@@ -8,7 +8,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 interface TaskCardProps {
-  task: Task;
+  task: Task & { categories?: { name: string } };
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onMoveLeft?: () => void;
@@ -17,6 +17,7 @@ interface TaskCardProps {
   canMoveRight?: boolean;
   compact?: boolean;
   isDailyKanban?: boolean;
+  showCategoryBadge?: boolean;
 }
 
 export function TaskCard({ 
@@ -28,7 +29,8 @@ export function TaskCard({
   canMoveLeft = false, 
   canMoveRight = false,
   compact = false,
-  isDailyKanban = false
+  isDailyKanban = false,
+  showCategoryBadge = false
 }: TaskCardProps) {
   const {
     attributes,
@@ -51,6 +53,9 @@ export function TaskCard({
     low: "bg-green-500 text-white",
   };
 
+  // Verificar se tarefa está atrasada
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isDailyKanban;
+
   return (
     <motion.div
       ref={setNodeRef}
@@ -63,7 +68,9 @@ export function TaskCard({
       transition={{ duration: 0.15 }}
     >
       <Card
-        className={`${compact ? 'p-2' : 'p-3'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow`}
+        className={`${compact ? 'p-2' : 'p-3'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+          isOverdue ? 'border-2 border-destructive' : ''
+        }`}
         onDoubleClick={() => onEdit(task)}
       >
         <div className={compact ? "space-y-1" : "space-y-2"}>
@@ -117,6 +124,12 @@ export function TaskCard({
           )}
 
           <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
+            {showCategoryBadge && task.categories?.name && (
+              <Badge variant="secondary" className={compact ? 'text-xs' : ''}>
+                📁 {task.categories.name}
+              </Badge>
+            )}
+
             {task.priority && (
               <Badge className={`${compact ? 'text-xs' : ''} ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                 {task.priority}
@@ -143,10 +156,13 @@ export function TaskCard({
           )}
           
           {task.due_date && !isDailyKanban && (
-            <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-md">
-              <Calendar className="h-4 w-4 text-primary" />
+            <div className={`flex items-center gap-2 px-2 py-1 rounded-md ${
+              isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-muted'
+            }`}>
+              <Calendar className={`h-4 w-4 ${isOverdue ? 'text-destructive' : 'text-primary'}`} />
               <span className="text-sm font-medium">
                 {new Date(task.due_date).toLocaleDateString("pt-BR")}
+                {isOverdue && ' - Atrasada!'}
               </span>
             </div>
           )}

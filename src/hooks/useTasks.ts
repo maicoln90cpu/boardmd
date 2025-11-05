@@ -20,7 +20,7 @@ export interface Task {
   updated_at: string;
 }
 
-export function useTasks(categoryId: string | null) {
+export function useTasks(categoryId: string | null | "all") {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -40,10 +40,23 @@ export function useTasks(categoryId: string | null) {
   const fetchTasks = async () => {
     let query = supabase
       .from("tasks")
-      .select("*");
+      .select("*, categories(name)");
     
-    if (categoryId) {
+    if (categoryId && categoryId !== "all") {
       query = query.eq("category_id", categoryId);
+    }
+
+    // Se for "all", excluir categoria "Diário"
+    if (categoryId === "all") {
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id")
+        .neq("name", "Diário");
+      
+      if (categories && categories.length > 0) {
+        const categoryIds = categories.map(c => c.id);
+        query = query.in("category_id", categoryIds);
+      }
     }
     
     const { data, error } = await query.order("position");

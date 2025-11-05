@@ -18,6 +18,7 @@ interface KanbanBoardProps {
   tagFilter?: string;
   isDailyKanban?: boolean;
   sortOption?: string;
+  showCategoryBadge?: boolean;
 }
 
 export function KanbanBoard({ 
@@ -28,7 +29,8 @@ export function KanbanBoard({
   priorityFilter = "all",
   tagFilter = "all",
   isDailyKanban = false,
-  sortOption = "manual"
+  sortOption = "manual",
+  showCategoryBadge = false
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -234,6 +236,7 @@ export function KanbanBoard({
                         canMoveRight={columnIndex < columns.length - 1}
                         compact={compact}
                         isDailyKanban={isDailyKanban}
+                        showCategoryBadge={showCategoryBadge}
                       />
                     ))}
                   </div>

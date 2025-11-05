@@ -22,6 +22,7 @@ function Index() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
+  const [viewMode, setViewMode] = useState<"category" | "all">("category");
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,7 +30,7 @@ function Index() {
   const [tagFilter, setTagFilter] = useState("all");
   const [sortOption, setSortOption] = useState("manual");
   
-  const { tasks } = useTasks(selectedCategory);
+  const { tasks } = useTasks(viewMode === "all" ? "all" : selectedCategory);
   const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
 
   useEffect(() => {
@@ -148,6 +149,8 @@ function Index() {
         onExport={handleExport}
         onImport={handleImport}
         onThemeToggle={toggleTheme}
+        onViewAll={() => setViewMode(viewMode === "all" ? "category" : "all")}
+        viewMode={viewMode}
       />
 
       <main className="ml-64">
@@ -177,22 +180,30 @@ function Index() {
         )}
         
         {/* Topbar + Filtros + Kanban Principal */}
-        {selectedCategory && columns.length > 0 && (
+        {((viewMode === "category" && selectedCategory) || viewMode === "all") && columns.length > 0 && (
           <>
-            <Topbar
-              categories={categories.filter(c => c.name !== "Diário")}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              onAddCategory={async (name) => {
-                await addCategory(name);
-                addActivity("category_created", `Categoria "${name}" criada`);
-                // Auto-select new category after creation
-                const newCat = categories.find(c => c.name === name);
-                if (newCat) {
-                  setSelectedCategory(newCat.id);
-                }
-              }}
-            />
+            {viewMode === "category" && (
+              <Topbar
+                categories={categories.filter(c => c.name !== "Diário")}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                onAddCategory={async (name) => {
+                  await addCategory(name);
+                  addActivity("category_created", `Categoria "${name}" criada`);
+                  // Auto-select new category after creation
+                  const newCat = categories.find(c => c.name === name);
+                  if (newCat) {
+                    setSelectedCategory(newCat.id);
+                  }
+                }}
+              />
+            )}
+
+            {viewMode === "all" && (
+              <div className="px-6 py-3 border-b bg-background">
+                <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+              </div>
+            )}
             
             <SearchFilters
               searchTerm={searchTerm}
@@ -209,11 +220,12 @@ function Index() {
 
             <KanbanBoard 
               columns={columns} 
-              categoryId={selectedCategory}
+              categoryId={viewMode === "all" ? "all" : selectedCategory}
               searchTerm={searchTerm}
               priorityFilter={priorityFilter}
               tagFilter={tagFilter}
               sortOption={sortOption}
+              showCategoryBadge={viewMode === "all"}
             />
           </>
         )}

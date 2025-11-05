@@ -1,29 +1,32 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2 } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useCategories } from "@/hooks/useCategories";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
   onThemeToggle: () => void;
+  onViewAll?: () => void;
+  viewMode: string;
 }
 
-export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
+export function Sidebar({ onExport, onImport, onThemeToggle, onViewAll, viewMode }: SidebarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const { categories, deleteCategory } = useCategories();
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
-  const handleExit = () => {
-    if (confirm("Deseja realmente sair? Isso limpará o estado local.")) {
-      localStorage.clear();
-      window.location.reload();
+  const handleLogout = async () => {
+    if (confirm("Deseja realmente sair?")) {
+      await signOut();
     }
   };
 
@@ -66,12 +69,13 @@ export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
   };
 
   const menuItems = [
-    { icon: LayoutGrid, label: "Kanban", active: true },
+    { icon: LayoutGrid, label: "Kanban", active: viewMode === "category" },
+    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: onViewAll },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },
     { icon: Palette, label: "Tema", onClick: onThemeToggle },
     { icon: Settings, label: "Configurações", onClick: () => setSettingsOpen(true) },
-    { icon: LogOut, label: "Sair", onClick: handleExit },
+    { icon: LogOut, label: "Sair", onClick: handleLogout },
   ];
 
   return (
