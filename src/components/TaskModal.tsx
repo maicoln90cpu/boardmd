@@ -51,6 +51,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   }, [task, open]);
 
   const handleSave = () => {
+    if (!title.trim()) return;
+    
     let dueDateTimestamp = null;
     
     if (dueDate) {
@@ -75,9 +77,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     onOpenChange(false);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && e.ctrlKey) {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" aria-describedby="task-modal-description">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
@@ -129,7 +138,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             </div>
           </div>
 
-          {isDailyKanban && dueDate && (
+          {isDailyKanban && (
             <div>
               <Label>Horário</Label>
               <Input
@@ -151,6 +160,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
           <Button onClick={handleSave} className="w-full" disabled={!title.trim()}>
             {task ? "Atualizar" : "Criar"} Tarefa
+            <span className="ml-2 text-xs opacity-60">(Ctrl+Enter)</span>
           </Button>
         </div>
       </DialogContent>

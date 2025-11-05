@@ -26,8 +26,15 @@ function Index() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   
-  const { tasks } = useTasks(selectedCategory);
+  // Se "Todos" selecionado, busca tasks de todas categorias não-diárias
+  const nonDailyCategories = categories.filter(c => c.name !== "Diário");
+  const tasksToShow = categoryFilter === "all" 
+    ? null // busca todas
+    : categoryFilter;
+  
+  const { tasks } = useTasks(tasksToShow);
   const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
 
   useEffect(() => {
@@ -118,6 +125,7 @@ function Index() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
+    setCategoryFilter("all");
   };
 
   const handleResetDaily = async () => {
@@ -195,11 +203,14 @@ function Index() {
               onTagChange={setTagFilter}
               availableTags={availableTags}
               onClearFilters={handleClearFilters}
+              categoryFilter={categoryFilter}
+              onCategoryFilterChange={setCategoryFilter}
+              availableCategories={categories.filter(c => c.name !== "Diário")}
             />
 
             <KanbanBoard 
               columns={columns} 
-              categoryId={selectedCategory}
+              categoryId={categoryFilter === "all" ? selectedCategory : categoryFilter}
               searchTerm={searchTerm}
               priorityFilter={priorityFilter}
               tagFilter={tagFilter}

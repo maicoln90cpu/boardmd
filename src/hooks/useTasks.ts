@@ -17,7 +17,7 @@ export interface Task {
   updated_at: string;
 }
 
-export function useTasks(categoryId: string) {
+export function useTasks(categoryId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -27,15 +27,22 @@ export function useTasks(categoryId: string) {
       fetchTasks();
       const cleanup = subscribeToTasks();
       return cleanup;
+    } else {
+      setTasks([]);
+      setLoading(false);
     }
   }, [categoryId]);
 
   const fetchTasks = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("tasks")
-      .select("*")
-      .eq("category_id", categoryId)
-      .order("position");
+      .select("*");
+    
+    if (categoryId) {
+      query = query.eq("category_id", categoryId);
+    }
+    
+    const { data, error } = await query.order("position");
 
     if (error) {
       toast({ title: "Erro ao carregar tarefas", variant: "destructive" });
@@ -49,9 +56,18 @@ export function useTasks(categoryId: string) {
   const subscribeToTasks = () => {
     const channel = supabase
       .channel(`tasks-${categoryId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
-        fetchTasks();
-      })
+      .on(
+        "postgres_changes", 
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "tasks",
+          ...(categoryId ? { filter: `category_id=eq.${categoryId}` } : {})
+        }, 
+        () => {
+          fetchTasks();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -69,6 +85,11 @@ export function useTasks(categoryId: string) {
       toast({ title: "Coluna é obrigatória", variant: "destructive" });
       return;
     }
+    
+    if (!task.category_id) {
+      toast({ title: "Categoria é obrigatória", variant: "destructive" });
+      return;
+    }
 
     // Calculate position at end of column
     const columnTasks = tasks.filter((t) => t.column_id === task.column_id);
@@ -83,7 +104,7 @@ export function useTasks(categoryId: string) {
         due_date: task.due_date || null,
         tags: task.tags || null,
         column_id: task.column_id,
-        category_id: categoryId,
+        category_id: task.category_id,
         position,
       });
 

@@ -50,8 +50,6 @@ export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
       toast({ title: "Categoria atualizada!" });
       setEditingId(null);
       setEditingName("");
-      // Force immediate reload to sync UI
-      window.location.reload();
     }
   };
 
