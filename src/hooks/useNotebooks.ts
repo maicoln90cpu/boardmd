@@ -64,12 +64,21 @@ export function useNotebooks() {
     if (!user) return;
 
     try {
-      const { error } = await supabase.from("notebooks").insert({
-        name,
-        user_id: user.id,
-      });
+      const { data, error } = await supabase
+        .from("notebooks")
+        .insert({
+          name,
+          user_id: user.id,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Atualização otimista
+      if (data) {
+        setNotebooks((prev) => [data, ...prev]);
+      }
 
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
@@ -92,6 +101,7 @@ export function useNotebooks() {
 
       if (error) throw error;
 
+      await fetchNotebooks();
       toast({ title: "Caderno atualizado!" });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -133,6 +143,7 @@ export function useNotebooks() {
 
       if (error) throw error;
 
+      await fetchNotebooks();
       toast({ title: "Caderno movido para lixeira" });
     } catch (error) {
       if (import.meta.env.DEV) {

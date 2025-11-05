@@ -79,6 +79,11 @@ export function useNotes() {
 
       if (error) throw error;
 
+      // Atualização otimista
+      if (data) {
+        setNotes((prev) => [data, ...prev]);
+      }
+
       toast({ title: "Nota criada com sucesso!" });
       return data;
     } catch (error) {
@@ -139,6 +144,7 @@ export function useNotes() {
 
       if (error) throw error;
 
+      await fetchNotes();
       toast({ title: "Nota movida para lixeira" });
     } catch (error) {
       if (import.meta.env.DEV) {

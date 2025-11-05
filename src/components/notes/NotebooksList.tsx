@@ -4,6 +4,7 @@ import { Note, useNotes } from "@/hooks/useNotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText } from "lucide-react";
+import { useDroppable } from "@dnd-kit/core";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,67 +103,20 @@ export function NotebooksList({
 
           return (
             <div key={notebook.id} className="space-y-1">
-              <div className="flex items-center gap-1 group hover:bg-accent rounded-md px-2 py-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
-                  onClick={() => toggleNotebook(notebook.id)}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </Button>
-
-                <BookOpen className="h-4 w-4 text-muted-foreground" />
-
-                {editingId === notebook.id ? (
-                  <Input
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    className="h-6 px-1 py-0 text-sm flex-1"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleEditSave(notebook.id);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                    onBlur={() => handleEditSave(notebook.id)}
-                  />
-                ) : (
-                  <span className="flex-1 text-sm truncate">{notebook.name}</span>
-                )}
-
-                <span className="text-xs text-muted-foreground">({count})</span>
-
-                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => handleEditStart(notebook)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-destructive"
-                    onClick={() => handleDeleteClick(notebook)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => onAddNote(notebook.id)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
+              <NotebookHeader
+                notebook={notebook}
+                isExpanded={isExpanded}
+                count={count}
+                editingId={editingId}
+                editingName={editingName}
+                onToggle={() => toggleNotebook(notebook.id)}
+                onEditStart={() => handleEditStart(notebook)}
+                onEditSave={() => handleEditSave(notebook.id)}
+                onEditChange={setEditingName}
+                onEditCancel={() => setEditingId(null)}
+                onDelete={() => handleDeleteClick(notebook)}
+                onAddNote={() => onAddNote(notebook.id)}
+              />
 
               {isExpanded && notebookNotes.length > 0 && (
                 <div className="ml-6 space-y-1">
@@ -223,5 +177,109 @@ export function NotebooksList({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function NotebookHeader({
+  notebook,
+  isExpanded,
+  count,
+  editingId,
+  editingName,
+  onToggle,
+  onEditStart,
+  onEditSave,
+  onEditChange,
+  onEditCancel,
+  onDelete,
+  onAddNote,
+}: {
+  notebook: Notebook;
+  isExpanded: boolean;
+  count: number;
+  editingId: string | null;
+  editingName: string;
+  onToggle: () => void;
+  onEditStart: () => void;
+  onEditSave: () => void;
+  onEditChange: (value: string) => void;
+  onEditCancel: () => void;
+  onDelete: () => void;
+  onAddNote: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `notebook-${notebook.id}`,
+    data: { type: "notebook", notebookId: notebook.id },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`
+        flex items-center gap-1 group hover:bg-accent rounded-md px-2 py-1
+        transition-colors
+        ${isOver ? "bg-accent/70 ring-2 ring-primary" : ""}
+      `}
+    >
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 w-6 p-0"
+        onClick={onToggle}
+      >
+        {isExpanded ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+      </Button>
+
+      <BookOpen className="h-4 w-4 text-muted-foreground" />
+
+      {editingId === notebook.id ? (
+        <Input
+          value={editingName}
+          onChange={(e) => onEditChange(e.target.value)}
+          className="h-6 px-1 py-0 text-sm flex-1"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onEditSave();
+            if (e.key === "Escape") onEditCancel();
+          }}
+          onBlur={onEditSave}
+        />
+      ) : (
+        <span className="flex-1 text-sm truncate">{notebook.name}</span>
+      )}
+
+      <span className="text-xs text-muted-foreground">({count})</span>
+
+      <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onEditStart}
+        >
+          <Pencil className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0 text-destructive"
+          onClick={onDelete}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 w-6 p-0"
+          onClick={onAddNote}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+      </div>
+    </div>
   );
 }

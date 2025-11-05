@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
+import { useSearchParams } from "react-router-dom";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -22,6 +23,7 @@ function Index() {
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
   const { addActivity } = useActivityLog();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
@@ -30,6 +32,7 @@ function Index() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,6 +40,14 @@ function Index() {
   const [tagFilter, setTagFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortOption, setSortOption] = useState("manual");
+
+  // Ler view da URL na inicialização
+  useEffect(() => {
+    const view = searchParams.get("view");
+    if (view === "all" || view === "daily") {
+      setViewMode(view);
+    }
+  }, []);
   
   const { tasks } = useTasks(viewMode === "all" ? "all" : dailyCategory);
   const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
@@ -153,6 +164,7 @@ function Index() {
     setTagFilter("all");
     setCategoryFilter("all");
     setSortOption("manual");
+    setDisplayMode("by_category");
   };
 
   const handleResetDaily = async () => {
@@ -245,28 +257,49 @@ function Index() {
               sortOption={sortOption}
               onSortChange={setSortOption}
               viewMode={viewMode}
+              displayMode={displayMode}
+              onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")}
             />
 
-            {/* Renderizar Kanbans por categoria */}
-            {categories
-              .filter(cat => cat.name !== "Diário")
-              .filter(cat => categoryFilter === "all" || cat.id === categoryFilter)
-              .map(category => (
-                <div key={category.id} className="mb-8">
-                  <div className="px-6 py-3 bg-muted/50">
-                    <h3 className="text-lg font-semibold">{category.name}</h3>
-                  </div>
-                  <KanbanBoard 
-                    columns={columns} 
-                    categoryId={category.id}
-                    searchTerm={searchTerm}
-                    priorityFilter={priorityFilter}
-                    tagFilter={tagFilter}
-                    sortOption={sortOption}
-                    viewMode={viewMode}
-                  />
+            {/* Renderizar baseado no displayMode */}
+            {displayMode === "all_tasks" ? (
+              <div className="mb-8">
+                <div className="px-6 py-3 bg-muted/50">
+                  <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
                 </div>
-              ))}
+                <KanbanBoard 
+                  columns={columns} 
+                  categoryId="all"
+                  searchTerm={searchTerm}
+                  priorityFilter={priorityFilter}
+                  tagFilter={tagFilter}
+                  sortOption={sortOption}
+                  viewMode={viewMode}
+                  showCategoryBadge
+                />
+              </div>
+            ) : (
+              /* Renderizar Kanbans por categoria */
+              categories
+                .filter(cat => cat.name !== "Diário")
+                .filter(cat => categoryFilter === "all" || cat.id === categoryFilter)
+                .map(category => (
+                  <div key={category.id} className="mb-8">
+                    <div className="px-6 py-3 bg-muted/50">
+                      <h3 className="text-lg font-semibold">{category.name}</h3>
+                    </div>
+                    <KanbanBoard 
+                      columns={columns} 
+                      categoryId={category.id}
+                      searchTerm={searchTerm}
+                      priorityFilter={priorityFilter}
+                      tagFilter={tagFilter}
+                      sortOption={sortOption}
+                      viewMode={viewMode}
+                    />
+                  </div>
+                ))
+            )}
           </>
         )}
       </main>

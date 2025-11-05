@@ -2,6 +2,8 @@ import { Note } from "@/hooks/useNotes";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Trash2 } from "lucide-react";
 import { useNotes } from "@/hooks/useNotes";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 interface NotesListProps {
   notes: Note[];
@@ -31,6 +33,8 @@ export function NotesList({
         </Button>
       </div>
 
+      <NoneDropArea />
+
       {/* Notas soltas */}
       {looseNotes.length > 0 && (
         <div className="space-y-1">
@@ -38,27 +42,13 @@ export function NotesList({
             <span className="text-xs text-muted-foreground">Sem caderno</span>
           </div>
           {looseNotes.map((note) => (
-            <div
+            <DraggableNote
               key={note.id}
-              className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group ${
-                selectedNoteId === note.id ? "bg-accent" : "hover:bg-accent/50"
-              }`}
-              onClick={() => onSelectNote(note.id)}
-            >
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm flex-1 truncate">{note.title}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteNote(note.id);
-                }}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+              note={note}
+              isSelected={selectedNoteId === note.id}
+              onSelect={onSelectNote}
+              onDelete={deleteNote}
+            />
           ))}
         </div>
       )}
@@ -70,27 +60,13 @@ export function NotesList({
             <span className="text-xs text-muted-foreground">Em cadernos</span>
           </div>
           {notesInNotebooks.map((note) => (
-            <div
+            <DraggableNote
               key={note.id}
-              className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group ${
-                selectedNoteId === note.id ? "bg-accent" : "hover:bg-accent/50"
-              }`}
-              onClick={() => onSelectNote(note.id)}
-            >
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm flex-1 truncate">{note.title}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteNote(note.id);
-                }}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+              note={note}
+              isSelected={selectedNoteId === note.id}
+              onSelect={onSelectNote}
+              onDelete={deleteNote}
+            />
           ))}
         </div>
       )}
@@ -103,6 +79,82 @@ export function NotesList({
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+function NoneDropArea() {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "none-drop-area",
+    data: { type: "none" },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`
+        border-2 border-dashed rounded-lg p-2 mb-2 text-xs text-center text-muted-foreground
+        transition-colors
+        ${isOver ? "bg-accent/50 border-primary" : "border-muted"}
+      `}
+    >
+      Arraste aqui para remover do caderno
+    </div>
+  );
+}
+
+function DraggableNote({
+  note,
+  isSelected,
+  onSelect,
+  onDelete,
+}: {
+  note: Note;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: note.id,
+    data: { type: "note", noteId: note.id },
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? "grabbing" : "grab",
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`
+        flex items-center gap-2 px-2 py-1 rounded-md group
+        transition-colors hover:bg-accent/50
+        ${isSelected ? "bg-accent" : ""}
+      `}
+    >
+      <div
+        onClick={() => onSelect(note.id)}
+        className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+      >
+        <FileText className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm truncate">{note.title}</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(note.id);
+        }}
+        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
+      >
+        <Trash2 className="h-3 w-3" />
+      </Button>
     </div>
   );
 }

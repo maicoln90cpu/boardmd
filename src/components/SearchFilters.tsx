@@ -19,6 +19,8 @@ interface SearchFiltersProps {
   sortOption: string;
   onSortChange: (value: string) => void;
   viewMode?: string;
+  displayMode?: string;
+  onDisplayModeChange?: (value: string) => void;
 }
 
 export function SearchFilters({
@@ -36,6 +38,8 @@ export function SearchFilters({
   sortOption,
   onSortChange,
   viewMode,
+  displayMode,
+  onDisplayModeChange,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
@@ -90,6 +94,18 @@ export function SearchFilters({
                 {cat.name}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {viewMode === "all" && displayMode && onDisplayModeChange && (
+        <Select value={displayMode} onValueChange={onDisplayModeChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Exibição" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="by_category">Por categoria</SelectItem>
+            <SelectItem value="all_tasks">Todas as tarefas</SelectItem>
           </SelectContent>
         </Select>
       )}
