@@ -118,9 +118,11 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(taskData);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("tasks")
-        .insert([validated as any]);
+        .insert([validated as any])
+        .select()
+        .single();
 
       if (error) {
         toast({
@@ -129,6 +131,16 @@ export function useTasks(categoryId: string | null | "all") {
           variant: "destructive",
         });
         return;
+      }
+
+      // Registrar no histórico
+      if (data) {
+        await supabase.from("task_history").insert([{
+          task_id: data.id,
+          user_id: user.id,
+          action: "created",
+          changes: { title: task.title }
+        }]);
       }
 
       toast({ title: "Tarefa criada com sucesso" });
@@ -145,6 +157,8 @@ export function useTasks(categoryId: string | null | "all") {
   };
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
+    if (!user) return;
+
     try {
       const validated = taskSchema.partial().parse(updates);
 
@@ -165,6 +179,15 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
+      // Registrar no histórico
+      const action = updates.column_id ? "moved" : "updated";
+      await supabase.from("task_history").insert([{
+        task_id: id,
+        user_id: user.id,
+        action,
+        changes: updates
+      }]);
+
       toast({ title: "Tarefa atualizada com sucesso" });
       await fetchTasks();
     } catch (e) {
@@ -179,11 +202,21 @@ export function useTasks(categoryId: string | null | "all") {
   };
 
   const deleteTask = async (id: string) => {
+    if (!user) return;
+
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (error) {
       toast({ title: "Erro ao deletar tarefa", variant: "destructive" });
     } else {
+      // Registrar no histórico antes de deletar
+      await supabase.from("task_history").insert([{
+        task_id: id,
+        user_id: user.id,
+        action: "deleted",
+        changes: {}
+      }]);
+
       toast({ title: "Tarefa deletada com sucesso" });
       await fetchTasks();
     }

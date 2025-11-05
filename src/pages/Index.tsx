@@ -3,14 +3,18 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchFilters } from "@/components/SearchFilters";
+import { DashboardStats } from "@/components/DashboardStats";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, Task } from "@/hooks/useTasks";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, BarChart3 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ActivityHistory } from "@/components/ActivityHistory";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -23,6 +27,9 @@ function Index() {
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
   const [viewMode, setViewMode] = useState<"category" | "all">("category");
+  const [showStats, setShowStats] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,6 +142,11 @@ function Index() {
     setDailyBoardKey(k => k + 1); // Força refresh do board diário
   };
 
+  const handleTaskSelect = (task: Task) => {
+    setSelectedTaskForHistory(task.id);
+    setShowHistory(true);
+  };
+
   if (loadingCategories || loadingColumns) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -154,8 +166,8 @@ function Index() {
       />
 
       <main className="ml-64">
-        {/* Kanban Diário Fixo */}
-        {dailyCategory && columns.length > 0 && (
+        {/* Kanban Diário Fixo - só aparece no modo categoria */}
+        {viewMode === "category" && dailyCategory && columns.length > 0 && (
           <div className="sticky top-0 z-10 bg-background border-b">
             <div className="px-6 py-3 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
@@ -200,8 +212,19 @@ function Index() {
             )}
 
             {viewMode === "all" && (
-              <div className="px-6 py-3 border-b bg-background">
+              <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
                 <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+                <div className="flex items-center gap-2">
+                  <GlobalSearch tasks={tasks} onSelectTask={handleTaskSelect} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowStats(true)}
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Estatísticas
+                  </Button>
+                </div>
               </div>
             )}
             
@@ -226,10 +249,31 @@ function Index() {
               tagFilter={tagFilter}
               sortOption={sortOption}
               showCategoryBadge={viewMode === "all"}
+              allowCrossCategoryDrag={viewMode === "all"}
             />
           </>
         )}
       </main>
+
+      {/* Dialog de Estatísticas */}
+      <Dialog open={showStats} onOpenChange={setShowStats}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>📊 Estatísticas do Projeto</DialogTitle>
+          </DialogHeader>
+          <DashboardStats tasks={tasks} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>📋 Histórico de Atividades</DialogTitle>
+          </DialogHeader>
+          <ActivityHistory taskId={selectedTaskForHistory} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

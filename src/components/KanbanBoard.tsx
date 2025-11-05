@@ -19,6 +19,7 @@ interface KanbanBoardProps {
   isDailyKanban?: boolean;
   sortOption?: string;
   showCategoryBadge?: boolean;
+  allowCrossCategoryDrag?: boolean;
 }
 
 export function KanbanBoard({ 
@@ -30,7 +31,8 @@ export function KanbanBoard({
   tagFilter = "all",
   isDailyKanban = false,
   sortOption = "manual",
-  showCategoryBadge = false
+  showCategoryBadge = false,
+  allowCrossCategoryDrag = false
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -74,10 +76,19 @@ export function KanbanBoard({
       const destinationTasks = tasks.filter((t) => t.column_id === newColumnId);
       const newPosition = destinationTasks.length;
       
-      updateTask(taskId, { 
+      // Se permitir drag entre categorias, manter category_id da tarefa
+      // Senão, usar o categoryId atual
+      const updates: Partial<Task> = {
         column_id: newColumnId,
-        position: newPosition 
-      });
+        position: newPosition
+      };
+
+      // Não alterar categoria se allowCrossCategoryDrag estiver ativo
+      if (!allowCrossCategoryDrag && categoryId !== "all") {
+        updates.category_id = categoryId;
+      }
+      
+      updateTask(taskId, updates);
     }
 
     setActiveId(null);

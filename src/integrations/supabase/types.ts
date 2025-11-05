@@ -107,6 +107,33 @@ export type Database = {
         }
         Relationships: []
       }
+      task_history: {
+        Row: {
+          action: string
+          changes: Json
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changes: Json
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changes?: Json
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           category_id: string
