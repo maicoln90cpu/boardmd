@@ -1,0 +1,227 @@
+import { useState } from "react";
+import { Notebook, useNotebooks } from "@/hooks/useNotebooks";
+import { Note, useNotes } from "@/hooks/useNotes";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+interface NotebooksListProps {
+  notebooks: Notebook[];
+  notes: Note[];
+  selectedNoteId: string | null;
+  onSelectNote: (noteId: string) => void;
+  onAddNote: (notebookId: string | null) => void;
+}
+
+export function NotebooksList({
+  notebooks,
+  notes,
+  selectedNoteId,
+  onSelectNote,
+  onAddNote,
+}: NotebooksListProps) {
+  const { addNotebook, updateNotebook, deleteNotebook } = useNotebooks();
+  const { deleteNote } = useNotes();
+  const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [notebookToDelete, setNotebookToDelete] = useState<Notebook | null>(null);
+
+  const toggleNotebook = (id: string) => {
+    const newExpanded = new Set(expandedNotebooks);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedNotebooks(newExpanded);
+  };
+
+  const handleAddNotebook = async () => {
+    await addNotebook("Novo Caderno");
+  };
+
+  const handleEditStart = (notebook: Notebook) => {
+    setEditingId(notebook.id);
+    setEditingName(notebook.name);
+  };
+
+  const handleEditSave = async (id: string) => {
+    if (editingName.trim()) {
+      await updateNotebook(id, editingName.trim());
+    }
+    setEditingId(null);
+  };
+
+  const handleDeleteClick = (notebook: Notebook) => {
+    setNotebookToDelete(notebook);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (notebookToDelete) {
+      await deleteNotebook(notebookToDelete.id);
+      setNotebookToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const getNotebookNotes = (notebookId: string) => {
+    return notes.filter((note) => note.notebook_id === notebookId);
+  };
+
+  const notesCount = (notebookId: string) => {
+    return getNotebookNotes(notebookId).length;
+  };
+
+  return (
+    <>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between p-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">CADERNOS</h3>
+          <Button variant="ghost" size="sm" onClick={handleAddNotebook}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {notebooks.map((notebook) => {
+          const notebookNotes = getNotebookNotes(notebook.id);
+          const isExpanded = expandedNotebooks.has(notebook.id);
+          const count = notesCount(notebook.id);
+
+          return (
+            <div key={notebook.id} className="space-y-1">
+              <div className="flex items-center gap-1 group hover:bg-accent rounded-md px-2 py-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => toggleNotebook(notebook.id)}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+
+                {editingId === notebook.id ? (
+                  <Input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    className="h-6 px-1 py-0 text-sm flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleEditSave(notebook.id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    onBlur={() => handleEditSave(notebook.id)}
+                  />
+                ) : (
+                  <span className="flex-1 text-sm truncate">{notebook.name}</span>
+                )}
+
+                <span className="text-xs text-muted-foreground">({count})</span>
+
+                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleEditStart(notebook)}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-destructive"
+                    onClick={() => handleDeleteClick(notebook)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => onAddNote(notebook.id)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {isExpanded && notebookNotes.length > 0 && (
+                <div className="ml-6 space-y-1">
+                  {notebookNotes.map((note) => (
+                    <div
+                      key={note.id}
+                      className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group ${
+                        selectedNoteId === note.id
+                          ? "bg-accent"
+                          : "hover:bg-accent/50"
+                      }`}
+                      onClick={() => onSelectNote(note.id)}
+                    >
+                      <FileText className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-sm flex-1 truncate">{note.title}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNote(note.id);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir caderno?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {notebookToDelete && notesCount(notebookToDelete.id) > 0 ? (
+                <>
+                  Este caderno contém {notesCount(notebookToDelete.id)} nota(s).
+                  Ao excluir o caderno, as notas serão mantidas mas ficarão sem caderno.
+                  O caderno e suas notas podem ser restaurados da lixeira.
+                </>
+              ) : (
+                "Tem certeza que deseja excluir este caderno? Ele pode ser restaurado da lixeira."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

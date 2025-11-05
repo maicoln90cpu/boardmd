@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   onExport: () => void;
@@ -23,6 +24,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
   const { categories, deleteCategory } = useCategories();
   const { toast } = useToast();
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     if (confirm("Deseja realmente sair?")) {
@@ -71,6 +73,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
     { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
+    { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },
     { icon: Palette, label: "Tema", onClick: onThemeToggle },

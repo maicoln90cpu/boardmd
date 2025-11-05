@@ -83,6 +83,68 @@ export type Database = {
         }
         Relationships: []
       }
+      notebooks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          notebook_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          notebook_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          notebook_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -193,6 +255,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trash: {
+        Row: {
+          deleted_at: string
+          id: string
+          item_data: Json
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          id?: string
+          item_data: Json
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          item_data?: Json
+          item_id?: string
+          item_type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
