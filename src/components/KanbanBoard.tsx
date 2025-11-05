@@ -110,6 +110,24 @@ export function KanbanBoard({
     setDeleteDialogOpen(false);
   };
 
+  const handleMoveTask = (taskId: string, direction: "left" | "right") => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
+    const targetIndex = direction === "left" ? currentColumnIndex - 1 : currentColumnIndex + 1;
+    
+    if (targetIndex >= 0 && targetIndex < columns.length) {
+      const targetColumn = columns[targetIndex];
+      const destinationTasks = tasks.filter(t => t.column_id === targetColumn.id);
+      
+      updateTask(taskId, {
+        column_id: targetColumn.id,
+        position: destinationTasks.length
+      });
+    }
+  };
+
   const getTasksForColumn = (columnId: string) => {
     return tasks.filter((t) => {
       if (t.column_id !== columnId) return false;
@@ -142,7 +160,7 @@ export function KanbanBoard({
         onDragEnd={handleDragEnd}
       >
         <div className={`grid grid-cols-3 gap-6 ${compact ? 'p-3' : 'p-6'}`}>
-          {columns.map((column) => {
+          {columns.map((column, columnIndex) => {
             const columnTasks = getTasksForColumn(column.id);
             return (
               <div key={column.id} className="flex flex-col gap-4">
@@ -174,6 +192,10 @@ export function KanbanBoard({
                         task={task}
                         onEdit={handleEditTask}
                         onDelete={handleDeleteClick}
+                        onMoveLeft={() => handleMoveTask(task.id, "left")}
+                        onMoveRight={() => handleMoveTask(task.id, "right")}
+                        canMoveLeft={columnIndex > 0}
+                        canMoveRight={columnIndex < columns.length - 1}
                       />
                     ))}
                   </div>

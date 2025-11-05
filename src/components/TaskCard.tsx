@@ -1,7 +1,7 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2 } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
@@ -11,9 +11,21 @@ interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onMoveLeft?: () => void;
+  onMoveRight?: () => void;
+  canMoveLeft?: boolean;
+  canMoveRight?: boolean;
 }
 
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ 
+  task, 
+  onEdit, 
+  onDelete, 
+  onMoveLeft, 
+  onMoveRight, 
+  canMoveLeft = false, 
+  canMoveRight = false 
+}: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -52,17 +64,45 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-medium flex-1">{task.title}</h3>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-6 w-6"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(task.id);
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            <div className="flex gap-1">
+              {canMoveLeft && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveLeft?.();
+                  }}
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+              )}
+              {canMoveRight && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMoveRight?.();
+                  }}
+                >
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(task.id);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
 
           {task.description && (
