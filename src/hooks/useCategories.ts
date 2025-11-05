@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { categorySchema } from "@/lib/validations";
+import { z } from "zod";
 
 export interface Category {
   id: string;
@@ -13,6 +16,7 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCategories();
@@ -34,9 +38,14 @@ export function useCategories() {
 
     // Initialize default categories if none exist
     if (!data || data.length === 0) {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const defaultCategories = [
-        { name: "Diário" },
-        { name: "Projetos" },
+        { name: "Diário", user_id: user.id },
+        { name: "Projetos", user_id: user.id },
       ];
 
       const { error: insertError } = await supabase
@@ -51,8 +60,8 @@ export function useCategories() {
 
     // Ensure "Diário" exists
     const hasDiario = data.some(c => c.name === "Diário");
-    if (!hasDiario) {
-      await supabase.from("categories").insert({ name: "Diário" });
+    if (!hasDiario && user) {
+      await supabase.from("categories").insert([{ name: "Diário", user_id: user.id }]);
       fetchCategories();
       return;
     }
@@ -75,12 +84,33 @@ export function useCategories() {
   };
 
   const addCategory = async (name: string) => {
-    const { error } = await supabase
-      .from("categories")
-      .insert({ name });
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    if (error) {
-      toast({ title: "Erro ao criar categoria", variant: "destructive" });
+    try {
+      const validated = categorySchema.parse({ name, user_id: user.id });
+
+      const { error } = await supabase
+        .from("categories")
+        .insert([validated as any]);
+
+      if (error) {
+        toast({ title: "Erro ao criar categoria", variant: "destructive" });
+      }
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: e.errors[0].message,
+          variant: "destructive",
+        });
+      }
     }
   };
 

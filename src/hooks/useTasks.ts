@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { taskSchema } from "@/lib/validations";
+import { z } from "zod";
 
 export interface Task {
   id: string;
@@ -21,6 +24,7 @@ export function useTasks(categoryId: string | null) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (categoryId) {
@@ -76,70 +80,88 @@ export function useTasks(categoryId: string | null) {
   };
 
   const addTask = async (task: Partial<Task>) => {
-    if (!task.title?.trim()) {
-      toast({ title: "Título é obrigatório", variant: "destructive" });
-      return;
-    }
-
-    if (!task.column_id) {
-      toast({ title: "Coluna é obrigatória", variant: "destructive" });
-      return;
-    }
-    
-    if (!task.category_id) {
-      toast({ title: "Categoria é obrigatória", variant: "destructive" });
-      return;
-    }
-
-    // Calculate position at end of column
-    const columnTasks = tasks.filter((t) => t.column_id === task.column_id);
-    const position = task.position ?? columnTasks.length;
-
-    const { error } = await supabase
-      .from("tasks")
-      .insert({
-        title: task.title.trim(),
-        description: task.description || null,
-        priority: task.priority || "medium",
-        due_date: task.due_date || null,
-        tags: task.tags || null,
-        column_id: task.column_id,
-        category_id: task.category_id,
-        position,
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para criar tarefas",
+        variant: "destructive",
       });
+      return;
+    }
 
-    if (error) {
-      console.error("Error creating task:", error);
-      toast({ 
-        title: "Erro ao criar tarefa", 
-        description: error.message,
-        variant: "destructive" 
-      });
-    } else {
+    try {
+      const maxPosition = Math.max(
+        ...tasks
+          .filter((t) => t.column_id === task.column_id)
+          .map((t) => t.position),
+        -1
+      );
+
+      const taskData = {
+        ...task,
+        position: maxPosition + 1,
+        user_id: user.id,
+      };
+
+      const validated = taskSchema.parse(taskData);
+
+      const { error } = await supabase
+        .from("tasks")
+        .insert([validated as any]);
+
+      if (error) {
+        toast({
+          title: "Erro ao criar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({ title: "Tarefa criada com sucesso" });
       await fetchTasks();
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: e.errors[0].message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
-    const { error } = await supabase
-      .from("tasks")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", id);
+    try {
+      const validated = taskSchema.partial().parse(updates);
 
-    if (error) {
-      console.error("Error updating task:", error);
-      toast({ 
-        title: "Erro ao atualizar tarefa",
-        description: error.message,
-        variant: "destructive" 
-      });
-    } else {
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          ...validated,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) {
+        toast({
+          title: "Erro ao atualizar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({ title: "Tarefa atualizada com sucesso" });
       await fetchTasks();
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: e.errors[0].message,
+          variant: "destructive",
+        });
+      }
     }
   };
 

@@ -20,21 +20,21 @@ export type Database = {
           created_at: string
           details: Json
           id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           action: string
           created_at?: string
           details: Json
           id?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           action?: string
           created_at?: string
           details?: Json
           id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -43,19 +43,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -65,21 +65,21 @@ export type Database = {
           id: string
           name: string
           position: number
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           position: number
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           position?: number
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -96,7 +96,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           category_id: string
@@ -110,7 +110,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           category_id?: string
@@ -124,7 +124,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { columnSchema } from "@/lib/validations";
+import { z } from "zod";
 
 export interface Column {
   id: string;
@@ -14,6 +17,7 @@ export function useColumns() {
   const [columns, setColumns] = useState<Column[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchColumns();
@@ -41,10 +45,14 @@ export function useColumns() {
   };
 
   const initializeColumns = async () => {
+    if (!user) {
+      return;
+    }
+
     const defaultColumns = [
-      { name: "A Fazer", position: 0 },
-      { name: "Em Andamento", position: 1 },
-      { name: "Concluído", position: 2 },
+      { name: "A Fazer", position: 0, user_id: user.id },
+      { name: "Em Andamento", position: 1, user_id: user.id },
+      { name: "Concluído", position: 2, user_id: user.id },
     ];
 
     const { error } = await supabase.from("columns").insert(defaultColumns);
@@ -68,14 +76,38 @@ export function useColumns() {
   };
 
   const addColumn = async (name: string) => {
-    const maxPosition = Math.max(...columns.map((c) => c.position), -1);
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const { error } = await supabase
-      .from("columns")
-      .insert({ name, position: maxPosition + 1 });
+    try {
+      const maxPosition = Math.max(...columns.map((c) => c.position), -1);
+      const validated = columnSchema.parse({ 
+        name, 
+        position: maxPosition + 1,
+        user_id: user.id 
+      });
 
-    if (error) {
-      toast({ title: "Erro ao criar coluna", variant: "destructive" });
+      const { error } = await supabase
+        .from("columns")
+        .insert([validated as any]);
+
+      if (error) {
+        toast({ title: "Erro ao criar coluna", variant: "destructive" });
+      }
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: e.errors[0].message,
+          variant: "destructive",
+        });
+      }
     }
   };
 
