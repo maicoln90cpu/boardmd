@@ -105,7 +105,10 @@ function Index() {
           description: "Dados importados com sucesso" 
         });
       } catch (error) {
-        console.error("Import error:", error);
+        // Only log errors in development
+        if (import.meta.env.DEV) {
+          console.error("Import error:", error);
+        }
         toast({ 
           title: "Erro na importação", 
           description: "Arquivo inválido",
