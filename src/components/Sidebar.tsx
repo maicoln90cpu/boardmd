@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -12,11 +12,11 @@ interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
   onThemeToggle: () => void;
-  onViewAll?: () => void;
-  viewMode: string;
+  onViewChange: (mode: "daily" | "all") => void;
+  viewMode: "daily" | "all";
 }
 
-export function Sidebar({ onExport, onImport, onThemeToggle, onViewAll, viewMode }: SidebarProps) {
+export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewMode }: SidebarProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -69,8 +69,8 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewAll, viewMode
   };
 
   const menuItems = [
-    { icon: LayoutGrid, label: "Kanban", active: viewMode === "category" },
-    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: onViewAll },
+    { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
+    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },
     { icon: Palette, label: "Tema", onClick: onThemeToggle },

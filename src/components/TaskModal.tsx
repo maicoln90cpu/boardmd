@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task } from "@/hooks/useTasks";
 import { Label } from "@/components/ui/label";
+import { useCategories } from "@/hooks/useCategories";
 
 interface TaskModalProps {
   open: boolean;
@@ -14,21 +15,26 @@ interface TaskModalProps {
   task?: Task | null;
   columnId: string;
   isDailyKanban?: boolean;
+  viewMode?: string;
+  categoryId?: string;
 }
 
-export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false }: TaskModalProps) {
+export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId }: TaskModalProps) {
+  const { categories } = useCategories();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
   const [tags, setTags] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   useEffect(() => {
     if (task) {
       setTitle(task.title);
       setDescription(task.description || "");
       setPriority(task.priority || "medium");
+      setSelectedCategory(task.category_id || "");
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -47,8 +53,9 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setDueDate("");
       setDueTime("");
       setTags("");
+      setSelectedCategory(categoryId || "");
     }
-  }, [task, open]);
+  }, [task, open, categoryId]);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -84,6 +91,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       tags: tags ? tags.split(",").map((t) => t.trim()) : null,
       column_id: columnId,
       position: task?.position ?? 0,
+      category_id: selectedCategory || categoryId,
     };
 
     onSave(taskData);
@@ -137,6 +145,26 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             />
           </div>
 
+          {viewMode === "all" && (
+            <div>
+              <Label>Categoria</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories
+                    .filter(cat => cat.name !== "Diário")
+                    .map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Prioridade</Label>
@@ -182,7 +210,11 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             />
           </div>
 
-          <Button onClick={handleSave} className="w-full" disabled={!title.trim()}>
+          <Button 
+            onClick={handleSave} 
+            className="w-full" 
+            disabled={!title.trim() || (viewMode === "all" && !selectedCategory)}
+          >
             {task ? "Atualizar" : "Criar"} Tarefa
             <span className="ml-2 text-xs opacity-60">(Ctrl+Enter)</span>
           </Button>

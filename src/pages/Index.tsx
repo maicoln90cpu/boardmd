@@ -26,7 +26,7 @@ function Index() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
-  const [viewMode, setViewMode] = useState<"category" | "all">("category");
+  const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
@@ -35,10 +35,30 @@ function Index() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortOption, setSortOption] = useState("manual");
   
-  const { tasks } = useTasks(viewMode === "all" ? "all" : selectedCategory);
+  const { tasks } = useTasks(viewMode === "all" ? "all" : dailyCategory);
   const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
+
+  // Filtrar tasks baseado no viewMode e filtros
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const dailyCat = categories.find(c => c.name === "Diário");
+      
+      // No modo "all", excluir tarefas do Diário
+      if (viewMode === "all" && task.category_id === dailyCat?.id) {
+        return false;
+      }
+      
+      // Filtro de categoria (apenas no modo "all")
+      if (viewMode === "all" && categoryFilter !== "all" && task.category_id !== categoryFilter) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [tasks, viewMode, categoryFilter, categories]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -58,14 +78,14 @@ function Index() {
     }
   }, [categories, selectedCategory]);
 
-  // Tags disponíveis
+  // Tags disponíveis (usar filteredTasks)
   const availableTags = useMemo(() => {
     const tags = new Set<string>();
-    tasks.forEach(task => {
+    filteredTasks.forEach(task => {
       task.tags?.forEach(tag => tags.add(tag));
     });
     return Array.from(tags);
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const handleExport = () => {
     const data = {
@@ -131,6 +151,7 @@ function Index() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
+    setCategoryFilter("all");
     setSortOption("manual");
   };
 
@@ -161,13 +182,13 @@ function Index() {
         onExport={handleExport}
         onImport={handleImport}
         onThemeToggle={toggleTheme}
-        onViewAll={() => setViewMode(viewMode === "all" ? "category" : "all")}
+        onViewChange={setViewMode}
         viewMode={viewMode}
       />
 
       <main className="ml-64">
-        {/* Kanban Diário Fixo - só aparece no modo categoria */}
-        {viewMode === "category" && dailyCategory && columns.length > 0 && (
+        {/* Kanban Diário - modo daily */}
+        {viewMode === "daily" && dailyCategory && columns.length > 0 && (
           <div className="sticky top-0 z-10 bg-background border-b">
             <div className="px-6 py-3 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
@@ -191,42 +212,23 @@ function Index() {
           </div>
         )}
         
-        {/* Topbar + Filtros + Kanban Principal */}
-        {((viewMode === "category" && selectedCategory) || viewMode === "all") && columns.length > 0 && (
+        {/* Todos os Projetos - modo all */}
+        {viewMode === "all" && columns.length > 0 && (
           <>
-            {viewMode === "category" && (
-              <Topbar
-                categories={categories.filter(c => c.name !== "Diário")}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                onAddCategory={async (name) => {
-                  await addCategory(name);
-                  addActivity("category_created", `Categoria "${name}" criada`);
-                  // Auto-select new category after creation
-                  const newCat = categories.find(c => c.name === name);
-                  if (newCat) {
-                    setSelectedCategory(newCat.id);
-                  }
-                }}
-              />
-            )}
-
-            {viewMode === "all" && (
-              <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
-                <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
-                <div className="flex items-center gap-2">
-                  <GlobalSearch tasks={tasks} onSelectTask={handleTaskSelect} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowStats(true)}
-                  >
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Estatísticas
-                  </Button>
-                </div>
+            <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
+              <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+              <div className="flex items-center gap-2">
+                <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowStats(true)}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Estatísticas
+                </Button>
               </div>
-            )}
+            </div>
             
             <SearchFilters
               searchTerm={searchTerm}
@@ -235,22 +237,36 @@ function Index() {
               onPriorityChange={setPriorityFilter}
               tagFilter={tagFilter}
               onTagChange={setTagFilter}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
               availableTags={availableTags}
+              categories={categories.filter(c => c.name !== "Diário")}
               onClearFilters={handleClearFilters}
               sortOption={sortOption}
               onSortChange={setSortOption}
+              viewMode={viewMode}
             />
 
-            <KanbanBoard 
-              columns={columns} 
-              categoryId={viewMode === "all" ? "all" : selectedCategory}
-              searchTerm={searchTerm}
-              priorityFilter={priorityFilter}
-              tagFilter={tagFilter}
-              sortOption={sortOption}
-              showCategoryBadge={viewMode === "all"}
-              allowCrossCategoryDrag={viewMode === "all"}
-            />
+            {/* Renderizar Kanbans por categoria */}
+            {categories
+              .filter(cat => cat.name !== "Diário")
+              .filter(cat => categoryFilter === "all" || cat.id === categoryFilter)
+              .map(category => (
+                <div key={category.id} className="mb-8">
+                  <div className="px-6 py-3 bg-muted/50">
+                    <h3 className="text-lg font-semibold">{category.name}</h3>
+                  </div>
+                  <KanbanBoard 
+                    columns={columns} 
+                    categoryId={category.id}
+                    searchTerm={searchTerm}
+                    priorityFilter={priorityFilter}
+                    tagFilter={tagFilter}
+                    sortOption={sortOption}
+                    viewMode={viewMode}
+                  />
+                </div>
+              ))}
           </>
         )}
       </main>
@@ -261,7 +277,7 @@ function Index() {
           <DialogHeader>
             <DialogTitle>📊 Estatísticas do Projeto</DialogTitle>
           </DialogHeader>
-          <DashboardStats tasks={tasks} />
+          <DashboardStats tasks={filteredTasks} />
         </DialogContent>
       </Dialog>
 

@@ -20,6 +20,7 @@ interface KanbanBoardProps {
   sortOption?: string;
   showCategoryBadge?: boolean;
   allowCrossCategoryDrag?: boolean;
+  viewMode?: string;
 }
 
 export function KanbanBoard({ 
@@ -32,7 +33,8 @@ export function KanbanBoard({
   isDailyKanban = false,
   sortOption = "manual",
   showCategoryBadge = false,
-  allowCrossCategoryDrag = false
+  allowCrossCategoryDrag = false,
+  viewMode = "daily"
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -277,6 +279,8 @@ export function KanbanBoard({
         task={selectedTask}
         columnId={selectedColumn}
         isDailyKanban={isDailyKanban}
+        viewMode={viewMode}
+        categoryId={categoryId}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

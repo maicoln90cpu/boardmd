@@ -11,10 +11,14 @@ interface SearchFiltersProps {
   onPriorityChange: (value: string) => void;
   tagFilter: string;
   onTagChange: (value: string) => void;
+  categoryFilter?: string;
+  onCategoryChange?: (value: string) => void;
   availableTags: string[];
+  categories?: Array<{ id: string; name: string }>;
   onClearFilters: () => void;
   sortOption: string;
   onSortChange: (value: string) => void;
+  viewMode?: string;
 }
 
 export function SearchFilters({
@@ -24,12 +28,17 @@ export function SearchFilters({
   onPriorityChange,
   tagFilter,
   onTagChange,
+  categoryFilter,
+  onCategoryChange,
   availableTags,
+  categories,
   onClearFilters,
   sortOption,
   onSortChange,
+  viewMode,
 }: SearchFiltersProps) {
-  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || sortOption !== "manual";
+  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
+    (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
 
   return (
     <div className="flex items-center gap-3 p-4 bg-card border-b">
@@ -68,6 +77,22 @@ export function SearchFilters({
           ))}
         </SelectContent>
       </Select>
+
+      {viewMode === "all" && categories && onCategoryChange && (
+        <Select value={categoryFilter} onValueChange={onCategoryChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as categorias</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select value={sortOption} onValueChange={onSortChange}>
         <SelectTrigger className="w-48">
