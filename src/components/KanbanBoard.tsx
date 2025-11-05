@@ -17,6 +17,7 @@ interface KanbanBoardProps {
   priorityFilter?: string;
   tagFilter?: string;
   isDailyKanban?: boolean;
+  sortOption?: string;
 }
 
 export function KanbanBoard({ 
@@ -26,7 +27,8 @@ export function KanbanBoard({
   searchTerm = "",
   priorityFilter = "all",
   tagFilter = "all",
-  isDailyKanban = false
+  isDailyKanban = false,
+  sortOption = "manual"
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -131,7 +133,7 @@ export function KanbanBoard({
   };
 
   const getTasksForColumn = (columnId: string) => {
-    return tasks.filter((t) => {
+    const filtered = tasks.filter((t) => {
       if (t.column_id !== columnId) return false;
       
       // Filtro de busca
@@ -151,6 +153,38 @@ export function KanbanBoard({
       
       return true;
     });
+
+    // Aplicar ordenação
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "name_asc":
+          return a.title.localeCompare(b.title, "pt-BR");
+        case "name_desc":
+          return b.title.localeCompare(a.title, "pt-BR");
+        case "priority_asc": {
+          const priorityMap: Record<string, number> = { low: 1, medium: 2, high: 3 };
+          return (priorityMap[a.priority || "medium"] || 2) - (priorityMap[b.priority || "medium"] || 2);
+        }
+        case "priority_desc": {
+          const priorityMap: Record<string, number> = { low: 1, medium: 2, high: 3 };
+          return (priorityMap[b.priority || "medium"] || 2) - (priorityMap[a.priority || "medium"] || 2);
+        }
+        case "date_asc": {
+          const timeA = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
+          const timeB = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+          return timeA - timeB;
+        }
+        case "date_desc": {
+          const timeA = a.due_date ? new Date(a.due_date).getTime() : Number.NEGATIVE_INFINITY;
+          const timeB = b.due_date ? new Date(b.due_date).getTime() : Number.NEGATIVE_INFINITY;
+          return timeB - timeA;
+        }
+        default:
+          return a.position - b.position;
+      }
+    });
+
+    return sorted;
   };
 
   return (

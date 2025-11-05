@@ -117,6 +117,7 @@ export function useTasks(categoryId: string | null) {
       });
     } else {
       toast({ title: "Tarefa criada com sucesso" });
+      await fetchTasks();
     }
   };
 
@@ -136,6 +137,9 @@ export function useTasks(categoryId: string | null) {
         description: error.message,
         variant: "destructive" 
       });
+    } else {
+      toast({ title: "Tarefa atualizada com sucesso" });
+      await fetchTasks();
     }
   };
 
@@ -144,6 +148,9 @@ export function useTasks(categoryId: string | null) {
 
     if (error) {
       toast({ title: "Erro ao deletar tarefa", variant: "destructive" });
+    } else {
+      toast({ title: "Tarefa deletada com sucesso" });
+      await fetchTasks();
     }
   };
 
@@ -170,5 +177,5 @@ export function useTasks(categoryId: string | null) {
     fetchTasks();
   };
 
-  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn };
+  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks };
 }

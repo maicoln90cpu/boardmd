@@ -53,22 +53,26 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const handleSave = () => {
     if (!title.trim()) return;
     
-    let dueDateTimestamp = null;
+    let dueDateTimestamp: string | null = null;
     
     if (dueDate) {
       if (isDailyKanban) {
-        // Se tiver horário preenchido, usa ele
         if (dueTime) {
-          dueDateTimestamp = `${dueDate}T${dueTime}:00`;
+          // Salvar com data e hora em ISO
+          const local = new Date(`${dueDate}T${dueTime}`);
+          dueDateTimestamp = local.toISOString();
         } else if (task?.due_date) {
           // Preserva horário original ao editar
           dueDateTimestamp = task.due_date;
         } else {
-          // Novo card sem horário
-          dueDateTimestamp = dueDate;
+          // Novo card sem horário - usar 00:00
+          const local = new Date(`${dueDate}T00:00`);
+          dueDateTimestamp = local.toISOString();
         }
       } else {
-        dueDateTimestamp = dueDate;
+        // Kanban Projetos - salvar data com 00:00
+        const local = new Date(`${dueDate}T00:00`);
+        dueDateTimestamp = local.toISOString();
       }
     }
     
@@ -87,7 +91,18 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    const isTextArea = target.tagName.toLowerCase() === "textarea";
+    
+    // Ctrl+Enter sempre salva
     if (e.key === "Enter" && e.ctrlKey) {
+      e.preventDefault();
+      handleSave();
+      return;
+    }
+    
+    // Enter simples salva se não estiver em textarea
+    if (e.key === "Enter" && !isTextArea) {
       e.preventDefault();
       handleSave();
     }

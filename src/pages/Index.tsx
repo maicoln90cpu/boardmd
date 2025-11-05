@@ -21,11 +21,13 @@ function Index() {
   
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
+  const [dailyBoardKey, setDailyBoardKey] = useState(0);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [sortOption, setSortOption] = useState("manual");
   
   const { tasks } = useTasks(selectedCategory);
   const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
@@ -118,6 +120,7 @@ function Index() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
+    setSortOption("manual");
   };
 
   const handleResetDaily = async () => {
@@ -125,6 +128,7 @@ function Index() {
     const firstColumn = columns[0];
     await resetDailyTasks(firstColumn.id);
     addActivity("daily_reset", "Kanban Diário resetado");
+    setDailyBoardKey(k => k + 1); // Força refresh do board diário
   };
 
   if (loadingCategories || loadingColumns) {
@@ -160,6 +164,7 @@ function Index() {
               </Button>
             </div>
             <KanbanBoard 
+              key={dailyBoardKey}
               columns={columns} 
               categoryId={dailyCategory}
               compact
@@ -195,6 +200,8 @@ function Index() {
               onTagChange={setTagFilter}
               availableTags={availableTags}
               onClearFilters={handleClearFilters}
+              sortOption={sortOption}
+              onSortChange={setSortOption}
             />
 
             <KanbanBoard 
@@ -203,6 +210,7 @@ function Index() {
               searchTerm={searchTerm}
               priorityFilter={priorityFilter}
               tagFilter={tagFilter}
+              sortOption={sortOption}
             />
           </>
         )}
