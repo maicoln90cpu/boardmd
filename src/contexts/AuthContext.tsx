@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -69,11 +70,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (error) {
+      setLoading(false);
       toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
       throw error;
     }
+
+    // Verificar se perfil existe, se não, criar
+    if (data.user) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        // Criar perfil padrão se não existir
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert([{ 
+            id: data.user.id, 
+            name: data.user.email?.split('@')[0] || 'Usuário',
+            phone: null 
+          }]);
+
+        if (insertError && import.meta.env.DEV) {
+          console.error("Erro ao criar perfil:", insertError);
+        }
+      }
+    }
+    
+    setLoading(false);
+    toast({ title: "Sucesso!", description: "Login realizado com sucesso" });
   };
 
   const signOut = async () => {
