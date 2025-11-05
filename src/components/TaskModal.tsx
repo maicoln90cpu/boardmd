@@ -13,13 +13,15 @@ interface TaskModalProps {
   onSave: (task: Partial<Task>) => void;
   task?: Task | null;
   columnId: string;
+  isDailyKanban?: boolean;
 }
 
-export function TaskModal({ open, onOpenChange, onSave, task, columnId }: TaskModalProps) {
+export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false }: TaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
   const [dueDate, setDueDate] = useState("");
+  const [dueTime, setDueTime] = useState("");
   const [tags, setTags] = useState("");
 
   useEffect(() => {
@@ -27,23 +29,43 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId }: TaskMo
       setTitle(task.title);
       setDescription(task.description || "");
       setPriority(task.priority || "medium");
-      setDueDate(task.due_date ? new Date(task.due_date).toISOString().split("T")[0] : "");
+      
+      if (task.due_date) {
+        const date = new Date(task.due_date);
+        setDueDate(date.toISOString().split("T")[0]);
+        setDueTime(date.toTimeString().slice(0, 5));
+      } else {
+        setDueDate("");
+        setDueTime("");
+      }
+      
       setTags(task.tags?.join(", ") || "");
     } else {
       setTitle("");
       setDescription("");
       setPriority("medium");
       setDueDate("");
+      setDueTime("");
       setTags("");
     }
   }, [task, open]);
 
   const handleSave = () => {
+    let dueDateTimestamp = null;
+    
+    if (dueDate) {
+      if (isDailyKanban && dueTime) {
+        dueDateTimestamp = `${dueDate}T${dueTime}:00`;
+      } else {
+        dueDateTimestamp = dueDate;
+      }
+    }
+    
     const taskData: Partial<Task> = {
       title,
       description: description || null,
       priority,
-      due_date: dueDate || null,
+      due_date: dueDateTimestamp,
       tags: tags ? tags.split(",").map((t) => t.trim()) : null,
       column_id: columnId,
       position: task?.position ?? 0,
@@ -98,7 +120,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId }: TaskMo
             </div>
 
             <div>
-              <Label>Data de Entrega</Label>
+              <Label>{isDailyKanban ? "Data" : "Data de Entrega"}</Label>
               <Input
                 type="date"
                 value={dueDate}
@@ -106,6 +128,17 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId }: TaskMo
               />
             </div>
           </div>
+
+          {isDailyKanban && dueDate && (
+            <div>
+              <Label>Horário</Label>
+              <Input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+              />
+            </div>
+          )}
 
           <div>
             <Label>Tags (separadas por vírgula)</Label>

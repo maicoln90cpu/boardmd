@@ -126,5 +126,28 @@ export function useTasks(categoryId: string) {
     }
   };
 
-  return { tasks, loading, addTask, updateTask, deleteTask };
+  const resetAllTasksToFirstColumn = async (firstColumnId: string) => {
+    const tasksToReset = tasks.filter(t => t.column_id !== firstColumnId);
+    
+    if (tasksToReset.length === 0) {
+      toast({ title: "Nenhuma tarefa para resetar", variant: "default" });
+      return;
+    }
+
+    const updates = tasksToReset.map((task, index) => 
+      supabase
+        .from("tasks")
+        .update({ 
+          column_id: firstColumnId,
+          position: index 
+        })
+        .eq("id", task.id)
+    );
+    
+    await Promise.all(updates);
+    toast({ title: `${tasksToReset.length} tarefa(s) resetada(s)!` });
+    fetchTasks();
+  };
+
+  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn };
 }

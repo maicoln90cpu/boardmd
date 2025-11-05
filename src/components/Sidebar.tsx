@@ -47,9 +47,11 @@ export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
     if (error) {
       toast({ title: "Erro ao atualizar categoria", variant: "destructive" });
     } else {
-      toast({ title: "Categoria atualizada" });
+      toast({ title: "Categoria atualizada!" });
       setEditingId(null);
       setEditingName("");
+      // Force immediate reload to sync UI
+      window.location.reload();
     }
   };
 

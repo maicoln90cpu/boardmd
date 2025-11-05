@@ -16,6 +16,7 @@ interface KanbanBoardProps {
   searchTerm?: string;
   priorityFilter?: string;
   tagFilter?: string;
+  isDailyKanban?: boolean;
 }
 
 export function KanbanBoard({ 
@@ -24,7 +25,8 @@ export function KanbanBoard({
   compact = false,
   searchTerm = "",
   priorityFilter = "all",
-  tagFilter = "all"
+  tagFilter = "all",
+  isDailyKanban = false
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -159,14 +161,14 @@ export function KanbanBoard({
         onDragStart={(e) => setActiveId(e.active.id as string)}
         onDragEnd={handleDragEnd}
       >
-        <div className={`grid grid-cols-3 gap-6 ${compact ? 'p-3' : 'p-6'}`}>
+        <div className={`grid grid-cols-3 ${compact ? 'gap-4 p-2' : 'gap-6 p-6'}`}>
           {columns.map((column, columnIndex) => {
             const columnTasks = getTasksForColumn(column.id);
             return (
-              <div key={column.id} className="flex flex-col gap-4">
+              <div key={column.id} className={`flex flex-col ${compact ? 'gap-2' : 'gap-4'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold">{column.name}</h2>
+                    <h2 className={`${compact ? 'text-base' : 'text-lg'} font-semibold`}>{column.name}</h2>
                     <span className="text-sm text-muted-foreground">
                       ({columnTasks.length})
                     </span>
@@ -185,7 +187,7 @@ export function KanbanBoard({
                   strategy={verticalListSortingStrategy}
                   id={column.id}
                 >
-                  <div className="flex flex-col gap-3 min-h-[200px] p-4 rounded-lg bg-muted/30">
+                  <div className={`flex flex-col ${compact ? 'gap-2 min-h-[120px] p-2' : 'gap-3 min-h-[200px] p-4'} rounded-lg bg-muted/30`}>
                     {columnTasks.map((task) => (
                       <TaskCard
                         key={task.id}
@@ -196,6 +198,8 @@ export function KanbanBoard({
                         onMoveRight={() => handleMoveTask(task.id, "right")}
                         canMoveLeft={columnIndex > 0}
                         canMoveRight={columnIndex < columns.length - 1}
+                        compact={compact}
+                        isDailyKanban={isDailyKanban}
                       />
                     ))}
                   </div>
@@ -224,6 +228,7 @@ export function KanbanBoard({
         onSave={handleSaveTask}
         task={selectedTask}
         columnId={selectedColumn}
+        isDailyKanban={isDailyKanban}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

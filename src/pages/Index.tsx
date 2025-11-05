@@ -9,6 +9,8 @@ import { useTasks } from "@/hooks/useTasks";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -26,6 +28,7 @@ function Index() {
   const [tagFilter, setTagFilter] = useState("all");
   
   const { tasks } = useTasks(selectedCategory);
+  const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -117,6 +120,13 @@ function Index() {
     setTagFilter("all");
   };
 
+  const handleResetDaily = async () => {
+    if (!columns.length) return;
+    const firstColumn = columns[0];
+    await resetDailyTasks(firstColumn.id);
+    addActivity("daily_reset", "Kanban Diário resetado");
+  };
+
   if (loadingCategories || loadingColumns) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -137,13 +147,23 @@ function Index() {
         {/* Kanban Diário Fixo */}
         {dailyCategory && columns.length > 0 && (
           <div className="sticky top-0 z-10 bg-background border-b">
-            <div className="px-6 py-3 border-b">
+            <div className="px-6 py-3 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetDaily}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Resetar Tudo
+              </Button>
             </div>
             <KanbanBoard 
               columns={columns} 
               categoryId={dailyCategory}
               compact
+              isDailyKanban
             />
           </div>
         )}

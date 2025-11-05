@@ -1,7 +1,7 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
@@ -15,6 +15,8 @@ interface TaskCardProps {
   onMoveRight?: () => void;
   canMoveLeft?: boolean;
   canMoveRight?: boolean;
+  compact?: boolean;
+  isDailyKanban?: boolean;
 }
 
 export function TaskCard({ 
@@ -24,7 +26,9 @@ export function TaskCard({
   onMoveLeft, 
   onMoveRight, 
   canMoveLeft = false, 
-  canMoveRight = false 
+  canMoveRight = false,
+  compact = false,
+  isDailyKanban = false
 }: TaskCardProps) {
   const {
     attributes,
@@ -53,17 +57,18 @@ export function TaskCard({
       style={style}
       {...attributes}
       {...listeners}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.15 }}
     >
       <Card
-        className="p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+        className={`${compact ? 'p-2' : 'p-3'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow`}
         onDoubleClick={() => onEdit(task)}
       >
-        <div className="space-y-2">
+        <div className={compact ? "space-y-1" : "space-y-2"}>
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-medium flex-1">{task.title}</h3>
+            <h3 className={`font-medium flex-1 ${compact ? 'text-sm' : ''}`}>{task.title}</h3>
             <div className="flex gap-1">
               {canMoveLeft && (
                 <Button
@@ -106,29 +111,43 @@ export function TaskCard({
           </div>
 
           {task.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className={`${compact ? 'text-xs' : 'text-sm'} text-muted-foreground line-clamp-2`}>
               {task.description}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
             {task.priority && (
-              <Badge className={priorityColors[task.priority as keyof typeof priorityColors]}>
+              <Badge className={`${compact ? 'text-xs' : ''} ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                 {task.priority}
               </Badge>
             )}
 
             {task.tags?.map((tag) => (
-              <Badge key={tag} variant="outline">
+              <Badge key={tag} variant="outline" className={compact ? 'text-xs' : ''}>
                 {tag}
               </Badge>
             ))}
           </div>
 
-          {task.due_date && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Calendar className="h-3 w-3" />
-              {new Date(task.due_date).toLocaleDateString("pt-BR")}
+          {task.due_date && isDailyKanban && (
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md">
+              <Clock className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-medium">
+                {new Date(task.due_date).toLocaleTimeString("pt-BR", {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+          )}
+          
+          {task.due_date && !isDailyKanban && (
+            <div className="flex items-center gap-2 px-2 py-1 bg-muted rounded-md">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                {new Date(task.due_date).toLocaleDateString("pt-BR")}
+              </span>
             </div>
           )}
         </div>
