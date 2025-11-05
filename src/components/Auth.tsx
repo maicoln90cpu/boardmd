@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,15 @@ export function Auth() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirecionar para home quando usuário estiver autenticado
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,6 +30,7 @@ export function Auth() {
         await signUp(email, password, name, phone);
       } else {
         await signIn(email, password);
+        navigate("/", { replace: true });
       }
     } catch (error) {
       if (import.meta.env.DEV) {
