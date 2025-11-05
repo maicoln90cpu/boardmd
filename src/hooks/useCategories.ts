@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Category {
@@ -13,15 +12,12 @@ export interface Category {
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      fetchCategories();
-      subscribeToCategories();
-    }
-  }, [user]);
+    fetchCategories();
+    subscribeToCategories();
+  }, []);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -52,11 +48,9 @@ export function useCategories() {
   };
 
   const addCategory = async (name: string) => {
-    if (!user) return;
-
     const { error } = await supabase
       .from("categories")
-      .insert({ name, user_id: user.id });
+      .insert({ name });
 
     if (error) {
       toast({ title: "Erro ao criar categoria", variant: "destructive" });

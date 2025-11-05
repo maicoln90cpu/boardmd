@@ -1,6 +1,5 @@
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   onExport: () => void;
@@ -9,8 +8,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
-  const { signOut } = useAuth();
-
   const menuItems = [
     { icon: LayoutGrid, label: "Kanban", active: true },
     { icon: Download, label: "Exportar", onClick: onExport },
@@ -33,14 +30,6 @@ export function Sidebar({ onExport, onImport, onThemeToggle }: SidebarProps) {
             {item.label}
           </Button>
         ))}
-        <Button
-          variant="ghost"
-          className="justify-start gap-3 mt-auto"
-          onClick={signOut}
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </Button>
       </nav>
     </aside>
   );

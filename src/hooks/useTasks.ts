@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Task {
@@ -21,15 +20,14 @@ export interface Task {
 export function useTasks(categoryId: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && categoryId) {
+    if (categoryId) {
       fetchTasks();
       subscribeToTasks();
     }
-  }, [user, categoryId]);
+  }, [categoryId]);
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
@@ -61,13 +59,18 @@ export function useTasks(categoryId: string) {
   };
 
   const addTask = async (task: Partial<Task>) => {
-    if (!user) return;
-
-    const { error } = await supabase.from("tasks").insert({
-      ...task,
-      user_id: user.id,
-      category_id: categoryId,
-    });
+    const { error } = await supabase
+      .from("tasks")
+      .insert({
+        title: task.title || "",
+        description: task.description,
+        priority: task.priority,
+        due_date: task.due_date,
+        tags: task.tags,
+        column_id: task.column_id || "",
+        category_id: categoryId,
+        position: task.position || 0,
+      });
 
     if (error) {
       toast({ title: "Erro ao criar tarefa", variant: "destructive" });

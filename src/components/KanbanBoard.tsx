@@ -12,9 +12,20 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface KanbanBoardProps {
   columns: Column[];
   categoryId: string;
+  compact?: boolean;
+  searchTerm?: string;
+  priorityFilter?: string;
+  tagFilter?: string;
 }
 
-export function KanbanBoard({ columns, categoryId }: KanbanBoardProps) {
+export function KanbanBoard({ 
+  columns, 
+  categoryId, 
+  compact = false,
+  searchTerm = "",
+  priorityFilter = "all",
+  tagFilter = "all"
+}: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -81,7 +92,26 @@ export function KanbanBoard({ columns, categoryId }: KanbanBoardProps) {
   };
 
   const getTasksForColumn = (columnId: string) => {
-    return tasks.filter((t) => t.column_id === columnId);
+    return tasks.filter((t) => {
+      if (t.column_id !== columnId) return false;
+      
+      // Filtro de busca
+      if (searchTerm && !t.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro de prioridade
+      if (priorityFilter !== "all" && t.priority !== priorityFilter) {
+        return false;
+      }
+      
+      // Filtro de tag
+      if (tagFilter !== "all" && !t.tags?.includes(tagFilter)) {
+        return false;
+      }
+      
+      return true;
+    });
   };
 
   return (
@@ -92,7 +122,7 @@ export function KanbanBoard({ columns, categoryId }: KanbanBoardProps) {
         onDragStart={(e) => setActiveId(e.active.id as string)}
         onDragEnd={handleDragEnd}
       >
-        <div className="grid grid-cols-3 gap-6 p-6">
+        <div className={`grid grid-cols-3 gap-6 ${compact ? 'p-3' : 'p-6'}`}>
           {columns.map((column) => {
             const columnTasks = getTasksForColumn(column.id);
             return (
