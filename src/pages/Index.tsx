@@ -85,12 +85,22 @@ function Index() {
         const text = await file.text();
         const data = JSON.parse(text);
         
+        // Import categories (skip "Diário" to avoid duplicates)
+        if (data.categories && Array.isArray(data.categories)) {
+          for (const cat of data.categories) {
+            if (cat.name !== "Diário") {
+              await addCategory(cat.name);
+            }
+          }
+        }
+        
         addActivity("import", `Arquivo ${file.name} importado`);
         toast({ 
           title: "Importação bem-sucedida", 
-          description: "Dados importados. Recarregue a página para ver as mudanças." 
+          description: "Dados importados com sucesso" 
         });
       } catch (error) {
+        console.error("Import error:", error);
         toast({ 
           title: "Erro na importação", 
           description: "Arquivo inválido",
@@ -117,26 +127,16 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Topbar
-        categories={categories.filter(c => c.name !== "Diário")}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        onAddCategory={(name) => {
-          addCategory(name);
-          addActivity("category_created", `Categoria "${name}" criada`);
-        }}
-      />
-      
       <Sidebar
         onExport={handleExport}
         onImport={handleImport}
         onThemeToggle={toggleTheme}
       />
 
-      <main className="ml-64 pt-16">
+      <main className="ml-64">
         {/* Kanban Diário Fixo */}
         {dailyCategory && columns.length > 0 && (
-          <div className="sticky top-16 z-10 bg-background border-b">
+          <div className="sticky top-0 z-10 bg-background border-b">
             <div className="px-6 py-3 border-b">
               <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
             </div>
@@ -148,27 +148,43 @@ function Index() {
           </div>
         )}
         
-        {/* Filtros */}
-        <SearchFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          priorityFilter={priorityFilter}
-          onPriorityChange={setPriorityFilter}
-          tagFilter={tagFilter}
-          onTagChange={setTagFilter}
-          availableTags={availableTags}
-          onClearFilters={handleClearFilters}
-        />
-
-        {/* Kanban Principal */}
+        {/* Topbar + Filtros + Kanban Principal */}
         {selectedCategory && columns.length > 0 && (
-          <KanbanBoard 
-            columns={columns} 
-            categoryId={selectedCategory}
-            searchTerm={searchTerm}
-            priorityFilter={priorityFilter}
-            tagFilter={tagFilter}
-          />
+          <>
+            <Topbar
+              categories={categories.filter(c => c.name !== "Diário")}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              onAddCategory={async (name) => {
+                await addCategory(name);
+                addActivity("category_created", `Categoria "${name}" criada`);
+                // Auto-select new category after creation
+                const newCat = categories.find(c => c.name === name);
+                if (newCat) {
+                  setSelectedCategory(newCat.id);
+                }
+              }}
+            />
+            
+            <SearchFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              priorityFilter={priorityFilter}
+              onPriorityChange={setPriorityFilter}
+              tagFilter={tagFilter}
+              onTagChange={setTagFilter}
+              availableTags={availableTags}
+              onClearFilters={handleClearFilters}
+            />
+
+            <KanbanBoard 
+              columns={columns} 
+              categoryId={selectedCategory}
+              searchTerm={searchTerm}
+              priorityFilter={priorityFilter}
+              tagFilter={tagFilter}
+            />
+          </>
         )}
       </main>
     </div>

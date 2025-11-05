@@ -55,10 +55,13 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId }: TaskMo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="task-modal-description">
         <DialogHeader>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
+        <p id="task-modal-description" className="sr-only">
+          {task ? "Formulário para editar uma tarefa existente" : "Formulário para criar uma nova tarefa"}
+        </p>
         <div className="space-y-4">
           <div>
             <Label>Título</Label>

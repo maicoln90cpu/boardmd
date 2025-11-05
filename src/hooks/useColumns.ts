@@ -17,7 +17,8 @@ export function useColumns() {
 
   useEffect(() => {
     fetchColumns();
-    subscribeToColumns();
+    const cleanup = subscribeToColumns();
+    return cleanup;
   }, []);
 
   const fetchColumns = async () => {
@@ -55,7 +56,7 @@ export function useColumns() {
 
   const subscribeToColumns = () => {
     const channel = supabase
-      .channel("columns")
+      .channel("columns-subscription")
       .on("postgres_changes", { event: "*", schema: "public", table: "columns" }, () => {
         fetchColumns();
       })

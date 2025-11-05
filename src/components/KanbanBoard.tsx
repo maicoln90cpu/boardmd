@@ -45,14 +45,33 @@ export function KanbanBoard({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      setActiveId(null);
+      return;
+    }
 
     const taskId = active.id as string;
-    const columnId = over.id as string;
-
     const task = tasks.find((t) => t.id === taskId);
-    if (task && task.column_id !== columnId) {
-      updateTask(taskId, { column_id: columnId });
+    
+    if (!task) {
+      setActiveId(null);
+      return;
+    }
+
+    // Get the actual container ID (column ID) from the droppable
+    const containerId = over.data?.current?.sortable?.containerId ?? over.id;
+    const newColumnId = containerId as string;
+
+    // Only update if changed column
+    if (task.column_id !== newColumnId) {
+      // Calculate new position (append to end of destination column)
+      const destinationTasks = tasks.filter((t) => t.column_id === newColumnId);
+      const newPosition = destinationTasks.length;
+      
+      updateTask(taskId, { 
+        column_id: newColumnId,
+        position: newPosition 
+      });
     }
 
     setActiveId(null);

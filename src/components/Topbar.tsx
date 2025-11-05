@@ -25,51 +25,69 @@ export function Topbar({ categories, selectedCategory, onCategoryChange, onAddCa
     }
   };
 
-  return (
-    <header className="fixed top-0 left-0 right-0 h-16 border-b border-border bg-card z-10">
-      <div className="flex items-center justify-between h-full px-6">
-        <h1 className="text-2xl font-bold">Kanban Board</h1>
-        
-        <div className="flex items-center gap-4">
-          <Select value={selectedCategory} onValueChange={onCategoryChange}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Selecione categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  const handleAdd = () => {
+    const trimmedName = newCategoryName.trim();
+    
+    if (!trimmedName) {
+      return;
+    }
+    
+    if (trimmedName.toLowerCase() === "diário") {
+      alert("Não é possível criar outra categoria 'Diário'");
+      return;
+    }
+    
+    onAddCategory(trimmedName);
+    setNewCategoryName("");
+    setOpen(false);
+  };
 
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Categoria
+  return (
+    <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
+      <h2 className="text-lg font-semibold">Kanban — {categories.find(c => c.id === selectedCategory)?.name || "Projetos"}</h2>
+      
+      <div className="flex items-center gap-4">
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Selecione categoria" />
+          </SelectTrigger>
+          <SelectContent className="bg-card z-50">
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Categoria
+            </Button>
+          </DialogTrigger>
+          <DialogContent aria-describedby="category-dialog-description">
+            <DialogHeader>
+              <DialogTitle>Criar Nova Categoria</DialogTitle>
+            </DialogHeader>
+            <p id="category-dialog-description" className="sr-only">
+              Formulário para criar uma nova categoria de tarefas
+            </p>
+            <div className="space-y-4">
+              <Input
+                placeholder="Nome da categoria"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              />
+              <Button onClick={handleAdd} className="w-full" disabled={!newCategoryName.trim()}>
+                Criar
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Nova Categoria</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <Input
-                  placeholder="Nome da categoria"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
-                />
-                <Button onClick={handleAddCategory} className="w-full">
-                  Criar
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
-    </header>
+    </div>
   );
 }

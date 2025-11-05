@@ -16,7 +16,8 @@ export function useCategories() {
 
   useEffect(() => {
     fetchCategories();
-    subscribeToCategories();
+    const cleanup = subscribeToCategories();
+    return cleanup;
   }, []);
 
   const fetchCategories = async () => {
@@ -27,6 +28,32 @@ export function useCategories() {
 
     if (error) {
       toast({ title: "Erro ao carregar categorias", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // Initialize default categories if none exist
+    if (!data || data.length === 0) {
+      const defaultCategories = [
+        { name: "Diário" },
+        { name: "Projetos" },
+      ];
+
+      const { error: insertError } = await supabase
+        .from("categories")
+        .insert(defaultCategories);
+
+      if (!insertError) {
+        fetchCategories(); // Refetch after seeding
+      }
+      return;
+    }
+
+    // Ensure "Diário" exists
+    const hasDiario = data.some(c => c.name === "Diário");
+    if (!hasDiario) {
+      await supabase.from("categories").insert({ name: "Diário" });
+      fetchCategories();
       return;
     }
 
@@ -36,7 +63,7 @@ export function useCategories() {
 
   const subscribeToCategories = () => {
     const channel = supabase
-      .channel("categories")
+      .channel("categories-subscription")
       .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
         fetchCategories();
       })

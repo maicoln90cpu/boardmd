@@ -25,7 +25,8 @@ export function useTasks(categoryId: string) {
   useEffect(() => {
     if (categoryId) {
       fetchTasks();
-      subscribeToTasks();
+      const cleanup = subscribeToTasks();
+      return cleanup;
     }
   }, [categoryId]);
 
@@ -47,7 +48,7 @@ export function useTasks(categoryId: string) {
 
   const subscribeToTasks = () => {
     const channel = supabase
-      .channel("tasks")
+      .channel(`tasks-${categoryId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
         fetchTasks();
       })
@@ -59,29 +60,61 @@ export function useTasks(categoryId: string) {
   };
 
   const addTask = async (task: Partial<Task>) => {
+    if (!task.title?.trim()) {
+      toast({ title: "Título é obrigatório", variant: "destructive" });
+      return;
+    }
+
+    if (!task.column_id) {
+      toast({ title: "Coluna é obrigatória", variant: "destructive" });
+      return;
+    }
+
+    // Calculate position at end of column
+    const columnTasks = tasks.filter((t) => t.column_id === task.column_id);
+    const position = task.position ?? columnTasks.length;
+
     const { error } = await supabase
       .from("tasks")
       .insert({
-        title: task.title || "",
-        description: task.description,
-        priority: task.priority,
-        due_date: task.due_date,
-        tags: task.tags,
-        column_id: task.column_id || "",
+        title: task.title.trim(),
+        description: task.description || null,
+        priority: task.priority || "medium",
+        due_date: task.due_date || null,
+        tags: task.tags || null,
+        column_id: task.column_id,
         category_id: categoryId,
-        position: task.position || 0,
+        position,
       });
 
     if (error) {
-      toast({ title: "Erro ao criar tarefa", variant: "destructive" });
+      console.error("Error creating task:", error);
+      toast({ 
+        title: "Erro ao criar tarefa", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    } else {
+      toast({ title: "Tarefa criada com sucesso" });
     }
   };
 
   const updateTask = async (id: string, updates: Partial<Task>) => {
-    const { error } = await supabase.from("tasks").update(updates).eq("id", id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", id);
 
     if (error) {
-      toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });
+      console.error("Error updating task:", error);
+      toast({ 
+        title: "Erro ao atualizar tarefa",
+        description: error.message,
+        variant: "destructive" 
+      });
     }
   };
 
