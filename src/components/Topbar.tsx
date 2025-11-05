@@ -43,8 +43,8 @@ export function Topbar({ categories, selectedCategory, onCategoryChange, onAddCa
   };
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
-      <h2 className="text-lg font-semibold">Kanban — {categories.find(c => c.id === selectedCategory)?.name || "Projetos"}</h2>
+    <div className="flex items-center gap-4 px-6 py-3 border-b bg-background">
+      <h2 className="text-lg font-semibold">📊 Kanban - Projetos</h2>
       
       <div className="flex items-center gap-4">
         <Select value={selectedCategory} onValueChange={onCategoryChange}>

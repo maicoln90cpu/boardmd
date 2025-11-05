@@ -95,7 +95,7 @@ export function KanbanBoard({
     if (selectedTask) {
       await updateTask(selectedTask.id, taskData);
     } else {
-      await addTask({ ...taskData, column_id: selectedColumn });
+      await addTask({ ...taskData, column_id: selectedColumn, category_id: categoryId });
     }
   };
 

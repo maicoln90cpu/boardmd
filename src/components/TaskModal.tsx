@@ -56,8 +56,17 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     let dueDateTimestamp = null;
     
     if (dueDate) {
-      if (isDailyKanban && dueTime) {
-        dueDateTimestamp = `${dueDate}T${dueTime}:00`;
+      if (isDailyKanban) {
+        // Se tiver horário preenchido, usa ele
+        if (dueTime) {
+          dueDateTimestamp = `${dueDate}T${dueTime}:00`;
+        } else if (task?.due_date) {
+          // Preserva horário original ao editar
+          dueDateTimestamp = task.due_date;
+        } else {
+          // Novo card sem horário
+          dueDateTimestamp = dueDate;
+        }
       } else {
         dueDateTimestamp = dueDate;
       }

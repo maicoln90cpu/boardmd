@@ -13,9 +13,6 @@ interface SearchFiltersProps {
   onTagChange: (value: string) => void;
   availableTags: string[];
   onClearFilters: () => void;
-  categoryFilter?: string;
-  onCategoryFilterChange?: (value: string) => void;
-  availableCategories?: Array<{ id: string; name: string }>;
 }
 
 export function SearchFilters({
@@ -27,11 +24,8 @@ export function SearchFilters({
   onTagChange,
   availableTags,
   onClearFilters,
-  categoryFilter,
-  onCategoryFilterChange,
-  availableCategories = [],
 }: SearchFiltersProps) {
-  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || (categoryFilter && categoryFilter !== "all");
+  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all";
 
   return (
     <div className="flex items-center gap-3 p-4 bg-card border-b">
@@ -70,22 +64,6 @@ export function SearchFilters({
           ))}
         </SelectContent>
       </Select>
-
-      {availableCategories.length > 0 && onCategoryFilterChange && (
-        <Select value={categoryFilter || "all"} onValueChange={onCategoryFilterChange}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            {availableCategories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
 
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={onClearFilters}>
