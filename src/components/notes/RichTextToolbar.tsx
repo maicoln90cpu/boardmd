@@ -23,14 +23,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
+const PRESET_COLORS = [
+  { name: "Preto", value: "#000000" },
+  { name: "Vermelho", value: "#EF4444" },
+  { name: "Azul", value: "#3B82F6" },
+  { name: "Verde", value: "#10B981" },
+  { name: "Amarelo", value: "#F59E0B" },
+  { name: "Branco", value: "#FFFFFF" },
+];
+
 interface RichTextToolbarProps {
   editor: Editor | null;
 }
 
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
-  const [textColor, setTextColor] = useState("#000000");
-  const [highlightColor, setHighlightColor] = useState("#FFFF00");
 
   if (!editor) return null;
 
@@ -119,17 +126,24 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             <Palette className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-48">
+        <PopoverContent className="w-56">
           <div className="space-y-2">
             <label className="text-sm font-medium">Cor do texto</label>
-            <Input
-              type="color"
-              value={textColor}
-              onChange={(e) => {
-                setTextColor(e.target.value);
-                editor.chain().focus().setColor(e.target.value).run();
-              }}
-            />
+            <div className="grid grid-cols-3 gap-2">
+              {PRESET_COLORS.map((color) => (
+                <Button
+                  key={color.value}
+                  variant="outline"
+                  size="sm"
+                  className="h-10"
+                  style={{ backgroundColor: color.value, color: color.value === "#FFFFFF" ? "#000" : "#fff" }}
+                  onClick={() => editor.chain().focus().setColor(color.value).run()}
+                  title={color.name}
+                >
+                  {color.name}
+                </Button>
+              ))}
+            </div>
           </div>
         </PopoverContent>
       </Popover>
@@ -141,17 +155,24 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             <Highlighter className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-48">
+        <PopoverContent className="w-56">
           <div className="space-y-2">
             <label className="text-sm font-medium">Cor de destaque</label>
-            <Input
-              type="color"
-              value={highlightColor}
-              onChange={(e) => {
-                setHighlightColor(e.target.value);
-                editor.chain().focus().setHighlight({ color: e.target.value }).run();
-              }}
-            />
+            <div className="grid grid-cols-3 gap-2">
+              {PRESET_COLORS.map((color) => (
+                <Button
+                  key={color.value}
+                  variant="outline"
+                  size="sm"
+                  className="h-10"
+                  style={{ backgroundColor: color.value, color: color.value === "#FFFFFF" ? "#000" : "#fff" }}
+                  onClick={() => editor.chain().focus().setHighlight({ color: color.value }).run()}
+                  title={color.name}
+                >
+                  {color.name}
+                </Button>
+              ))}
+            </div>
           </div>
         </PopoverContent>
       </Popover>

@@ -6,10 +6,13 @@ import { Color } from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
+import BulletList from "@tiptap/extension-bullet-list";
+import OrderedList from "@tiptap/extension-ordered-list";
+import ListItem from "@tiptap/extension-list-item";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { Note } from "@/hooks/useNotes";
 import { Input } from "@/components/ui/input";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface NoteEditorProps {
@@ -19,10 +22,18 @@ interface NoteEditorProps {
 
 export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
+  const contentSyncedRef = useRef<string>("");
   
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+      }),
+      BulletList,
+      OrderedList,
+      ListItem,
       Underline,
       TextStyle,
       Color,
@@ -58,18 +69,23 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
 
   // Auto-save conteúdo
   useEffect(() => {
-    if (editor && debouncedContent && debouncedContent !== note.content) {
-      onUpdate(note.id, { content: debouncedContent });
+    if (debouncedContent && debouncedContent !== contentSyncedRef.current) {
+      if (debouncedContent !== note.content) {
+        contentSyncedRef.current = debouncedContent;
+        onUpdate(note.id, { content: debouncedContent });
+      }
     }
-  }, [debouncedContent, editor, note.id, note.content, onUpdate]);
+  }, [debouncedContent, note.id, note.content, onUpdate]);
 
   // Atualizar editor quando nota mudar
   useEffect(() => {
-    if (editor && note.content !== editor.getHTML()) {
-      editor.commands.setContent(note.content || "");
-    }
+    if (!editor) return;
     setTitle(note.title);
-  }, [note.id]);
+    if (note.content && note.content !== contentSyncedRef.current) {
+      contentSyncedRef.current = note.content;
+      editor.commands.setContent(note.content);
+    }
+  }, [note.id, note.content, editor]);
 
   return (
     <div className="flex flex-col h-full">

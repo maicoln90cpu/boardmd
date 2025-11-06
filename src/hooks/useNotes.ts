@@ -69,6 +69,8 @@ export function useNotes() {
   const addNote = async (title: string, notebookId: string | null = null) => {
     if (!user) return null;
 
+    isOptimisticUpdateRef.current = true;
+
     try {
       const { data, error } = await supabase
         .from("notes")
@@ -99,6 +101,10 @@ export function useNotes() {
         variant: "destructive",
       });
       return null;
+    } finally {
+      setTimeout(() => {
+        isOptimisticUpdateRef.current = false;
+      }, 1000);
     }
   };
 

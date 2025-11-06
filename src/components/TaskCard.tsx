@@ -70,20 +70,20 @@ export function TaskCard({
       transition={{ duration: 0.15 }}
     >
       <Card
-        className={`${compact ? 'p-2' : 'p-3'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+        className={`${compact ? 'p-1.5' : 'p-2'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
           isOverdue ? 'border-2 border-destructive' : ''
         }`}
         onDoubleClick={() => onEdit(task)}
       >
-        <div className={compact ? "space-y-1" : "space-y-2"}>
-          <div className="flex items-start justify-between gap-2">
-            <h3 className={`font-medium flex-1 ${compact ? 'text-sm' : ''}`}>{task.title}</h3>
-            <div className="flex gap-1">
+        <div className={compact ? "space-y-1" : "space-y-1.5"}>
+          <div className="flex items-start justify-between gap-1.5">
+            <h3 className={`font-medium flex-1 ${compact ? 'text-xs' : 'text-sm'}`}>{task.title}</h3>
+            <div className="flex gap-0.5">
               {onToggleFavorite && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className={`h-6 w-6 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
+                  className={`h-5 w-5 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleFavorite(task.id);
@@ -97,72 +97,72 @@ export function TaskCard({
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6"
+                  className="h-5 w-5"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMoveLeft?.();
                   }}
                 >
-                  <ChevronLeft className="h-3 w-3" />
+                  <ChevronLeft className="h-2.5 w-2.5" />
                 </Button>
               )}
               {canMoveRight && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6"
+                  className="h-5 w-5"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMoveRight?.();
                   }}
                 >
-                  <ChevronRight className="h-3 w-3" />
+                  <ChevronRight className="h-2.5 w-2.5" />
                 </Button>
               )}
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(task.id);
                 }}
               >
-                <Trash2 className="h-3 w-3" />
+                <Trash2 className="h-2.5 w-2.5" />
               </Button>
             </div>
           </div>
 
           {task.description && (
-            <p className={`${compact ? 'text-xs' : 'text-sm'} text-muted-foreground line-clamp-2`}>
+            <p className={`${compact ? 'text-[10px]' : 'text-xs'} text-muted-foreground line-clamp-2`}>
               {task.description}
             </p>
           )}
 
-          <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
+          <div className={`flex flex-wrap ${compact ? 'gap-0.5' : 'gap-1'}`}>
             {showCategoryBadge && task.categories?.name && (
-              <Badge variant="secondary" className={compact ? 'text-xs' : ''}>
+              <Badge variant="secondary" className={compact ? 'text-[10px] px-1 py-0' : 'text-xs px-1.5 py-0'}>
                 📁 {task.categories.name}
               </Badge>
             )}
 
             {task.priority && (
-              <Badge className={`${compact ? 'text-xs' : ''} ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
+              <Badge className={`${compact ? 'text-[10px] px-1 py-0' : 'text-xs px-1.5 py-0'} ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                 {task.priority}
               </Badge>
             )}
 
             {task.tags?.map((tag) => (
-              <Badge key={tag} variant="outline" className={compact ? 'text-xs' : ''}>
+              <Badge key={tag} variant="outline" className={compact ? 'text-[10px] px-1 py-0' : 'text-xs px-1.5 py-0'}>
                 {tag}
               </Badge>
             ))}
           </div>
 
           {task.due_date && isDailyKanban && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-muted rounded-md">
-              <Clock className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-medium">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded-md">
+              <Clock className="h-3 w-3 text-primary" />
+              <span className="text-[10px] font-medium">
                 {new Date(task.due_date).toLocaleTimeString("pt-BR", {
                   hour: '2-digit',
                   minute: '2-digit'
@@ -172,11 +172,11 @@ export function TaskCard({
           )}
           
           {task.due_date && !isDailyKanban && (
-            <div className={`flex items-center gap-2 px-2 py-1 rounded-md ${
+            <div className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${
               isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-muted'
             }`}>
-              <Calendar className={`h-4 w-4 ${isOverdue ? 'text-destructive' : 'text-primary'}`} />
-              <span className="text-sm font-medium">
+              <Calendar className={`h-3 w-3 ${isOverdue ? 'text-destructive' : 'text-primary'}`} />
+              <span className="text-xs font-medium">
                 {new Date(task.due_date).toLocaleDateString("pt-BR")}
                 {isOverdue && ' - Atrasada!'}
               </span>

@@ -67,6 +67,8 @@ export function useNotebooks() {
   const addNotebook = async (name: string) => {
     if (!user) return;
 
+    isOptimisticUpdateRef.current = true;
+
     try {
       const { data, error } = await supabase
         .from("notebooks")
@@ -93,6 +95,10 @@ export function useNotebooks() {
         title: "Erro ao criar caderno",
         variant: "destructive",
       });
+    } finally {
+      setTimeout(() => {
+        isOptimisticUpdateRef.current = false;
+      }, 1000);
     }
   };
 

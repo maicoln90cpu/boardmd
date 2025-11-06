@@ -85,7 +85,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
 
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
-    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all"), showAddButton: true },
+    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
     { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },
@@ -102,27 +102,15 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
         </div>
         <nav className="flex flex-col gap-1 p-4">
           {menuItems.map((item) => (
-            <div key={item.label} className="flex items-center gap-2">
-              <Button
-                variant={item.active ? "secondary" : "ghost"}
-                className="justify-start gap-3 flex-1"
-                onClick={item.onClick}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Button>
-              {item.showAddButton && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-9 w-9"
-                  onClick={() => setIsAddingCategory(true)}
-                  title="Adicionar nova categoria"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <Button
+              key={item.label}
+              variant={item.active ? "secondary" : "ghost"}
+              className="justify-start gap-3"
+              onClick={item.onClick}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Button>
           ))}
         </nav>
       </aside>

@@ -23,6 +23,27 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
     t => t.is_favorite && t.category_id !== dailyCategory?.id
   );
 
+  // Debug logs
+  if (import.meta.env.DEV) {
+    console.log("Debug Favoritos:", {
+      totalTasks: tasks.length,
+      favoriteTasks: favoriteTasks.length,
+      dailyCategoryId: dailyCategory?.id,
+      categories: categories.map(c => ({ id: c.id, name: c.name })),
+      tasksWithFavorite: tasks.filter(t => t.is_favorite).map(t => ({ 
+        id: t.id, 
+        title: t.title, 
+        is_favorite: t.is_favorite,
+        category_id: t.category_id 
+      }))
+    });
+  }
+
+  if (!categories || categories.length === 0) {
+    console.warn("Categories não carregadas em FavoritesSection");
+    return null;
+  }
+
   // Agrupar por categoria
   const tasksByCategory = favoriteTasks.reduce((acc, task) => {
     const category = categories.find(c => c.id === task.category_id);
