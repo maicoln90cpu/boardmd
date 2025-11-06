@@ -51,17 +51,17 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
 
   // Auto-save título
   useEffect(() => {
-    if (debouncedTitle !== note.title) {
+    if (debouncedTitle !== note.title && debouncedTitle.trim() !== "") {
       onUpdate(note.id, { title: debouncedTitle });
     }
-  }, [debouncedTitle]);
+  }, [debouncedTitle, note.id, note.title, onUpdate]);
 
   // Auto-save conteúdo
   useEffect(() => {
     if (editor && debouncedContent && debouncedContent !== note.content) {
       onUpdate(note.id, { content: debouncedContent });
     }
-  }, [debouncedContent]);
+  }, [debouncedContent, editor, note.id, note.content, onUpdate]);
 
   // Atualizar editor quando nota mudar
   useEffect(() => {

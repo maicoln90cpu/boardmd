@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,8 +20,9 @@ export function useNotes() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchNotes = async () => {
+  const fetchNotes = async (skipIfOptimistic = false) => {
     if (!user) return;
+    if (skipIfOptimistic && isOptimisticUpdateRef.current) return;
 
     try {
       const { data, error } = await supabase
@@ -43,6 +45,8 @@ export function useNotes() {
     }
   };
 
+  const isOptimisticUpdateRef = React.useRef(false);
+
   useEffect(() => {
     fetchNotes();
 
@@ -52,7 +56,7 @@ export function useNotes() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notes" },
         () => {
-          fetchNotes();
+          fetchNotes(true);
         }
       )
       .subscribe();
@@ -131,6 +135,7 @@ export function useNotes() {
 
   const deleteNote = async (id: string) => {
     // Optimistic update
+    isOptimisticUpdateRef.current = true;
     const noteToDelete = notes.find((n) => n.id === id);
     setNotes((prev) => prev.filter((note) => note.id !== id));
 
@@ -170,6 +175,10 @@ export function useNotes() {
       if (noteToDelete) {
         setNotes((prev) => [noteToDelete, ...prev]);
       }
+    } finally {
+      setTimeout(() => {
+        isOptimisticUpdateRef.current = false;
+      }, 1000);
     }
   };
 

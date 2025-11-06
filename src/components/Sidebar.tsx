@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,9 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const { categories, deleteCategory } = useCategories();
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const { categories, addCategory, deleteCategory } = useCategories();
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -70,9 +72,20 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
     }
   };
 
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    await addCategory(newCategoryName.trim());
+    setNewCategoryName("");
+    setIsAddingCategory(false);
+  };
+
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
-    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
+    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all"), showAddButton: true },
     { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },
@@ -89,15 +102,27 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
         </div>
         <nav className="flex flex-col gap-1 p-4">
           {menuItems.map((item) => (
-            <Button
-              key={item.label}
-              variant={item.active ? "secondary" : "ghost"}
-              className="justify-start gap-3"
-              onClick={item.onClick}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Button>
+            <div key={item.label} className="flex items-center gap-2">
+              <Button
+                variant={item.active ? "secondary" : "ghost"}
+                className="justify-start gap-3 flex-1"
+                onClick={item.onClick}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Button>
+              {item.showAddButton && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9"
+                  onClick={() => setIsAddingCategory(true)}
+                  title="Adicionar nova categoria"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           ))}
         </nav>
       </aside>
@@ -122,7 +147,52 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-medium">Gerenciar Categorias</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">Gerenciar Categorias</h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsAddingCategory(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Categoria
+                </Button>
+              </div>
+
+              {isAddingCategory && (
+                <div className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Nome da nova categoria..."
+                    className="flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleAddCategory();
+                      }
+                      if (e.key === "Escape") {
+                        setIsAddingCategory(false);
+                        setNewCategoryName("");
+                      }
+                    }}
+                  />
+                  <Button size="sm" onClick={handleAddCategory}>
+                    Criar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-2">
                 {categories
                   .filter(cat => cat.name !== "Diário")

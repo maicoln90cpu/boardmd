@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -17,8 +18,9 @@ export function useNotebooks() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchNotebooks = async () => {
+  const fetchNotebooks = async (skipIfOptimistic = false) => {
     if (!user) return;
+    if (skipIfOptimistic && isOptimisticUpdateRef.current) return;
 
     try {
       const { data, error } = await supabase
@@ -41,6 +43,8 @@ export function useNotebooks() {
     }
   };
 
+  const isOptimisticUpdateRef = React.useRef(false);
+
   useEffect(() => {
     fetchNotebooks();
 
@@ -50,7 +54,7 @@ export function useNotebooks() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notebooks" },
         () => {
-          fetchNotebooks();
+          fetchNotebooks(true);
         }
       )
       .subscribe();
@@ -124,6 +128,7 @@ export function useNotebooks() {
 
   const deleteNotebook = async (id: string) => {
     // Optimistic update
+    isOptimisticUpdateRef.current = true;
     const notebookToDelete = notebooks.find((n) => n.id === id);
     setNotebooks((prev) => prev.filter((notebook) => notebook.id !== id));
 
@@ -168,6 +173,10 @@ export function useNotebooks() {
       if (notebookToDelete) {
         setNotebooks((prev) => [notebookToDelete, ...prev]);
       }
+    } finally {
+      setTimeout(() => {
+        isOptimisticUpdateRef.current = false;
+      }, 1000);
     }
   };
 
