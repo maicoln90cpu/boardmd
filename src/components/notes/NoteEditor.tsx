@@ -22,7 +22,8 @@ interface NoteEditorProps {
 
 export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
-  const contentSyncedRef = useRef<string>("");
+  const contentSyncedRef = useRef<string>(note.content || "");
+  const isInitialMount = useRef(true);
   
   const editor = useEditor({
     extensions: [
@@ -69,23 +70,58 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
 
   // Auto-save conteúdo
   useEffect(() => {
-    if (debouncedContent && debouncedContent !== contentSyncedRef.current) {
-      if (debouncedContent !== note.content) {
-        contentSyncedRef.current = debouncedContent;
-        onUpdate(note.id, { content: debouncedContent });
-      }
+    // Pular primeira renderização para evitar salvamento desnecessário
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [debouncedContent, note.id, note.content, onUpdate]);
 
-  // Atualizar editor quando nota mudar
+    if (!editor) return;
+
+    // Só salvar se o conteúdo realmente mudou
+    if (debouncedContent && debouncedContent !== contentSyncedRef.current) {
+      console.log("💾 Salvando conteúdo...", {
+        noteId: note.id,
+        contentLength: debouncedContent.length,
+        previousLength: contentSyncedRef.current.length
+      });
+      contentSyncedRef.current = debouncedContent;
+      onUpdate(note.id, { content: debouncedContent });
+    }
+  }, [debouncedContent, note.id, onUpdate, editor]);
+
+  // Sincronizar editor quando trocar de nota
   useEffect(() => {
     if (!editor) return;
+    
+    console.log("🔄 Sincronizando nota:", {
+      noteId: note.id,
+      title: note.title,
+      contentLength: note.content?.length || 0
+    });
+
+    // Atualizar título
     setTitle(note.title);
-    if (note.content && note.content !== contentSyncedRef.current) {
-      contentSyncedRef.current = note.content;
-      editor.commands.setContent(note.content);
+
+    // Atualizar conteúdo do editor
+    const currentContent = editor.getHTML();
+    const newContent = note.content || "";
+    
+    if (currentContent !== newContent) {
+      contentSyncedRef.current = newContent;
+      isInitialMount.current = true; // Reset flag para nova nota
+      editor.commands.setContent(newContent);
     }
-  }, [note.id, note.content, editor]);
+  }, [note.id, editor]);
+
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      if (editor) {
+        editor.destroy();
+      }
+    };
+  }, [editor]);
 
   return (
     <div className="flex flex-col h-full">

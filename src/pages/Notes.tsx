@@ -124,7 +124,7 @@ export default function Notes() {
         {/* Área principal - Editor */}
         <div className="flex-1 flex flex-col">
           {selectedNote ? (
-            <NoteEditor note={selectedNote} onUpdate={handleUpdateNote} />
+            <NoteEditor key={selectedNote.id} note={selectedNote} onUpdate={handleUpdateNote} />
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div>
