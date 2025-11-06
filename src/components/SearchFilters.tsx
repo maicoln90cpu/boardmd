@@ -21,6 +21,10 @@ interface SearchFiltersProps {
   viewMode?: string;
   displayMode?: string;
   onDisplayModeChange?: (value: string) => void;
+  dailySortOption?: string;
+  onDailySortChange?: (value: "time" | "name" | "priority") => void;
+  dailySortOrder?: string;
+  onDailySortOrderChange?: (value: "asc" | "desc") => void;
 }
 
 export function SearchFilters({
@@ -40,6 +44,10 @@ export function SearchFilters({
   viewMode,
   displayMode,
   onDisplayModeChange,
+  dailySortOption,
+  onDailySortChange,
+  dailySortOrder,
+  onDailySortOrderChange,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
@@ -110,20 +118,46 @@ export function SearchFilters({
         </Select>
       )}
 
-      <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="Ordenar por" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="manual">Ordem Manual</SelectItem>
-          <SelectItem value="date_asc">Data (Crescente)</SelectItem>
-          <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
-          <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
-          <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
-          <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
-          <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
-        </SelectContent>
-      </Select>
+      {viewMode === "daily" && dailySortOption && onDailySortChange && dailySortOrder && onDailySortOrderChange && (
+        <>
+          <Select value={dailySortOption} onValueChange={onDailySortChange}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="time">⏰ Horário</SelectItem>
+              <SelectItem value="name">📝 Nome</SelectItem>
+              <SelectItem value="priority">🎯 Prioridade</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onDailySortOrderChange(dailySortOrder === "asc" ? "desc" : "asc")}
+            className="gap-2"
+          >
+            {dailySortOrder === "asc" ? "↑ Crescente" : "↓ Decrescente"}
+          </Button>
+        </>
+      )}
+
+      {viewMode === "all" && (
+        <Select value={sortOption} onValueChange={onSortChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="manual">Ordem Manual</SelectItem>
+            <SelectItem value="date_asc">Data (Crescente)</SelectItem>
+            <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
+            <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
+            <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
+            <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
+            <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
 
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={onClearFilters}>

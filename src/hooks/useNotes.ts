@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +19,9 @@ export function useNotes() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Ref para debounce do realtime
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchNotes = async () => {
     if (!user) return;
@@ -53,12 +56,21 @@ export function useNotes() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notes" },
         () => {
-          fetchNotes();
+          // Debounce de 1s para evitar fetches consecutivos durante auto-save
+          if (fetchDebounceRef.current) {
+            clearTimeout(fetchDebounceRef.current);
+          }
+          fetchDebounceRef.current = setTimeout(() => {
+            fetchNotes();
+          }, 1000);
         }
       )
       .subscribe();
 
     return () => {
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
       supabase.removeChannel(channel);
     };
   }, [user]);

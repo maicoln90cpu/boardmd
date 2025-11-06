@@ -42,6 +42,10 @@ function Index() {
   const [tagFilter, setTagFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortOption, setSortOption] = useState("manual");
+  
+  // Estados de ordenação para Kanban Diário
+  const [dailySortOption, setDailySortOption] = useState<"time" | "name" | "priority">("time");
+  const [dailySortOrder, setDailySortOrder] = useState<"asc" | "desc">("asc");
 
   // Ler view da URL na inicialização
   useEffect(() => {
@@ -220,12 +224,33 @@ function Index() {
                       Resetar Tudo
                     </Button>
                   </div>
+                  
+                  {/* Controles de ordenação do Kanban Diário */}
+                  <SearchFilters
+                    searchTerm=""
+                    onSearchChange={() => {}}
+                    priorityFilter="all"
+                    onPriorityChange={() => {}}
+                    tagFilter="all"
+                    onTagChange={() => {}}
+                    availableTags={[]}
+                    onClearFilters={() => {}}
+                    sortOption="manual"
+                    onSortChange={() => {}}
+                    viewMode={viewMode}
+                    dailySortOption={dailySortOption}
+                    onDailySortChange={setDailySortOption}
+                    dailySortOrder={dailySortOrder}
+                    onDailySortOrderChange={setDailySortOrder}
+                  />
+                  
                   <KanbanBoard 
                     key={dailyBoardKey}
                     columns={columns} 
                     categoryId={dailyCategory}
                     compact
                     isDailyKanban
+                    sortOption={dailySortOrder === "asc" ? `${dailySortOption}_asc` : `${dailySortOption}_desc`}
                   />
                 </div>
               </div>
