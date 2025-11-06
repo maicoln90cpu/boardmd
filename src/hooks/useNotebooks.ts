@@ -93,6 +93,13 @@ export function useNotebooks() {
   };
 
   const updateNotebook = async (id: string, name: string) => {
+    // Optimistic update
+    setNotebooks((prev) =>
+      prev.map((notebook) =>
+        notebook.id === id ? { ...notebook, name, updated_at: new Date().toISOString() } : notebook
+      )
+    );
+
     try {
       const { error } = await supabase
         .from("notebooks")
@@ -101,7 +108,6 @@ export function useNotebooks() {
 
       if (error) throw error;
 
-      await fetchNotebooks();
       toast({ title: "Caderno atualizado!" });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -111,10 +117,16 @@ export function useNotebooks() {
         title: "Erro ao atualizar caderno",
         variant: "destructive",
       });
+      // Revert on error
+      await fetchNotebooks();
     }
   };
 
   const deleteNotebook = async (id: string) => {
+    // Optimistic update
+    const notebookToDelete = notebooks.find((n) => n.id === id);
+    setNotebooks((prev) => prev.filter((notebook) => notebook.id !== id));
+
     try {
       // Buscar notebook e suas notas
       const { data: notebook } = await supabase
@@ -143,7 +155,6 @@ export function useNotebooks() {
 
       if (error) throw error;
 
-      await fetchNotebooks();
       toast({ title: "Caderno movido para lixeira" });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -153,6 +164,10 @@ export function useNotebooks() {
         title: "Erro ao excluir caderno",
         variant: "destructive",
       });
+      // Revert on error
+      if (notebookToDelete) {
+        setNotebooks((prev) => [notebookToDelete, ...prev]);
+      }
     }
   };
 

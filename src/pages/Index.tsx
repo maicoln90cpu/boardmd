@@ -5,6 +5,7 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchFilters } from "@/components/SearchFilters";
 import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { FavoritesSection } from "@/components/FavoritesSection";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -201,27 +202,32 @@ function Index() {
       <main className="ml-64">
         {/* Kanban Diário - modo daily */}
         {viewMode === "daily" && dailyCategory && columns.length > 0 && (
-          <div className="sticky top-0 z-10 bg-background border-b">
-            <div className="px-6 py-3 border-b flex items-center justify-between">
-              <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetDaily}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Resetar Tudo
-              </Button>
+          <>
+            <div className="sticky top-0 z-10 bg-background border-b">
+              <div className="px-6 py-3 border-b flex items-center justify-between">
+                <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetDaily}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Resetar Tudo
+                </Button>
+              </div>
+              <KanbanBoard 
+                key={dailyBoardKey}
+                columns={columns} 
+                categoryId={dailyCategory}
+                compact
+                isDailyKanban
+              />
             </div>
-            <KanbanBoard 
-              key={dailyBoardKey}
-              columns={columns} 
-              categoryId={dailyCategory}
-              compact
-              isDailyKanban
-            />
-          </div>
+
+            {/* Seção de Favoritos */}
+            <FavoritesSection columns={columns} categories={categories} />
+          </>
         )}
         
         {/* Todos os Projetos - modo all */}

@@ -36,7 +36,7 @@ export function KanbanBoard({
   allowCrossCategoryDrag = false,
   viewMode = "daily"
 }: KanbanBoardProps) {
-  const { tasks, addTask, updateTask, deleteTask } = useTasks(categoryId);
+  const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
@@ -250,6 +250,7 @@ export function KanbanBoard({
                         compact={compact}
                         isDailyKanban={isDailyKanban}
                         showCategoryBadge={showCategoryBadge}
+                        onToggleFavorite={toggleFavorite}
                       />
                     ))}
                   </div>

@@ -1,7 +1,7 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
@@ -18,6 +18,7 @@ interface TaskCardProps {
   compact?: boolean;
   isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
+  onToggleFavorite?: (taskId: string) => void;
 }
 
 export function TaskCard({ 
@@ -30,7 +31,8 @@ export function TaskCard({
   canMoveRight = false,
   compact = false,
   isDailyKanban = false,
-  showCategoryBadge = false
+  showCategoryBadge = false,
+  onToggleFavorite
 }: TaskCardProps) {
   const {
     attributes,
@@ -77,6 +79,20 @@ export function TaskCard({
           <div className="flex items-start justify-between gap-2">
             <h3 className={`font-medium flex-1 ${compact ? 'text-sm' : ''}`}>{task.title}</h3>
             <div className="flex gap-1">
+              {onToggleFavorite && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className={`h-6 w-6 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(task.id);
+                  }}
+                  title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                >
+                  <Star className={`h-3 w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
+                </Button>
+              )}
               {canMoveLeft && (
                 <Button
                   size="icon"

@@ -50,12 +50,18 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setTitle("");
       setDescription("");
       setPriority("medium");
-      setDueDate("");
+      // Se for Kanban Diário, data padrão é hoje
+      if (isDailyKanban) {
+        const today = new Date().toISOString().split("T")[0];
+        setDueDate(today);
+      } else {
+        setDueDate("");
+      }
       setDueTime("");
       setTags("");
       setSelectedCategory(categoryId || "");
     }
-  }, [task, open, categoryId]);
+  }, [task, open, categoryId, isDailyKanban]);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -182,11 +188,24 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
             <div>
               <Label>{isDailyKanban ? "Data" : "Data de Entrega"}</Label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="flex-1"
+                />
+                {isDailyKanban && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDueDate(new Date().toISOString().split("T")[0])}
+                  >
+                    Hoje
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 

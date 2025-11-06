@@ -204,6 +204,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_favorite: boolean
           position: number
           priority: string | null
           tags: string[] | null
@@ -218,6 +219,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_favorite?: boolean
           position?: number
           priority?: string | null
           tags?: string[] | null
@@ -232,6 +234,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_favorite?: boolean
           position?: number
           priority?: string | null
           tags?: string[] | null

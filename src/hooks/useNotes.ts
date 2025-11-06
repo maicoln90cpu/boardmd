@@ -102,6 +102,13 @@ export function useNotes() {
     id: string,
     updates: Partial<Omit<Note, "id" | "user_id" | "created_at">>
   ) => {
+    // Optimistic update
+    setNotes((prev) =>
+      prev.map((note) =>
+        note.id === id ? { ...note, ...updates, updated_at: new Date().toISOString() } : note
+      )
+    );
+
     try {
       const { error } = await supabase
         .from("notes")
@@ -117,10 +124,16 @@ export function useNotes() {
         title: "Erro ao atualizar nota",
         variant: "destructive",
       });
+      // Revert on error
+      await fetchNotes();
     }
   };
 
   const deleteNote = async (id: string) => {
+    // Optimistic update
+    const noteToDelete = notes.find((n) => n.id === id);
+    setNotes((prev) => prev.filter((note) => note.id !== id));
+
     try {
       // Buscar nota
       const { data: note } = await supabase
@@ -144,7 +157,6 @@ export function useNotes() {
 
       if (error) throw error;
 
-      await fetchNotes();
       toast({ title: "Nota movida para lixeira" });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -154,10 +166,21 @@ export function useNotes() {
         title: "Erro ao excluir nota",
         variant: "destructive",
       });
+      // Revert on error
+      if (noteToDelete) {
+        setNotes((prev) => [noteToDelete, ...prev]);
+      }
     }
   };
 
   const moveNoteToNotebook = async (noteId: string, notebookId: string | null) => {
+    // Optimistic update
+    setNotes((prev) =>
+      prev.map((note) =>
+        note.id === noteId ? { ...note, notebook_id: notebookId } : note
+      )
+    );
+
     try {
       const { error } = await supabase
         .from("notes")
@@ -177,6 +200,8 @@ export function useNotes() {
         title: "Erro ao mover nota",
         variant: "destructive",
       });
+      // Revert on error
+      await fetchNotes();
     }
   };
 

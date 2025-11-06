@@ -18,6 +18,7 @@ export interface Task {
   user_id: string;
   created_at: string;
   updated_at: string;
+  is_favorite: boolean;
 }
 
 export function useTasks(categoryId: string | null | "all") {
@@ -245,5 +246,34 @@ export function useTasks(categoryId: string | null | "all") {
     fetchTasks();
   };
 
-  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks };
+  const toggleFavorite = async (taskId: string) => {
+    if (!user) return;
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ is_favorite: !task.is_favorite })
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: task.is_favorite ? "Removido dos favoritos" : "Adicionado aos favoritos",
+      });
+      await fetchTasks();
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Error toggling favorite:", error);
+      }
+      toast({
+        title: "Erro ao atualizar favorito",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks, toggleFavorite };
 }
