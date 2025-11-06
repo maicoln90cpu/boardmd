@@ -17,6 +17,7 @@ import { RotateCcw, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -199,35 +200,47 @@ function Index() {
         viewMode={viewMode}
       />
 
-      <main className="ml-64">
-        {/* Kanban Diário - modo daily */}
+      <main className="ml-64 h-screen">
+        {/* Kanban Diário - modo daily com painéis redimensionáveis */}
         {viewMode === "daily" && dailyCategory && columns.length > 0 && (
-          <>
-            <div className="sticky top-0 z-10 bg-background border-b">
-              <div className="px-6 py-3 border-b flex items-center justify-between">
-                <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetDaily}
-                  className="flex items-center gap-2"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Resetar Tudo
-                </Button>
+          <ResizablePanelGroup direction="vertical" className="h-full">
+            {/* Painel Kanban Diário */}
+            <ResizablePanel defaultSize={60} minSize={30}>
+              <div className="h-full overflow-y-auto">
+                <div className="sticky top-0 z-10 bg-background border-b">
+                  <div className="px-6 py-3 border-b flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResetDaily}
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Resetar Tudo
+                    </Button>
+                  </div>
+                  <KanbanBoard 
+                    key={dailyBoardKey}
+                    columns={columns} 
+                    categoryId={dailyCategory}
+                    compact
+                    isDailyKanban
+                  />
+                </div>
               </div>
-              <KanbanBoard 
-                key={dailyBoardKey}
-                columns={columns} 
-                categoryId={dailyCategory}
-                compact
-                isDailyKanban
-              />
-            </div>
+            </ResizablePanel>
 
-            {/* Seção de Favoritos */}
-            <FavoritesSection columns={columns} categories={categories} />
-          </>
+            {/* Handle arrastável */}
+            <ResizableHandle withHandle />
+
+            {/* Painel Favoritos */}
+            <ResizablePanel defaultSize={40} minSize={20}>
+              <div className="h-full overflow-y-auto">
+                <FavoritesSection columns={columns} categories={categories} />
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
         
         {/* Todos os Projetos - modo all */}

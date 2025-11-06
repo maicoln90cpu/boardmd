@@ -20,9 +20,8 @@ export function useNotes() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchNotes = async (skipIfOptimistic = false) => {
+  const fetchNotes = async () => {
     if (!user) return;
-    if (skipIfOptimistic && isOptimisticUpdateRef.current) return;
 
     try {
       const { data, error } = await supabase
@@ -45,8 +44,6 @@ export function useNotes() {
     }
   };
 
-  const isOptimisticUpdateRef = React.useRef(false);
-
   useEffect(() => {
     fetchNotes();
 
@@ -56,7 +53,7 @@ export function useNotes() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notes" },
         () => {
-          fetchNotes(true);
+          fetchNotes();
         }
       )
       .subscribe();
@@ -68,8 +65,6 @@ export function useNotes() {
 
   const addNote = async (title: string, notebookId: string | null = null) => {
     if (!user) return null;
-
-    isOptimisticUpdateRef.current = true;
 
     try {
       const { data, error } = await supabase
@@ -101,10 +96,6 @@ export function useNotes() {
         variant: "destructive",
       });
       return null;
-    } finally {
-      setTimeout(() => {
-        isOptimisticUpdateRef.current = false;
-      }, 1000);
     }
   };
 
@@ -141,7 +132,6 @@ export function useNotes() {
 
   const deleteNote = async (id: string) => {
     // Optimistic update
-    isOptimisticUpdateRef.current = true;
     const noteToDelete = notes.find((n) => n.id === id);
     setNotes((prev) => prev.filter((note) => note.id !== id));
 
@@ -181,10 +171,6 @@ export function useNotes() {
       if (noteToDelete) {
         setNotes((prev) => [noteToDelete, ...prev]);
       }
-    } finally {
-      setTimeout(() => {
-        isOptimisticUpdateRef.current = false;
-      }, 1000);
     }
   };
 

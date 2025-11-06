@@ -22,8 +22,6 @@ interface NoteEditorProps {
 
 export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
-  const contentSyncedRef = useRef<string>(note.content || "");
-  const isInitialMount = useRef(true);
   
   const editor = useEditor({
     extensions: [
@@ -68,56 +66,34 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
     }
   }, [debouncedTitle, note.id, note.title, onUpdate]);
 
-  // Auto-save conteúdo
+  // Auto-save conteúdo - SIMPLIFICADO
   useEffect(() => {
-    // Pular primeira renderização para evitar salvamento desnecessário
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
     if (!editor) return;
 
-    // Só salvar se o conteúdo realmente mudou
-    if (debouncedContent && debouncedContent !== contentSyncedRef.current) {
-      console.log("💾 Salvando conteúdo...", {
-        noteId: note.id,
-        contentLength: debouncedContent.length,
-        previousLength: contentSyncedRef.current.length
-      });
-      contentSyncedRef.current = debouncedContent;
+    // Só salvar se conteúdo mudou E não é vazio
+    if (debouncedContent !== note.content && debouncedContent !== "") {
       onUpdate(note.id, { content: debouncedContent });
     }
-  }, [debouncedContent, note.id, onUpdate, editor]);
+  }, [debouncedContent, note.id, note.content, editor, onUpdate]);
 
-  // Sincronizar editor quando trocar de nota
+  // Sincronizar quando trocar de nota - SIMPLIFICADO
   useEffect(() => {
     if (!editor) return;
-    
-    console.log("🔄 Sincronizando nota:", {
-      noteId: note.id,
-      title: note.title,
-      contentLength: note.content?.length || 0
-    });
 
-    // Atualizar título
+    // Resetar estados locais
     setTitle(note.title);
-
-    // Atualizar conteúdo do editor
-    const currentContent = editor.getHTML();
-    const newContent = note.content || "";
     
-    if (currentContent !== newContent) {
-      contentSyncedRef.current = newContent;
-      isInitialMount.current = true; // Reset flag para nova nota
-      editor.commands.setContent(newContent);
+    // Só atualizar editor se conteúdo for diferente
+    const currentContent = editor.getHTML();
+    if (currentContent !== (note.content || "")) {
+      editor.commands.setContent(note.content || "");
     }
-  }, [note.id, editor]);
+  }, [note.id, note.title, note.content, editor]);
 
   // Cleanup ao desmontar
   useEffect(() => {
     return () => {
-      if (editor) {
+      if (editor && !editor.isDestroyed) {
         editor.destroy();
       }
     };
