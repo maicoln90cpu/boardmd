@@ -78,57 +78,57 @@ export function TaskCard({
         <div className={compact ? "space-y-1" : "space-y-1.5"}>
           <div className="flex items-start justify-between gap-1.5">
             <h3 className={`font-medium flex-1 ${compact ? 'text-xs' : 'text-sm'}`}>{task.title}</h3>
-            <div className="flex gap-0.5">
+            <div className="flex gap-0.5 sm:gap-1">
               {onToggleFavorite && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className={`h-5 w-5 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
+                  className={`h-8 w-8 sm:h-6 sm:w-6 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleFavorite(task.id);
                   }}
                   title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                 >
-                  <Star className={`h-3 w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
+                  <Star className={`h-4 w-4 sm:h-3 sm:w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
                 </Button>
               )}
               {canMoveLeft && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-5 w-5"
+                  className="h-8 w-8 sm:h-6 sm:w-6"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMoveLeft?.();
                   }}
                 >
-                  <ChevronLeft className="h-2.5 w-2.5" />
+                  <ChevronLeft className="h-4 w-4 sm:h-3 sm:w-3" />
                 </Button>
               )}
               {canMoveRight && (
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-5 w-5"
+                  className="h-8 w-8 sm:h-6 sm:w-6"
                   onClick={(e) => {
                     e.stopPropagation();
                     onMoveRight?.();
                   }}
                 >
-                  <ChevronRight className="h-2.5 w-2.5" />
+                  <ChevronRight className="h-4 w-4 sm:h-3 sm:w-3" />
                 </Button>
               )}
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="h-8 w-8 sm:h-6 sm:w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(task.id);
                 }}
               >
-                <Trash2 className="h-2.5 w-2.5" />
+                <Trash2 className="h-4 w-4 sm:h-3 sm:w-3" />
               </Button>
             </div>
           </div>

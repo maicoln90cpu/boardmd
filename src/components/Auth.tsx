@@ -42,7 +42,7 @@ export function Auth() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>{isSignUp ? "Criar Conta" : "Entrar"}</CardTitle>

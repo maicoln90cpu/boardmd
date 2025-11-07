@@ -96,7 +96,8 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card">
+      {/* Sidebar responsiva - mobile drawer, desktop fixa */}
+      <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card hidden md:block">
         <div className="px-6 py-4 border-b">
           <h1 className="text-xl font-bold">Kanban Board</h1>
         </div>
@@ -105,7 +106,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
             <Button
               key={item.label}
               variant={item.active ? "secondary" : "ghost"}
-              className="justify-start gap-3"
+              className="justify-start gap-3 min-h-[48px]"
               onClick={item.onClick}
             >
               <item.icon className="h-4 w-4" />
@@ -114,6 +115,36 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
           ))}
         </nav>
       </aside>
+
+      {/* Mobile menu - bottom navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
+        <div className="grid grid-cols-4 gap-1 p-2">
+          {menuItems.slice(0, 4).map((item) => (
+            <Button
+              key={item.label}
+              variant={item.active ? "secondary" : "ghost"}
+              className="flex-col gap-1 h-auto py-2 min-h-[64px]"
+              onClick={item.onClick}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs">{item.label}</span>
+            </Button>
+          ))}
+        </div>
+        <div className="grid grid-cols-4 gap-1 p-2 pt-0">
+          {menuItems.slice(4).map((item) => (
+            <Button
+              key={item.label}
+              variant={item.active ? "secondary" : "ghost"}
+              className="flex-col gap-1 h-auto py-2 min-h-[64px]"
+              onClick={item.onClick}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs">{item.label}</span>
+            </Button>
+          ))}
+        </div>
+      </nav>
 
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent aria-describedby="settings-dialog-description" className="max-w-2xl max-h-[80vh] overflow-y-auto">

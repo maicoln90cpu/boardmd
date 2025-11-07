@@ -40,11 +40,12 @@ export function GlobalSearch({ tasks, onSelectTask }: GlobalSearchProps) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors border rounded-md hover:bg-accent"
+        className="flex items-center gap-2 px-3 md:px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors border rounded-md hover:bg-accent min-h-[48px]"
       >
-        <Search className="h-4 w-4" />
-        <span>Buscar tarefas...</span>
-        <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+        <Search className="h-4 w-4 flex-shrink-0" />
+        <span className="hidden sm:inline">Buscar tarefas...</span>
+        <span className="sm:hidden">Buscar</span>
+        <kbd className="ml-auto pointer-events-none hidden md:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-xs">⌘</span>K
         </kbd>
       </button>

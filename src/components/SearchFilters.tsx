@@ -53,118 +53,120 @@ export function SearchFilters({
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
 
   return (
-    <div className="flex items-center gap-3 p-4 bg-card border-b">
-      <div className="relative flex-1 max-w-md">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b">
+      <div className="relative flex-1 max-w-full sm:max-w-md min-w-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar tarefas..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9"
+          className="pl-9 min-h-[48px]"
         />
       </div>
 
-      <Select value={priorityFilter} onValueChange={onPriorityChange}>
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Prioridade" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          <SelectItem value="high">Alta</SelectItem>
-          <SelectItem value="medium">Média</SelectItem>
-          <SelectItem value="low">Baixa</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select value={tagFilter} onValueChange={onTagChange}>
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Tag" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {availableTags.map((tag) => (
-            <SelectItem key={tag} value={tag}>
-              {tag}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {viewMode === "all" && categories && onCategoryChange && (
-        <Select value={categoryFilter} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Categoria" />
+      <div className="flex flex-wrap items-center gap-2">
+        <Select value={priorityFilter} onValueChange={onPriorityChange}>
+          <SelectTrigger className="w-full sm:w-40 min-h-[48px]">
+            <SelectValue placeholder="Prioridade" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="high">Alta</SelectItem>
+            <SelectItem value="medium">Média</SelectItem>
+            <SelectItem value="low">Baixa</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={tagFilter} onValueChange={onTagChange}>
+          <SelectTrigger className="w-full sm:w-40 min-h-[48px]">
+            <SelectValue placeholder="Tag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {availableTags.map((tag) => (
+              <SelectItem key={tag} value={tag}>
+                {tag}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-      )}
 
-      {viewMode === "all" && displayMode && onDisplayModeChange && (
-        <Select value={displayMode} onValueChange={onDisplayModeChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Exibição" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="by_category">Por categoria</SelectItem>
-            <SelectItem value="all_tasks">Todas as tarefas</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
+        {viewMode === "all" && categories && onCategoryChange && (
+          <Select value={categoryFilter} onValueChange={onCategoryChange}>
+            <SelectTrigger className="w-full sm:w-48 min-h-[48px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
-      {viewMode === "daily" && dailySortOption && onDailySortChange && dailySortOrder && onDailySortOrderChange && (
-        <>
-          <Select value={dailySortOption} onValueChange={onDailySortChange}>
-            <SelectTrigger className="w-40">
+        {viewMode === "all" && displayMode && onDisplayModeChange && (
+          <Select value={displayMode} onValueChange={onDisplayModeChange}>
+            <SelectTrigger className="w-full sm:w-48 min-h-[48px]">
+              <SelectValue placeholder="Exibição" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="by_category">Por categoria</SelectItem>
+              <SelectItem value="all_tasks">Todas as tarefas</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
+
+        {viewMode === "daily" && dailySortOption && onDailySortChange && dailySortOrder && onDailySortOrderChange && (
+          <>
+            <Select value={dailySortOption} onValueChange={onDailySortChange}>
+              <SelectTrigger className="w-full sm:w-40 min-h-[48px]">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="time">⏰ Horário</SelectItem>
+                <SelectItem value="name">📝 Nome</SelectItem>
+                <SelectItem value="priority">🎯 Prioridade</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => onDailySortOrderChange(dailySortOrder === "asc" ? "desc" : "asc")}
+              className="gap-2 min-h-[48px] w-full sm:w-auto"
+            >
+              {dailySortOrder === "asc" ? "↑ Crescente" : "↓ Decrescente"}
+            </Button>
+          </>
+        )}
+
+        {viewMode === "all" && (
+          <Select value={sortOption} onValueChange={onSortChange}>
+            <SelectTrigger className="w-full sm:w-48 min-h-[48px]">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="time">⏰ Horário</SelectItem>
-              <SelectItem value="name">📝 Nome</SelectItem>
-              <SelectItem value="priority">🎯 Prioridade</SelectItem>
+              <SelectItem value="manual">Ordem Manual</SelectItem>
+              <SelectItem value="date_asc">Data (Crescente)</SelectItem>
+              <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
+              <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
+              <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
+              <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
+              <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDailySortOrderChange(dailySortOrder === "asc" ? "desc" : "asc")}
-            className="gap-2"
-          >
-            {dailySortOrder === "asc" ? "↑ Crescente" : "↓ Decrescente"}
+        )}
+
+        {hasActiveFilters && (
+          <Button variant="ghost" size="default" onClick={onClearFilters} className="min-h-[48px] w-full sm:w-auto">
+            <X className="h-4 w-4 mr-2" />
+            Limpar
           </Button>
-        </>
-      )}
-
-      {viewMode === "all" && (
-        <Select value={sortOption} onValueChange={onSortChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Ordenar por" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="manual">Ordem Manual</SelectItem>
-            <SelectItem value="date_asc">Data (Crescente)</SelectItem>
-            <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
-            <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
-            <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
-            <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
-            <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-
-      {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={onClearFilters}>
-          <X className="h-4 w-4 mr-2" />
-          Limpar
-        </Button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

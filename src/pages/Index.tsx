@@ -195,7 +195,7 @@ function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-32 md:pb-0">
       <Sidebar
         onExport={handleExport}
         onImport={handleImport}
@@ -204,7 +204,7 @@ function Index() {
         viewMode={viewMode}
       />
 
-      <main className="ml-64 h-screen">
+      <main className="md:ml-64 h-screen">
         {/* Kanban Diário - modo daily com painéis redimensionáveis */}
         {viewMode === "daily" && dailyCategory && columns.length > 0 && (
           <ResizablePanelGroup direction="vertical" className="h-full">

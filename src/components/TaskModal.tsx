@@ -124,7 +124,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[500px] max-h-[85vh] overflow-y-auto" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
