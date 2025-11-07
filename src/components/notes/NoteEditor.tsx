@@ -28,10 +28,6 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "idle">("idle");
   const { toast } = useToast();
   
-  // Refs para controlar sincronização e salvamento
-  const isSavingRef = useRef(false);
-  const lastSavedContentRef = useRef(note.content || "");
-  
   const editor = useEditor({
     extensions: [
       // Extensões customizadas PRIMEIRO para evitar conflitos
@@ -77,43 +73,32 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
     }
   }, [debouncedTitle, note.id, note.title, onUpdate]);
 
-  // Auto-save conteúdo - CORRIGIDO com proteção contra reset
+  // Auto-save conteúdo - SIMPLIFICADO (mesma lógica do título)
   useEffect(() => {
     if (!editor) return;
     
-    // Normalizar HTML para comparação confiável
+    // Normalização BÁSICA apenas para evitar salvar tags vazias
     const normalizedContent = debouncedContent.replace(/<p><\/p>/g, '').trim();
     const normalizedNoteContent = (note.content || '').replace(/<p><\/p>/g, '').trim();
     
-    // Só salvar se:
-    // 1. Conteúdo mudou de verdade
-    // 2. É diferente do último salvo
-    // 3. Não está em processo de salvamento
-    if (normalizedContent !== normalizedNoteContent && 
-        normalizedContent !== lastSavedContentRef.current &&
-        !isSavingRef.current) {
-      
-      isSavingRef.current = true;
-      lastSavedContentRef.current = normalizedContent;
+    // MESMA lógica do título - SIMPLES E DIRETA
+    if (normalizedContent !== normalizedNoteContent && normalizedContent !== "") {
       setSaveStatus("saving");
-      
       onUpdate(note.id, { content: debouncedContent });
       
-      // Feedback visual de salvamento concluído
+      // Feedback visual simples (sem bloquear nada)
       setTimeout(() => {
-        isSavingRef.current = false;
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
-      }, 500);
+      }, 300);
     }
   }, [debouncedContent, note.id, note.content, editor, onUpdate]);
 
-  // Sincronização - CORRIGIDO para respeitar flag de salvamento
+  // Sincronização - SIMPLIFICADA
   useEffect(() => {
-    if (!editor || isSavingRef.current) return; // Não sincronizar se está salvando
+    if (!editor) return;
     
     setTitle(note.title);
-    lastSavedContentRef.current = note.content || "";
     
     const currentContent = editor.getHTML();
     const normalizedCurrent = currentContent.replace(/<p><\/p>/g, '').trim();
