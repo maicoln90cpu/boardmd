@@ -10,6 +10,7 @@ interface NotesListProps {
   selectedNoteId: string | null;
   onSelectNote: (noteId: string) => void;
   onAddNote: () => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
 export function NotesList({
@@ -17,8 +18,8 @@ export function NotesList({
   selectedNoteId,
   onSelectNote,
   onAddNote,
+  onDeleteNote,
 }: NotesListProps) {
-  const { deleteNote } = useNotes();
 
   // Separar notas soltas (sem caderno) e notas em cadernos
   const looseNotes = notes.filter((note) => !note.notebook_id);
@@ -47,7 +48,7 @@ export function NotesList({
               note={note}
               isSelected={selectedNoteId === note.id}
               onSelect={onSelectNote}
-              onDelete={deleteNote}
+              onDelete={onDeleteNote}
             />
           ))}
         </div>
@@ -65,7 +66,7 @@ export function NotesList({
               note={note}
               isSelected={selectedNoteId === note.id}
               onSelect={onSelectNote}
-              onDelete={deleteNote}
+              onDelete={onDeleteNote}
             />
           ))}
         </div>

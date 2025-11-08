@@ -14,7 +14,7 @@ import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
-  const { notes, loading: loadingNotes, addNote, updateNote, moveNoteToNotebook, setIsEditing } = useNotes();
+  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setIsEditing } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const { toggleTheme } = useTheme();
@@ -46,6 +46,16 @@ export default function Notes() {
   const handleSelectNote = (noteId: string) => {
     setSelectedNoteId(noteId);
     setIsEditing(true); // Pausa real-time durante edição
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    // Se a nota excluída estiver selecionada, limpar seleção
+    if (selectedNoteId === noteId) {
+      setSelectedNoteId(null);
+      setIsEditing(false); // Reativar real-time
+    }
+    
+    await deleteNote(noteId);
   };
 
   const handleViewChange = (mode: "daily" | "all") => {
@@ -110,6 +120,7 @@ export default function Notes() {
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={handleAddNote}
+                onDeleteNote={handleDeleteNote}
               />
 
               <NotesList
@@ -117,6 +128,7 @@ export default function Notes() {
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(null)}
+                onDeleteNote={handleDeleteNote}
               />
             </div>
           </div>

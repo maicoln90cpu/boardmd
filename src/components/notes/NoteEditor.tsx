@@ -1,10 +1,18 @@
 import { Note } from "@/hooks/useNotes";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import Link from "@tiptap/extension-link";
+import TextAlign from "@tiptap/extension-text-align";
+import Color from "@tiptap/extension-color";
+import { TextStyle } from "@tiptap/extension-text-style";
+import Highlight from "@tiptap/extension-highlight";
+import { RichTextToolbar } from "./RichTextToolbar";
 
 interface NoteEditorProps {
   note: Note;
@@ -15,11 +23,29 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
 
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link.configure({ openOnClick: false }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+    ],
+    content: note.content || "",
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML());
+    },
+  });
+
   // Sincronizar com mudanças externas da nota
   useEffect(() => {
     setTitle(note.title);
-    setContent(note.content || "");
-  }, [note.id, note.title, note.content]);
+    if (editor && note.content !== editor.getHTML()) {
+      editor.commands.setContent(note.content || "");
+    }
+  }, [note.id, note.title, note.content, editor]);
 
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
@@ -53,14 +79,15 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
         />
       </div>
 
-      {/* Conteúdo */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-        <Textarea
-          placeholder="Escreva aqui suas anotações..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="min-h-[500px] resize-none border-none shadow-none focus-visible:ring-0 text-base"
-        />
+      {/* Editor de conteúdo */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <RichTextToolbar editor={editor} />
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <EditorContent
+            editor={editor}
+            className="prose prose-sm max-w-none focus:outline-none h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:outline-none"
+          />
+        </div>
       </div>
 
       {/* Botões de ação */}

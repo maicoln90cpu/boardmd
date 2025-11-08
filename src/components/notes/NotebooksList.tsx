@@ -22,6 +22,7 @@ interface NotebooksListProps {
   selectedNoteId: string | null;
   onSelectNote: (noteId: string) => void;
   onAddNote: (notebookId: string | null) => void;
+  onDeleteNote: (noteId: string) => void;
 }
 
 export function NotebooksList({
@@ -30,9 +31,9 @@ export function NotebooksList({
   selectedNoteId,
   onSelectNote,
   onAddNote,
+  onDeleteNote,
 }: NotebooksListProps) {
   const { addNotebook, updateNotebook, deleteNotebook } = useNotebooks();
-  const { deleteNote } = useNotes();
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -138,7 +139,7 @@ export function NotebooksList({
                         className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteNote(note.id);
+                          onDeleteNote(note.id);
                         }}
                       >
                         <Trash2 className="h-3 w-3" />
