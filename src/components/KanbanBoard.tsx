@@ -38,6 +38,7 @@ export function KanbanBoard({
   viewMode = "daily"
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
+  const { updateColumnColor } = useColumns();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
