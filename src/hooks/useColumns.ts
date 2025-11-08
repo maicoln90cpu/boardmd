@@ -11,6 +11,7 @@ export interface Column {
   position: number;
   user_id: string;
   created_at: string;
+  color: string | null;
 }
 
 export function useColumns() {
@@ -111,5 +112,23 @@ export function useColumns() {
     }
   };
 
-  return { columns, loading, addColumn };
+  const updateColumnColor = async (columnId: string, color: string | null) => {
+    try {
+      const { error } = await supabase
+        .from("columns")
+        .update({ color })
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      toast({ title: "Cor atualizada com sucesso" });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar cor",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return { columns, loading, addColumn, updateColumnColor };
 }

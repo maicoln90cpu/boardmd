@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Column } from "@/hooks/useColumns";
+import { Column, useColumns } from "@/hooks/useColumns";
 import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ColumnColorPicker, getColumnColorClass } from "./kanban/ColumnColorPicker";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -215,20 +216,26 @@ export function KanbanBoard({
             const columnTasks = getTasksForColumn(column.id);
             return (
               <div key={column.id} className={`flex flex-col ${compact ? 'gap-2' : 'gap-4'}`}>
-                <div className="flex items-center justify-between">
+                <div className={`flex items-center justify-between p-3 rounded-t-lg ${getColumnColorClass(column.color)}`}>
                   <div className="flex items-center gap-2">
                     <h2 className={`${compact ? 'text-base' : 'text-lg'} font-semibold`}>{column.name}</h2>
                     <span className="text-sm text-muted-foreground">
                       ({columnTasks.length})
                     </span>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleAddTask(column.id)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <ColumnColorPicker
+                      currentColor={column.color}
+                      onColorChange={(color) => updateColumnColor(column.id, color)}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleAddTask(column.id)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <SortableContext

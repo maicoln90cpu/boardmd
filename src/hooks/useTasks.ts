@@ -19,6 +19,11 @@ export interface Task {
   created_at: string;
   updated_at: string;
   is_favorite: boolean;
+  subtasks: Array<{ id: string; title: string; completed: boolean }> | null;
+  recurrence_rule: {
+    frequency: 'daily' | 'weekly' | 'monthly';
+    interval: number;
+  } | null;
 }
 
 export function useTasks(categoryId: string | null | "all") {
@@ -67,7 +72,7 @@ export function useTasks(categoryId: string | null | "all") {
       return;
     }
 
-    setTasks(data || []);
+    setTasks((data || []) as unknown as Task[]);
     setLoading(false);
   };
 

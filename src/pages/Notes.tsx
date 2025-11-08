@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
 import { NotebooksList } from "@/components/notes/NotebooksList";
 import { NotesList } from "@/components/notes/NotesList";
 import { NoteEditor } from "@/components/notes/NoteEditor";
+import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,11 @@ import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
-  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setIsEditing } = useNotes();
+  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setIsEditing, togglePin } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -27,6 +30,41 @@ export default function Notes() {
       },
     })
   );
+
+  // Filtrar e ordenar notas
+  const filteredAndSortedNotes = useMemo(() => {
+    let filtered = notes;
+
+    // Busca por título e conteúdo
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = notes.filter(
+        (note) =>
+          note.title.toLowerCase().includes(term) ||
+          note.content?.toLowerCase().includes(term)
+      );
+    }
+
+    // Ordenação
+    let sorted = [...filtered];
+    switch (sortBy) {
+      case 'alphabetical':
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case 'created':
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'updated':
+      default:
+        sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    }
+
+    // Notas fixadas sempre no topo
+    const pinned = sorted.filter(n => n.is_pinned);
+    const unpinned = sorted.filter(n => !n.is_pinned);
+    
+    return [...pinned, ...unpinned];
+  }, [notes, searchTerm, sortBy]);
 
   const selectedNote = selectedNoteId
     ? notes.find((n) => n.id === selectedNoteId) || null
@@ -113,10 +151,17 @@ export default function Notes() {
               </Button>
             </div>
 
+            <NotesSearch
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+            />
+
             <div className="flex-1 overflow-y-auto p-2 space-y-4">
               <NotebooksList
                 notebooks={notebooks}
-                notes={notes}
+                notes={filteredAndSortedNotes}
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={handleAddNote}
@@ -124,7 +169,7 @@ export default function Notes() {
               />
 
               <NotesList
-                notes={notes}
+                notes={filteredAndSortedNotes}
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(null)}
@@ -137,7 +182,12 @@ export default function Notes() {
         {/* Área principal - Editor */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {selectedNote ? (
-            <NoteEditor key={selectedNote.id} note={selectedNote} onUpdate={handleUpdateNote} />
+            <NoteEditor 
+              key={selectedNote.id} 
+              note={selectedNote} 
+              onUpdate={handleUpdateNote}
+              onTogglePin={togglePin}
+            />
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div>

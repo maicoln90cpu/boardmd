@@ -12,6 +12,8 @@ export interface Note {
   user_id: string;
   created_at: string;
   updated_at: string;
+  is_pinned: boolean;
+  color: string | null;
 }
 
 export function useNotes() {
@@ -224,6 +226,43 @@ export function useNotes() {
     }
   };
 
+  const togglePin = async (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    const newPinnedState = !note.is_pinned;
+    
+    // Optimistic update
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.id === noteId ? { ...n, is_pinned: newPinnedState } : n
+      )
+    );
+
+    try {
+      const { error } = await supabase
+        .from("notes")
+        .update({ is_pinned: newPinnedState })
+        .eq("id", noteId);
+
+      if (error) throw error;
+
+      toast({
+        title: newPinnedState ? "Nota fixada" : "Nota desfixada",
+      });
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Error toggling pin:", error);
+      }
+      toast({
+        title: "Erro ao fixar nota",
+        variant: "destructive",
+      });
+      // Revert on error
+      await fetchNotes();
+    }
+  };
+
   const setIsEditing = (editing: boolean) => {
     isEditingRef.current = editing;
   };
@@ -237,5 +276,6 @@ export function useNotes() {
     moveNoteToNotebook,
     fetchNotes,
     setIsEditing,
+    togglePin,
   };
 }

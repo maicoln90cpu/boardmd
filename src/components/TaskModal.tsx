@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task } from "@/hooks/useTasks";
 import { Label } from "@/components/ui/label";
 import { useCategories } from "@/hooks/useCategories";
+import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
+import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
 
 interface TaskModalProps {
   open: boolean;
@@ -28,6 +30,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [dueTime, setDueTime] = useState("");
   const [tags, setTags] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
+  const [recurrence, setRecurrence] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; interval: number } | null>(null);
 
   useEffect(() => {
     if (task) {
@@ -35,6 +39,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setDescription(task.description || "");
       setPriority(task.priority || "medium");
       setSelectedCategory(task.category_id || "");
+      setSubtasks(task.subtasks || []);
+      setRecurrence(task.recurrence_rule);
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -50,6 +56,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setTitle("");
       setDescription("");
       setPriority("medium");
+      setSubtasks([]);
+      setRecurrence(null);
       // Se for Kanban Diário, data padrão é hoje
       if (isDailyKanban) {
         const today = new Date().toISOString().split("T")[0];
@@ -98,6 +106,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       column_id: columnId,
       position: task?.position ?? 0,
       category_id: selectedCategory || categoryId,
+      subtasks: subtasks.length > 0 ? subtasks : null,
+      recurrence_rule: recurrence,
     };
 
     onSave(taskData);
@@ -124,7 +134,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[500px] max-h-[85vh] overflow-y-auto" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-[600px] max-h-[90vh] overflow-y-auto" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
@@ -228,6 +238,10 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               placeholder="ex: urgente, cliente, bug"
             />
           </div>
+
+          <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
+
+          <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
 
           <Button 
             onClick={handleSave} 

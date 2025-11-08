@@ -61,6 +61,7 @@ export type Database = {
       }
       columns: {
         Row: {
+          color: string | null
           created_at: string
           id: string
           name: string
@@ -68,6 +69,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           id?: string
           name: string
@@ -75,6 +77,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -109,27 +112,33 @@ export type Database = {
       }
       notes: {
         Row: {
+          color: string | null
           content: string | null
           created_at: string
           id: string
+          is_pinned: boolean
           notebook_id: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          color?: string | null
           content?: string | null
           created_at?: string
           id?: string
+          is_pinned?: boolean
           notebook_id?: string | null
           title?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          color?: string | null
           content?: string | null
           created_at?: string
           id?: string
+          is_pinned?: boolean
           notebook_id?: string | null
           title?: string
           updated_at?: string
@@ -207,6 +216,8 @@ export type Database = {
           is_favorite: boolean
           position: number
           priority: string | null
+          recurrence_rule: Json | null
+          subtasks: Json | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -222,6 +233,8 @@ export type Database = {
           is_favorite?: boolean
           position?: number
           priority?: string | null
+          recurrence_rule?: Json | null
+          subtasks?: Json | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -237,6 +250,8 @@ export type Database = {
           is_favorite?: boolean
           position?: number
           priority?: string | null
+          recurrence_rule?: Json | null
+          subtasks?: Json | null
           tags?: string[] | null
           title?: string
           updated_at?: string
