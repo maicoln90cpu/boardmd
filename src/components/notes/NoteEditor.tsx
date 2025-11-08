@@ -47,6 +47,19 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
     }
   }, [note.id, note.title, note.content, editor]);
 
+  // Atalho de teclado para salvar (Ctrl+Enter / Cmd+Enter)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [title, content]);
+
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
       toast.error("Adicione um título ou conteúdo");
@@ -95,6 +108,9 @@ export function NoteEditor({ note, onUpdate }: NoteEditorProps) {
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
+          <kbd className="hidden sm:inline-flex ml-2 px-1.5 py-0.5 text-xs bg-muted rounded">
+            {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}+↵
+          </kbd>
         </Button>
         <Button onClick={handleCancel} variant="outline" className="flex-1 min-h-[48px]">
           <X className="w-4 h-4 mr-2" />

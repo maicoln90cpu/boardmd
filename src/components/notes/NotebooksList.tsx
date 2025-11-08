@@ -33,7 +33,7 @@ export function NotebooksList({
   onAddNote,
   onDeleteNote,
 }: NotebooksListProps) {
-  const { addNotebook, updateNotebook, deleteNotebook } = useNotebooks();
+  const { addNotebook, updateNotebook, deleteNotebook, setIsEditing } = useNotebooks();
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -51,10 +51,13 @@ export function NotebooksList({
   };
 
   const handleAddNotebook = async () => {
+    setIsEditing(true);
     await addNotebook("Novo Caderno");
+    setIsEditing(false);
   };
 
   const handleEditStart = (notebook: Notebook) => {
+    setIsEditing(true);
     setEditingId(notebook.id);
     setEditingName(notebook.name);
   };
@@ -64,6 +67,7 @@ export function NotebooksList({
       await updateNotebook(id, editingName.trim());
     }
     setEditingId(null);
+    setIsEditing(false);
   };
 
   const handleDeleteClick = (notebook: Notebook) => {
@@ -73,9 +77,11 @@ export function NotebooksList({
 
   const handleDeleteConfirm = async () => {
     if (notebookToDelete) {
+      setIsEditing(true);
       await deleteNotebook(notebookToDelete.id);
       setNotebookToDelete(null);
       setDeleteDialogOpen(false);
+      setIsEditing(false);
     }
   };
 
@@ -114,7 +120,10 @@ export function NotebooksList({
                 onEditStart={() => handleEditStart(notebook)}
                 onEditSave={() => handleEditSave(notebook.id)}
                 onEditChange={setEditingName}
-                onEditCancel={() => setEditingId(null)}
+                onEditCancel={() => {
+                  setEditingId(null);
+                  setIsEditing(false);
+                }}
                 onDelete={() => handleDeleteClick(notebook)}
                 onAddNote={() => onAddNote(notebook.id)}
               />

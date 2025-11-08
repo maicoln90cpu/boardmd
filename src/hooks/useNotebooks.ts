@@ -17,6 +17,7 @@ export function useNotebooks() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const isEditingRef = React.useRef(false);
 
   const fetchNotebooks = async () => {
     if (!user) return;
@@ -51,7 +52,9 @@ export function useNotebooks() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notebooks" },
         () => {
-          fetchNotebooks();
+          if (!isEditingRef.current) {
+            fetchNotebooks();
+          }
         }
       )
       .subscribe();
@@ -172,6 +175,10 @@ export function useNotebooks() {
     }
   };
 
+  const setIsEditing = (editing: boolean) => {
+    isEditingRef.current = editing;
+  };
+
   return {
     notebooks,
     loading,
@@ -179,5 +186,6 @@ export function useNotebooks() {
     updateNotebook,
     deleteNotebook,
     fetchNotebooks,
+    setIsEditing,
   };
 }
