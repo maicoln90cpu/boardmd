@@ -22,6 +22,9 @@ export function useNotes() {
   
   // Ref para debounce do realtime
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Ref para pausar real-time durante edição
+  const isEditingRef = useRef(false);
 
   const fetchNotes = async () => {
     if (!user) return;
@@ -56,13 +59,16 @@ export function useNotes() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notes" },
         () => {
-          // Debounce de 1s para evitar fetches consecutivos durante auto-save
-          if (fetchDebounceRef.current) {
-            clearTimeout(fetchDebounceRef.current);
+          // Só atualiza se NÃO estiver editando
+          if (!isEditingRef.current) {
+            // Debounce de 1s para evitar fetches consecutivos
+            if (fetchDebounceRef.current) {
+              clearTimeout(fetchDebounceRef.current);
+            }
+            fetchDebounceRef.current = setTimeout(() => {
+              fetchNotes();
+            }, 1000);
           }
-          fetchDebounceRef.current = setTimeout(() => {
-            fetchNotes();
-          }, 1000);
         }
       )
       .subscribe();
@@ -218,6 +224,10 @@ export function useNotes() {
     }
   };
 
+  const setIsEditing = (editing: boolean) => {
+    isEditingRef.current = editing;
+  };
+
   return {
     notes,
     loading,
@@ -226,5 +236,6 @@ export function useNotes() {
     deleteNote,
     moveNoteToNotebook,
     fetchNotes,
+    setIsEditing,
   };
 }

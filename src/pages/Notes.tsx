@@ -14,7 +14,7 @@ import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
-  const { notes, loading: loadingNotes, addNote, updateNote, moveNoteToNotebook } = useNotes();
+  const { notes, loading: loadingNotes, addNote, updateNote, moveNoteToNotebook, setIsEditing } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const { toggleTheme } = useTheme();
@@ -45,6 +45,7 @@ export default function Notes() {
 
   const handleSelectNote = (noteId: string) => {
     setSelectedNoteId(noteId);
+    setIsEditing(true); // Pausa real-time durante edição
   };
 
   const handleViewChange = (mode: "daily" | "all") => {
@@ -122,7 +123,7 @@ export default function Notes() {
         </DndContext>
 
         {/* Área principal - Editor */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {selectedNote ? (
             <NoteEditor key={selectedNote.id} note={selectedNote} onUpdate={handleUpdateNote} />
           ) : (
