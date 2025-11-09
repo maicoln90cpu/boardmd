@@ -178,6 +178,42 @@ export type Database = {
         }
         Relationships: []
       }
+      project_templates: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string
+          id: string
+          is_public: boolean
+          name: string
+          usage_count: number
+        }
+        Insert: {
+          config: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_public?: boolean
+          name: string
+          usage_count?: number
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_public?: boolean
+          name?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       task_history: {
         Row: {
           action: string
@@ -297,6 +333,45 @@ export type Database = {
           item_data?: Json
           item_id?: string
           item_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          best_streak: number
+          created_at: string
+          current_streak: number
+          id: string
+          level: number
+          tasks_completed_today: number
+          tasks_completed_week: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          level?: number
+          tasks_completed_today?: number
+          tasks_completed_week?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          level?: number
+          tasks_completed_today?: number
+          tasks_completed_week?: number
+          total_points?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

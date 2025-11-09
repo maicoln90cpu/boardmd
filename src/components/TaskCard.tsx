@@ -1,11 +1,12 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
 
 interface TaskCardProps {
   task: Task & { categories?: { name: string } };
@@ -43,6 +44,9 @@ export function TaskCard({
     isDragging,
   } = useSortable({ id: task.id });
 
+  const { getTaskUrgency } = useDueDateAlerts([task]);
+  const urgency = getTaskUrgency(task);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -55,8 +59,9 @@ export function TaskCard({
     low: "bg-green-500 text-white",
   };
 
-  // Verificar se tarefa está atrasada
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isDailyKanban;
+  const isOverdue = urgency === "overdue";
+  const isUrgent = urgency === "urgent";
+  const isWarning = urgency === "warning";
 
   return (
     <motion.div
@@ -72,7 +77,7 @@ export function TaskCard({
       <Card
         className={`${compact ? 'p-1.5' : 'p-2'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
           isOverdue ? 'border-2 border-destructive' : ''
-        }`}
+        } ${isUrgent ? 'border-2 border-orange-500' : ''} ${isWarning ? 'border-l-4 border-l-yellow-500' : ''}`}
         onDoubleClick={() => onEdit(task)}
       >
         <div className={compact ? "space-y-1" : "space-y-1.5"}>
@@ -173,12 +178,19 @@ export function TaskCard({
           
           {task.due_date && !isDailyKanban && (
             <div className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded-md ${
-              isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-muted'
+              isOverdue ? 'bg-destructive/10 text-destructive' : 
+              isUrgent ? 'bg-orange-500/10 text-orange-600' :
+              isWarning ? 'bg-yellow-500/10 text-yellow-600' : 'bg-muted'
             }`}>
-              <Calendar className={`h-3 w-3 ${isOverdue ? 'text-destructive' : 'text-primary'}`} />
+              {isOverdue || isUrgent ? (
+                <AlertCircle className="h-3 w-3" />
+              ) : (
+                <Calendar className="h-3 w-3 text-primary" />
+              )}
               <span className="text-xs font-medium">
                 {new Date(task.due_date).toLocaleDateString("pt-BR")}
                 {isOverdue && ' - Atrasada!'}
+                {isUrgent && ' - Urgente!'}
               </span>
             </div>
           )}

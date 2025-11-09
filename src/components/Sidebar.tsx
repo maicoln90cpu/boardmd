@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -86,6 +86,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
     { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
+    { icon: BarChart3, label: "Dashboard", onClick: () => navigate("/dashboard") },
     { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
     { icon: Download, label: "Exportar", onClick: onExport },
     { icon: Upload, label: "Importar", onClick: onImport },

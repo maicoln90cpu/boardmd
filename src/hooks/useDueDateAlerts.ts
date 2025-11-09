@@ -1,0 +1,91 @@
+import { useEffect, useRef } from "react";
+import { Task } from "./useTasks";
+import { useToast } from "./use-toast";
+import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
+
+export function useDueDateAlerts(tasks: Task[]) {
+  const { toast } = useToast();
+  const notifiedTasksRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const checkDueDates = () => {
+      const now = new Date();
+
+      tasks.forEach((task) => {
+        if (!task.due_date || task.column_id?.includes("done")) return;
+
+        const dueDate = new Date(task.due_date);
+        const taskId = task.id;
+
+        // Se já notificou, não notificar novamente
+        if (notifiedTasksRef.current.has(taskId)) return;
+
+        // Verifica se está atrasada
+        if (isPast(dueDate) && !notifiedTasksRef.current.has(`${taskId}-overdue`)) {
+          toast({
+            title: "⏰ Tarefa Atrasada!",
+            description: `"${task.title}" já passou do prazo`,
+            variant: "destructive",
+          });
+          notifiedTasksRef.current.add(`${taskId}-overdue`);
+          return;
+        }
+
+        const hoursUntilDue = differenceInHours(dueDate, now);
+        const minutesUntilDue = differenceInMinutes(dueDate, now);
+
+        // Alerta 1 hora antes
+        if (minutesUntilDue <= 60 && minutesUntilDue > 0) {
+          if (!notifiedTasksRef.current.has(`${taskId}-1h`)) {
+            toast({
+              title: "🔥 Prazo Urgente!",
+              description: `"${task.title}" vence em menos de 1 hora`,
+              variant: "destructive",
+            });
+            notifiedTasksRef.current.add(`${taskId}-1h`);
+          }
+          return;
+        }
+
+        // Alerta 24 horas antes
+        if (hoursUntilDue <= 24 && hoursUntilDue > 1) {
+          if (!notifiedTasksRef.current.has(`${taskId}-24h`)) {
+            toast({
+              title: "⚠️ Prazo Próximo",
+              description: `"${task.title}" vence em ${hoursUntilDue} horas`,
+            });
+            notifiedTasksRef.current.add(`${taskId}-24h`);
+          }
+        }
+      });
+    };
+
+    // Verifica imediatamente
+    checkDueDates();
+
+    // Verifica a cada minuto
+    const interval = setInterval(checkDueDates, 60000);
+
+    return () => clearInterval(interval);
+  }, [tasks, toast]);
+
+  // Função para determinar o status de urgência
+  const getTaskUrgency = (task: Task): "overdue" | "urgent" | "warning" | "normal" => {
+    if (!task.due_date || task.column_id?.includes("done")) return "normal";
+
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+
+    if (isPast(dueDate)) return "overdue";
+
+    const minutesUntilDue = differenceInMinutes(dueDate, now);
+    const hoursUntilDue = differenceInHours(dueDate, now);
+
+    if (minutesUntilDue <= 60) return "urgent";
+    if (hoursUntilDue <= 24) return "warning";
+
+    return "normal";
+  };
+
+  return { getTaskUrgency };
+}

@@ -6,14 +6,16 @@ import { SearchFilters } from "@/components/SearchFilters";
 import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
+import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
+import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3 } from "lucide-react";
+import { RotateCcw, BarChart3, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
@@ -33,6 +35,7 @@ function Index() {
   const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
   
@@ -46,6 +49,12 @@ function Index() {
   // Estados de ordenação para Kanban Diário
   const [dailySortOption, setDailySortOption] = useState<"time" | "name" | "priority">("time");
   const [dailySortOrder, setDailySortOrder] = useState<"asc" | "desc">("asc");
+
+  // Buscar todas as tarefas para notificações
+  const { tasks: allTasks } = useTasks(undefined);
+  
+  // Hook de notificações de prazo - monitora TODAS as tarefas
+  useDueDateAlerts(allTasks);
 
   // Ler view da URL na inicialização
   useEffect(() => {
@@ -214,15 +223,26 @@ function Index() {
                 <div className="sticky top-0 z-10 bg-background border-b">
                   <div className="px-6 py-3 border-b flex items-center justify-between">
                     <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetDaily}
-                      className="flex items-center gap-2"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Resetar Tudo
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTemplates(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Templates
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetDaily}
+                        className="flex items-center gap-2"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Resetar Tudo
+                      </Button>
+                    </div>
                   </div>
                   
                   {/* Controles de ordenação do Kanban Diário */}
@@ -357,6 +377,9 @@ function Index() {
           <DashboardStats tasks={filteredTasks} />
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Templates */}
+      <TemplateSelector open={showTemplates} onOpenChange={setShowTemplates} />
 
       {/* Dialog de Histórico */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
