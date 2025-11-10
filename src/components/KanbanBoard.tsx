@@ -10,6 +10,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnColorClass } from "./kanban/ColumnColorPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -23,6 +25,7 @@ interface KanbanBoardProps {
   showCategoryBadge?: boolean;
   allowCrossCategoryDrag?: boolean;
   viewMode?: string;
+  densityMode?: "comfortable" | "compact" | "ultra-compact";
 }
 
 export function KanbanBoard({ 
@@ -36,7 +39,8 @@ export function KanbanBoard({
   sortOption = "manual",
   showCategoryBadge = false,
   allowCrossCategoryDrag = false,
-  viewMode = "daily"
+  viewMode = "daily",
+  densityMode = "comfortable"
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
@@ -44,6 +48,12 @@ export function KanbanBoard({
   
   // Modo compacto automático em mobile ou quando forçado via prop
   const compact = isMobile || compactProp;
+  
+  // Salvar tamanhos das colunas no localStorage
+  const [columnSizes, setColumnSizes] = useLocalStorage<number[]>(
+    `kanban-column-sizes-${categoryId}`,
+    columns.map(() => 100 / columns.length)
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
@@ -209,6 +219,44 @@ export function KanbanBoard({
     return sorted;
   };
 
+  // Calcular espaçamentos e tamanhos baseados no modo de densidade
+  const getDensityStyles = () => {
+    switch (densityMode) {
+      case "ultra-compact":
+        return {
+          gap: "gap-1",
+          padding: "p-1",
+          headerPadding: "p-1.5",
+          cardGap: "gap-1",
+          minHeight: "min-h-[60px]",
+          headerText: "text-xs",
+          countText: "text-xs"
+        };
+      case "compact":
+        return {
+          gap: "gap-2",
+          padding: "p-2",
+          headerPadding: "p-2",
+          cardGap: "gap-1.5",
+          minHeight: "min-h-[100px]",
+          headerText: "text-sm",
+          countText: "text-xs"
+        };
+      default: // comfortable
+        return {
+          gap: compact ? "gap-4" : "gap-4 md:gap-6",
+          padding: compact ? "p-2" : "p-4 md:p-6",
+          headerPadding: "p-3",
+          cardGap: compact ? "gap-2" : "gap-3",
+          minHeight: compact ? "min-h-[120px]" : "min-h-[200px]",
+          headerText: compact ? "text-base" : "text-lg",
+          countText: "text-sm"
+        };
+    }
+  };
+
+  const styles = getDensityStyles();
+
   return (
     <>
       <DndContext
@@ -217,60 +265,78 @@ export function KanbanBoard({
         onDragStart={(e) => setActiveId(e.active.id as string)}
         onDragEnd={handleDragEnd}
       >
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${compact ? 'gap-4 p-2' : 'gap-4 md:gap-6 p-4 md:p-6'}`}>
-          {columns.map((column, columnIndex) => {
-            const columnTasks = getTasksForColumn(column.id);
-            return (
-              <div key={column.id} className={`flex flex-col ${compact ? 'gap-2' : 'gap-4'}`}>
-                <div className={`flex items-center justify-between p-3 rounded-t-lg ${getColumnColorClass(column.color)}`}>
-                  <div className="flex items-center gap-2">
-                    <h2 className={`${compact ? 'text-base' : 'text-lg'} font-semibold`}>{column.name}</h2>
-                    <span className="text-sm text-muted-foreground">
-                      ({columnTasks.length})
-                    </span>
-                  </div>
-                  <div className="flex gap-1">
-                    <ColumnColorPicker
-                      currentColor={column.color}
-                      onColorChange={(color) => updateColumnColor(column.id, color)}
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleAddTask(column.id)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+        <div className={styles.padding}>
+          <ResizablePanelGroup
+            direction="horizontal"
+            className={styles.gap}
+            onLayout={(sizes) => setColumnSizes(sizes)}
+          >
+            {columns.map((column, columnIndex) => {
+              const columnTasks = getTasksForColumn(column.id);
+              return (
+                <>
+                  <ResizablePanel
+                    key={column.id}
+                    defaultSize={columnSizes[columnIndex] || 100 / columns.length}
+                    minSize={15}
+                  >
+                    <div className={`flex flex-col ${styles.gap} h-full`}>
+                      <div className={`flex items-center justify-between ${styles.headerPadding} rounded-t-lg ${getColumnColorClass(column.color)}`}>
+                        <div className="flex items-center gap-2">
+                          <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
+                          <span className={`${styles.countText} text-muted-foreground`}>
+                            ({columnTasks.length})
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          <ColumnColorPicker
+                            currentColor={column.color}
+                            onColorChange={(color) => updateColumnColor(column.id, color)}
+                          />
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleAddTask(column.id)}
+                          >
+                            <Plus className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                          </Button>
+                        </div>
+                      </div>
 
-                <SortableContext
-                  items={columnTasks.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
-                  id={column.id}
-                >
-                  <div className={`flex flex-col ${compact ? 'gap-2 min-h-[120px] p-2' : 'gap-3 min-h-[200px] p-4'} rounded-lg bg-muted/30`}>
-                    {columnTasks.map((task) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onEdit={handleEditTask}
-                        onDelete={handleDeleteClick}
-                        onMoveLeft={() => handleMoveTask(task.id, "left")}
-                        onMoveRight={() => handleMoveTask(task.id, "right")}
-                        canMoveLeft={columnIndex > 0}
-                        canMoveRight={columnIndex < columns.length - 1}
-                        compact={compact}
-                        isDailyKanban={isDailyKanban}
-                        showCategoryBadge={showCategoryBadge}
-                        onToggleFavorite={toggleFavorite}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </div>
-            );
-          })}
+                      <SortableContext
+                        items={columnTasks.map((t) => t.id)}
+                        strategy={verticalListSortingStrategy}
+                        id={column.id}
+                      >
+                        <div className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-lg bg-muted/30`}>
+                          {columnTasks.map((task) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              onEdit={handleEditTask}
+                              onDelete={handleDeleteClick}
+                              onMoveLeft={() => handleMoveTask(task.id, "left")}
+                              onMoveRight={() => handleMoveTask(task.id, "right")}
+                              canMoveLeft={columnIndex > 0}
+                              canMoveRight={columnIndex < columns.length - 1}
+                              compact={compact || densityMode !== "comfortable"}
+                              isDailyKanban={isDailyKanban}
+                              showCategoryBadge={showCategoryBadge}
+                              onToggleFavorite={toggleFavorite}
+                              densityMode={densityMode}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </div>
+                  </ResizablePanel>
+                  {columnIndex < columns.length - 1 && (
+                    <ResizableHandle withHandle />
+                  )}
+                </>
+              );
+            })}
+          </ResizablePanelGroup>
         </div>
 
         <DragOverlay>

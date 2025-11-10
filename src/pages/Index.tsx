@@ -50,6 +50,9 @@ function Index() {
   // Estados de ordenação para Kanban Diário
   const [dailySortOption, setDailySortOption] = useState<"time" | "name" | "priority">("time");
   const [dailySortOrder, setDailySortOrder] = useState<"asc" | "desc">("asc");
+  
+  // Estado de densidade
+  const [densityMode, setDensityMode] = useState<"comfortable" | "compact" | "ultra-compact">("comfortable");
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -277,6 +280,8 @@ function Index() {
                     onDailySortChange={setDailySortOption}
                     dailySortOrder={dailySortOrder}
                     onDailySortOrderChange={setDailySortOrder}
+                    densityMode={densityMode}
+                    onDensityChange={setDensityMode}
                   />
                   
                   <KanbanBoard 
@@ -286,6 +291,7 @@ function Index() {
                     compact
                     isDailyKanban
                     sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
+                    densityMode={densityMode}
                   />
                 </div>
               </div>
@@ -339,6 +345,8 @@ function Index() {
               displayMode={displayMode}
               onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")}
               searchInputRef={searchInputRef}
+              densityMode={densityMode}
+              onDensityChange={setDensityMode}
             />
 
             {/* Renderizar baseado no displayMode */}
@@ -356,6 +364,7 @@ function Index() {
                   sortOption={sortOption}
                   viewMode={viewMode}
                   showCategoryBadge
+                  densityMode={densityMode}
                 />
               </div>
             ) : (
@@ -376,6 +385,7 @@ function Index() {
                       tagFilter={tagFilter}
                       sortOption={sortOption}
                       viewMode={viewMode}
+                      densityMode={densityMode}
                     />
                   </div>
                 ))

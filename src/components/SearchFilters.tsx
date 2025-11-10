@@ -28,6 +28,8 @@ interface SearchFiltersProps {
   dailySortOrder?: string;
   onDailySortOrderChange?: (value: "asc" | "desc") => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
+  densityMode?: "comfortable" | "compact" | "ultra-compact";
+  onDensityChange?: (mode: "comfortable" | "compact" | "ultra-compact") => void;
 }
 
 export function SearchFilters({
@@ -52,10 +54,18 @@ export function SearchFilters({
   dailySortOrder,
   onDailySortOrderChange,
   searchInputRef,
+  densityMode = "comfortable",
+  onDensityChange,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
   const isMobile = useIsMobile();
+  
+  const densityIcon = {
+    "comfortable": "⊟",
+    "compact": "▤",
+    "ultra-compact": "≡"
+  };
 
   // Renderizar filtros (conteúdo compartilhado)
   const renderFilters = () => (
@@ -151,6 +161,20 @@ export function SearchFilters({
             <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
             <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
             <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+      
+      {onDensityChange && (
+        <Select value={densityMode} onValueChange={onDensityChange}>
+          <SelectTrigger className="w-full sm:w-[140px] min-h-[48px]">
+            <span className="mr-2">{densityIcon[densityMode]}</span>
+            <SelectValue placeholder="Densidade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="comfortable">Confortável</SelectItem>
+            <SelectItem value="compact">Compacto</SelectItem>
+            <SelectItem value="ultra-compact">Ultra</SelectItem>
           </SelectContent>
         </Select>
       )}
