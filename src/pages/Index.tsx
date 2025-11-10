@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -28,6 +28,7 @@ function Index() {
   const { toast } = useToast();
   const { addActivity } = useActivityLog();
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
@@ -55,6 +56,20 @@ function Index() {
   
   // Hook de notificações de prazo - monitora TODAS as tarefas
   useDueDateAlerts(allTasks);
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+F ou Cmd+F - Focar na busca (apenas em modo all com searchInputRef disponível)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && viewMode === "all") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode]);
 
   // Ler view da URL na inicialização
   useEffect(() => {
@@ -270,7 +285,7 @@ function Index() {
                     categoryId={dailyCategory}
                     compact
                     isDailyKanban
-                    sortOption={dailySortOrder === "asc" ? `${dailySortOption}_asc` : `${dailySortOption}_desc`}
+                    sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
                   />
                 </div>
               </div>
@@ -323,6 +338,7 @@ function Index() {
               viewMode={viewMode}
               displayMode={displayMode}
               onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")}
+              searchInputRef={searchInputRef}
             />
 
             {/* Renderizar baseado no displayMode */}

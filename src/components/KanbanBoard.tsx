@@ -9,6 +9,7 @@ import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSen
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnColorClass } from "./kanban/ColumnColorPicker";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -27,7 +28,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ 
   columns, 
   categoryId, 
-  compact = false,
+  compact: compactProp = false,
   searchTerm = "",
   priorityFilter = "all",
   tagFilter = "all",
@@ -39,6 +40,10 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
+  const isMobile = useIsMobile();
+  
+  // Modo compacto automático em mobile ou quando forçado via prop
+  const compact = isMobile || compactProp;
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string>("");

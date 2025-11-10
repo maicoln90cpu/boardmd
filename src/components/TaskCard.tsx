@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -64,22 +65,24 @@ export function TaskCard({
   const isWarning = urgency === "warning";
 
   return (
-    <motion.div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.15 }}
-    >
-      <Card
-        className={`${compact ? 'p-1.5' : 'p-2'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
-          isOverdue ? 'border-2 border-destructive' : ''
-        } ${isUrgent ? 'border-2 border-orange-500' : ''} ${isWarning ? 'border-l-4 border-l-yellow-500' : ''}`}
-        onDoubleClick={() => onEdit(task)}
-      >
+    <HoverCard openDelay={300}>
+      <HoverCardTrigger asChild>
+        <motion.div
+          ref={setNodeRef}
+          style={style}
+          {...attributes}
+          {...listeners}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.15 }}
+        >
+          <Card
+            className={`${compact ? 'p-1.5' : 'p-2'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+              isOverdue ? 'border-2 border-destructive' : ''
+            } ${isUrgent ? 'border-2 border-orange-500' : ''} ${isWarning ? 'border-l-4 border-l-yellow-500' : ''}`}
+            onDoubleClick={() => onEdit(task)}
+          >
         <div className={compact ? "space-y-1" : "space-y-1.5"}>
           <div className="flex items-start justify-between gap-1.5">
             <h3 className={`font-medium flex-1 ${compact ? 'text-xs' : 'text-sm'}`}>{task.title}</h3>
@@ -197,5 +200,33 @@ export function TaskCard({
         </div>
       </Card>
     </motion.div>
+      </HoverCardTrigger>
+      <HoverCardContent side="right" className="w-80">
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold">{task.title}</h4>
+          {task.description && (
+            <p className="text-xs text-muted-foreground">{task.description}</p>
+          )}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium">Subtarefas:</p>
+              {task.subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2 text-xs">
+                  <span className={subtask.completed ? 'line-through text-muted-foreground' : ''}>
+                    {subtask.completed ? '✓' : '○'} {subtask.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {task.due_date && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Prazo: {new Date(task.due_date).toLocaleString("pt-BR")}
+            </p>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }

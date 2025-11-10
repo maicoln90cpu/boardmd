@@ -85,7 +85,7 @@ export function useTasks(categoryId: string | null | "all") {
           event: "*", 
           schema: "public", 
           table: "tasks",
-          ...(categoryId ? { filter: `category_id=eq.${categoryId}` } : {})
+          ...(categoryId && categoryId !== "all" ? { filter: `category_id=eq.${categoryId}` } : {})
         }, 
         () => {
           fetchTasks();

@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+// Schema para subtarefas
+const subtaskSchema = z.object({
+  id: z.string(),
+  title: z.string().trim().min(1, "Título da subtarefa não pode estar vazio").max(200),
+  completed: z.boolean()
+});
+
+// Schema para recorrência
+const recurrenceRuleSchema = z.object({
+  frequency: z.enum(['daily', 'weekly', 'monthly']),
+  interval: z.number().int().min(1).max(365)
+});
+
 export const taskSchema = z.object({
   title: z.string()
     .trim()
@@ -20,7 +33,12 @@ export const taskSchema = z.object({
   column_id: z.string().uuid("ID de coluna inválido"),
   category_id: z.string().uuid("ID de categoria inválido"),
   position: z.number().int().min(0).optional(),
-  user_id: z.string().uuid("ID de usuário inválido").optional()
+  user_id: z.string().uuid("ID de usuário inválido").optional(),
+  subtasks: z.array(subtaskSchema)
+    .max(50, "Máximo de 50 subtarefas permitidas")
+    .nullable()
+    .optional(),
+  recurrence_rule: recurrenceRuleSchema.nullable().optional()
 });
 
 export const categorySchema = z.object({
