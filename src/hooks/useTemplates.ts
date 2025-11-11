@@ -43,11 +43,59 @@ export function useTemplates() {
   });
 
   const applyTemplateMutation = useMutation({
-    mutationFn: async (templateId: string) => {
+    mutationFn: async ({ 
+      templateId, 
+      mode 
+    }: { 
+      templateId: string; 
+      mode: "add" | "replace" 
+    }) => {
       if (!user?.id) throw new Error("User not authenticated");
 
       const template = templates?.find((t) => t.id === templateId);
       if (!template) throw new Error("Template not found");
+
+      // Se modo for "replace", deletar colunas não-originais existentes
+      if (mode === "replace") {
+        // Buscar colunas atuais do usuário
+        const { data: existingColumns, error: fetchError } = await supabase
+          .from("columns")
+          .select("id, position")
+          .eq("user_id", user.id)
+          .order("position");
+
+        if (fetchError) throw fetchError;
+
+        // Deletar colunas além das 3 primeiras (originais)
+        if (existingColumns && existingColumns.length > 3) {
+          const columnsToDelete = existingColumns.slice(3).map((c) => c.id);
+          
+          // Verificar se há tarefas nessas colunas
+          const { count, error: countError } = await supabase
+            .from("tasks")
+            .select("*", { count: "exact", head: true })
+            .in("column_id", columnsToDelete);
+
+          if (countError) throw countError;
+
+          if (count && count > 0) {
+            // Mover tarefas para a primeira coluna (A Fazer)
+            const firstColumnId = existingColumns[0].id;
+            await supabase
+              .from("tasks")
+              .update({ column_id: firstColumnId })
+              .in("column_id", columnsToDelete);
+          }
+
+          // Deletar as colunas
+          const { error: deleteError } = await supabase
+            .from("columns")
+            .delete()
+            .in("id", columnsToDelete);
+
+          if (deleteError) throw deleteError;
+        }
+      }
 
       // 1. Criar categorias
       const categoryMap = new Map<string, string>();
@@ -64,12 +112,23 @@ export function useTemplates() {
 
       // 2. Criar colunas
       const columnMap = new Map<string, string>();
+      
+      // Buscar a maior posição atual
+      const { data: maxPosData } = await supabase
+        .from("columns")
+        .select("position")
+        .eq("user_id", user.id)
+        .order("position", { ascending: false })
+        .limit(1);
+
+      const startPosition = maxPosData && maxPosData.length > 0 ? maxPosData[0].position + 1 : 0;
+
       for (const col of template.config.columns) {
         const { data: column, error: colError } = await supabase
           .from("columns")
           .insert({
             name: col.name,
-            position: col.position,
+            position: startPosition + col.position,
             user_id: user.id,
           })
           .select()
@@ -104,16 +163,17 @@ export function useTemplates() {
         .update({ usage_count: template.usage_count + 1 })
         .eq("id", templateId);
 
-      return template;
+      return { template, mode };
     },
-    onSuccess: (template) => {
+    onSuccess: ({ template, mode }) => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["columns"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       
+      const modeText = mode === "replace" ? "substituindo as colunas existentes" : "adicionando às colunas atuais";
       toast({
         title: "✅ Template Aplicado!",
-        description: `"${template.name}" foi configurado com sucesso`,
+        description: `"${template.name}" foi configurado com sucesso ${modeText}`,
       });
     },
     onError: (error: Error) => {

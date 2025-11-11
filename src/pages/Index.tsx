@@ -7,6 +7,7 @@ import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
 import { TemplateSelector } from "@/components/templates/TemplateSelector";
+import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -14,8 +15,9 @@ import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3, FileText } from "lucide-react";
+import { RotateCcw, BarChart3, FileText, Columns3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
@@ -23,7 +25,15 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
-  const { columns, loading: loadingColumns } = useColumns();
+  const { 
+    columns, 
+    loading: loadingColumns, 
+    hiddenColumns,
+    toggleColumnVisibility,
+    getVisibleColumns,
+    resetToDefaultView,
+    deleteColumn
+  } = useColumns();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
   const { addActivity } = useActivityLog();
@@ -37,8 +47,10 @@ function Index() {
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
+  const [simplifiedMode, setSimplifiedMode] = useLocalStorage<boolean>("kanban-simplified-mode", false);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -213,6 +225,25 @@ function Index() {
     setShowHistory(true);
   };
 
+  // Calcular colunas visíveis considerando modo simplificado
+  const visibleColumns = useMemo(() => {
+    const baseColumns = getVisibleColumns();
+    
+    if (simplifiedMode && viewMode === "all") {
+      // Modo simplificado: mostrar apenas as 3 colunas com mais tarefas
+      const columnsWithCounts = baseColumns.map((col) => ({
+        ...col,
+        taskCount: tasks.filter((task) => task.column_id === col.id).length,
+      }));
+      
+      return columnsWithCounts
+        .sort((a, b) => b.taskCount - a.taskCount)
+        .slice(0, 3);
+    }
+    
+    return baseColumns;
+  }, [getVisibleColumns, simplifiedMode, viewMode, tasks]);
+
   if (loadingCategories || loadingColumns) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -233,7 +264,7 @@ function Index() {
 
       <main className="md:ml-64 h-screen">
         {/* Kanban Diário - modo daily com painéis redimensionáveis */}
-        {viewMode === "daily" && dailyCategory && columns.length > 0 && (
+        {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && (
           <ResizablePanelGroup direction="vertical" className="h-full">
             {/* Painel Kanban Diário */}
             <ResizablePanel defaultSize={60} minSize={30}>
@@ -242,6 +273,15 @@ function Index() {
                   <div className="px-6 py-3 border-b flex items-center justify-between">
                     <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowColumnManager(true)}
+                        className="flex items-center gap-2"
+                      >
+                        <Columns3 className="h-4 w-4" />
+                        Colunas
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -286,7 +326,7 @@ function Index() {
                   
                   <KanbanBoard 
                     key={dailyBoardKey}
-                    columns={columns} 
+                    columns={visibleColumns} 
                     categoryId={dailyCategory}
                     compact
                     isDailyKanban
@@ -310,12 +350,20 @@ function Index() {
         )}
         
         {/* Todos os Projetos - modo all */}
-        {viewMode === "all" && columns.length > 0 && (
+        {viewMode === "all" && visibleColumns.length > 0 && (
           <>
             <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
               <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
               <div className="flex items-center gap-2">
                 <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowColumnManager(true)}
+                >
+                  <Columns3 className="h-4 w-4 mr-2" />
+                  Colunas
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -347,6 +395,8 @@ function Index() {
               searchInputRef={searchInputRef}
               densityMode={densityMode}
               onDensityChange={setDensityMode}
+              simplifiedMode={simplifiedMode}
+              onSimplifiedModeChange={setSimplifiedMode}
             />
 
             {/* Renderizar baseado no displayMode */}
@@ -356,7 +406,7 @@ function Index() {
                   <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
                 </div>
                 <KanbanBoard 
-                  columns={columns} 
+                  columns={visibleColumns} 
                   categoryId="all"
                   searchTerm={searchTerm}
                   priorityFilter={priorityFilter}
@@ -378,7 +428,7 @@ function Index() {
                       <h3 className="text-lg font-semibold">{category.name}</h3>
                     </div>
                     <KanbanBoard 
-                      columns={columns} 
+                      columns={visibleColumns} 
                       categoryId={category.id}
                       searchTerm={searchTerm}
                       priorityFilter={priorityFilter}
@@ -406,6 +456,17 @@ function Index() {
 
       {/* Dialog de Templates */}
       <TemplateSelector open={showTemplates} onOpenChange={setShowTemplates} />
+
+      {/* Dialog de Gerenciamento de Colunas */}
+      <ColumnManager
+        open={showColumnManager}
+        onOpenChange={setShowColumnManager}
+        columns={columns}
+        hiddenColumns={hiddenColumns}
+        onToggleVisibility={toggleColumnVisibility}
+        onDeleteColumn={deleteColumn}
+        onResetToDefault={resetToDefaultView}
+      />
 
       {/* Dialog de Histórico */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>

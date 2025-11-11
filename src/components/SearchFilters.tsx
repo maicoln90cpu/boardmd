@@ -1,4 +1,4 @@
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { Search, X, SlidersHorizontal, Columns3 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +30,8 @@ interface SearchFiltersProps {
   searchInputRef?: React.RefObject<HTMLInputElement>;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   onDensityChange?: (mode: "comfortable" | "compact" | "ultra-compact") => void;
+  simplifiedMode?: boolean;
+  onSimplifiedModeChange?: (value: boolean) => void;
 }
 
 export function SearchFilters({
@@ -56,6 +58,8 @@ export function SearchFilters({
   searchInputRef,
   densityMode = "comfortable",
   onDensityChange,
+  simplifiedMode = false,
+  onSimplifiedModeChange,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
@@ -177,6 +181,18 @@ export function SearchFilters({
             <SelectItem value="ultra-compact">Ultra</SelectItem>
           </SelectContent>
         </Select>
+      )}
+
+      {viewMode === "all" && onSimplifiedModeChange && (
+        <Button
+          variant={simplifiedMode ? "default" : "outline"}
+          size="default"
+          onClick={() => onSimplifiedModeChange(!simplifiedMode)}
+          className="gap-2 min-h-[48px] w-full sm:w-auto"
+        >
+          <Columns3 className="h-4 w-4" />
+          {simplifiedMode ? "Modo Simplificado" : "Todas Colunas"}
+        </Button>
       )}
 
       {hasActiveFilters && (

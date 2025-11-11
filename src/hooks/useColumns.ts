@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { columnSchema } from "@/lib/validations";
 import { z } from "zod";
+import { useLocalStorage } from "./useLocalStorage";
 
 export interface Column {
   id: string;
@@ -19,6 +20,7 @@ export function useColumns() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [hiddenColumns, setHiddenColumns] = useLocalStorage<string[]>("kanban-hidden-columns", []);
 
   useEffect(() => {
     fetchColumns();
@@ -130,5 +132,75 @@ export function useColumns() {
     }
   };
 
-  return { columns, loading, addColumn, updateColumnColor };
+  const deleteColumn = async (columnId: string) => {
+    try {
+      // Verificar se há tarefas nesta coluna
+      const { count, error: countError } = await supabase
+        .from("tasks")
+        .select("*", { count: "exact", head: true })
+        .eq("column_id", columnId);
+
+      if (countError) throw countError;
+
+      if (count && count > 0) {
+        toast({
+          title: "Não é possível deletar",
+          description: `Esta coluna tem ${count} tarefa(s). Mova-as antes de deletar.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from("columns")
+        .delete()
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      toast({ title: "Coluna deletada com sucesso" });
+      return true;
+    } catch (error) {
+      toast({
+        title: "Erro ao deletar coluna",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  const toggleColumnVisibility = (columnId: string) => {
+    setHiddenColumns((prev) => {
+      if (prev.includes(columnId)) {
+        return prev.filter((id) => id !== columnId);
+      } else {
+        return [...prev, columnId];
+      }
+    });
+  };
+
+  const getVisibleColumns = () => {
+    return columns.filter((col) => !hiddenColumns.includes(col.id));
+  };
+
+  const resetToDefaultView = () => {
+    // Mostrar apenas as 3 primeiras colunas (as originais)
+    const defaultColumns = columns.slice(0, 3).map((c) => c.id);
+    const columnsToHide = columns.slice(3).map((c) => c.id);
+    setHiddenColumns(columnsToHide);
+    
+    toast({ title: "Visualização resetada para padrão (3 colunas)" });
+  };
+
+  return { 
+    columns, 
+    loading, 
+    addColumn, 
+    updateColumnColor, 
+    deleteColumn,
+    hiddenColumns,
+    toggleColumnVisibility,
+    getVisibleColumns,
+    resetToDefaultView
+  };
 }
