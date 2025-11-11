@@ -54,7 +54,7 @@ export function useColumns() {
 
     const defaultColumns = [
       { name: "A Fazer", position: 0, user_id: user.id },
-      { name: "Em Andamento", position: 1, user_id: user.id },
+      { name: "Em Planejamento", position: 1, user_id: user.id },
       { name: "Concluído", position: 2, user_id: user.id },
     ];
 
@@ -192,6 +192,48 @@ export function useColumns() {
     toast({ title: "Visualização resetada para padrão (3 colunas)" });
   };
 
+  const renameColumn = async (columnId: string, newName: string) => {
+    try {
+      const { error } = await supabase
+        .from("columns")
+        .update({ name: newName })
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      toast({ title: "Coluna renomeada com sucesso" });
+    } catch (error) {
+      toast({
+        title: "Erro ao renomear coluna",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const reorderColumns = async (newOrder: Column[]) => {
+    try {
+      // Atualizar posições no banco
+      const updates = newOrder.map((col, index) => ({
+        id: col.id,
+        position: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from("columns")
+          .update({ position: update.position })
+          .eq("id", update.id);
+      }
+
+      toast({ title: "Ordem das colunas atualizada" });
+    } catch (error) {
+      toast({
+        title: "Erro ao reordenar colunas",
+        variant: "destructive",
+      });
+    }
+  };
+
   return { 
     columns, 
     loading, 
@@ -201,6 +243,8 @@ export function useColumns() {
     hiddenColumns,
     toggleColumnVisibility,
     getVisibleColumns,
-    resetToDefaultView
+    resetToDefaultView,
+    renameColumn,
+    reorderColumns
   };
 }

@@ -32,7 +32,9 @@ function Index() {
     toggleColumnVisibility,
     getVisibleColumns,
     resetToDefaultView,
-    deleteColumn
+    deleteColumn,
+    renameColumn,
+    reorderColumns
   } = useColumns();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -65,6 +67,9 @@ function Index() {
   
   // Estado de densidade
   const [densityMode, setDensityMode] = useState<"comfortable" | "compact" | "ultra-compact">("comfortable");
+
+  // Tamanho do painel diário (salvar no localStorage)
+  const [dailyPanelSizes, setDailyPanelSizes] = useLocalStorage<number[]>("daily-panel-sizes", [60, 40]);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -265,9 +270,13 @@ function Index() {
       <main className="md:ml-64 h-screen">
         {/* Kanban Diário - modo daily com painéis redimensionáveis */}
         {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && (
-          <ResizablePanelGroup direction="vertical" className="h-full">
+          <ResizablePanelGroup 
+            direction="vertical" 
+            className="h-full"
+            onLayout={(sizes) => setDailyPanelSizes(sizes)}
+          >
             {/* Painel Kanban Diário */}
-            <ResizablePanel defaultSize={60} minSize={30}>
+            <ResizablePanel defaultSize={dailyPanelSizes[0] || 60} minSize={30}>
               <div className="h-full overflow-y-auto">
                 <div className="sticky top-0 z-10 bg-background border-b">
                   <div className="px-6 py-3 border-b flex items-center justify-between">
@@ -341,7 +350,7 @@ function Index() {
             <ResizableHandle withHandle />
 
             {/* Painel Favoritos */}
-            <ResizablePanel defaultSize={40} minSize={20}>
+            <ResizablePanel defaultSize={dailyPanelSizes[1] || 40} minSize={20}>
               <div className="h-full overflow-y-auto">
                 <FavoritesSection columns={columns} categories={categories} />
               </div>
@@ -466,6 +475,8 @@ function Index() {
         onToggleVisibility={toggleColumnVisibility}
         onDeleteColumn={deleteColumn}
         onResetToDefault={resetToDefaultView}
+        onRenameColumn={renameColumn}
+        onReorderColumns={reorderColumns}
       />
 
       {/* Dialog de Histórico */}
