@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchFilters } from "@/components/SearchFilters";
+import { DailySortControls } from "@/components/DailySortControls";
 import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
@@ -313,25 +314,14 @@ function Index() {
                   </div>
                   
                   {/* Controles de ordenação do Kanban Diário */}
-                  <SearchFilters
-                    searchTerm=""
-                    onSearchChange={() => {}}
-                    priorityFilter="all"
-                    onPriorityChange={() => {}}
-                    tagFilter="all"
-                    onTagChange={() => {}}
-                    availableTags={[]}
-                    onClearFilters={() => {}}
-                    sortOption="manual"
-                    onSortChange={() => {}}
-                    viewMode={viewMode}
-                    dailySortOption={dailySortOption}
-                    onDailySortChange={setDailySortOption}
-                    dailySortOrder={dailySortOrder}
-                    onDailySortOrderChange={setDailySortOrder}
-                    densityMode={densityMode}
-                    onDensityChange={setDensityMode}
-                  />
+                  <div className="px-6 py-2 border-b bg-card">
+                    <DailySortControls
+                      sortOption={dailySortOption}
+                      onSortChange={setDailySortOption}
+                      sortOrder={dailySortOrder}
+                      onSortOrderChange={setDailySortOrder}
+                    />
+                  </div>
                   
                   <KanbanBoard 
                     key={dailyBoardKey}
@@ -406,6 +396,7 @@ function Index() {
               onDensityChange={setDensityMode}
               simplifiedMode={simplifiedMode}
               onSimplifiedModeChange={setSimplifiedMode}
+              compact={true}
             />
 
             {/* Renderizar baseado no displayMode */}

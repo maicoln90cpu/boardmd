@@ -32,6 +32,7 @@ interface SearchFiltersProps {
   onDensityChange?: (mode: "comfortable" | "compact" | "ultra-compact") => void;
   simplifiedMode?: boolean;
   onSimplifiedModeChange?: (value: boolean) => void;
+  compact?: boolean;
 }
 
 export function SearchFilters({
@@ -60,6 +61,7 @@ export function SearchFilters({
   onDensityChange,
   simplifiedMode = false,
   onSimplifiedModeChange,
+  compact = false,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
@@ -72,10 +74,13 @@ export function SearchFilters({
   };
 
   // Renderizar filtros (conteúdo compartilhado)
+  const selectClass = compact ? "w-[140px] min-h-[40px]" : "w-full min-h-[48px]";
+  const buttonClass = compact ? "min-h-[40px]" : "min-h-[48px]";
+
   const renderFilters = () => (
     <>
       <Select value={priorityFilter} onValueChange={onPriorityChange}>
-        <SelectTrigger className="w-full min-h-[48px]">
+        <SelectTrigger className={selectClass}>
           <SelectValue placeholder="Prioridade" />
         </SelectTrigger>
         <SelectContent>
@@ -87,7 +92,7 @@ export function SearchFilters({
       </Select>
 
       <Select value={tagFilter} onValueChange={onTagChange}>
-        <SelectTrigger className="w-full min-h-[48px]">
+        <SelectTrigger className={selectClass}>
           <SelectValue placeholder="Tag" />
         </SelectTrigger>
         <SelectContent>
@@ -102,7 +107,7 @@ export function SearchFilters({
 
       {viewMode === "all" && categories && onCategoryChange && (
         <Select value={categoryFilter} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-full min-h-[48px]">
+          <SelectTrigger className={selectClass}>
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -118,7 +123,7 @@ export function SearchFilters({
 
       {viewMode === "all" && displayMode && onDisplayModeChange && (
         <Select value={displayMode} onValueChange={onDisplayModeChange}>
-          <SelectTrigger className="w-full min-h-[48px]">
+          <SelectTrigger className={selectClass}>
             <SelectValue placeholder="Exibição" />
           </SelectTrigger>
           <SelectContent>
@@ -131,7 +136,7 @@ export function SearchFilters({
       {viewMode === "daily" && dailySortOption && onDailySortChange && dailySortOrder && onDailySortOrderChange && (
         <>
           <Select value={dailySortOption} onValueChange={onDailySortChange}>
-            <SelectTrigger className="w-full min-h-[48px]">
+            <SelectTrigger className={selectClass}>
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
@@ -154,7 +159,7 @@ export function SearchFilters({
 
       {viewMode === "all" && (
         <Select value={sortOption} onValueChange={onSortChange}>
-          <SelectTrigger className="w-full min-h-[48px]">
+          <SelectTrigger className={selectClass}>
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
@@ -171,7 +176,7 @@ export function SearchFilters({
       
       {onDensityChange && (
         <Select value={densityMode} onValueChange={onDensityChange}>
-          <SelectTrigger className="w-full sm:w-[140px] min-h-[48px]">
+          <SelectTrigger className={compact ? "w-[120px] min-h-[40px]" : "w-full sm:w-[140px] min-h-[48px]"}>
             <span className="mr-2">{densityIcon[densityMode]}</span>
             <SelectValue placeholder="Densidade" />
           </SelectTrigger>
@@ -196,7 +201,7 @@ export function SearchFilters({
       )}
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="default" onClick={onClearFilters} className="min-h-[48px] w-full">
+        <Button variant="ghost" size="default" onClick={onClearFilters} className={`${buttonClass} ${compact ? "w-auto" : "w-full"}`}>
           <X className="h-4 w-4 mr-2" />
           Limpar
         </Button>
@@ -204,16 +209,22 @@ export function SearchFilters({
     </>
   );
 
+  const containerClass = compact 
+    ? "flex flex-wrap items-center gap-2 p-2 bg-card border-b"
+    : "flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b";
+
+  const inputClass = compact ? "pl-9 min-h-[40px]" : "pl-9 min-h-[48px]";
+
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b">
-      <div className="relative flex-1 max-w-full sm:max-w-md min-w-0">
+    <div className={containerClass}>
+      <div className={compact ? "relative w-64 min-w-0" : "relative flex-1 max-w-full sm:max-w-md min-w-0"}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={searchInputRef}
           placeholder="Buscar tarefas..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 min-h-[48px]"
+          className={inputClass}
         />
       </div>
 

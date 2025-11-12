@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Sidebar } from "@/components/Sidebar";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/useCategories";
@@ -45,6 +46,14 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen">
+      <Sidebar
+        onExport={() => {}}
+        onImport={() => {}}
+        onThemeToggle={toggleTheme}
+        onViewChange={(mode) => navigate(`/?view=${mode}`)}
+        viewMode="all"
+      />
+      
       <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         {/* Header com botão de voltar */}
         <div className="flex items-center gap-4 px-6 py-3 border-b bg-background">

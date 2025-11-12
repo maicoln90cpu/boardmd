@@ -100,31 +100,32 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                 <h3 className="text-sm font-medium text-muted-foreground px-2">
                   📁 {category.name}
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                   {tasks.map((task: any) => {
                     const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
                     return (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        onEdit={handleEditTask}
-                        onDelete={deleteTask}
-                        onMoveLeft={
-                          currentColumnIndex > 0
-                            ? () => updateTask(task.id, { column_id: columns[currentColumnIndex - 1].id })
-                            : undefined
-                        }
-                        onMoveRight={
-                          currentColumnIndex < columns.length - 1
-                            ? () => updateTask(task.id, { column_id: columns[currentColumnIndex + 1].id })
-                            : undefined
-                        }
-                        canMoveLeft={currentColumnIndex > 0}
-                        canMoveRight={currentColumnIndex < columns.length - 1}
-                        compact
-                        showCategoryBadge
-                        onToggleFavorite={toggleFavorite}
-                      />
+                      <div key={task.id} className="flex-shrink-0 min-w-[180px] max-w-[200px]">
+                        <TaskCard
+                          task={task}
+                          onEdit={handleEditTask}
+                          onDelete={deleteTask}
+                          onMoveLeft={
+                            currentColumnIndex > 0
+                              ? () => updateTask(task.id, { column_id: columns[currentColumnIndex - 1].id })
+                              : undefined
+                          }
+                          onMoveRight={
+                            currentColumnIndex < columns.length - 1
+                              ? () => updateTask(task.id, { column_id: columns[currentColumnIndex + 1].id })
+                              : undefined
+                          }
+                          canMoveLeft={currentColumnIndex > 0}
+                          canMoveRight={currentColumnIndex < columns.length - 1}
+                          densityMode="ultra-compact"
+                          showCategoryBadge
+                          onToggleFavorite={toggleFavorite}
+                        />
+                      </div>
                     );
                   })}
                 </div>
