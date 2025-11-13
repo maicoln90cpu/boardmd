@@ -220,8 +220,20 @@ function Index() {
 
   const handleResetDaily = async () => {
     if (!columns.length) return;
-    const firstColumn = columns[0];
-    await resetDailyTasks(firstColumn.id);
+    
+    // Identificar coluna "Recorrente" (se existir)
+    const recurrentColumn = columns.find(col => 
+      col.name.toLowerCase() === "recorrente"
+    );
+    
+    // Identificar coluna "A Fazer" (destino padrão)
+    const targetColumn = columns.find(col => 
+      col.name === "A Fazer"
+    ) || columns[0]; // Fallback para primeira coluna
+    
+    const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
+    
+    await resetDailyTasks(targetColumn.id, excludeIds);
     addActivity("daily_reset", "Kanban Diário resetado");
     setDailyBoardKey(k => k + 1); // Força refresh do board diário
   };

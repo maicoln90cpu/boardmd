@@ -85,9 +85,24 @@ export function KanbanBoard({
       return;
     }
 
-    // Get the actual container ID (column ID) from the droppable
+    // Bloquear movimento de tarefas recorrentes para fora da coluna Recorrente
+    const sourceColumn = columns.find(col => col.id === task.column_id);
     const containerId = over.data?.current?.sortable?.containerId ?? over.id;
     const newColumnId = containerId as string;
+    
+    if (task.recurrence_rule && 
+        sourceColumn?.name.toLowerCase() === "recorrente" &&
+        task.column_id !== newColumnId) {
+      import("@/hooks/use-toast").then(({ toast }) => {
+        toast({
+          title: "Tarefa recorrente bloqueada",
+          description: "Desative a recorrência antes de mover esta tarefa",
+          variant: "destructive",
+        });
+      });
+      setActiveId(null);
+      return;
+    }
 
     // Only update if changed column
     if (task.column_id !== newColumnId) {
@@ -282,11 +297,16 @@ export function KanbanBoard({
                   >
                     <div className={`flex flex-col ${styles.gap} h-full`}>
                       <div className={`flex items-center justify-between ${styles.headerPadding} rounded-t-lg ${getColumnColorClass(column.color)}`}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
                           <span className={`${styles.countText} text-muted-foreground`}>
                             ({columnTasks.length})
                           </span>
+                          {column.name.toLowerCase() === "recorrente" && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
+                              🔄 Não reseta
+                            </span>
+                          )}
                         </div>
                         <div className="flex gap-1">
                           <ColumnColorPicker
@@ -361,6 +381,7 @@ export function KanbanBoard({
         isDailyKanban={isDailyKanban}
         viewMode={viewMode}
         categoryId={categoryId}
+        columns={columns}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
