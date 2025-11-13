@@ -419,6 +419,7 @@ function Index() {
               onCategoryChange={setCategoryFilter}
               availableTags={availableTags}
               categories={categories.filter(c => c.name !== "Diário")}
+              tasks={tasks}
               onClearFilters={handleClearFilters}
               sortOption={sortOption}
               onSortChange={setSortOption}

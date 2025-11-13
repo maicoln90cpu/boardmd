@@ -10,6 +10,7 @@ interface CategoryFilterProps {
   selectedCategories: string[];
   onCategoryChange: (categories: string[]) => void;
   compact?: boolean;
+  tasks?: Array<{ category_id: string }>;
 }
 
 export function CategoryFilter({
@@ -17,6 +18,7 @@ export function CategoryFilter({
   selectedCategories,
   onCategoryChange,
   compact = false,
+  tasks = [],
 }: CategoryFilterProps) {
   const handleToggle = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
@@ -36,6 +38,10 @@ export function CategoryFilter({
 
   const allSelected = selectedCategories.length === categories.length;
   const selectedCount = selectedCategories.length;
+
+  const getTaskCount = (categoryId: string) => {
+    return tasks.filter(t => t.category_id === categoryId).length;
+  };
 
   return (
     <Popover>
@@ -90,9 +96,12 @@ export function CategoryFilter({
                 />
                 <label
                   htmlFor={category.id}
-                  className="text-sm cursor-pointer flex-1"
+                  className="text-sm cursor-pointer flex-1 flex items-center justify-between"
                 >
-                  {category.name}
+                  <span>{category.name}</span>
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {getTaskCount(category.id)}
+                  </Badge>
                 </label>
               </div>
             ))}

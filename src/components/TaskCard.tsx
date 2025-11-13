@@ -429,6 +429,12 @@ export function TaskCard({
                     </Badge>
                   )}
 
+                  {task.mirror_task_id && (
+                    <Badge variant="secondary" className="text-[10px] px-1 py-0 gap-0.5">
+                      🪞 Espelhada
+                    </Badge>
+                  )}
+
                   {task.priority && (
                     <Badge className={`text-[10px] px-1 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                       {task.priority[0].toUpperCase()}
