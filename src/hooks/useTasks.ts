@@ -228,20 +228,29 @@ export function useTasks(categoryId: string | null | "all") {
     }
   };
 
-  const resetAllTasksToFirstColumn = async (firstColumnId: string) => {
-    const tasksToReset = tasks.filter(t => t.column_id !== firstColumnId);
+  const resetAllTasksToFirstColumn = async (firstColumnId: string, excludeColumns: string[] = []) => {
+    const tasksToReset = tasks.filter(t => 
+      t.column_id !== firstColumnId && 
+      !excludeColumns.includes(t.column_id)
+    );
     
     if (tasksToReset.length === 0) {
       toast({ title: "Nenhuma tarefa para resetar", variant: "default" });
       return;
     }
 
+    // Data atual (meia-noite)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
     const updates = tasksToReset.map((task, index) => 
       supabase
         .from("tasks")
         .update({ 
           column_id: firstColumnId,
-          position: index 
+          position: index,
+          due_date: todayISO
         })
         .eq("id", task.id)
     );

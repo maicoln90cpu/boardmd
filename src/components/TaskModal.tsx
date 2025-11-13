@@ -19,9 +19,10 @@ interface TaskModalProps {
   isDailyKanban?: boolean;
   viewMode?: string;
   categoryId?: string;
+  columns?: Array<{ id: string; name: string }>;
 }
 
-export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId }: TaskModalProps) {
+export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns }: TaskModalProps) {
   const { categories } = useCategories();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -97,16 +98,29 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       }
     }
     
+    let finalColumnId = columnId;
+    
+    // Auto-mover para coluna Recorrente se ativou recorrência pela primeira vez
+    if (recurrence && !task?.recurrence_rule && columns) {
+      const recurrentColumn = columns.find(col => 
+        col.name.toLowerCase() === "recorrente"
+      );
+      
+      if (recurrentColumn) {
+        finalColumnId = recurrentColumn.id;
+      }
+    }
+    
     const taskData: Partial<Task> = {
       title,
       description: description || null,
       priority,
       due_date: dueDateTimestamp,
       tags: tags ? tags.split(",").map((t) => t.trim()) : null,
-      column_id: columnId,
+      column_id: finalColumnId,
       position: task?.position ?? 0,
       category_id: selectedCategory || categoryId,
-      subtasks: subtasks.length > 0 ? subtasks : null,
+      subtasks,
       recurrence_rule: recurrence,
     };
 
