@@ -24,6 +24,7 @@ export interface Task {
     frequency: 'daily' | 'weekly' | 'monthly';
     interval: number;
   } | null;
+  mirror_task_id: string | null;
 }
 
 export function useTasks(categoryId: string | null | "all") {

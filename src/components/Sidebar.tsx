@@ -85,7 +85,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
 
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
-    { icon: Layers, label: "Todos", active: viewMode === "all", onClick: () => onViewChange("all") },
+    { icon: Layers, label: "Projetos", active: viewMode === "all", onClick: () => onViewChange("all") },
     { icon: BarChart3, label: "Dashboard", onClick: () => navigate("/dashboard") },
     { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
     { icon: Download, label: "Exportar", onClick: onExport },

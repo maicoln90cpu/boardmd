@@ -18,6 +18,7 @@ interface SearchFiltersProps {
   onCategoryChange?: (value: string[]) => void;
   availableTags: string[];
   categories?: Array<{ id: string; name: string }>;
+  tasks?: Array<{ category_id: string }>;
   onClearFilters: () => void;
   sortOption: string;
   onSortChange: (value: string) => void;
@@ -47,6 +48,7 @@ export function SearchFilters({
   onCategoryChange,
   availableTags,
   categories,
+  tasks = [],
   onClearFilters,
   sortOption,
   onSortChange,
@@ -113,6 +115,7 @@ export function SearchFilters({
           selectedCategories={categoryFilter || []}
           onCategoryChange={onCategoryChange}
           compact={compact}
+          tasks={tasks}
         />
       )}
 
