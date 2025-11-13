@@ -9,13 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import React from "react";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
+import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task & { categories?: { name: string } };
@@ -77,6 +80,9 @@ export function TaskCard({
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
 
+  // Estado do checkbox para tarefas recorrentes
+  const [isCompleted, setIsCompleted] = useLocalStorage(`task-completed-${task.id}`, false);
+
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(!!task.recurrence_rule);
   const [recurrenceFrequency, setRecurrenceFrequency] = React.useState<"daily" | "weekly" | "monthly">(
     task.recurrence_rule?.frequency || "daily"
@@ -134,6 +140,14 @@ export function TaskCard({
             {isUltraCompact ? (
               // Layout ultra-compacto: tudo em 1 linha
               <div className="flex items-center gap-1 text-[10px]">
+                {task.recurrence_rule && (
+                  <Checkbox
+                    checked={isCompleted}
+                    onCheckedChange={(checked) => setIsCompleted(!!checked)}
+                    className="h-3 w-3 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
                 {onToggleFavorite && (
                   <Button
                     size="icon"
@@ -147,7 +161,13 @@ export function TaskCard({
                     <Star className={`h-3 w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
                   </Button>
                 )}
-                <span className="font-medium truncate flex-1 min-w-0 cursor-pointer" onClick={() => onEdit(task)}>
+                <span 
+                  className={cn(
+                    "font-medium truncate flex-1 min-w-0 cursor-pointer",
+                    isCompleted && "line-through opacity-50"
+                  )}
+                  onClick={() => onEdit(task)}
+                >
                   {task.title}
                 </span>
                 {showCategoryBadge && task.categories?.name && (
@@ -263,7 +283,25 @@ export function TaskCard({
               // Layout normal - mais compacto e inline
               <div className={compact ? "space-y-0.5" : "space-y-1"}>
                 <div className="flex items-start justify-between gap-1.5">
-                  <h3 className={`font-medium flex-1 ${compact ? 'text-xs' : 'text-sm'}`}>{task.title}</h3>
+                  <div className="flex items-center gap-2 flex-1">
+                    {task.recurrence_rule && (
+                      <Checkbox
+                        checked={isCompleted}
+                        onCheckedChange={(checked) => setIsCompleted(!!checked)}
+                        className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                    <h3 
+                      className={cn(
+                        "font-medium flex-1",
+                        compact ? "text-xs" : "text-sm",
+                        isCompleted && "line-through opacity-50"
+                      )}
+                    >
+                      {task.title}
+                    </h3>
+                  </div>
                   <div className="flex gap-0.5">
                     {onToggleFavorite && (
                       <Button

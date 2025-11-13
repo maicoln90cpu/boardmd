@@ -60,7 +60,7 @@ function Index() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState("manual");
   
   // Estados de ordenação para Kanban Diário
@@ -115,7 +115,7 @@ function Index() {
       }
       
       // Filtro de categoria (apenas no modo "all")
-      if (viewMode === "all" && categoryFilter !== "all" && task.category_id !== categoryFilter) {
+      if (viewMode === "all" && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
         return false;
       }
       
@@ -138,8 +138,16 @@ function Index() {
           setSelectedCategory(firstNonDaily.id);
         }
       }
+      
+      // Inicializar filtro de categorias com todas (exceto Diário)
+      if (categoryFilter.length === 0) {
+        const allCategoryIds = categories
+          .filter(c => c.name !== "Diário")
+          .map(c => c.id);
+        setCategoryFilter(allCategoryIds);
+      }
     }
-  }, [categories, selectedCategory]);
+  }, [categories, selectedCategory, categoryFilter.length]);
 
   // Tags disponíveis (usar filteredTasks)
   const availableTags = useMemo(() => {
@@ -214,7 +222,7 @@ function Index() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
-    setCategoryFilter("all");
+    setCategoryFilter([]);
     setSortOption("manual");
     setDisplayMode("by_category");
   };
@@ -249,15 +257,26 @@ function Index() {
     const baseColumns = getVisibleColumns();
     
     if (simplifiedMode && viewMode === "all") {
-      // Modo simplificado: mostrar apenas as 3 colunas com mais tarefas
-      const columnsWithCounts = baseColumns.map((col) => ({
-        ...col,
-        taskCount: tasks.filter((task) => task.column_id === col.id).length,
-      }));
+      // Modo simplificado: mostrar apenas Recorrente → A Fazer → Em Progresso
+      const desiredColumns = ["Recorrente", "A Fazer", "Em Progresso"];
       
-      return columnsWithCounts
-        .sort((a, b) => b.taskCount - a.taskCount)
-        .slice(0, 3);
+      const simplifiedCols = desiredColumns
+        .map(name => baseColumns.find(col => col.name === name))
+        .filter(Boolean);
+      
+      // Se alguma coluna desejada não existe, fallback para comportamento antigo
+      if (simplifiedCols.length < 3) {
+        const columnsWithCounts = baseColumns.map((col) => ({
+          ...col,
+          taskCount: tasks.filter((task) => task.column_id === col.id).length,
+        }));
+        
+        return columnsWithCounts
+          .sort((a, b) => b.taskCount - a.taskCount)
+          .slice(0, 3);
+      }
+      
+      return simplifiedCols;
     }
     
     return baseColumns;
@@ -436,7 +455,7 @@ function Index() {
               /* Renderizar Kanbans por categoria */
               categories
                 .filter(cat => cat.name !== "Diário")
-                .filter(cat => categoryFilter === "all" || cat.id === categoryFilter)
+                .filter(cat => categoryFilter.length === 0 || categoryFilter.includes(cat.id))
                 .map(category => (
                   <div key={category.id} className="mb-8">
                     <div className="px-6 py-3 bg-muted/50">

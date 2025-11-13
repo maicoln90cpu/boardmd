@@ -244,6 +244,13 @@ export function useTasks(categoryId: string | null | "all") {
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
 
+    // Limpar checkboxes do localStorage para tarefas recorrentes
+    tasksToReset.forEach(task => {
+      if (task.recurrence_rule) {
+        localStorage.removeItem(`task-completed-${task.id}`);
+      }
+    });
+
     const updates = tasksToReset.map((task, index) => 
       supabase
         .from("tasks")
