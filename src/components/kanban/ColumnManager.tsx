@@ -52,6 +52,7 @@ interface ColumnManagerProps {
   onResetToDefault: () => void;
   onRenameColumn: (columnId: string, newName: string) => void;
   onReorderColumns: (newOrder: Column[]) => void;
+  onAddColumn: (name: string) => void;
 }
 
 interface SortableColumnItemProps {
@@ -210,10 +211,13 @@ export function ColumnManager({
   onResetToDefault,
   onRenameColumn,
   onReorderColumns,
+  onAddColumn,
 }: ColumnManagerProps) {
   const { tasks } = useTasks("all");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [orderedColumns, setOrderedColumns] = useState<Column[]>(columns);
+  const [newColumnName, setNewColumnName] = useState("");
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -255,6 +259,13 @@ export function ColumnManager({
     }
   };
 
+  const handleAddColumn = () => {
+    if (!newColumnName.trim()) return;
+    onAddColumn(newColumnName.trim());
+    setNewColumnName("");
+    setIsAddingColumn(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,16 +277,60 @@ export function ColumnManager({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex items-center gap-2 py-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onResetToDefault}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Resetar para Padrão (3 colunas)
-            </Button>
+          <div className="flex flex-col gap-3 py-2">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onResetToDefault}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Resetar para Padrão (3 colunas)
+              </Button>
+            </div>
+
+            {!isAddingColumn ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsAddingColumn(true)}
+                className="w-full"
+              >
+                + Nova Coluna
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newColumnName}
+                  onChange={(e) => setNewColumnName(e.target.value)}
+                  placeholder="Nome da nova coluna..."
+                  className="flex-1"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddColumn();
+                    } else if (e.key === "Escape") {
+                      setIsAddingColumn(false);
+                      setNewColumnName("");
+                    }
+                  }}
+                />
+                <Button size="sm" onClick={handleAddColumn}>
+                  Criar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsAddingColumn(false);
+                    setNewColumnName("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            )}
           </div>
 
           <ScrollArea className="h-[400px] pr-4">
