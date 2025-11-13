@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { CategoryFilter } from "@/components/CategoryFilter";
 
 interface SearchFiltersProps {
   searchTerm: string;
@@ -13,8 +14,8 @@ interface SearchFiltersProps {
   onPriorityChange: (value: string) => void;
   tagFilter: string;
   onTagChange: (value: string) => void;
-  categoryFilter?: string;
-  onCategoryChange?: (value: string) => void;
+  categoryFilter?: string[];
+  onCategoryChange?: (value: string[]) => void;
   availableTags: string[];
   categories?: Array<{ id: string; name: string }>;
   onClearFilters: () => void;
@@ -64,7 +65,8 @@ export function SearchFilters({
   compact = false,
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
-    (categoryFilter && categoryFilter !== "all") || sortOption !== "manual";
+    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) || 
+    sortOption !== "manual";
   const isMobile = useIsMobile();
   
   const densityIcon = {
@@ -106,19 +108,12 @@ export function SearchFilters({
       </Select>
 
       {viewMode === "all" && categories && onCategoryChange && (
-        <Select value={categoryFilter} onValueChange={onCategoryChange}>
-          <SelectTrigger className={selectClass}>
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CategoryFilter
+          categories={categories}
+          selectedCategories={categoryFilter || []}
+          onCategoryChange={onCategoryChange}
+          compact={compact}
+        />
       )}
 
       {viewMode === "all" && displayMode && onDisplayModeChange && (
@@ -127,8 +122,8 @@ export function SearchFilters({
             <SelectValue placeholder="Exibição" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="by_category">Por categoria</SelectItem>
-            <SelectItem value="all_tasks">Todas as tarefas</SelectItem>
+            <SelectItem value="by_category">📁 Por categoria</SelectItem>
+            <SelectItem value="all_tasks">📋 Todas as tarefas</SelectItem>
           </SelectContent>
         </Select>
       )}

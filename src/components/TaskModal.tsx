@@ -112,7 +112,56 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         .ilike("name", "diário")
         .maybeSingle();
 
-      if (dailyCategory) {
+      if (dailyCategory && categoryId !== dailyCategory.id) {
+        // Se está em outra categoria (não Diário), criar ESPELHO no Diário
+        const { data: recurrentColumn } = await supabase
+          .from("columns")
+          .select("id")
+          .ilike("name", "recorrente")
+          .maybeSingle();
+
+        if (recurrentColumn) {
+          // 1. Salvar tarefa original (mantém no lugar)
+          const taskData: Partial<Task> = {
+            title,
+            description: description || null,
+            priority,
+            due_date: dueDateTimestamp,
+            tags: tags ? tags.split(",").map((t) => t.trim()) : null,
+            column_id: finalColumnId,
+            position: task?.position ?? 0,
+            category_id: finalCategoryId,
+            subtasks,
+            recurrence_rule: recurrence,
+          };
+          
+          onSave(taskData);
+
+          // 2. Criar CÓPIA espelhada no Diário/Recorrente
+          const mirroredTask = {
+            ...taskData,
+            category_id: dailyCategory.id,
+            column_id: recurrentColumn.id,
+            tags: [...(taskData.tags || []), "espelho-diário"]
+          };
+
+          const { error: mirrorError } = await supabase
+            .from("tasks")
+            .insert([mirroredTask as any]);
+
+          if (!mirrorError) {
+            toast({
+              title: "🔄 Tarefa recorrente espelhada!",
+              description: "A tarefa permanece aqui e também aparece no Kanban Diário na coluna Recorrente.",
+              duration: 5000,
+            });
+          }
+
+          onOpenChange(false);
+          return;
+        }
+      } else if (dailyCategory && categoryId === dailyCategory.id) {
+        // Se já está no Diário, apenas mover para Recorrente
         const { data: recurrentColumn } = await supabase
           .from("columns")
           .select("id")
@@ -125,7 +174,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
           
           toast({
             title: "🔄 Tarefa recorrente criada!",
-            description: "Sua tarefa foi movida para o Kanban Diário na coluna Recorrente. Ela não será resetada automaticamente e ficará sempre disponível.",
+            description: "Sua tarefa foi movida para a coluna Recorrente. Ela não será resetada automaticamente.",
             duration: 5000,
           });
         }
