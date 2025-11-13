@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useCategories } from "@/hooks/useCategories";
 import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TaskModalProps {
   open: boolean;
@@ -33,6 +35,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
   const [recurrence, setRecurrence] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; interval: number } | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (task) {
@@ -72,7 +75,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     }
   }, [task, open, categoryId, isDailyKanban]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim()) return;
     
     let dueDateTimestamp: string | null = null;
@@ -99,15 +102,33 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     }
     
     let finalColumnId = columnId;
+    let finalCategoryId = selectedCategory || categoryId;
     
-    // Auto-mover para coluna Recorrente se ativou recorrência pela primeira vez
-    if (recurrence && !task?.recurrence_rule && columns) {
-      const recurrentColumn = columns.find(col => 
-        col.name.toLowerCase() === "recorrente"
-      );
-      
-      if (recurrentColumn) {
-        finalColumnId = recurrentColumn.id;
+    // Auto-mover para Kanban Diário e coluna Recorrente se ativou recorrência pela primeira vez
+    if (recurrence && !task?.recurrence_rule) {
+      const { data: dailyCategory } = await supabase
+        .from("categories")
+        .select("id")
+        .ilike("name", "diário")
+        .maybeSingle();
+
+      if (dailyCategory) {
+        const { data: recurrentColumn } = await supabase
+          .from("columns")
+          .select("id")
+          .ilike("name", "recorrente")
+          .maybeSingle();
+
+        if (recurrentColumn) {
+          finalCategoryId = dailyCategory.id;
+          finalColumnId = recurrentColumn.id;
+          
+          toast({
+            title: "🔄 Tarefa recorrente criada!",
+            description: "Sua tarefa foi movida para o Kanban Diário na coluna Recorrente. Ela não será resetada automaticamente e ficará sempre disponível.",
+            duration: 5000,
+          });
+        }
       }
     }
     
@@ -119,7 +140,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       tags: tags ? tags.split(",").map((t) => t.trim()) : null,
       column_id: finalColumnId,
       position: task?.position ?? 0,
-      category_id: selectedCategory || categoryId,
+      category_id: finalCategoryId,
       subtasks,
       recurrence_rule: recurrence,
     };
