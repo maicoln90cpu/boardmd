@@ -11,6 +11,7 @@ import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TaskModalProps {
   open: boolean;
@@ -26,6 +27,7 @@ interface TaskModalProps {
 
 export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns }: TaskModalProps) {
   const { categories } = useCategories();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
@@ -112,23 +114,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         .ilike("name", "diário")
         .maybeSingle();
 
-      // Verificar se já tem espelho criado
-      const { data: existingMirror } = await supabase
-        .from("tasks")
-        .select("id")
-        .eq("mirror_task_id", task?.id || "")
-        .maybeSingle();
-
       if (dailyCategory && categoryId !== dailyCategory.id) {
-        // Se está em outra categoria (não Diário), criar ESPELHO no Diário (se não existir)
+        // Se está em outra categoria (não Diário), verificar se precisa criar ESPELHO
         const { data: recurrentColumn } = await supabase
           .from("columns")
           .select("id")
           .ilike("name", "recorrente")
           .maybeSingle();
 
-        if (recurrentColumn && !existingMirror) {
-          // 1. Salvar tarefa original (mantém no lugar)
+        if (recurrentColumn) {
+          // Preparar dados da tarefa
           const taskData: Partial<Task> = {
             title,
             description: description || null,
@@ -141,45 +136,149 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             subtasks,
             recurrence_rule: recurrence,
           };
-          
-          onSave(taskData);
 
-          // 2. Criar CÓPIA espelhada no Diário/Recorrente
-          const mirroredTask = {
-            ...taskData,
-            category_id: dailyCategory.id,
-            column_id: recurrentColumn.id,
-            tags: [...(taskData.tags || []), "espelho-diário"]
-          };
-
-          const { data: newMirror, error: mirrorError } = await supabase
-            .from("tasks")
-            .insert([mirroredTask as any])
-            .select()
-            .single();
-
-          if (!mirrorError && newMirror && task?.id) {
-            // Atualizar tarefa original com ID do espelho
-            await supabase
+          // Se está editando tarefa existente
+          if (task?.id) {
+            // Verificar se já tem espelho criado
+            const { data: existingMirror } = await supabase
               .from("tasks")
-              .update({ mirror_task_id: newMirror.id })
-              .eq("id", task.id);
+              .select("id")
+              .eq("mirror_task_id", task.id)
+              .maybeSingle();
 
-            // Atualizar espelho com ID da original
-            await supabase
+            if (!existingMirror) {
+              console.log("[ESPELHAMENTO] Criando espelho para tarefa existente:", task.id);
+              // 1. Salvar tarefa original primeiro
+              onSave(taskData);
+
+              // 2. Criar CÓPIA espelhada no Diário/Recorrente
+              const mirroredTask = {
+                ...taskData,
+                category_id: dailyCategory.id,
+                column_id: recurrentColumn.id,
+                tags: [...(taskData.tags || []), "espelho-diário"],
+                user_id: task.user_id
+              };
+
+              const { data: newMirror, error: mirrorError } = await supabase
+                .from("tasks")
+                .insert([mirroredTask as any])
+                .select()
+                .single();
+
+              if (!mirrorError && newMirror) {
+                console.log("[ESPELHAMENTO] Espelho criado:", newMirror.id);
+                // Atualizar tarefa original com ID do espelho
+                await supabase
+                  .from("tasks")
+                  .update({ mirror_task_id: newMirror.id })
+                  .eq("id", task.id);
+
+                // Atualizar espelho com ID da original
+                await supabase
+                  .from("tasks")
+                  .update({ mirror_task_id: task.id })
+                  .eq("id", newMirror.id);
+
+                console.log("[ESPELHAMENTO] Referências mútuas criadas");
+                toast({
+                  title: "🔄 Tarefa recorrente espelhada!",
+                  description: "A tarefa permanece aqui e também aparece no Kanban Diário na coluna Recorrente.",
+                  duration: 5000,
+                });
+              }
+
+              onOpenChange(false);
+              return;
+            }
+          } else {
+            // Se está criando nova tarefa recorrente, criar ambas diretamente no banco
+            console.log("[ESPELHAMENTO] Criando nova tarefa recorrente com espelho");
+            if (!user) {
+              toast({
+                title: "Erro",
+                description: "Você precisa estar logado",
+                variant: "destructive"
+              });
+              onOpenChange(false);
+              return;
+            }
+
+            // 1. Criar tarefa original
+            const originalTask = {
+              title,
+              description: description || null,
+              priority,
+              due_date: dueDateTimestamp,
+              tags: tags ? tags.split(",").map((t) => t.trim()) : [],
+              column_id: finalColumnId,
+              category_id: finalCategoryId,
+              subtasks,
+              recurrence_rule: recurrence,
+              user_id: user.id,
+              position: 0
+            };
+
+            const { data: newOriginal, error: originalError } = await supabase
               .from("tasks")
-              .update({ mirror_task_id: task.id })
-              .eq("id", newMirror.id);
+              .insert([originalTask as any])
+              .select()
+              .single();
 
-            toast({
-              title: "🔄 Tarefa recorrente espelhada!",
-              description: "A tarefa permanece aqui e também aparece no Kanban Diário na coluna Recorrente.",
-              duration: 5000,
-            });
+            if (originalError || !newOriginal) {
+              toast({
+                title: "Erro ao criar tarefa",
+                variant: "destructive"
+              });
+              onOpenChange(false);
+              return;
+            }
+
+            // 2. Criar espelho
+            const mirroredTask = {
+              title,
+              description: description || null,
+              priority,
+              due_date: dueDateTimestamp,
+              tags: [...(tags ? tags.split(",").map((t) => t.trim()) : []), "espelho-diário"],
+              column_id: recurrentColumn.id,
+              category_id: dailyCategory.id,
+              subtasks,
+              recurrence_rule: recurrence,
+              user_id: user.id,
+              position: 0
+            };
+
+            const { data: newMirror, error: mirrorError } = await supabase
+              .from("tasks")
+              .insert([mirroredTask as any])
+              .select()
+              .single();
+
+            if (!mirrorError && newMirror) {
+              console.log("[ESPELHAMENTO] Original e espelho criados:", newOriginal.id, newMirror.id);
+              // Atualizar ambas com referências mútuas
+              await supabase
+                .from("tasks")
+                .update({ mirror_task_id: newMirror.id })
+                .eq("id", newOriginal.id);
+
+              await supabase
+                .from("tasks")
+                .update({ mirror_task_id: newOriginal.id })
+                .eq("id", newMirror.id);
+
+              console.log("[ESPELHAMENTO] Referências mútuas criadas");
+              toast({
+                title: "🔄 Tarefa recorrente espelhada!",
+                description: "A tarefa foi criada e espelhada no Kanban Diário na coluna Recorrente.",
+                duration: 5000,
+              });
+            }
+
+            onOpenChange(false);
+            return;
           }
-
-          onOpenChange(false);
-          return;
         }
       } else if (dailyCategory && categoryId === dailyCategory.id) {
         // Se já está no Diário, apenas mover para Recorrente

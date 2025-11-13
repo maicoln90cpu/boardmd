@@ -47,7 +47,7 @@ export function useTasks(categoryId: string | null | "all") {
   const fetchTasks = async () => {
     let query = supabase
       .from("tasks")
-      .select("*, categories(name)");
+      .select("*, categories(name), mirror_task_id");
     
     if (categoryId && categoryId !== "all") {
       query = query.eq("category_id", categoryId);
