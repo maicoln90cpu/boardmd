@@ -1,9 +1,17 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import React from "react";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -67,6 +75,42 @@ export function TaskCard({
   const isWarning = urgency === "warning";
   
   const isUltraCompact = densityMode === "ultra-compact";
+  const { toast } = useToast();
+
+  const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(!!task.recurrence_rule);
+  const [recurrenceFrequency, setRecurrenceFrequency] = React.useState<"daily" | "weekly" | "monthly">(
+    task.recurrence_rule?.frequency || "daily"
+  );
+  const [recurrenceInterval, setRecurrenceInterval] = React.useState(
+    task.recurrence_rule?.interval || 1
+  );
+
+  const handleRecurrenceUpdate = async () => {
+    const newRecurrence = recurrenceEnabled
+      ? { frequency: recurrenceFrequency, interval: recurrenceInterval }
+      : null;
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ recurrence_rule: newRecurrence })
+      .eq("id", task.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar recorrência",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: recurrenceEnabled ? "Recorrência ativada" : "Recorrência desativada",
+        description: recurrenceEnabled
+          ? "A tarefa agora é recorrente e ficará na coluna Recorrente"
+          : "A tarefa não é mais recorrente",
+      });
+      window.location.reload();
+    }
+  };
 
   return (
     <HoverCard openDelay={300}>
@@ -148,6 +192,60 @@ export function TaskCard({
                       <ChevronRight className="h-3 w-3" />
                     </Button>
                   )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-4 w-4 p-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Repeat className={`h-3 w-3 ${task.recurrence_rule ? "text-purple-500" : ""}`} />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="rec-toggle" className="text-xs">Recorrente</Label>
+                          <Switch
+                            id="rec-toggle"
+                            checked={recurrenceEnabled}
+                            onCheckedChange={setRecurrenceEnabled}
+                          />
+                        </div>
+                        {recurrenceEnabled && (
+                          <>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Frequência</Label>
+                              <Select value={recurrenceFrequency} onValueChange={(v: any) => setRecurrenceFrequency(v)}>
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="daily">Diária</SelectItem>
+                                  <SelectItem value="weekly">Semanal</SelectItem>
+                                  <SelectItem value="monthly">Mensal</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs">Intervalo</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                className="h-8 text-xs"
+                                value={recurrenceInterval}
+                                onChange={(e) => setRecurrenceInterval(Number(e.target.value))}
+                              />
+                            </div>
+                          </>
+                        )}
+                        <Button onClick={handleRecurrenceUpdate} size="sm" className="w-full h-8 text-xs">
+                          Salvar
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -207,6 +305,64 @@ export function TaskCard({
                         <ChevronRight className="h-3 w-3" />
                       </Button>
                     )}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Repeat className={`h-3 w-3 ${task.recurrence_rule ? "text-purple-500" : ""}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="recurrence-toggle-compact">Tarefa Recorrente</Label>
+                            <Switch
+                              id="recurrence-toggle-compact"
+                              checked={recurrenceEnabled}
+                              onCheckedChange={setRecurrenceEnabled}
+                            />
+                          </div>
+                          {recurrenceEnabled && (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Frequência</Label>
+                                <Select
+                                  value={recurrenceFrequency}
+                                  onValueChange={(value: "daily" | "weekly" | "monthly") =>
+                                    setRecurrenceFrequency(value)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="daily">Diária</SelectItem>
+                                    <SelectItem value="weekly">Semanal</SelectItem>
+                                    <SelectItem value="monthly">Mensal</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Intervalo</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={recurrenceInterval}
+                                  onChange={(e) => setRecurrenceInterval(Number(e.target.value))}
+                                />
+                              </div>
+                            </>
+                          )}
+                          <Button onClick={handleRecurrenceUpdate} className="w-full">
+                            Salvar Recorrência
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Button
                       size="icon"
                       variant="ghost"

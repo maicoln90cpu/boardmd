@@ -1,18 +1,22 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Maximize2 } from "lucide-react";
 
 interface DailySortControlsProps {
   sortOption: "time" | "name" | "priority";
   onSortChange: (value: "time" | "name" | "priority") => void;
   sortOrder: "asc" | "desc";
   onSortOrderChange: (value: "asc" | "desc") => void;
+  densityMode?: "comfortable" | "compact" | "ultra-compact";
+  onDensityChange?: (value: "comfortable" | "compact" | "ultra-compact") => void;
 }
 
 export function DailySortControls({ 
   sortOption, 
   onSortChange, 
   sortOrder, 
-  onSortOrderChange 
+  onSortOrderChange,
+  densityMode = "comfortable",
+  onDensityChange
 }: DailySortControlsProps) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -37,6 +41,20 @@ export function DailySortControls({
           <SelectItem value="desc">Decrescente</SelectItem>
         </SelectContent>
       </Select>
+
+      {onDensityChange && (
+        <Select value={densityMode} onValueChange={onDensityChange}>
+          <SelectTrigger className="w-[160px]">
+            <Maximize2 className="h-4 w-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="comfortable">Confortável</SelectItem>
+            <SelectItem value="compact">Compacto</SelectItem>
+            <SelectItem value="ultra-compact">Ultra Compacto</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 }

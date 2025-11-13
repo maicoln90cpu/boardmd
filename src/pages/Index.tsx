@@ -332,6 +332,8 @@ function Index() {
                       onSortChange={setDailySortOption}
                       sortOrder={dailySortOrder}
                       onSortOrderChange={setDailySortOrder}
+                      densityMode={densityMode}
+                      onDensityChange={setDensityMode}
                     />
                   </div>
                   
