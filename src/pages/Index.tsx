@@ -35,7 +35,8 @@ function Index() {
     resetToDefaultView,
     deleteColumn,
     renameColumn,
-    reorderColumns
+    reorderColumns,
+    addColumn
   } = useColumns();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -66,8 +67,8 @@ function Index() {
   const [dailySortOption, setDailySortOption] = useState<"time" | "name" | "priority">("time");
   const [dailySortOrder, setDailySortOrder] = useState<"asc" | "desc">("asc");
   
-  // Estado de densidade
-  const [densityMode, setDensityMode] = useState<"comfortable" | "compact" | "ultra-compact">("comfortable");
+  // Estado de densidade (salvo no localStorage)
+  const [densityMode, setDensityMode] = useLocalStorage<"comfortable" | "compact" | "ultra-compact">("kanban-density-mode", "comfortable");
 
   // Tamanho do painel diário (salvar no localStorage)
   const [dailyPanelSizes, setDailyPanelSizes] = useLocalStorage<number[]>("daily-panel-sizes", [60, 40]);
@@ -481,6 +482,7 @@ function Index() {
         onDeleteColumn={deleteColumn}
         onResetToDefault={resetToDefaultView}
         onRenameColumn={renameColumn}
+        onAddColumn={addColumn}
         onReorderColumns={reorderColumns}
       />
 
