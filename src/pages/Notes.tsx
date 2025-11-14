@@ -4,6 +4,7 @@ import { useNotes, Note } from "@/hooks/useNotes";
 import { NotebooksList } from "@/components/notes/NotebooksList";
 import { NotesList } from "@/components/notes/NotesList";
 import { NoteEditor } from "@/components/notes/NoteEditor";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
@@ -12,6 +13,7 @@ import { Trash2 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
@@ -22,6 +24,8 @@ export default function Notes() {
   const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === 'mobile';
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -120,6 +124,39 @@ export default function Notes() {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-muted-foreground">Carregando anotações...</p>
+      </div>
+    );
+  }
+
+  // Se for mobile, usar layout mobile otimizado
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between bg-card">
+          <h2 className="text-xl font-bold">📝 Anotações</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTrashOpen(true)}
+            title="Lixeira"
+            className="min-h-[44px] min-w-[44px]"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <MobileNotesLayout
+          notebooks={notebooks}
+          notes={filteredAndSortedNotes}
+          selectedNoteId={selectedNoteId}
+          onSelectNote={handleSelectNote}
+          onAddNote={handleAddNote}
+          onDeleteNote={handleDeleteNote}
+          onUpdateNote={handleUpdateNote}
+          onTogglePin={togglePin}
+        />
+
+        <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
       </div>
     );
   }
