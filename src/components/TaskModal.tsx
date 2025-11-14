@@ -12,6 +12,8 @@ import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TaskModalProps {
   open: boolean;
@@ -28,6 +30,8 @@ interface TaskModalProps {
 export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns }: TaskModalProps) {
   const { categories } = useCategories();
   const { user } = useAuth();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === 'mobile';
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<string>("medium");
@@ -85,19 +89,15 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     if (dueDate) {
       if (isDailyKanban) {
         if (dueTime) {
-          // Salvar com data e hora em ISO
           const local = new Date(`${dueDate}T${dueTime}`);
           dueDateTimestamp = local.toISOString();
         } else if (task?.due_date) {
-          // Preserva horário original ao editar
           dueDateTimestamp = task.due_date;
         } else {
-          // Novo card sem horário - usar 00:00
           const local = new Date(`${dueDate}T00:00`);
           dueDateTimestamp = local.toISOString();
         }
       } else {
-        // Kanban Projetos - salvar data com 00:00
         const local = new Date(`${dueDate}T00:00`);
         dueDateTimestamp = local.toISOString();
       }
@@ -140,9 +140,9 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
           // Se está editando tarefa existente
           if (task?.id) {
             // Verificar se já tem espelho criado
-            const { data: existingMirror } = await supabase
+            const { data: existingMirror } = await (supabase
               .from("tasks")
-              .select("id")
+              .select("id") as any)
               .eq("mirror_task_id", task.id)
               .maybeSingle();
 
@@ -171,13 +171,13 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 // Atualizar tarefa original com ID do espelho
                 await supabase
                   .from("tasks")
-                  .update({ mirror_task_id: newMirror.id })
+                  .update({ mirror_task_id: newMirror.id } as any)
                   .eq("id", task.id);
 
                 // Atualizar espelho com ID da original
                 await supabase
                   .from("tasks")
-                  .update({ mirror_task_id: task.id })
+                  .update({ mirror_task_id: task.id } as any)
                   .eq("id", newMirror.id);
 
                 console.log("[ESPELHAMENTO] Referências mútuas criadas");
@@ -260,12 +260,12 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               // Atualizar ambas com referências mútuas
               await supabase
                 .from("tasks")
-                .update({ mirror_task_id: newMirror.id })
+                .update({ mirror_task_id: newMirror.id } as any)
                 .eq("id", newOriginal.id);
 
               await supabase
                 .from("tasks")
-                .update({ mirror_task_id: newOriginal.id })
+                .update({ mirror_task_id: newOriginal.id } as any)
                 .eq("id", newMirror.id);
 
               console.log("[ESPELHAMENTO] Referências mútuas criadas");
@@ -338,59 +338,45 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-[600px] max-h-[90vh] overflow-y-auto" aria-describedby="task-modal-description" onKeyDown={handleKeyDown}>
-        <DialogHeader>
+      <DialogContent 
+        className={`${isMobile ? 'w-full h-full max-w-full max-h-full rounded-none' : 'w-[calc(100vw-2rem)] max-w-[600px] max-h-[90vh]'} overflow-hidden`}
+        aria-describedby="task-modal-description" 
+        onKeyDown={handleKeyDown}
+      >
+        <DialogHeader className={isMobile ? 'px-4 pt-4' : ''}>
           <DialogTitle>{task ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
         </DialogHeader>
         <p id="task-modal-description" className="sr-only">
           {task ? "Formulário para editar uma tarefa existente" : "Formulário para criar uma nova tarefa"}
         </p>
-        <div className="space-y-4">
-          <div>
-            <Label>Título</Label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título da tarefa"
-            />
-          </div>
-
-          <div>
-            <Label>Descrição</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrição detalhada"
-              rows={3}
-            />
-          </div>
-
-          {viewMode === "all" && (
+        
+        <ScrollArea className="flex-1 px-4 pb-4">
+          <div className="space-y-4">
             <div>
-              <Label>Categoria</Label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories
-                    .filter(cat => cat.name !== "Diário")
-                    .map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <Label>Título</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Digite o título da tarefa"
+                className={isMobile ? 'min-h-[48px] text-base' : ''}
+              />
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Descrição (opcional)"
+                className={isMobile ? 'min-h-[120px] text-base' : 'min-h-[100px]'}
+              />
+            </div>
+
             <div>
               <Label>Prioridade</Label>
               <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger>
-                  <SelectValue />
+                <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                  <SelectValue placeholder="Selecione a prioridade" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Baixa</SelectItem>
@@ -401,62 +387,79 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             </div>
 
             <div>
-              <Label>{isDailyKanban ? "Data" : "Data de Entrega"}</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="flex-1"
-                />
-                {isDailyKanban && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDueDate(new Date().toISOString().split("T")[0])}
-                  >
-                    Hoje
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {isDailyKanban && (
-            <div>
-              <Label>Horário</Label>
+              <Label>Data de Vencimento</Label>
               <Input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className={isMobile ? 'min-h-[48px] text-base' : ''}
               />
             </div>
-          )}
 
-          <div>
-            <Label>Tags (separadas por vírgula)</Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="ex: urgente, cliente, bug"
-            />
+            {isDailyKanban && (
+              <div>
+                <Label>Horário (opcional)</Label>
+                <Input
+                  type="time"
+                  value={dueTime}
+                  onChange={(e) => setDueTime(e.target.value)}
+                  className={isMobile ? 'min-h-[48px] text-base' : ''}
+                />
+              </div>
+            )}
+
+            <div>
+              <Label>Tags</Label>
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="Tag1, Tag2, Tag3"
+                className={isMobile ? 'min-h-[48px] text-base' : ''}
+              />
+            </div>
+
+            {viewMode !== "daily" && (
+              <div>
+                <Label>Categoria</Label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
+            
+            <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
           </div>
+        </ScrollArea>
 
-          <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
-
-          <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
-
+        <div className={`flex ${isMobile ? 'flex-col gap-2 px-4 pb-4' : 'justify-end gap-2 px-6 pb-4'} border-t pt-4`}>
           <Button 
-            onClick={handleSave} 
-            className="w-full" 
-            disabled={!title.trim() || (viewMode === "all" && !selectedCategory)}
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            className={isMobile ? 'min-h-[48px] order-2' : ''}
           >
-            {task ? "Atualizar" : "Criar"} Tarefa
-            <span className="ml-2 text-xs opacity-60">(Ctrl+Enter)</span>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSave}
+            className={isMobile ? 'min-h-[48px] order-1' : ''}
+          >
+            Salvar
+            <span className={isMobile ? 'hidden' : 'ml-2 text-xs opacity-70'}>Ctrl+Enter</span>
           </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
+

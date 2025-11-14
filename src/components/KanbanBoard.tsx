@@ -9,9 +9,10 @@ import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSen
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnColorClass } from "./kanban/ColumnColorPicker";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { MobileKanbanView } from "./kanban/MobileKanbanView";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -44,7 +45,7 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
-  const isMobile = useIsMobile();
+  const isMobile = useBreakpoint() === 'mobile';
   
   // Modo compacto automático em mobile ou quando forçado via prop
   const compact = isMobile || compactProp;
@@ -271,6 +272,54 @@ export function KanbanBoard({
   };
 
   const styles = getDensityStyles();
+
+  // Se for mobile, usar view mobile otimizada
+  if (isMobile) {
+    return (
+      <>
+        <MobileKanbanView
+          columns={columns}
+          tasks={tasks}
+          getTasksForColumn={getTasksForColumn}
+          handleAddTask={handleAddTask}
+          handleEditTask={handleEditTask}
+          handleDeleteClick={handleDeleteClick}
+          toggleFavorite={toggleFavorite}
+          handleMoveTask={handleMoveTask}
+          isDailyKanban={isDailyKanban}
+          showCategoryBadge={showCategoryBadge}
+          densityMode={densityMode}
+        />
+
+        <TaskModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          onSave={handleSaveTask}
+          task={selectedTask}
+          columnId={selectedColumn}
+          isDailyKanban={isDailyKanban}
+          viewMode={viewMode}
+          categoryId={categoryId}
+          columns={columns}
+        />
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. A tarefa será permanentemente excluída.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
 
   return (
     <>
