@@ -156,6 +156,14 @@ export default function Notes() {
           onTogglePin={togglePin}
         />
 
+        <Sidebar
+          onExport={() => {}}
+          onImport={() => {}}
+          onThemeToggle={toggleTheme}
+          onViewChange={handleViewChange}
+          viewMode="daily"
+        />
+
         <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
       </div>
     );

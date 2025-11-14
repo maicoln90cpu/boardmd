@@ -78,7 +78,7 @@ export function SearchFilters({
   };
 
   // Renderizar filtros (conteúdo compartilhado)
-  const selectClass = compact ? "w-[140px] min-h-[40px]" : "w-full min-h-[48px]";
+  const selectClass = compact ? "w-full text-xs h-9" : "w-full min-h-[48px]";
   const buttonClass = compact ? "min-h-[40px]" : "min-h-[48px]";
 
   const renderFilters = () => (
@@ -208,8 +208,8 @@ export function SearchFilters({
   );
 
   const containerClass = compact 
-    ? "flex flex-wrap items-center gap-2 p-2 bg-card border-b"
-    : "flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b";
+    ? "grid grid-cols-3 gap-2 p-2 bg-card border-b"
+    : "flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b md:flex-wrap";
 
   const inputClass = compact ? "pl-9 min-h-[40px]" : "pl-9 min-h-[48px]";
 

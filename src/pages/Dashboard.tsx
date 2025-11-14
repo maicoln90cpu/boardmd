@@ -67,7 +67,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-semibold">📊 Dashboard</h2>
         </div>
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto pb-[140px] md:pb-0">
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background p-8 border-b">
             <div className="max-w-7xl mx-auto">
