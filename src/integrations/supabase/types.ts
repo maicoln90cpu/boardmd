@@ -250,6 +250,7 @@ export type Database = {
           due_date: string | null
           id: string
           is_favorite: boolean
+          mirror_task_id: string | null
           position: number
           priority: string | null
           recurrence_rule: Json | null
@@ -267,6 +268,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_favorite?: boolean
+          mirror_task_id?: string | null
           position?: number
           priority?: string | null
           recurrence_rule?: Json | null
@@ -284,6 +286,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_favorite?: boolean
+          mirror_task_id?: string | null
           position?: number
           priority?: string | null
           recurrence_rule?: Json | null
@@ -306,6 +309,13 @@ export type Database = {
             columns: ["column_id"]
             isOneToOne: false
             referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_mirror_task_id_fkey"
+            columns: ["mirror_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

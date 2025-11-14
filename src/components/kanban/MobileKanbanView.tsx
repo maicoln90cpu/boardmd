@@ -42,107 +42,62 @@ export function MobileKanbanView({
   const canMoveRight = currentColumnIndex < columns.length - 1;
 
   return (
-    <div className="flex flex-col h-full">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <div className="border-b bg-card px-2">
-          <TabsList className="w-full justify-start overflow-x-auto flex-nowrap h-auto p-1">
-            {columns.map((column) => {
-              const columnTasks = getTasksForColumn(column.id);
-              return (
-                <TabsTrigger
-                  key={column.id}
-                  value={column.id}
-                  className={`flex-shrink-0 min-w-[120px] ${getColumnColorClass(column.color)}`}
-                >
-                  <span className="truncate">{column.name}</span>
-                  <span className="ml-2 text-xs opacity-70">({columnTasks.length})</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </div>
-
-        {columns.map((column) => {
-          const columnTasks = getTasksForColumn(column.id);
-
-          return (
-            <TabsContent
-              key={column.id}
-              value={column.id}
-              className="flex-1 overflow-y-auto mt-0 p-3"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-lg">{column.name}</h3>
-                <Button
-                  onClick={() => handleAddTask(column.id)}
-                  size="sm"
-                  className="min-h-[44px]"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Nova Tarefa
-                </Button>
-              </div>
-
-              <SortableContext
-                items={columnTasks.map(t => t.id)}
-                strategy={verticalListSortingStrategy}
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-2">
+        <div className="grid grid-cols-3 gap-2">
+          {columns.map((column) => {
+            const columnTasks = getTasksForColumn(column.id);
+            return (
+              <div 
+                key={column.id} 
+                className="flex flex-col bg-card rounded-lg border min-h-[250px]"
               >
-                <div className="space-y-3">
-                  {columnTasks.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>Nenhuma tarefa</p>
-                    </div>
-                  ) : (
-                    columnTasks.map((task) => (
-                      <div key={task.id} className="relative">
+                {/* Header da coluna */}
+                <div className={`p-2 border-b sticky top-0 bg-card z-10 rounded-t-lg ${getColumnColorClass(column.color)}`}>
+                  <h4 className="text-xs font-semibold truncate">{column.name}</h4>
+                  <span className="text-[10px] text-muted-foreground">({columnTasks.length})</span>
+                </div>
+                
+                {/* Lista de tasks */}
+                <SortableContext
+                  items={columnTasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex-1 p-1 space-y-1 overflow-y-auto">
+                    {columnTasks.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground text-[10px]">
+                        Vazio
+                      </div>
+                    ) : (
+                      columnTasks.map((task) => (
                         <TaskCard
+                          key={task.id}
                           task={task}
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteClick(task.id)}
                           onToggleFavorite={toggleFavorite}
                           isDailyKanban={isDailyKanban}
                           showCategoryBadge={showCategoryBadge}
-                          densityMode={densityMode}
+                          densityMode="ultra-compact"
                         />
-                        
-                        {/* Botões de navegação rápida entre colunas */}
-                        <div className="absolute -right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1">
-                          {canMoveLeft && currentColumnIndex > 0 && (
-                            <Button
-                              size="icon"
-                              variant="secondary"
-                              className="h-8 w-8 rounded-full shadow-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMoveTask(task.id, "left");
-                              }}
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {canMoveRight && currentColumnIndex < columns.length - 1 && (
-                            <Button
-                              size="icon"
-                              variant="secondary"
-                              className="h-8 w-8 rounded-full shadow-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMoveTask(task.id, "right");
-                              }}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </SortableContext>
-            </TabsContent>
-          );
-        })}
-      </Tabs>
+                      ))
+                    )}
+                  </div>
+                </SortableContext>
+                
+                {/* Botão adicionar tarefa */}
+                <Button 
+                  size="sm" 
+                  className="m-1 h-7 text-[10px]"
+                  onClick={() => handleAddTask(column.id)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

@@ -75,7 +75,7 @@ export function MobileNotesLayout({
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 pb-[140px]">
             {/* Notebooks */}
             <div className="mb-6">
               <h3 className="font-semibold mb-3">📚 Cadernos</h3>
@@ -99,10 +99,22 @@ export function MobileNotesLayout({
             </div>
 
             {/* Notas sem caderno */}
-            <div>
+            <div className="mb-6">
               <h3 className="font-semibold mb-3">📄 Notas Soltas</h3>
               <NotesList
                 notes={notes.filter(n => !n.notebook_id)}
+                selectedNoteId={selectedNoteId}
+                onSelectNote={handleSelectNote}
+                onAddNote={() => handleAddNote(null)}
+                onDeleteNote={onDeleteNote}
+              />
+            </div>
+
+            {/* Todas as Notas */}
+            <div>
+              <h3 className="font-semibold mb-3">📋 Todas as Notas</h3>
+              <NotesList
+                notes={notes}
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(null)}
