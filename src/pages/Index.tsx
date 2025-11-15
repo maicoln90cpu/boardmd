@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RotateCcw, BarChart3, FileText, Columns3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
@@ -72,6 +73,9 @@ function Index() {
 
   // Tamanho do painel diário (salvar no localStorage)
   const [dailyPanelSizes, setDailyPanelSizes] = useLocalStorage<number[]>("daily-panel-sizes", [60, 40]);
+  
+  // Mostrar divisor do Kanban Diário
+  const [showDailyDivider, setShowDailyDivider] = useLocalStorage<boolean>("show-daily-divider", true);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -312,9 +316,17 @@ function Index() {
             <ResizablePanel defaultSize={dailyPanelSizes[0] || 60} minSize={30}>
               <div className="h-full overflow-y-auto">
                 <div className="sticky top-0 z-10 bg-background border-b">
-                  <div className="px-6 py-3 border-b flex items-center justify-between">
+                  <div className="px-6 py-3 border-b flex items-center justify-between flex-wrap gap-2">
                     <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Checkbox 
+                          id="show-divider"
+                          checked={showDailyDivider}
+                          onCheckedChange={(checked) => setShowDailyDivider(checked === true)}
+                        />
+                        <label htmlFor="show-divider" className="text-sm cursor-pointer">Mostrar Divisor</label>
+                      </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -371,7 +383,7 @@ function Index() {
             </ResizablePanel>
 
             {/* Handle arrastável */}
-            <ResizableHandle withHandle />
+            {showDailyDivider && <ResizableHandle withHandle />}
 
             {/* Painel Favoritos */}
             <ResizablePanel defaultSize={dailyPanelSizes[1] || 40} minSize={20}>
