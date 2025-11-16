@@ -297,5 +297,62 @@ export function useTasks(categoryId: string | null | "all") {
     }
   };
 
-  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks, toggleFavorite };
+  const duplicateTask = async (taskId: string) => {
+    if (!user) return;
+
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    try {
+      // Criar cópia da tarefa sem id, created_at e updated_at
+      const { id, created_at, updated_at, ...taskData } = task;
+      
+      const duplicatedTask = {
+        ...taskData,
+        title: `${task.title} (cópia)`,
+        position: task.position + 1,
+        user_id: user.id,
+      };
+
+      const validated = taskSchema.parse(duplicatedTask);
+
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([validated as any])
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro ao duplicar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Registrar no histórico
+      if (data) {
+        await supabase.from("task_history").insert([{
+          task_id: data.id,
+          user_id: user.id,
+          action: "created",
+          changes: { title: duplicatedTask.title, duplicated_from: taskId }
+        }]);
+      }
+
+      toast({ title: "Tarefa duplicada com sucesso" });
+      await fetchTasks();
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: e.errors[0].message,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks, toggleFavorite, duplicateTask };
 }

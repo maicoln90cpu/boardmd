@@ -16,6 +16,7 @@ interface MobileKanbanViewProps {
   handleEditTask: (task: Task) => void;
   handleDeleteClick: (taskId: string) => void;
   toggleFavorite: (taskId: string) => void;
+  duplicateTask: (taskId: string) => void;
   handleMoveTask: (taskId: string, direction: "left" | "right") => void;
   isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
@@ -30,6 +31,7 @@ export function MobileKanbanView({
   handleEditTask,
   handleDeleteClick,
   toggleFavorite,
+  duplicateTask,
   handleMoveTask,
   isDailyKanban = false,
   showCategoryBadge = false,
@@ -76,6 +78,7 @@ export function MobileKanbanView({
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteClick(task.id)}
                           onToggleFavorite={toggleFavorite}
+                          onDuplicate={duplicateTask}
                           isDailyKanban={isDailyKanban}
                           showCategoryBadge={showCategoryBadge}
                           densityMode="ultra-compact"
