@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryFilter } from "@/components/CategoryFilter";
+import { cn } from "@/lib/utils";
 
 interface SearchFiltersProps {
   searchTerm: string;

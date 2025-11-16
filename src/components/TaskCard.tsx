@@ -1,7 +1,7 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -32,6 +32,7 @@ interface TaskCardProps {
   isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
   onToggleFavorite?: (taskId: string) => void;
+  onDuplicate?: (taskId: string) => void;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
 }
 
@@ -47,6 +48,7 @@ export function TaskCard({
   isDailyKanban = false,
   showCategoryBadge = false,
   onToggleFavorite,
+  onDuplicate,
   densityMode = "comfortable"
 }: TaskCardProps) {
   const {
@@ -266,6 +268,18 @@ export function TaskCard({
                       </div>
                     </PopoverContent>
                   </Popover>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-4 w-4 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate?.(task.id);
+                    }}
+                    title="Duplicar tarefa"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"

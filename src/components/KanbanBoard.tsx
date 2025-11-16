@@ -43,7 +43,7 @@ export function KanbanBoard({
   viewMode = "daily",
   densityMode = "comfortable"
 }: KanbanBoardProps) {
-  const { tasks, addTask, updateTask, deleteTask, toggleFavorite } = useTasks(categoryId);
+  const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
   const isMobile = useBreakpoint() === 'mobile';
   
@@ -285,6 +285,7 @@ export function KanbanBoard({
           handleEditTask={handleEditTask}
           handleDeleteClick={handleDeleteClick}
           toggleFavorite={toggleFavorite}
+          duplicateTask={duplicateTask}
           handleMoveTask={handleMoveTask}
           isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
@@ -392,6 +393,7 @@ export function KanbanBoard({
                               isDailyKanban={isDailyKanban}
                               showCategoryBadge={showCategoryBadge}
                               onToggleFavorite={toggleFavorite}
+                              onDuplicate={duplicateTask}
                               densityMode={densityMode}
                             />
                           ))}

@@ -295,7 +295,7 @@ function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 md:pb-0">
+    <div className="min-h-screen bg-background pb-[140px] md:pb-0">
       <Sidebar
         onExport={handleExport}
         onImport={handleImport}
@@ -443,7 +443,6 @@ function Index() {
               onDensityChange={setDensityMode}
               simplifiedMode={simplifiedMode}
               onSimplifiedModeChange={setSimplifiedMode}
-              compact={true}
             />
 
             {/* Renderizar baseado no displayMode */}
