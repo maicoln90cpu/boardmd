@@ -14,6 +14,7 @@ export interface AppSettings {
     resetTime: string; // "00:00"
     defaultColumn: string;
     maxTasksPerColumn: number;
+    allowCrossCategoryDrag: boolean;
   };
   productivity: {
     dailyGoal: number;
@@ -40,6 +41,7 @@ const defaultSettings: AppSettings = {
     resetTime: '00:00',
     defaultColumn: '',
     maxTasksPerColumn: 20,
+    allowCrossCategoryDrag: false,
   },
   productivity: {
     dailyGoal: 5,
