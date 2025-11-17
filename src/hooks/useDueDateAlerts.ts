@@ -3,11 +3,40 @@ import { Task } from "./useTasks";
 import { useToast } from "./use-toast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 
+// Request browser notification permission on first call
+let permissionRequested = false;
+function requestNotificationPermission() {
+  if (!permissionRequested && "Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+    permissionRequested = true;
+  }
+}
+
+// Show browser notification
+function showBrowserNotification(title: string, body: string, urgent: boolean = false) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    const notification = new Notification(title, {
+      body,
+      icon: "/pwa-icon.png",
+      badge: "/favicon.png",
+      tag: "due-date-alert",
+      requireInteraction: urgent,
+    });
+
+    if (!urgent) {
+      setTimeout(() => notification.close(), 5000);
+    }
+  }
+}
+
 export function useDueDateAlerts(tasks: Task[]) {
   const { toast } = useToast();
   const notifiedTasksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Request permission once
+    requestNotificationPermission();
+
     const checkDueDates = () => {
       const now = new Date();
 
@@ -27,6 +56,11 @@ export function useDueDateAlerts(tasks: Task[]) {
             description: `"${task.title}" já passou do prazo`,
             variant: "destructive",
           });
+          showBrowserNotification(
+            "⏰ Tarefa Atrasada!",
+            `"${task.title}" já passou do prazo`,
+            true
+          );
           notifiedTasksRef.current.add(`${taskId}-overdue`);
           return;
         }
@@ -42,6 +76,11 @@ export function useDueDateAlerts(tasks: Task[]) {
               description: `"${task.title}" vence em menos de 1 hora`,
               variant: "destructive",
             });
+            showBrowserNotification(
+              "🔥 Prazo Urgente!",
+              `"${task.title}" vence em menos de 1 hora`,
+              true
+            );
             notifiedTasksRef.current.add(`${taskId}-1h`);
           }
           return;
@@ -54,6 +93,11 @@ export function useDueDateAlerts(tasks: Task[]) {
               title: "⚠️ Prazo Próximo",
               description: `"${task.title}" vence em ${hoursUntilDue} horas`,
             });
+            showBrowserNotification(
+              "⚠️ Prazo Próximo",
+              `"${task.title}" vence em ${hoursUntilDue} horas`,
+              false
+            );
             notifiedTasksRef.current.add(`${taskId}-24h`);
           }
         }
