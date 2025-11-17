@@ -11,12 +11,18 @@ import {
 import { Task } from "@/hooks/useTasks";
 import { Badge } from "@/components/ui/badge";
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 interface GlobalSearchProps {
   tasks: Task[];
   onSelectTask: (task: Task) => void;
+  categories: Category[];
 }
 
-export function GlobalSearch({ tasks, onSelectTask }: GlobalSearchProps) {
+export function GlobalSearch({ tasks, onSelectTask, categories }: GlobalSearchProps) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -34,6 +40,10 @@ export function GlobalSearch({ tasks, onSelectTask }: GlobalSearchProps) {
   const handleSelect = (task: Task) => {
     setOpen(false);
     onSelectTask(task);
+  };
+
+  const getCategoryName = (categoryId: string) => {
+    return categories.find(c => c.id === categoryId)?.name || "Sem categoria";
   };
 
   return (
@@ -64,11 +74,16 @@ export function GlobalSearch({ tasks, onSelectTask }: GlobalSearchProps) {
                 <FileText className="h-4 w-4" />
                 <div className="flex-1">
                   <div className="font-medium">{task.title}</div>
-                  {task.description && (
-                    <div className="text-sm text-muted-foreground line-clamp-1">
-                      {task.description}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="secondary" className="text-xs">
+                      {getCategoryName(task.category_id)}
+                    </Badge>
+                    {task.description && (
+                      <span className="text-sm text-muted-foreground line-clamp-1">
+                        {task.description}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {task.priority && (
                   <Badge variant="outline" className="text-xs">

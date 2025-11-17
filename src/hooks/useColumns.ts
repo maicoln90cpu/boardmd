@@ -184,12 +184,26 @@ export function useColumns() {
   };
 
   const resetToDefaultView = () => {
-    // Mostrar apenas as 3 primeiras colunas (as originais)
-    const defaultColumns = columns.slice(0, 3).map((c) => c.id);
-    const columnsToHide = columns.slice(3).map((c) => c.id);
+    if (columns.length < 3) {
+      toast({
+        title: "Não é possível resetar",
+        description: "Você precisa ter pelo menos 3 colunas criadas",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Pegar primeiras 3 colunas por position
+    const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
+    const defaultColumns = sortedColumns.slice(0, 3).map((c) => c.id);
+    const columnsToHide = sortedColumns.slice(3).map((c) => c.id);
+    
     setHiddenColumns(columnsToHide);
     
-    toast({ title: "Visualização resetada para padrão (3 colunas)" });
+    toast({ 
+      title: "Visão resetada", 
+      description: `Mostrando apenas as 3 primeiras colunas: ${sortedColumns.slice(0, 3).map(c => c.name).join(", ")}` 
+    });
   };
 
   const renameColumn = async (columnId: string, newName: string) => {

@@ -17,6 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RotateCcw, BarChart3, FileText, Columns3 } from "lucide-react";
@@ -24,6 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Badge } from "@/components/ui/badge";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -57,16 +59,16 @@ function Index() {
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
   const [simplifiedMode, setSimplifiedMode] = useLocalStorage<boolean>("kanban-simplified-mode", false);
   
-  // Filtros
-  const [searchTerm, setSearchTerm] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState("all");
+  // Filtros (persistidos no localStorage)
+  const [searchTerm, setSearchTerm] = useLocalStorage<string>("filter-search", "");
+  const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
+  const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [sortOption, setSortOption] = useState("manual");
+  const [sortOption, setSortOption] = useLocalStorage<string>("filter-sort", "manual");
   
-  // Estados de ordenação para Kanban Diário
-  const [dailySortOption, setDailySortOption] = useState<"time" | "name" | "priority">("time");
-  const [dailySortOrder, setDailySortOrder] = useState<"asc" | "desc">("asc");
+  // Estados de ordenação para Kanban Diário (persistidos)
+  const [dailySortOption, setDailySortOption] = useLocalStorage<"time" | "name" | "priority">("daily-sort-option", "time");
+  const [dailySortOrder, setDailySortOrder] = useLocalStorage<"asc" | "desc">("daily-sort-order", "asc");
   
   // Estado de densidade (salvo no localStorage)
   const [densityMode, setDensityMode] = useLocalStorage<"comfortable" | "compact" | "ultra-compact">("kanban-density-mode", "comfortable");
@@ -83,19 +85,21 @@ function Index() {
   // Hook de notificações de prazo - monitora TODAS as tarefas
   useDueDateAlerts(allTasks);
 
-  // Atalhos de teclado
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+F ou Cmd+F - Focar na busca (apenas em modo all com searchInputRef disponível)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && viewMode === "all") {
-        e.preventDefault();
+  // Atalhos de teclado globais
+  useKeyboardShortcuts({
+    onSearch: () => {
+      if (viewMode === "all") {
         searchInputRef.current?.focus();
       }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode]);
+    },
+    onNewTask: () => {
+      // TODO: Implementar abertura de modal de nova tarefa
+      toast({
+        title: "Atalho Ctrl+N",
+        description: "Modal de nova tarefa será implementado",
+      });
+    },
+  });
 
   // Ler view da URL na inicialização
   useEffect(() => {
@@ -261,30 +265,21 @@ function Index() {
     const baseColumns = getVisibleColumns();
     
     if (simplifiedMode && viewMode === "all") {
-      // Modo simplificado: mostrar apenas Recorrente → A Fazer → Em Progresso
-      const desiredColumns = ["Recorrente", "A Fazer", "Em Progresso"];
+      // Modo simplificado: mostrar apenas as primeiras 3 colunas por position
+      const simplifiedCols = baseColumns
+        .sort((a, b) => a.position - b.position)
+        .slice(0, 3);
       
-      const simplifiedCols = desiredColumns
-        .map(name => baseColumns.find(col => col.name === name))
-        .filter(Boolean);
-      
-      // Se alguma coluna desejada não existe, fallback para comportamento antigo
+      // Se não houver pelo menos 3 colunas, mostrar todas disponíveis
       if (simplifiedCols.length < 3) {
-        const columnsWithCounts = baseColumns.map((col) => ({
-          ...col,
-          taskCount: tasks.filter((task) => task.column_id === col.id).length,
-        }));
-        
-        return columnsWithCounts
-          .sort((a, b) => b.taskCount - a.taskCount)
-          .slice(0, 3);
+        return baseColumns;
       }
       
       return simplifiedCols;
     }
     
     return baseColumns;
-  }, [getVisibleColumns, simplifiedMode, viewMode, tasks]);
+  }, [getVisibleColumns, simplifiedMode, viewMode]);
 
   if (loadingCategories || loadingColumns) {
     return (
@@ -398,9 +393,16 @@ function Index() {
         {viewMode === "all" && visibleColumns.length > 0 && (
           <>
             <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
-              <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
               <div className="flex items-center gap-2">
-                <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} />
+                <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+                {simplifiedMode && (
+                  <Badge variant="secondary" className="text-xs">
+                    Modo Simplificado
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} />
                 <Button
                   variant="outline"
                   size="sm"
