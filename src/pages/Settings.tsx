@@ -252,6 +252,24 @@ export default function Settings() {
                         }
                       />
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="crossCategory">Arrastar entre Categorias</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Permitir mover tarefas entre diferentes categorias
+                        </p>
+                      </div>
+                      <Switch
+                        id="crossCategory"
+                        checked={settings.kanban.allowCrossCategoryDrag}
+                        onCheckedChange={(checked) =>
+                          updateSettings({
+                            kanban: { ...settings.kanban, allowCrossCategoryDrag: checked },
+                          })
+                        }
+                      />
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
