@@ -19,12 +19,10 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RotateCcw, BarChart3, FileText, Columns3 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Badge } from "@/components/ui/badge";
 
 function Index() {
@@ -72,12 +70,6 @@ function Index() {
   
   // Estado de densidade (salvo no localStorage)
   const [densityMode, setDensityMode] = useLocalStorage<"comfortable" | "compact" | "ultra-compact">("kanban-density-mode", "comfortable");
-
-  // Tamanho do painel diário (salvar no localStorage)
-  const [dailyPanelSizes, setDailyPanelSizes] = useLocalStorage<number[]>("daily-panel-sizes", [60, 40]);
-  
-  // Mostrar divisor do Kanban Diário
-  const [showDailyDivider, setShowDailyDivider] = useLocalStorage<boolean>("show-daily-divider", true);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -300,93 +292,78 @@ function Index() {
       />
 
       <main className="md:ml-64 h-screen">
-        {/* Kanban Diário - modo daily com painéis redimensionáveis */}
+        {/* Kanban Diário - modo daily sem divisor */}
         {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && (
-          <ResizablePanelGroup 
-            direction="vertical" 
-            className="h-full"
-            onLayout={(sizes) => setDailyPanelSizes(sizes)}
-          >
-            {/* Painel Kanban Diário */}
-            <ResizablePanel defaultSize={dailyPanelSizes[0] || 60} minSize={30}>
-              <div className="h-full overflow-y-auto">
-                <div className="sticky top-0 z-10 bg-background border-b">
-                  <div className="px-6 py-3 border-b flex items-center justify-between flex-wrap gap-2">
-                    <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-                    <div className="flex gap-2 items-center flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <Checkbox 
-                          id="show-divider"
-                          checked={showDailyDivider}
-                          onCheckedChange={(checked) => setShowDailyDivider(checked === true)}
-                        />
-                        <label htmlFor="show-divider" className="text-sm cursor-pointer">Mostrar Divisor</label>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowColumnManager(true)}
-                        className="flex items-center gap-2"
-                      >
-                        <Columns3 className="h-4 w-4" />
-                        Colunas
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowTemplates(true)}
-                        className="flex items-center gap-2"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Templates
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleResetDaily}
-                        className="flex items-center gap-2"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Resetar Tudo
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {/* Controles de ordenação do Kanban Diário */}
-                  <div className="px-6 py-2 border-b bg-card">
-                    <DailySortControls
-                      sortOption={dailySortOption}
-                      onSortChange={setDailySortOption}
-                      sortOrder={dailySortOrder}
-                      onSortOrderChange={setDailySortOrder}
-                      densityMode={densityMode}
-                      onDensityChange={setDensityMode}
-                    />
-                  </div>
-                  
-                  <KanbanBoard 
-                    key={dailyBoardKey}
-                    columns={visibleColumns} 
-                    categoryId={dailyCategory}
-                    compact
-                    isDailyKanban
-                    sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
-                    densityMode={densityMode}
-                  />
+          <div className="h-full flex flex-col overflow-hidden">
+            {/* Cabeçalho Kanban Diário */}
+            <div className="sticky top-0 z-10 bg-background border-b">
+              <div className="px-6 py-3 border-b flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowColumnManager(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Columns3 className="h-4 w-4" />
+                    Colunas
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTemplates(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Templates
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResetDaily}
+                    className="flex items-center gap-2"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Resetar Tudo
+                  </Button>
                 </div>
               </div>
-            </ResizablePanel>
+              
+              {/* Controles de ordenação do Kanban Diário */}
+              <div className="px-6 py-2 border-b bg-card">
+                <DailySortControls
+                  sortOption={dailySortOption}
+                  onSortChange={setDailySortOption}
+                  sortOrder={dailySortOrder}
+                  onSortOrderChange={setDailySortOrder}
+                  densityMode={densityMode}
+                  onDensityChange={setDensityMode}
+                />
+              </div>
+            </div>
 
-            {/* Handle arrastável */}
-            {showDailyDivider && <ResizableHandle withHandle />}
+            {/* Layout Kanban + Favoritos */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+              {/* Kanban Board */}
+              <div className="flex-1 overflow-y-auto">
+                <KanbanBoard 
+                  key={dailyBoardKey}
+                  columns={visibleColumns} 
+                  categoryId={dailyCategory}
+                  compact
+                  isDailyKanban
+                  sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
+                  densityMode={densityMode}
+                />
+              </div>
 
-            {/* Painel Favoritos */}
-            <ResizablePanel defaultSize={dailyPanelSizes[1] || 40} minSize={20}>
-              <div className="h-full overflow-y-auto">
+              {/* Favoritos */}
+              <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l overflow-y-auto">
                 <FavoritesSection columns={columns} categories={categories} />
               </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            </div>
+          </div>
         )}
         
         {/* Todos os Projetos - modo all */}
