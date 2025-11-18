@@ -1,8 +1,9 @@
 import { Note } from "@/hooks/useNotes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Check, X, Pin } from "lucide-react";
+import { Check, X, Pin, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -14,6 +15,7 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
+import { useTasks } from "@/hooks/useTasks";
 
 interface NoteEditorProps {
   note: Note;
@@ -25,6 +27,10 @@ export function NoteEditor({ note, onUpdate, onTogglePin }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  
+  // Buscar tarefas disponíveis
+  const { tasks } = useTasks("all");
 
   const editor = useEditor({
     extensions: [
@@ -96,23 +102,45 @@ export function NoteEditor({ note, onUpdate, onTogglePin }: NoteEditorProps) {
       style={{ backgroundColor: color || undefined }}
     >
       {/* Título e ações */}
-      <div className="p-4 sm:p-6 border-b flex items-start gap-2">
-        <Input
-          placeholder="Título da anotação..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent"
-        />
-        <div className="flex gap-2">
-          <Button
-            variant={note.is_pinned ? "default" : "outline"}
-            size="icon"
-            onClick={() => onTogglePin(note.id)}
-            className="h-10 w-10 shrink-0"
-          >
-            <Pin className={`h-4 w-4 ${note.is_pinned ? 'fill-current' : ''}`} />
-          </Button>
-          <ColorPicker currentColor={color} onColorChange={handleColorChange} />
+      <div className="p-4 sm:p-6 border-b space-y-3">
+        <div className="flex items-start gap-2">
+          <Input
+            placeholder="Título da anotação..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent"
+          />
+          <div className="flex gap-2">
+            <Button
+              variant={note.is_pinned ? "default" : "outline"}
+              size="icon"
+              onClick={() => onTogglePin(note.id)}
+              className="h-10 w-10 shrink-0"
+            >
+              <Pin className={`h-4 w-4 ${note.is_pinned ? 'fill-current' : ''}`} />
+            </Button>
+            <ColorPicker currentColor={color} onColorChange={handleColorChange} />
+          </div>
+        </div>
+
+        {/* Vincular a tarefa */}
+        <div className="flex items-center gap-2">
+          <Link2 className="h-4 w-4 text-muted-foreground" />
+          <Select value={linkedTaskId || "none"} onValueChange={(value) => setLinkedTaskId(value === "none" ? null : value)}>
+            <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
+              <SelectValue placeholder="Vincular a uma tarefa..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                <span className="text-muted-foreground">Nenhuma tarefa vinculada</span>
+              </SelectItem>
+              {tasks.map((task) => (
+                <SelectItem key={task.id} value={task.id}>
+                  {task.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

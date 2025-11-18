@@ -100,11 +100,26 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                 <h3 className="text-sm font-medium text-muted-foreground px-2">
                   📁 {category.name}
                 </h3>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                {/* Grid responsivo ao invés de scroll horizontal */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {tasks.map((task: any) => {
                     const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
                     return (
-                      <div key={task.id} className="flex-shrink-0 min-w-[180px] max-w-[200px]">
+                      <div key={task.id} className="relative group">
+                        {/* Botão de desfavoritar no hover */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(task.id);
+                          }}
+                          className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                          title="Remover dos favoritos"
+                        >
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        </Button>
+                        
                         <TaskCard
                           task={task}
                           onEdit={handleEditTask}
