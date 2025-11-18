@@ -1,9 +1,10 @@
-import { Search, X, SlidersHorizontal, Columns3 } from "lucide-react";
+import { Search, X, SlidersHorizontal, Columns3, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { cn } from "@/lib/utils";
@@ -246,7 +247,98 @@ export function SearchFilters({
               <SheetTitle>Filtros e Ordenação</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-3 mt-4 overflow-y-auto max-h-[calc(85vh-100px)]">
-              {renderFilters()}
+              {/* Filtros Básicos sempre visíveis */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground">Filtros Básicos</h3>
+                <Select value={priorityFilter} onValueChange={onPriorityChange}>
+                  <SelectTrigger className={selectClass}>
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortOption} onValueChange={onSortChange}>
+                  <SelectTrigger className={selectClass}>
+                    <SelectValue placeholder="Ordenar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="due_date">Data de vencimento</SelectItem>
+                    <SelectItem value="priority">Prioridade</SelectItem>
+                    <SelectItem value="title">Alfabética</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtros Avançados em Collapsible */}
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronRight className="h-4 w-4 transition-transform ui-state-open:rotate-90" />
+                  Filtros Avançados
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-3">
+                  <Select value={tagFilter} onValueChange={onTagChange}>
+                    <SelectTrigger className={selectClass}>
+                      <SelectValue placeholder="Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {availableTags.map((tag) => (
+                        <SelectItem key={tag} value={tag}>
+                          {tag}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {viewMode === "all" && categories && onCategoryChange && (
+                    <CategoryFilter
+                      categories={categories}
+                      selectedCategories={categoryFilter || []}
+                      onCategoryChange={onCategoryChange}
+                      tasks={tasks}
+                      compact={compact}
+                    />
+                  )}
+
+                  {onDensityChange && (
+                    <Select value={densityMode} onValueChange={onDensityChange as any}>
+                      <SelectTrigger className={selectClass}>
+                        <SelectValue placeholder="Densidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="comfortable">Confortável</SelectItem>
+                        <SelectItem value="compact">Compacto</SelectItem>
+                        <SelectItem value="ultra-compact">Ultra</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {viewMode === "all" && onSimplifiedModeChange && (
+                    <Button
+                      variant={simplifiedMode ? "default" : "outline"}
+                      size="default"
+                      onClick={() => onSimplifiedModeChange(!simplifiedMode)}
+                      className="gap-2 min-h-[48px] w-full"
+                    >
+                      <Columns3 className="h-4 w-4" />
+                      {simplifiedMode ? "Modo Simplificado" : "Todas Colunas"}
+                    </Button>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
+
+              {hasActiveFilters && (
+                <Button variant="ghost" size="default" onClick={onClearFilters} className={`${buttonClass} w-full`}>
+                  <X className="h-4 w-4 mr-2" />
+                  Limpar Filtros
+                </Button>
+              )}
             </div>
           </SheetContent>
         </Sheet>
