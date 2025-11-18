@@ -187,6 +187,11 @@ export function TaskCard({
                     {new Date(task.due_date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}
                   </span>
                 )}
+                {task.mirror_task_id && (
+                  <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0 bg-cyan-500 text-white">
+                    🪞
+                  </Badge>
+                )}
                 <div className="flex gap-0.5 shrink-0">
                   {canMoveLeft && (
                     <Button

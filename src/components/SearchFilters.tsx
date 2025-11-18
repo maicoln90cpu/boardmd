@@ -79,10 +79,11 @@ export function SearchFilters({
     "ultra-compact": "≡"
   };
 
-  // Renderizar filtros (conteúdo compartilhado)
-  const selectClass = compact ? "w-full text-xs h-9" : "w-full min-h-[48px]";
+  // Classes compartilhadas
+  const selectClass = compact ? "w-full text-xs h-9" : "w-auto min-w-[140px] max-w-[180px] h-9 text-sm";
   const buttonClass = compact ? "min-h-[40px]" : "min-h-[48px]";
 
+  // Renderizar filtros (conteúdo compartilhado)
   const renderFilters = () => (
     <>
       <Select value={priorityFilter} onValueChange={onPriorityChange}>
@@ -97,19 +98,21 @@ export function SearchFilters({
         </SelectContent>
       </Select>
 
-      <Select value={tagFilter} onValueChange={onTagChange}>
-        <SelectTrigger className={selectClass}>
-          <SelectValue placeholder="Tag" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          {availableTags.map((tag) => (
-            <SelectItem key={tag} value={tag}>
-              {tag}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+          {availableTags.length > 0 && (
+            <Select value={tagFilter} onValueChange={onTagChange}>
+              <SelectTrigger className={selectClass}>
+                <SelectValue placeholder="Tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {availableTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>
+                    {tag}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
       {viewMode === "all" && categories && onCategoryChange && (
         <CategoryFilter
@@ -211,13 +214,13 @@ export function SearchFilters({
 
   const containerClass = compact 
     ? "grid grid-cols-3 gap-2 p-2 bg-card border-b"
-    : "flex flex-col sm:flex-row items-stretch sm:items-center gap-3 p-4 bg-card border-b md:flex-wrap";
+    : "flex flex-row items-center gap-2 p-2 bg-card border-b flex-nowrap overflow-x-auto";
 
-  const inputClass = compact ? "pl-9 min-h-[40px]" : "pl-9 min-h-[48px]";
+  const inputClass = compact ? "pl-9 min-h-[40px]" : "pl-9 h-10 text-sm";
 
   return (
     <div className={containerClass}>
-      <div className={compact ? "relative w-64 min-w-0" : "relative flex-1 max-w-full sm:max-w-md min-w-0"}>
+      <div className={compact ? "relative w-64 min-w-0" : "relative max-w-[240px] min-w-0"}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={searchInputRef}
@@ -282,19 +285,21 @@ export function SearchFilters({
                   Filtros Avançados
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-3 space-y-3">
-                  <Select value={tagFilter} onValueChange={onTagChange}>
-                    <SelectTrigger className={selectClass}>
-                      <SelectValue placeholder="Tag" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {availableTags.map((tag) => (
-                        <SelectItem key={tag} value={tag}>
-                          {tag}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {availableTags.length > 0 && (
+                    <Select value={tagFilter} onValueChange={onTagChange}>
+                      <SelectTrigger className={selectClass}>
+                        <SelectValue placeholder="Tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas</SelectItem>
+                        {availableTags.map((tag) => (
+                          <SelectItem key={tag} value={tag}>
+                            {tag}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   {viewMode === "all" && categories && onCategoryChange && (
                     <CategoryFilter
