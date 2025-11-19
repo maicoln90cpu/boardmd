@@ -4,7 +4,7 @@ import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -178,6 +178,26 @@ export function KanbanBoard({
         position: destinationTasks.length
       });
     }
+  };
+
+  const handleUncheckRecurrentTasks = (columnId: string) => {
+    const columnTasks = getTasksForColumn(columnId);
+    columnTasks.forEach(task => {
+      localStorage.removeItem(`task-completed-${task.id}`);
+    });
+    // Forçar re-render com pequeno delay
+    setTimeout(() => {
+      import("@/hooks/use-toast").then(({ toast }) => {
+        toast({
+          title: "✅ Tarefas desmarcadas",
+          description: "Todas as tarefas recorrentes foram desmarcadas",
+        });
+      });
+      // Re-renderizar forçando atualização do estado
+      setModalOpen(false);
+      setModalOpen(true);
+      setModalOpen(false);
+    }, 100);
   };
 
   const getTasksForColumn = (columnId: string) => {
@@ -359,6 +379,16 @@ export function KanbanBoard({
                           )}
                         </div>
                         <div className="flex gap-1">
+                          {column.name.toLowerCase() === "recorrente" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleUncheckRecurrentTasks(column.id)}
+                              title="Desmarcar todas as tarefas recorrentes"
+                            >
+                              <RotateCcw className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                            </Button>
+                          )}
                           <ColumnColorPicker
                             currentColor={column.color}
                             onColorChange={(color) => updateColumnColor(column.id, color)}
