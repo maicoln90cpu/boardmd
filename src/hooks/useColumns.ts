@@ -13,9 +13,10 @@ export interface Column {
   user_id: string;
   created_at: string;
   color: string | null;
+  kanban_type?: 'daily' | 'projects' | 'shared';
 }
 
-export function useColumns() {
+export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
   const [columns, setColumns] = useState<Column[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -29,10 +30,16 @@ export function useColumns() {
   }, []);
 
   const fetchColumns = async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("columns")
-      .select("*")
-      .order("position");
+      .select("*");
+    
+    // Filtrar por tipo de Kanban se especificado
+    if (kanbanType) {
+      query = query.or(`kanban_type.eq.${kanbanType},kanban_type.eq.shared`);
+    }
+    
+    const { data, error } = await query.order("position");
 
     if (error) {
       toast({ title: "Erro ao carregar colunas", variant: "destructive" });
@@ -42,7 +49,7 @@ export function useColumns() {
     if (data && data.length === 0) {
       await initializeColumns();
     } else {
-      setColumns(data || []);
+      setColumns((data || []) as Column[]);
     }
     setLoading(false);
   };
@@ -53,9 +60,9 @@ export function useColumns() {
     }
 
     const defaultColumns = [
-      { name: "A Fazer", position: 0, user_id: user.id },
-      { name: "Em Planejamento", position: 1, user_id: user.id },
-      { name: "Concluído", position: 2, user_id: user.id },
+      { name: "A Fazer", position: 0, user_id: user.id, kanban_type: kanbanType || 'shared' },
+      { name: "Em Planejamento", position: 1, user_id: user.id, kanban_type: kanbanType || 'shared' },
+      { name: "Concluído", position: 2, user_id: user.id, kanban_type: kanbanType || 'shared' },
     ];
 
     const { error } = await supabase.from("columns").insert(defaultColumns);

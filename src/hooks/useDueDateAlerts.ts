@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Task } from "./useTasks";
 import { useToast } from "./use-toast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 // Request browser notification permission on first call
 let permissionRequested = false;
@@ -37,11 +38,28 @@ export function useDueDateAlerts(tasks: Task[]) {
     // Request permission once
     requestNotificationPermission();
 
-    const checkDueDates = () => {
+    const checkDueDates = async () => {
       const now = new Date();
 
+      // Buscar nomes das colunas para verificar se estão concluídas
+      const columnIds = [...new Set(tasks.map(t => t.column_id))];
+      const { data: columnsData } = await supabase
+        .from("columns")
+        .select("id, name")
+        .in("id", columnIds);
+      
+      const columnMap = new Map(columnsData?.map(c => [c.id, c.name]) || []);
+
       tasks.forEach((task) => {
-        if (!task.due_date || task.column_id?.includes("done")) return;
+        // Não notificar se:
+        // 1. Não tem due_date
+        // 2. Está na coluna "Concluído" (ou similar)
+        // 3. Está marcada como concluída no localStorage
+        const columnName = columnMap.get(task.column_id) || "";
+        const isCompleted = columnName.toLowerCase().includes("concluí") || 
+                           localStorage.getItem(`task-completed-${task.id}`) === "true";
+        
+        if (!task.due_date || task.column_id?.includes("done") || isCompleted) return;
 
         const dueDate = new Date(task.due_date);
         const taskId = task.id;

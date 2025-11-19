@@ -19,11 +19,12 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3, FileText, Columns3 } from "lucide-react";
+import { RotateCcw, BarChart3, FileText, Columns3, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 function Index() {
   const { categories, loading: loadingCategories, addCategory } = useCategories();
@@ -70,6 +71,9 @@ function Index() {
   
   // Estado de densidade (salvo no localStorage)
   const [densityMode, setDensityMode] = useLocalStorage<"comfortable" | "compact" | "ultra-compact">("kanban-density-mode", "comfortable");
+  
+  // Estado para mostrar/ocultar painel de favoritos no Kanban Diário
+  const [showFavoritesPanel, setShowFavoritesPanel] = useLocalStorage<boolean>("kanban-show-favorites", true);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -303,6 +307,15 @@ function Index() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => setShowFavoritesPanel(!showFavoritesPanel)}
+                    className="flex items-center gap-2"
+                  >
+                    <Star className="h-4 w-4" />
+                    {showFavoritesPanel ? "Ocultar" : "Mostrar"} Favoritos
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowColumnManager(true)}
                     className="flex items-center gap-2"
                   >
@@ -345,8 +358,11 @@ function Index() {
 
             {/* Layout Kanban + Favoritos */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-              {/* Kanban Board */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Kanban Board - ocupa tudo quando Favoritos oculto */}
+              <div className={cn(
+                "overflow-y-auto",
+                showFavoritesPanel ? "flex-1" : "w-full"
+              )}>
                 <KanbanBoard 
                   key={dailyBoardKey}
                   columns={visibleColumns} 
@@ -358,10 +374,12 @@ function Index() {
                 />
               </div>
 
-              {/* Favoritos */}
-              <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l overflow-y-auto">
-                <FavoritesSection columns={columns} categories={categories} />
-              </div>
+              {/* Favoritos - só renderiza se showFavoritesPanel = true */}
+              {showFavoritesPanel && (
+                <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l overflow-y-auto">
+                  <FavoritesSection columns={columns} categories={categories} />
+                </div>
+              )}
             </div>
           </div>
         )}
