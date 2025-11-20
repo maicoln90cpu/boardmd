@@ -173,7 +173,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       </div>
 
       {/* Botões de ação */}
-      <div className="fixed bottom-0 left-0 right-0 md:relative p-10 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
+      <div className="fixed bottom-10 left-0 right-0 md:relative p-10 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
