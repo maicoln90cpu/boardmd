@@ -21,9 +21,10 @@ interface NoteEditorProps {
   note: Note;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
+  onSave?: () => void;
 }
 
-export function NoteEditor({ note, onUpdate, onTogglePin }: NoteEditorProps) {
+export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
@@ -83,6 +84,10 @@ export function NoteEditor({ note, onUpdate, onTogglePin }: NoteEditorProps) {
     });
 
     toast.success("Nota salva!");
+    
+    if (onSave) {
+      onSave();
+    }
   };
 
   const handleCancel = () => {

@@ -33,6 +33,7 @@ export function MobileNotesLayout({
 }: MobileNotesLayoutProps) {
   const [view, setView] = useState<MobileView>("notebooks");
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
+  const [editorSaveTriggered, setEditorSaveTriggered] = useState(0);
 
   const selectedNote = selectedNoteId
     ? notes.find((n) => n.id === selectedNoteId) || null
@@ -50,6 +51,11 @@ export function MobileNotesLayout({
 
   const handleBackFromEditor = () => {
     setView(selectedNotebookId ? "notes" : "notebooks");
+    onSelectNote(null);
+  };
+
+  const handleSaveFromHeader = () => {
+    setEditorSaveTriggered(prev => prev + 1);
   };
 
   const handleBackFromNotes = () => {
@@ -180,7 +186,7 @@ export function MobileNotesLayout({
             {selectedNote && (
               <Button
                 size="sm"
-                onClick={() => onUpdateNote(selectedNote.id, selectedNote)}
+                onClick={handleSaveFromHeader}
                 className="min-h-[44px] gap-1"
               >
                 <Check className="h-4 w-4" />
@@ -191,10 +197,11 @@ export function MobileNotesLayout({
 
           <div className="flex-1 overflow-hidden">
             <NoteEditor
-              key={selectedNote.id}
+              key={`${selectedNote.id}-${editorSaveTriggered}`}
               note={selectedNote}
               onUpdate={onUpdateNote}
               onTogglePin={onTogglePin}
+              onSave={handleBackFromEditor}
             />
           </div>
         </div>

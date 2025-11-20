@@ -19,9 +19,9 @@ export function DailySortControls({
   onDensityChange
 }: DailySortControlsProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-2 flex-nowrap">
       <Select value={sortOption} onValueChange={onSortChange}>
-        <SelectTrigger className="w-[160px]">
+        <SelectTrigger className="w-[96px] md:w-[160px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -32,7 +32,7 @@ export function DailySortControls({
       </Select>
 
       <Select value={sortOrder} onValueChange={onSortOrderChange}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[84px] md:w-[140px]">
           <ArrowUpDown className="h-4 w-4 mr-2" />
           <SelectValue />
         </SelectTrigger>
@@ -44,14 +44,14 @@ export function DailySortControls({
 
       {onDensityChange && (
         <Select value={densityMode} onValueChange={onDensityChange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[96px] md:w-[160px]">
             <Maximize2 className="h-4 w-4 mr-2" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="comfortable">Confortável</SelectItem>
             <SelectItem value="compact">Compacto</SelectItem>
-            <SelectItem value="ultra-compact">Ultra Compacto</SelectItem>
+            <SelectItem value="ultra-compact">Ultra</SelectItem>
           </SelectContent>
         </Select>
       )}
