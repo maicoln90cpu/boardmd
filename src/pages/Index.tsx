@@ -19,7 +19,7 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3, FileText, Columns3, Star } from "lucide-react";
+import { RotateCcw, BarChart3, FileText, Columns3, Star, Check, Square } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
@@ -406,54 +406,95 @@ function Index() {
         {/* Todos os Projetos - modo all */}
         {viewMode === "all" && visibleColumns.length > 0 && (
           <>
-            <div className="px-6 py-3 border-b bg-background flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
-                {simplifiedMode && (
-                  <Badge variant="secondary" className="text-xs">
-                    Modo Simplificado
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowColumnManager(true)}
-                >
-                  <Columns3 className="h-4 w-4 mr-2" />
-                  Colunas
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowStats(true)}
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Estatísticas
-                </Button>
-              </div>
+            <div className="border-b bg-background">
+              {/* DESKTOP: Layout original em 1 linha */}
+              {!isMobile && (
+                <div className="px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+                    {simplifiedMode && (
+                      <Badge variant="secondary" className="text-xs">Modo Simplificado</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} />
+                    <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
+                      <Columns3 className="h-4 w-4 mr-2" />
+                      Colunas
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowStats(true)}>
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Estatísticas
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* MOBILE: Layout em 3 linhas */}
+              {isMobile && (
+                <>
+                  {/* LINHA 1: Logo + Buscar */}
+                  <div className="px-3 py-2 border-b flex items-center gap-2">
+                    <h2 className="text-base font-semibold flex-shrink-0">📊 Todos</h2>
+                    <div className="flex-1 min-w-0">
+                      <GlobalSearch 
+                        tasks={filteredTasks} 
+                        onSelectTask={handleTaskSelect} 
+                        categories={categories} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* LINHA 2: Botão Colunas + Botão Estatísticas */}
+                  <div className="px-3 py-2 border-b flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowColumnManager(true)}
+                      className="flex-1 h-10"
+                    >
+                      <Columns3 className="h-4 w-4 mr-2" />
+                      Colunas
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowStats(true)}
+                      className="flex-1 h-10"
+                    >
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Estatísticas
+                    </Button>
+                  </div>
+
+                  {/* LINHA 3: Filtro colunas + Toggle badges */}
+                  <div className="px-3 py-2 border-b flex items-center gap-2">
+                    <Select 
+                      value={gridColumnsMobile.toString()} 
+                      onValueChange={(v) => setGridColumnsMobile(Number(v) as 1 | 2)}
+                    >
+                      <SelectTrigger className="flex-1 h-10 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Coluna</SelectItem>
+                        <SelectItem value="2">2 Colunas</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant={hideBadgesMobile ? "secondary" : "outline"}
+                      size="sm"
+                      onClick={() => setHideBadgesMobile(!hideBadgesMobile)}
+                      className="flex-1 h-10 text-sm gap-1"
+                    >
+                      {hideBadgesMobile ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                      <span className="text-xs truncate">{hideBadgesMobile ? "Mostrar" : "Ocultar"}</span>
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
-            
-            {/* Filtro de categoria mobile */}
-            {isMobile && (
-              <div className="px-3 py-2 border-b bg-card">
-                <Select value={selectedCategoryFilterMobile} onValueChange={setSelectedCategoryFilterMobile}>
-                  <SelectTrigger className="w-full h-10">
-                    <SelectValue placeholder="Filtrar por categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
-                    {categories.filter(c => c.name !== "Diário").map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             
             <SearchFilters
               searchTerm={searchTerm}
