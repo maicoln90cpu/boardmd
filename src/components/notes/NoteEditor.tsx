@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Check, X, Pin, Link2 } from "lucide-react";
+import { Check, X, Pin, Link2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -29,6 +29,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   
   // Buscar tarefas disponíveis
   const { tasks } = useTasks("all");
@@ -84,6 +85,9 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
     });
 
     toast.success("Nota salva!");
+
+    setShowSavedIndicator(true);
+    setTimeout(() => setShowSavedIndicator(false), 2000);
     
     if (onSave) {
       onSave();
@@ -103,7 +107,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
 
   return (
     <div 
-      className="flex flex-col h-full transition-colors"
+      className="flex flex-col min-h-[100dvh] transition-colors"
       style={{ backgroundColor: color || undefined }}
     >
       {/* Título e ações */}
@@ -127,6 +131,14 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
             <ColorPicker currentColor={color} onColorChange={handleColorChange} />
           </div>
         </div>
+
+        {/* Indicador de salvamento */}
+        {showSavedIndicator && (
+          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <span>Nota salva</span>
+          </div>
+        )}
 
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
@@ -152,7 +164,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       {/* Editor de conteúdo */}
       <div className="flex-1 flex flex-col min-h-0">
         <RichTextToolbar editor={editor} />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-[180px] md:pb-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:pb-6">
           <EditorContent
             editor={editor}
             className="prose prose-sm max-w-none focus:outline-none h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:outline-none"
@@ -161,7 +173,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       </div>
 
       {/* Botões de ação */}
-      <div className="fixed md:sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-50">
+      <div className="p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
