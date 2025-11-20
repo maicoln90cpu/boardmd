@@ -103,11 +103,11 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
 
   return (
     <div 
-      className="flex flex-col h-full overflow-hidden transition-colors"
+      className="flex flex-col h-full transition-colors"
       style={{ backgroundColor: color || undefined }}
     >
       {/* Título e ações */}
-      <div className="p-4 sm:p-6 border-b space-y-3">
+      <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
         <div className="flex items-start gap-2">
           <Input
             placeholder="Título da anotação..."
@@ -150,9 +150,9 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       </div>
 
       {/* Editor de conteúdo */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0">
         <RichTextToolbar editor={editor} />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-32 md:pb-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-[180px] md:pb-6">
           <EditorContent
             editor={editor}
             className="prose prose-sm max-w-none focus:outline-none h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:outline-none"
@@ -161,7 +161,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       </div>
 
       {/* Botões de ação */}
-      <div className="sticky bottom-0 p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg">
+      <div className="fixed md:sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-50">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar

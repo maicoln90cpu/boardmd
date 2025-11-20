@@ -183,7 +183,7 @@ export function MobileNotesLayout({
             <span className="text-sm text-muted-foreground flex-1">Voltar</span>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col min-h-0">
             <NoteEditor
               key={`${selectedNote.id}-${editorSaveTriggered}`}
               note={selectedNote}
