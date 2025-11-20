@@ -56,15 +56,15 @@ export default function Dashboard() {
       
       <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         {/* Header com botão de voltar */}
-        <div className="flex items-center gap-4 px-6 py-3 border-b bg-background">
+        <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 border-b bg-background">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-1 sm:gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
           >
-            <Home className="h-5 w-5" />
-            <span className="text-sm">Voltar</span>
+            <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="text-xs sm:text-sm">Voltar</span>
           </button>
-          <h2 className="text-lg font-semibold">📊 Dashboard</h2>
+          <h2 className="text-base sm:text-lg font-semibold truncate">📊 Dashboard</h2>
         </div>
 
         <div className="flex-1 overflow-auto pb-[140px] md:pb-0">

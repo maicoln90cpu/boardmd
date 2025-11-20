@@ -46,13 +46,13 @@ export function MobileKanbanView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-2">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {columns.map((column) => {
             const columnTasks = getTasksForColumn(column.id);
             return (
               <div 
                 key={column.id} 
-                className="flex flex-col bg-card rounded-lg border min-h-[250px]"
+                className="flex flex-col bg-card rounded-lg border min-h-[300px]"
               >
                 {/* Header da coluna */}
                 <div className={`p-2 border-b sticky top-0 bg-card z-10 rounded-t-lg ${getColumnColorClass(column.color)}`}>
