@@ -359,6 +359,33 @@ function Index() {
                   </Button>
                 </div>
               </div>
+
+              {isMobile && (
+                <div className="px-3 py-2 border-b flex items-center gap-2">
+                  <Select 
+                    value={gridColumnsMobile.toString()} 
+                    onValueChange={(v) => setGridColumnsMobile(Number(v) as 1 | 2)}
+                  >
+                    <SelectTrigger className="flex-1 h-10 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Coluna</SelectItem>
+                      <SelectItem value="2">2 Colunas</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant={hideBadgesMobile ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setHideBadgesMobile(!hideBadgesMobile)}
+                    className="flex-1 h-10 text-sm gap-1"
+                  >
+                    {hideBadgesMobile ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}
+                    <span className="text-xs truncate">{hideBadgesMobile ? "Mostrar" : "Ocultar"}</span>
+                  </Button>
+                </div>
+              )}
               
               {/* Controles de ordenação do Kanban Diário */}
               <div className="px-6 py-2 border-b bg-card">
@@ -533,11 +560,13 @@ function Index() {
                   searchTerm={searchTerm}
                   priorityFilter={priorityFilter}
                   tagFilter={tagFilter}
-                  sortOption={sortOption}
-                  viewMode={viewMode}
-                  showCategoryBadge
-                  densityMode={densityMode}
-                />
+              sortOption={sortOption}
+              viewMode={viewMode}
+              showCategoryBadge
+              densityMode={densityMode}
+              hideBadges={hideBadgesMobile}
+              gridColumns={gridColumnsMobile}
+            />
               </div>
             ) : (
               /* Renderizar Kanbans por categoria */
@@ -555,10 +584,12 @@ function Index() {
                       searchTerm={searchTerm}
                       priorityFilter={priorityFilter}
                       tagFilter={tagFilter}
-                      sortOption={sortOption}
-                      viewMode={viewMode}
-                      densityMode={densityMode}
-                    />
+                sortOption={sortOption}
+                viewMode={viewMode}
+                densityMode={densityMode}
+                hideBadges={hideBadgesMobile}
+                gridColumns={gridColumnsMobile}
+              />
                   </div>
                 ))
             )}
