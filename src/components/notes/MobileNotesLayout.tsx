@@ -181,18 +181,6 @@ export function MobileNotesLayout({
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <span className="text-sm text-muted-foreground flex-1">Voltar</span>
-            
-            {/* Botão Salvar no header mobile */}
-            {selectedNote && (
-              <Button
-                size="sm"
-                onClick={handleSaveFromHeader}
-                className="min-h-[44px] gap-1"
-              >
-                <Check className="h-4 w-4" />
-                Salvar
-              </Button>
-            )}
           </div>
 
           <div className="flex-1 overflow-hidden">
