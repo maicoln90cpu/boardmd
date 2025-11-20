@@ -7,23 +7,31 @@ export interface AppSettings {
     dueDate: boolean;
     achievements: boolean;
     sound: boolean;
-    dueDateHours: number; // Horas antes do prazo para notificar
+    dueDateHours: number;
   };
   kanban: {
     autoReset: boolean;
-    resetTime: string; // "00:00"
+    resetTime: string;
     defaultColumn: string;
     maxTasksPerColumn: number;
     allowCrossCategoryDrag: boolean;
+    showFavoritesPanel: boolean;
+    dailySortOption: 'time' | 'name' | 'priority';
+    dailySortOrder: 'asc' | 'desc';
+    simplifiedMode: boolean;
   };
   productivity: {
     dailyGoal: number;
     pomodoroEnabled: boolean;
-    pomodoroDuration: number; // minutos
+    pomodoroDuration: number;
   };
   interface: {
     sidebarPosition: 'left' | 'right';
     language: 'pt-BR' | 'en' | 'es';
+  };
+  mobile: {
+    gridColumns: 1 | 2;
+    hideBadges: boolean;
   };
 }
 
@@ -42,6 +50,10 @@ const defaultSettings: AppSettings = {
     defaultColumn: '',
     maxTasksPerColumn: 20,
     allowCrossCategoryDrag: false,
+    showFavoritesPanel: true,
+    dailySortOption: 'time',
+    dailySortOrder: 'asc',
+    simplifiedMode: false,
   },
   productivity: {
     dailyGoal: 5,
@@ -51,6 +63,10 @@ const defaultSettings: AppSettings = {
   interface: {
     sidebarPosition: 'left',
     language: 'pt-BR',
+  },
+  mobile: {
+    gridColumns: 2,
+    hideBadges: false,
   },
 };
 
@@ -79,6 +95,10 @@ export function useSettings() {
       interface: {
         ...prev.interface,
         ...(newSettings.interface || {}),
+      },
+      mobile: {
+        ...prev.mobile,
+        ...(newSettings.mobile || {}),
       },
     }));
   };
