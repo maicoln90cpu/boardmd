@@ -80,6 +80,10 @@ function Index() {
   
   // Estado para filtro de categoria no mobile (Kanban Projetos)
   const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
+  
+  // Estados para mobile - ocultar badges e escolher grid columns
+  const [hideBadgesMobile, setHideBadgesMobile] = useLocalStorage<boolean>("kanban-hide-badges-mobile", false);
+  const [gridColumnsMobile, setGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-grid-columns-mobile", 2);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -384,6 +388,8 @@ function Index() {
                   isDailyKanban
                   sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
                   densityMode={densityMode}
+                  hideBadges={hideBadgesMobile}
+                  gridColumns={gridColumnsMobile}
                 />
               </div>
 

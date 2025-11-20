@@ -34,6 +34,7 @@ interface TaskCardProps {
   onToggleFavorite?: (taskId: string) => void;
   onDuplicate?: (taskId: string) => void;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
+  hideBadges?: boolean;
 }
 
 export function TaskCard({
@@ -49,7 +50,8 @@ export function TaskCard({
   showCategoryBadge = false,
   onToggleFavorite,
   onDuplicate,
-  densityMode = "comfortable"
+  densityMode = "comfortable",
+  hideBadges = false
 }: TaskCardProps) {
   const {
     attributes,
@@ -192,24 +194,24 @@ export function TaskCard({
                   )}
                   onClick={() => onEdit(task)}
                 >
-                  {task.title}
+                {task.title}
                 </span>
-                {showCategoryBadge && task.categories?.name && (
+                {!hideBadges && showCategoryBadge && task.categories?.name && (
                   <Badge variant="outline" className="text-[9px] px-0.5 py-0 shrink-0">
                     {task.categories.name}
                   </Badge>
                 )}
-                {task.priority && (
+                {!hideBadges && task.priority && (
                   <Badge className={`text-[9px] px-0.5 py-0 shrink-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                     {task.priority[0].toUpperCase()}
                   </Badge>
                 )}
-                {task.due_date && (
+                {!hideBadges && task.due_date && (
                   <span className={`text-[9px] shrink-0 ${isOverdue ? 'text-destructive' : isUrgent ? 'text-orange-600' : 'text-muted-foreground'}`}>
                     {new Date(task.due_date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}
                   </span>
                 )}
-                {task.mirror_task_id && (
+                {!hideBadges && task.mirror_task_id && (
                   <Badge variant="secondary" className="text-[9px] px-1 py-0 shrink-0 bg-cyan-500 text-white">
                     🪞
                   </Badge>
@@ -464,31 +466,31 @@ export function TaskCard({
 
                 {/* Linha única com todos os badges e data */}
                 <div className={`flex items-center flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
-                  {showCategoryBadge && task.categories?.name && (
+                  {!hideBadges && showCategoryBadge && task.categories?.name && (
                     <Badge variant="secondary" className="text-[10px] px-1 py-0">
                       {task.categories.name}
                     </Badge>
                   )}
 
-                  {task.mirror_task_id && (
+                  {!hideBadges && task.mirror_task_id && (
                     <Badge variant="secondary" className="text-[10px] px-1 py-0 gap-0.5">
                       🪞 Espelhada
                     </Badge>
                   )}
 
-                  {task.priority && (
+                  {!hideBadges && task.priority && (
                     <Badge className={`text-[10px] px-1 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
                       {task.priority[0].toUpperCase()}
                     </Badge>
                   )}
 
-                  {task.tags?.slice(0, 2).map((tag) => (
+                  {!hideBadges && task.tags?.slice(0, 2).map((tag) => (
                     <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
                       {tag}
                     </Badge>
                   ))}
                   
-                  {task.tags && task.tags.length > 2 && (
+                  {!hideBadges && task.tags && task.tags.length > 2 && (
                     <Badge variant="outline" className="text-[10px] px-1 py-0">
                       +{task.tags.length - 2}
                     </Badge>

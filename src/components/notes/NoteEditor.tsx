@@ -147,7 +147,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin }: NoteEditorProps) {
       {/* Editor de conteúdo */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <RichTextToolbar editor={editor} />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-20 md:pb-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
           <EditorContent
             editor={editor}
             className="prose prose-sm max-w-none focus:outline-none h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:outline-none"
