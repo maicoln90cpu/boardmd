@@ -86,13 +86,9 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
   const menuItems = [
     { icon: Calendar, label: "Diário", active: viewMode === "daily", onClick: () => onViewChange("daily") },
     { icon: Layers, label: "Projetos", active: viewMode === "all", onClick: () => onViewChange("all") },
-    { icon: BarChart3, label: "Dashboard", onClick: () => navigate("/dashboard") },
     { icon: FileText, label: "Anotações", onClick: () => navigate("/notes") },
-    { icon: Download, label: "Exportar", onClick: onExport },
-    { icon: Upload, label: "Importar", onClick: onImport },
-    { icon: Palette, label: "Tema", onClick: onThemeToggle },
-    { icon: Settings, label: "Configurações", onClick: () => setSettingsOpen(true) },
-    { icon: LogOut, label: "Sair", onClick: handleLogout },
+    { icon: BarChart3, label: "Dashboard", onClick: () => navigate("/dashboard") },
+    { icon: Settings, label: "Config", onClick: () => navigate("/config") },
   ];
 
   return (
@@ -120,24 +116,11 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
       {/* Mobile menu - bottom navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
         <div className="grid grid-cols-5 gap-1 p-1.5">
-          {menuItems.slice(0, 5).map((item) => (
+          {menuItems.map((item) => (
             <Button
               key={item.label}
               variant={item.active ? "secondary" : "ghost"}
-              className="flex-col gap-0.5 h-auto py-1.5 text-[10px]"
-              onClick={item.onClick}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="truncate w-full text-center">{item.label}</span>
-            </Button>
-          ))}
-        </div>
-        <div className="grid grid-cols-5 gap-1 px-1.5 pb-1.5">
-          {menuItems.slice(5, 10).map((item) => (
-            <Button
-              key={item.label}
-              variant={item.active ? "secondary" : "ghost"}
-              className="flex-col gap-0.5 h-auto py-1.5 text-[10px]"
+              className="flex-col gap-0.5 h-auto py-2 text-[10px]"
               onClick={item.onClick}
             >
               <item.icon className="h-4 w-4" />
@@ -147,145 +130,6 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onViewChange, viewM
         </div>
       </nav>
 
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent aria-describedby="settings-dialog-description" className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Configurações</DialogTitle>
-            <DialogDescription id="settings-dialog-description">
-              Painel de preferências do sistema
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Tema</span>
-                <Button size="sm" variant="outline" onClick={onThemeToggle}>
-                  Alternar Tema
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Gerenciar Categorias</h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsAddingCategory(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Categoria
-                </Button>
-              </div>
-
-              {isAddingCategory && (
-                <div className="flex items-center gap-2 p-2 rounded-md border bg-card">
-                  <Input
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="Nome da nova categoria..."
-                    className="flex-1"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleAddCategory();
-                      }
-                      if (e.key === "Escape") {
-                        setIsAddingCategory(false);
-                        setNewCategoryName("");
-                      }
-                    }}
-                  />
-                  <Button size="sm" onClick={handleAddCategory}>
-                    Criar
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setIsAddingCategory(false);
-                      setNewCategoryName("");
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                {categories
-                  .filter(cat => cat.name !== "Diário")
-                  .map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
-                    >
-                      {editingId === category.id ? (
-                        <>
-                          <Input
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            className="flex-1"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                handleEditCategory(category.id, editingName);
-                              }
-                              if (e.key === "Escape") {
-                                setEditingId(null);
-                                setEditingName("");
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            onClick={() => handleEditCategory(category.id, editingName)}
-                          >
-                            Salvar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditingName("");
-                            }}
-                          >
-                            Cancelar
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex-1 text-sm">{category.name}</span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => {
-                              setEditingId(category.id);
-                              setEditingName(category.name);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteCategory(category.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

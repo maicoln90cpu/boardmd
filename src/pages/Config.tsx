@@ -1,0 +1,734 @@
+import { useState } from "react";
+import { useSettings } from "@/hooks/useSettings";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useCategories } from "@/hooks/useCategories";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft } from "lucide-react";
+import { ColumnManager } from "@/components/kanban/ColumnManager";
+import { useColumns } from "@/hooks/useColumns";
+
+export default function Config() {
+  const { settings, updateSettings, resetSettings } = useSettings();
+  const { toggleTheme } = useTheme();
+  const { categories, addCategory, deleteCategory } = useCategories();
+  const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [showColumnManager, setShowColumnManager] = useState(false);
+  
+  const { 
+    columns, 
+    hiddenColumns,
+    toggleColumnVisibility,
+    getVisibleColumns,
+    resetToDefaultView,
+    deleteColumn,
+    renameColumn,
+    reorderColumns,
+    addColumn
+  } = useColumns();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  const handleEditCategory = async (id: string, newName: string) => {
+    if (!newName.trim()) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    const category = categories.find(c => c.id === id);
+    if (category?.name === "Diário") {
+      toast({ title: "Não é possível editar a categoria Diário", variant: "destructive" });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("categories")
+      .update({ name: newName.trim() })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao atualizar categoria", variant: "destructive" });
+    } else {
+      toast({ title: "Categoria atualizada!" });
+      setEditingId(null);
+      setEditingName("");
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    const category = categories.find(c => c.id === id);
+    if (category?.name === "Diário") {
+      toast({ title: "Não é possível excluir a categoria Diário", variant: "destructive" });
+      return;
+    }
+
+    if (confirm(`Deseja realmente excluir a categoria "${category?.name}"?`)) {
+      await deleteCategory(id);
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    await addCategory(newCategoryName.trim());
+    setNewCategoryName("");
+    setIsAddingCategory(false);
+  };
+
+  const handleExport = () => {
+    const data = {
+      categories,
+      settings,
+      exportDate: new Date().toISOString(),
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `kanban-config-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "Exportação concluída", description: "Arquivo JSON baixado com sucesso" });
+  };
+
+  const handleImport = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        if (data.categories && Array.isArray(data.categories)) {
+          for (const cat of data.categories) {
+            if (cat.name !== "Diário") {
+              await addCategory(cat.name);
+            }
+          }
+        }
+        
+        toast({ 
+          title: "Importação bem-sucedida", 
+          description: "Dados importados com sucesso" 
+        });
+      } catch (error) {
+        toast({ 
+          title: "Erro na importação", 
+          description: "Arquivo inválido",
+          variant: "destructive" 
+        });
+      }
+    };
+    input.click();
+  };
+
+  const handleReset = () => {
+    resetSettings();
+    toast({ title: "Configurações resetadas", description: "Todas as configurações foram restauradas aos valores padrão" });
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header com botão voltar */}
+      <div className="sticky top-0 z-10 bg-background border-b">
+        <div className="px-6 py-4 flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
+        </div>
+      </div>
+
+      <div className="container max-w-6xl mx-auto p-6 pb-24">
+        <Tabs defaultValue="appearance" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+            <TabsTrigger value="appearance">Aparência</TabsTrigger>
+            <TabsTrigger value="notifications">Notificações</TabsTrigger>
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="productivity">Produtividade</TabsTrigger>
+            <TabsTrigger value="categories">Categorias</TabsTrigger>
+            <TabsTrigger value="advanced">Avançado</TabsTrigger>
+            <TabsTrigger value="data">Dados</TabsTrigger>
+          </TabsList>
+
+          {/* Aba Aparência */}
+          <TabsContent value="appearance" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>🎨 Aparência</CardTitle>
+                <CardDescription>Personalize a interface do aplicativo</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="theme">Tema</Label>
+                  <Select 
+                    value={settings.theme} 
+                    onValueChange={(value) => updateSettings({ theme: value as 'light' | 'dark' | 'auto' })}
+                  >
+                    <SelectTrigger id="theme">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Claro</SelectItem>
+                      <SelectItem value="dark">Escuro</SelectItem>
+                      <SelectItem value="auto">Automático</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="density">Densidade Padrão</Label>
+                  <Select 
+                    value={settings.defaultDensity} 
+                    onValueChange={(value) => updateSettings({ defaultDensity: value as 'comfortable' | 'compact' | 'ultra-compact' })}
+                  >
+                    <SelectTrigger id="density">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="comfortable">Confortável</SelectItem>
+                      <SelectItem value="compact">Compacto</SelectItem>
+                      <SelectItem value="ultra-compact">Ultra Compacto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Idioma</Label>
+                  <Select 
+                    value={settings.interface.language} 
+                    onValueChange={(value) => updateSettings({ interface: { ...settings.interface, language: value as 'pt-BR' | 'en' | 'es' } })}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pt-BR">Português (BR)</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <Label>Mobile</Label>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="grid-columns">Colunas do Grid Mobile</Label>
+                    <Select 
+                      value={settings.mobile.gridColumns.toString()} 
+                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, gridColumns: Number(value) as 1 | 2 } })}
+                    >
+                      <SelectTrigger id="grid-columns">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Coluna</SelectItem>
+                        <SelectItem value="2">2 Colunas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="hide-badges">Ocultar Badges no Mobile</Label>
+                    <Switch
+                      id="hide-badges"
+                      checked={settings.mobile.hideBadges}
+                      onCheckedChange={(checked) => updateSettings({ mobile: { ...settings.mobile, hideBadges: checked } })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Notificações */}
+          <TabsContent value="notifications" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>🔔 Notificações</CardTitle>
+                <CardDescription>Configure os alertas do sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="due-date">Alertas de Prazo</Label>
+                    <p className="text-sm text-muted-foreground">Receba notificações quando tarefas estiverem próximas do prazo</p>
+                  </div>
+                  <Switch
+                    id="due-date"
+                    checked={settings.notifications.dueDate}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="due-hours">Horas antes do prazo</Label>
+                  <Input
+                    id="due-hours"
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={settings.notifications.dueDateHours}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: parseInt(e.target.value) || 24 } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="achievements">Notificações de Conquistas</Label>
+                    <p className="text-sm text-muted-foreground">Receba avisos ao completar metas e conquistas</p>
+                  </div>
+                  <Switch
+                    id="achievements"
+                    checked={settings.notifications.achievements}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, achievements: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sound">Sons de Notificação</Label>
+                    <p className="text-sm text-muted-foreground">Reproduzir sons ao receber notificações</p>
+                  </div>
+                  <Switch
+                    id="sound"
+                    checked={settings.notifications.sound}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, sound: checked } })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Kanban */}
+          <TabsContent value="kanban" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>📋 Kanban</CardTitle>
+                <CardDescription>Configure o comportamento do quadro Kanban</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto-reset">Reset Automático Diário</Label>
+                    <p className="text-sm text-muted-foreground">Resetar automaticamente o Kanban Diário</p>
+                  </div>
+                  <Switch
+                    id="auto-reset"
+                    checked={settings.kanban.autoReset}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, autoReset: checked } })}
+                  />
+                </div>
+
+                {settings.kanban.autoReset && (
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-time">Horário do Reset</Label>
+                    <Input
+                      id="reset-time"
+                      type="time"
+                      value={settings.kanban.resetTime}
+                      onChange={(e) => updateSettings({ kanban: { ...settings.kanban, resetTime: e.target.value } })}
+                    />
+                  </div>
+                )}
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="max-tasks">Máximo de Tarefas por Coluna</Label>
+                  <Input
+                    id="max-tasks"
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={settings.kanban.maxTasksPerColumn}
+                    onChange={(e) => updateSettings({ kanban: { ...settings.kanban, maxTasksPerColumn: parseInt(e.target.value) || 20 } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="cross-drag">Arrastar entre Categorias</Label>
+                    <p className="text-sm text-muted-foreground">Permitir mover tarefas entre diferentes categorias</p>
+                  </div>
+                  <Switch
+                    id="cross-drag"
+                    checked={settings.kanban.allowCrossCategoryDrag}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, allowCrossCategoryDrag: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="favorites-panel">Mostrar Painel de Favoritos</Label>
+                    <p className="text-sm text-muted-foreground">Exibir painel lateral com tarefas favoritas</p>
+                  </div>
+                  <Switch
+                    id="favorites-panel"
+                    checked={settings.kanban.showFavoritesPanel}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="daily-sort">Ordenação Padrão (Kanban Diário)</Label>
+                  <Select 
+                    value={settings.kanban.dailySortOption} 
+                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOption: value as 'time' | 'name' | 'priority' } })}
+                  >
+                    <SelectTrigger id="daily-sort">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="time">Horário</SelectItem>
+                      <SelectItem value="name">Nome</SelectItem>
+                      <SelectItem value="priority">Prioridade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="daily-order">Ordem de Classificação</Label>
+                  <Select 
+                    value={settings.kanban.dailySortOrder} 
+                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value as 'asc' | 'desc' } })}
+                  >
+                    <SelectTrigger id="daily-order">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="asc">Crescente</SelectItem>
+                      <SelectItem value="desc">Decrescente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="simplified">Modo Simplificado</Label>
+                    <p className="text-sm text-muted-foreground">Mostrar apenas 3 colunas principais</p>
+                  </div>
+                  <Switch
+                    id="simplified"
+                    checked={settings.kanban.simplifiedMode}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div>
+                  <Button onClick={() => setShowColumnManager(true)} className="w-full">
+                    Gerenciar Colunas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Produtividade */}
+          <TabsContent value="productivity" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>📈 Produtividade</CardTitle>
+                <CardDescription>Configure suas metas e ferramentas de produtividade</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="daily-goal">Meta Diária de Tarefas</Label>
+                  <Input
+                    id="daily-goal"
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={settings.productivity.dailyGoal}
+                    onChange={(e) => updateSettings({ productivity: { ...settings.productivity, dailyGoal: parseInt(e.target.value) || 5 } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="pomodoro">Habilitar Pomodoro</Label>
+                    <p className="text-sm text-muted-foreground">Ativar timer Pomodoro para foco</p>
+                  </div>
+                  <Switch
+                    id="pomodoro"
+                    checked={settings.productivity.pomodoroEnabled}
+                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, pomodoroEnabled: checked } })}
+                  />
+                </div>
+
+                {settings.productivity.pomodoroEnabled && (
+                  <div className="space-y-2">
+                    <Label htmlFor="pomodoro-duration">Duração do Pomodoro (minutos)</Label>
+                    <Input
+                      id="pomodoro-duration"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={settings.productivity.pomodoroDuration}
+                      onChange={(e) => updateSettings({ productivity: { ...settings.productivity, pomodoroDuration: parseInt(e.target.value) || 25 } })}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Categorias */}
+          <TabsContent value="categories" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>🗂️ Categorias</CardTitle>
+                <CardDescription>Gerencie suas categorias de projetos</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsAddingCategory(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Categoria
+                  </Button>
+                </div>
+
+                {isAddingCategory && (
+                  <div className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                    <Input
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder="Nome da nova categoria..."
+                      className="flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddCategory();
+                        }
+                        if (e.key === "Escape") {
+                          setIsAddingCategory(false);
+                          setNewCategoryName("");
+                        }
+                      }}
+                    />
+                    <Button size="sm" onClick={handleAddCategory}>
+                      Criar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsAddingCategory(false);
+                        setNewCategoryName("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {categories
+                    .filter(cat => cat.name !== "Diário")
+                    .map((category) => (
+                      <div
+                        key={category.id}
+                        className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        {editingId === category.id ? (
+                          <>
+                            <Input
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              className="flex-1"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleEditCategory(category.id, editingName);
+                                }
+                                if (e.key === "Escape") {
+                                  setEditingId(null);
+                                  setEditingName("");
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleEditCategory(category.id, editingName)}
+                            >
+                              Salvar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setEditingId(null);
+                                setEditingName("");
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="flex-1 text-sm">{category.name}</span>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => {
+                                setEditingId(category.id);
+                                setEditingName(category.name);
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteCategory(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Avançado */}
+          <TabsContent value="advanced" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>🔧 Avançado</CardTitle>
+                <CardDescription>Configurações avançadas do sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      Resetar Todas as Configurações
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso irá resetar todas as configurações para os valores padrão. Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleReset}>
+                        Confirmar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <Separator />
+
+                <Button variant="outline" onClick={handleLogout} className="w-full">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair da Conta
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Dados */}
+          <TabsContent value="data" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>💾 Dados</CardTitle>
+                <CardDescription>Gerencie seus dados e backups</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={handleExport} variant="outline" className="w-full">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Dados
+                </Button>
+
+                <Button onClick={handleImport} variant="outline" className="w-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Dados
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialog de Gerenciamento de Colunas */}
+      <ColumnManager
+        open={showColumnManager}
+        onOpenChange={setShowColumnManager}
+        columns={columns}
+        hiddenColumns={hiddenColumns}
+        onToggleVisibility={toggleColumnVisibility}
+        onDeleteColumn={deleteColumn}
+        onResetToDefault={resetToDefaultView}
+        onRenameColumn={renameColumn}
+        onAddColumn={addColumn}
+        onReorderColumns={reorderColumns}
+      />
+    </div>
+  );
+}
