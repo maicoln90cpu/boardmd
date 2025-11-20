@@ -22,9 +22,10 @@ interface NoteEditorProps {
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onSave?: () => void;
+  externalSaveTrigger?: number;
 }
 
-export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorProps) {
+export function NoteEditor({ note, onUpdate, onTogglePin, onSave, externalSaveTrigger }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
@@ -90,6 +91,12 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
     }
   };
 
+  useEffect(() => {
+    if (externalSaveTrigger && externalSaveTrigger > 0) {
+      handleSave();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalSaveTrigger]);
   const handleCancel = () => {
     setTitle(note.title);
     setContent(note.content || "");

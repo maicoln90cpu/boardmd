@@ -202,6 +202,7 @@ export function MobileNotesLayout({
               onUpdate={onUpdateNote}
               onTogglePin={onTogglePin}
               onSave={handleBackFromEditor}
+              externalSaveTrigger={editorSaveTriggered}
             />
           </div>
         </div>
