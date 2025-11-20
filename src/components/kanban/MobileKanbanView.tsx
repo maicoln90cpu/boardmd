@@ -7,6 +7,7 @@ import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { getColumnColorClass } from "./ColumnColorPicker";
+import { cn } from "@/lib/utils";
 
 interface MobileKanbanViewProps {
   columns: Column[];
@@ -21,6 +22,8 @@ interface MobileKanbanViewProps {
   isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
+  hideBadges?: boolean;
+  gridColumns?: 1 | 2;
 }
 
 export function MobileKanbanView({
@@ -35,7 +38,9 @@ export function MobileKanbanView({
   handleMoveTask,
   isDailyKanban = false,
   showCategoryBadge = false,
-  densityMode = "compact"
+  densityMode = "compact",
+  hideBadges = false,
+  gridColumns = 2
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
 
@@ -46,7 +51,10 @@ export function MobileKanbanView({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-2">
-        <div className="grid grid-cols-2 gap-3">
+              <div className={cn(
+                "grid gap-3",
+                gridColumns === 1 ? "grid-cols-1" : "grid-cols-2"
+              )}>
           {columns.map((column) => {
             const columnTasks = getTasksForColumn(column.id);
             return (
@@ -82,6 +90,7 @@ export function MobileKanbanView({
                           isDailyKanban={isDailyKanban}
                           showCategoryBadge={showCategoryBadge}
                           densityMode="ultra-compact"
+                          hideBadges={hideBadges}
                         />
                       ))
                     )}

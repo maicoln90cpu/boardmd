@@ -27,6 +27,8 @@ interface KanbanBoardProps {
   allowCrossCategoryDrag?: boolean;
   viewMode?: string;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
+  hideBadges?: boolean;
+  gridColumns?: 1 | 2;
 }
 
 export function KanbanBoard({ 
@@ -41,7 +43,9 @@ export function KanbanBoard({
   showCategoryBadge = false,
   allowCrossCategoryDrag = false,
   viewMode = "daily",
-  densityMode = "comfortable"
+  densityMode = "comfortable",
+  hideBadges = false,
+  gridColumns = 2
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
@@ -310,6 +314,8 @@ export function KanbanBoard({
           isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
           densityMode={densityMode}
+          hideBadges={hideBadges}
+          gridColumns={gridColumns}
         />
 
         <TaskModal

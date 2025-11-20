@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Check } from "lucide-react";
 import { NotebooksList } from "./NotebooksList";
 import { NotesList } from "./NotesList";
 import { NoteEditor } from "./NoteEditor";
@@ -174,7 +174,19 @@ export function MobileNotesLayout({
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <span className="text-sm text-muted-foreground">Voltar</span>
+            <span className="text-sm text-muted-foreground flex-1">Voltar</span>
+            
+            {/* Botão Salvar no header mobile */}
+            {selectedNote && (
+              <Button
+                size="sm"
+                onClick={() => onUpdateNote(selectedNote.id, selectedNote)}
+                className="min-h-[44px] gap-1"
+              >
+                <Check className="h-4 w-4" />
+                Salvar
+              </Button>
+            )}
           </div>
 
           <div className="flex-1 overflow-hidden">
