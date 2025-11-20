@@ -25,8 +25,11 @@ import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 function Index() {
+  const isMobile = useIsMobile();
   const { categories, loading: loadingCategories, addCategory } = useCategories();
   const { 
     columns, 
@@ -74,6 +77,9 @@ function Index() {
   
   // Estado para mostrar/ocultar painel de favoritos no Kanban Diário
   const [showFavoritesPanel, setShowFavoritesPanel] = useLocalStorage<boolean>("kanban-show-favorites", true);
+  
+  // Estado para filtro de categoria no mobile (Kanban Projetos)
+  const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -123,9 +129,16 @@ function Index() {
         return false;
       }
       
+      // Filtro mobile de categoria
+      if (isMobile && viewMode === "all" && selectedCategoryFilterMobile !== "all") {
+        if (task.category_id !== selectedCategoryFilterMobile) {
+          return false;
+        }
+      }
+      
       return true;
     });
-  }, [tasks, viewMode, categoryFilter, categories]);
+  }, [tasks, viewMode, categoryFilter, categories, isMobile, selectedCategoryFilterMobile]);
 
   useEffect(() => {
     if (categories.length > 0) {
@@ -416,6 +429,25 @@ function Index() {
                 </Button>
               </div>
             </div>
+            
+            {/* Filtro de categoria mobile */}
+            {isMobile && (
+              <div className="px-3 py-2 border-b bg-card">
+                <Select value={selectedCategoryFilterMobile} onValueChange={setSelectedCategoryFilterMobile}>
+                  <SelectTrigger className="w-full h-10">
+                    <SelectValue placeholder="Filtrar por categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories.filter(c => c.name !== "Diário").map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             
             <SearchFilters
               searchTerm={searchTerm}
