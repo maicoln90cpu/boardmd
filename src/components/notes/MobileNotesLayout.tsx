@@ -50,8 +50,14 @@ export function MobileNotesLayout({
   };
 
   const handleBackFromEditor = () => {
-    setView(selectedNotebookId ? "notes" : "notebooks");
-    onSelectNote(null);
+    // Incrementar o trigger para forçar o save antes de voltar
+    setEditorSaveTriggered(prev => prev + 1);
+    
+    // Pequeno delay para garantir que o save seja processado
+    setTimeout(() => {
+      setView(selectedNotebookId ? "notes" : "notebooks");
+      onSelectNote(null);
+    }, 100);
   };
 
   const handleSaveFromHeader = () => {
