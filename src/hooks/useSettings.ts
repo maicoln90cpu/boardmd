@@ -1,4 +1,6 @@
-import { useLocalStorage } from "./useLocalStorage";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -71,10 +73,40 @@ const defaultSettings: AppSettings = {
 };
 
 export function useSettings() {
-  const [settings, setSettings] = useLocalStorage<AppSettings>(
-    'app-settings',
-    defaultSettings
-  );
+  const { user } = useAuth();
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Load settings from database
+  useEffect(() => {
+    if (!user) {
+      setSettings(defaultSettings);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadSettings = async () => {
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("settings")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error loading settings:", error);
+        setSettings(defaultSettings);
+      } else if (data?.settings) {
+        // Merge with default settings to ensure all properties exist
+        setSettings({ ...defaultSettings, ...(data.settings as Partial<AppSettings>) });
+      } else {
+        setSettings(defaultSettings);
+      }
+      setIsLoading(false);
+    };
+
+    loadSettings();
+  }, [user]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {
     setSettings((prev) => ({
@@ -101,15 +133,47 @@ export function useSettings() {
         ...(newSettings.mobile || {}),
       },
     }));
+    setIsDirty(true);
+  };
+
+  const saveSettings = async () => {
+    if (!user) return;
+
+    const { data: existingSettings } = await supabase
+      .from("user_settings")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingSettings) {
+      const { error } = await supabase
+        .from("user_settings")
+        .update({ settings: settings as any })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("user_settings")
+        .insert({ user_id: user.id, settings: settings as any });
+
+      if (error) throw error;
+    }
+
+    setIsDirty(false);
   };
 
   const resetSettings = () => {
     setSettings(defaultSettings);
+    setIsDirty(true);
   };
 
   return {
     settings,
     updateSettings,
+    saveSettings,
     resetSettings,
+    isLoading,
+    isDirty,
   };
 }

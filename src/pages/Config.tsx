@@ -20,7 +20,7 @@ import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 
 export default function Config() {
-  const { settings, updateSettings, resetSettings } = useSettings();
+  const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading } = useSettings();
   const { toggleTheme } = useTheme();
   const { categories, addCategory, deleteCategory } = useCategories();
   const { toast } = useToast();
@@ -151,20 +151,48 @@ export default function Config() {
     input.click();
   };
 
+  const handleSave = async () => {
+    try {
+      await saveSettings();
+      toast({ title: "✅ Configurações salvas", description: "Suas preferências foram salvas com sucesso" });
+    } catch (error) {
+      toast({ 
+        title: "Erro ao salvar", 
+        description: "Não foi possível salvar as configurações",
+        variant: "destructive" 
+      });
+    }
+  };
+
   const handleReset = () => {
     resetSettings();
     toast({ title: "Configurações resetadas", description: "Todas as configurações foram restauradas aos valores padrão" });
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Carregando configurações...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header com botão voltar */}
+      {/* Header com botão voltar e salvar */}
       <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="px-6 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
+        <div className="px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
+          </div>
+          {isDirty && (
+            <Button onClick={handleSave} className="font-semibold">
+              💾 Salvar Alterações
+            </Button>
+          )}
         </div>
       </div>
 
