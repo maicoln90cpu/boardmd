@@ -30,7 +30,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-  
+
   // Buscar tarefas disponíveis
   const { tasks } = useTasks("all");
 
@@ -88,7 +88,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
 
     setShowSavedIndicator(true);
     setTimeout(() => setShowSavedIndicator(false), 2000);
-    
+
     if (onSave) {
       onSave();
     }
@@ -106,10 +106,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
   };
 
   return (
-    <div 
-      className="flex flex-col min-h-[100dvh] transition-colors"
-      style={{ backgroundColor: color || undefined }}
-    >
+    <div className="flex flex-col min-h-[100dvh] transition-colors" style={{ backgroundColor: color || undefined }}>
       {/* Título e ações */}
       <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
         <div className="flex items-start gap-2">
@@ -126,7 +123,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
               onClick={() => onTogglePin(note.id)}
               className="h-10 w-10 shrink-0"
             >
-              <Pin className={`h-4 w-4 ${note.is_pinned ? 'fill-current' : ''}`} />
+              <Pin className={`h-4 w-4 ${note.is_pinned ? "fill-current" : ""}`} />
             </Button>
             <ColorPicker currentColor={color} onColorChange={handleColorChange} />
           </div>
@@ -143,7 +140,10 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
           <Link2 className="h-4 w-4 text-muted-foreground" />
-          <Select value={linkedTaskId || "none"} onValueChange={(value) => setLinkedTaskId(value === "none" ? null : value)}>
+          <Select
+            value={linkedTaskId || "none"}
+            onValueChange={(value) => setLinkedTaskId(value === "none" ? null : value)}
+          >
             <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
               <SelectValue placeholder="Vincular a uma tarefa..." />
             </SelectTrigger>
@@ -173,7 +173,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       </div>
 
       {/* Botões de ação */}
-      <div className="fixed bottom-0 left-0 right-0 md:relative p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
+      <div className="fixed bottom-0 left-0 right-0 md:relative p-10 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
