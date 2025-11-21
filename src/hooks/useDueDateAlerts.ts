@@ -3,6 +3,7 @@ import { Task } from "./useTasks";
 import { useToast } from "./use-toast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useSettings } from "./useSettings";
 
 // Request browser notification permission on first call
 let permissionRequested = false;
@@ -32,9 +33,13 @@ function showBrowserNotification(title: string, body: string, urgent: boolean = 
 
 export function useDueDateAlerts(tasks: Task[]) {
   const { toast } = useToast();
+  const { settings } = useSettings();
   const notifiedTasksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Não executar se notificações estão desabilitadas
+    if (!settings.notifications.dueDate) return;
+
     // Request permission once
     requestNotificationPermission();
 
@@ -86,7 +91,10 @@ export function useDueDateAlerts(tasks: Task[]) {
         const hoursUntilDue = differenceInHours(dueDate, now);
         const minutesUntilDue = differenceInMinutes(dueDate, now);
 
-        // Alerta 1 hora antes
+        // Item 4: Usar dueDateHours configurado
+        const configuredHours = settings.notifications.dueDateHours || 24;
+
+        // Alerta 1 hora antes (sempre)
         if (minutesUntilDue <= 60 && minutesUntilDue > 0) {
           if (!notifiedTasksRef.current.has(`${taskId}-1h`)) {
             toast({
@@ -104,9 +112,9 @@ export function useDueDateAlerts(tasks: Task[]) {
           return;
         }
 
-        // Alerta 24 horas antes
-        if (hoursUntilDue <= 24 && hoursUntilDue > 1) {
-          if (!notifiedTasksRef.current.has(`${taskId}-24h`)) {
+        // Alerta configurado antes
+        if (hoursUntilDue <= configuredHours && hoursUntilDue > 1) {
+          if (!notifiedTasksRef.current.has(`${taskId}-configured`)) {
             toast({
               title: "⚠️ Prazo Próximo",
               description: `"${task.title}" vence em ${hoursUntilDue} horas`,
@@ -116,7 +124,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               `"${task.title}" vence em ${hoursUntilDue} horas`,
               false
             );
-            notifiedTasksRef.current.add(`${taskId}-24h`);
+            notifiedTasksRef.current.add(`${taskId}-configured`);
           }
         }
       });
@@ -125,11 +133,12 @@ export function useDueDateAlerts(tasks: Task[]) {
     // Verifica imediatamente
     checkDueDates();
 
-    // Verifica a cada minuto
-    const interval = setInterval(checkDueDates, 60000);
+    // Item 4: Usar checkInterval configurado (em minutos)
+    const checkIntervalMs = (settings.notifications.checkInterval || 15) * 60000;
+    const interval = setInterval(checkDueDates, checkIntervalMs);
 
     return () => clearInterval(interval);
-  }, [tasks, toast]);
+  }, [tasks, toast, settings.notifications]);
 
   // Função para determinar o status de urgência
   const getTaskUrgency = (task: Task): "overdue" | "urgent" | "warning" | "normal" => {

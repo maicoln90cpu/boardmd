@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Subtask {
   id: string;
@@ -48,27 +49,30 @@ export function SubtasksEditor({ subtasks, onChange }: SubtasksEditorProps) {
     <div className="space-y-3">
       <Label>Subtarefas</Label>
       
-      <div className="space-y-2">
-        {subtasks.map((subtask) => (
-          <div key={subtask.id} className="flex items-center gap-2 group">
-            <Checkbox
-              checked={subtask.completed}
-              onCheckedChange={() => toggleSubtask(subtask.id)}
-            />
-            <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}>
-              {subtask.title}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => removeSubtask(subtask.id)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        ))}
-      </div>
+      {/* Item 5: Adicionar ScrollArea quando há muitas subtarefas */}
+      <ScrollArea className={subtasks.length > 5 ? "max-h-[200px]" : ""}>
+        <div className="space-y-2 pr-4">
+          {subtasks.map((subtask) => (
+            <div key={subtask.id} className="flex items-center gap-2 group">
+              <Checkbox
+                checked={subtask.completed}
+                onCheckedChange={() => toggleSubtask(subtask.id)}
+              />
+              <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-muted-foreground' : ''}`}>
+                {subtask.title}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => removeSubtask(subtask.id)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </ScrollArea>
 
       <div className="flex gap-2">
         <Input
