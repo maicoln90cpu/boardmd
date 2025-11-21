@@ -524,6 +524,24 @@ export default function Config() {
 
                 <Separator />
 
+                <div className="space-y-2">
+                  <Label htmlFor="snooze-minutes">Intervalo de Repetição (Snooze)</Label>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Repetir notificação a cada quantos minutos se a tarefa não for concluída
+                  </div>
+                  <Input
+                    id="snooze-minutes"
+                    type="number"
+                    min="5"
+                    max="120"
+                    step="5"
+                    value={settings.notifications.snoozeMinutes}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: parseInt(e.target.value) || 30 } })}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label htmlFor="achievements">Notificações de Conquistas</Label>
