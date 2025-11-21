@@ -10,6 +10,7 @@ export interface AppSettings {
     achievements: boolean;
     sound: boolean;
     dueDateHours: number;
+    checkInterval: 5 | 15 | 30 | 60;
   };
   kanban: {
     autoReset: boolean;
@@ -32,7 +33,8 @@ export interface AppSettings {
     language: 'pt-BR' | 'en' | 'es';
   };
   mobile: {
-    gridColumns: 1 | 2;
+    dailyGridColumns: 1 | 2;
+    projectsGridColumns: 1 | 2;
     hideBadges: boolean;
   };
 }
@@ -45,6 +47,7 @@ const defaultSettings: AppSettings = {
     achievements: true,
     sound: false,
     dueDateHours: 24,
+    checkInterval: 15,
   },
   kanban: {
     autoReset: false,
@@ -67,7 +70,8 @@ const defaultSettings: AppSettings = {
     language: 'pt-BR',
   },
   mobile: {
-    gridColumns: 2,
+    dailyGridColumns: 2,
+    projectsGridColumns: 2,
     hideBadges: false,
   },
 };
@@ -78,7 +82,7 @@ export function useSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Load settings from database
+  // Load settings from database + Realtime sync
   useEffect(() => {
     if (!user) {
       setSettings(defaultSettings);
@@ -106,6 +110,30 @@ export function useSettings() {
     };
 
     loadSettings();
+
+    // Item 1: Subscribe to realtime changes
+    const channel = supabase
+      .channel('user_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new?.settings) {
+            setSettings({ ...defaultSettings, ...(payload.new.settings as Partial<AppSettings>) });
+            setIsDirty(false);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const updateSettings = (newSettings: Partial<AppSettings>) => {

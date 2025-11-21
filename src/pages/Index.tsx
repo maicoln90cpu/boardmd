@@ -83,7 +83,8 @@ function Index() {
   
   // Estados para mobile - ocultar badges e escolher grid columns
   const [hideBadgesMobile, setHideBadgesMobile] = useLocalStorage<boolean>("kanban-hide-badges-mobile", false);
-  const [gridColumnsMobile, setGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-grid-columns-mobile", 2);
+  const [dailyGridColumnsMobile, setDailyGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-daily-grid-columns-mobile", 2);
+  const [projectsGridColumnsMobile, setProjectsGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-projects-grid-columns-mobile", 2);
 
   // Buscar todas as tarefas para notificações
   const { tasks: allTasks } = useTasks(undefined);
@@ -294,6 +295,40 @@ function Index() {
     return baseColumns;
   }, [getVisibleColumns, simplifiedMode, viewMode]);
 
+  // Item 2: Calcular contadores de tarefas por tipo de coluna
+  const taskCounters = useMemo(() => {
+    if (viewMode !== "all") return null;
+
+    const counters: { 
+      total: number; 
+      recorrente?: number; 
+      afazer?: number; 
+      emprogresso?: number; 
+      futuro?: number;
+    } = { total: 0 };
+
+    filteredTasks.forEach(task => {
+      counters.total++;
+      const column = visibleColumns.find(col => col.id === task.column_id);
+      if (column) {
+        const columnName = column.name.toLowerCase();
+        
+        // Identificar tipo de coluna
+        if (columnName.includes("recorrente")) {
+          counters.recorrente = (counters.recorrente || 0) + 1;
+        } else if (columnName.includes("fazer") || columnName.includes("pendente") || columnName.includes("backlog")) {
+          counters.afazer = (counters.afazer || 0) + 1;
+        } else if (columnName.includes("progresso") || columnName.includes("andamento") || columnName.includes("doing")) {
+          counters.emprogresso = (counters.emprogresso || 0) + 1;
+        } else if (columnName.includes("futuro") || columnName.includes("próximo") || columnName.includes("planejado")) {
+          counters.futuro = (counters.futuro || 0) + 1;
+        }
+      }
+    });
+
+    return counters;
+  }, [filteredTasks, visibleColumns, viewMode]);
+
   if (loadingCategories || loadingColumns) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -363,8 +398,8 @@ function Index() {
               {isMobile && (
                 <div className="px-3 py-2 border-b flex items-center gap-2">
                   <Select 
-                    value={gridColumnsMobile.toString()} 
-                    onValueChange={(v) => setGridColumnsMobile(Number(v) as 1 | 2)}
+                    value={dailyGridColumnsMobile.toString()} 
+                    onValueChange={(v) => setDailyGridColumnsMobile(Number(v) as 1 | 2)}
                   >
                     <SelectTrigger className="flex-1 h-10 text-sm">
                       <SelectValue />
@@ -416,7 +451,7 @@ function Index() {
                   sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`}
                   densityMode={densityMode}
                   hideBadges={hideBadgesMobile}
-                  gridColumns={gridColumnsMobile}
+                  gridColumns={dailyGridColumnsMobile}
                 />
               </div>
 
@@ -437,10 +472,38 @@ function Index() {
               {/* DESKTOP: Layout original em 1 linha */}
               {!isMobile && (
                 <div className="px-6 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
                     {simplifiedMode && (
                       <Badge variant="secondary" className="text-xs">Modo Simplificado</Badge>
+                    )}
+                    {/* Item 2: Badges com contadores */}
+                    {taskCounters && (
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          Total: {taskCounters.total}
+                        </Badge>
+                        {taskCounters.recorrente && (
+                          <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                            🔄 Recorrente: {taskCounters.recorrente}
+                          </Badge>
+                        )}
+                        {taskCounters.afazer && (
+                          <Badge variant="secondary" className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                            📋 A Fazer: {taskCounters.afazer}
+                          </Badge>
+                        )}
+                        {taskCounters.emprogresso && (
+                          <Badge variant="secondary" className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
+                            🚀 Em Progresso: {taskCounters.emprogresso}
+                          </Badge>
+                        )}
+                        {taskCounters.futuro && (
+                          <Badge variant="secondary" className="text-xs bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
+                            📅 Futuro: {taskCounters.futuro}
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -497,8 +560,8 @@ function Index() {
                   {/* LINHA 3: Filtro colunas + Toggle badges */}
                   <div className="px-3 py-2 border-b flex items-center gap-2">
                     <Select 
-                      value={gridColumnsMobile.toString()} 
-                      onValueChange={(v) => setGridColumnsMobile(Number(v) as 1 | 2)}
+                      value={projectsGridColumnsMobile.toString()} 
+                      onValueChange={(v) => setProjectsGridColumnsMobile(Number(v) as 1 | 2)}
                     >
                       <SelectTrigger className="flex-1 h-10 text-sm">
                         <SelectValue />
@@ -560,13 +623,13 @@ function Index() {
                   searchTerm={searchTerm}
                   priorityFilter={priorityFilter}
                   tagFilter={tagFilter}
-              sortOption={sortOption}
-              viewMode={viewMode}
-              showCategoryBadge
-              densityMode={densityMode}
-              hideBadges={hideBadgesMobile}
-              gridColumns={gridColumnsMobile}
-            />
+                  sortOption={sortOption}
+                  viewMode={viewMode}
+                  showCategoryBadge
+                  densityMode={densityMode}
+                  hideBadges={hideBadgesMobile}
+                  gridColumns={projectsGridColumnsMobile}
+                />
               </div>
             ) : (
               /* Renderizar Kanbans por categoria */
@@ -584,12 +647,12 @@ function Index() {
                       searchTerm={searchTerm}
                       priorityFilter={priorityFilter}
                       tagFilter={tagFilter}
-                sortOption={sortOption}
-                viewMode={viewMode}
-                densityMode={densityMode}
-                hideBadges={hideBadgesMobile}
-                gridColumns={gridColumnsMobile}
-              />
+                      sortOption={sortOption}
+                      viewMode={viewMode}
+                      densityMode={densityMode}
+                      hideBadges={hideBadgesMobile}
+                      gridColumns={projectsGridColumnsMobile}
+                    />
                   </div>
                 ))
             )}

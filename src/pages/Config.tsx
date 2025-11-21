@@ -21,7 +21,7 @@ import { useColumns } from "@/hooks/useColumns";
 
 export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading } = useSettings();
-  const { toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { categories, addCategory, deleteCategory } = useCategories();
   const { toast } = useToast();
   const { signOut } = useAuth();
@@ -220,7 +220,11 @@ export default function Config() {
                   <Label htmlFor="theme">Tema</Label>
                   <Select 
                     value={settings.theme} 
-                    onValueChange={(value) => updateSettings({ theme: value as 'light' | 'dark' | 'auto' })}
+                    onValueChange={(value) => {
+                      const newTheme = value as 'light' | 'dark' | 'auto';
+                      updateSettings({ theme: newTheme });
+                      setTheme(newTheme);
+                    }}
                   >
                     <SelectTrigger id="theme">
                       <SelectValue />
@@ -277,12 +281,28 @@ export default function Config() {
                   <Label>Mobile</Label>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="grid-columns">Colunas do Grid Mobile</Label>
+                    <Label htmlFor="grid-columns-daily">Colunas do Grid Mobile (Diário)</Label>
                     <Select 
-                      value={settings.mobile.gridColumns.toString()} 
-                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, gridColumns: Number(value) as 1 | 2 } })}
+                      value={settings.mobile.dailyGridColumns.toString()} 
+                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: Number(value) as 1 | 2 } })}
                     >
-                      <SelectTrigger id="grid-columns">
+                      <SelectTrigger id="grid-columns-daily">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Coluna</SelectItem>
+                        <SelectItem value="2">2 Colunas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="grid-columns-projects">Colunas do Grid Mobile (Projetos)</Label>
+                    <Select 
+                      value={settings.mobile.projectsGridColumns.toString()} 
+                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: Number(value) as 1 | 2 } })}
+                    >
+                      <SelectTrigger id="grid-columns-projects">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -337,6 +357,26 @@ export default function Config() {
                     value={settings.notifications.dueDateHours}
                     onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: parseInt(e.target.value) || 24 } })}
                   />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="check-interval">Periodicidade de Verificação</Label>
+                  <Select 
+                    value={settings.notifications.checkInterval.toString()} 
+                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
+                  >
+                    <SelectTrigger id="check-interval">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">A cada 5 minutos</SelectItem>
+                      <SelectItem value="15">A cada 15 minutos</SelectItem>
+                      <SelectItem value="30">A cada 30 minutos</SelectItem>
+                      <SelectItem value="60">A cada hora</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Separator />

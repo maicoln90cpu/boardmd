@@ -86,6 +86,7 @@ export function SearchFilters({
   // Renderizar filtros (conteúdo compartilhado)
   const renderFilters = () => (
     <>
+      {/* Item 8: Prioridade, Tags, Categoria e Modo Exibição na mesma linha */}
       <Select value={priorityFilter} onValueChange={onPriorityChange}>
         <SelectTrigger className={selectClass}>
           <SelectValue placeholder="Prioridade" />
@@ -98,21 +99,21 @@ export function SearchFilters({
         </SelectContent>
       </Select>
 
-          {availableTags.length > 0 && (
-            <Select value={tagFilter} onValueChange={onTagChange}>
-              <SelectTrigger className={selectClass}>
-                <SelectValue placeholder="Tag" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {availableTags.map((tag) => (
-                  <SelectItem key={tag} value={tag}>
-                    {tag}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+      {availableTags.length > 0 && (
+        <Select value={tagFilter} onValueChange={onTagChange}>
+          <SelectTrigger className={selectClass}>
+            <SelectValue placeholder="Tag" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {availableTags.map((tag) => (
+              <SelectItem key={tag} value={tag}>
+                {tag}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       {viewMode === "all" && categories && onCategoryChange && (
         <CategoryFilter
