@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
+import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
 import {
   DndContext,
   closestCenter,
@@ -569,6 +570,8 @@ export default function Config() {
                 </div>
               </CardContent>
             </Card>
+
+            <PushNotificationsSettings />
           </TabsContent>
 
           {/* Aba Kanban */}

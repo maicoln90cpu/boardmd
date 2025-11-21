@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Check, X, Pin, Link2, CheckCircle2 } from "lucide-react";
+import { Check, X, Pin, Link2, CheckCircle2, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -16,6 +16,7 @@ import Highlight from "@tiptap/extension-highlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks } from "@/hooks/useTasks";
+import { useWebShare } from "@/hooks/useWebShare";
 
 interface NoteEditorProps {
   note: Note;
@@ -33,6 +34,7 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
 
   // Buscar tarefas disponíveis
   const { tasks } = useTasks("all");
+  const { share } = useWebShare();
 
   const editor = useEditor({
     extensions: [
@@ -105,6 +107,16 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
     setColor(newColor);
   };
 
+  const handleShare = () => {
+    const plainText = editor?.getText() || "";
+    
+    share({
+      title: "Nota - " + (title || "Sem título"),
+      text: plainText.substring(0, 500) + (plainText.length > 500 ? "..." : ""),
+      url: window.location.href,
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-[100dvh] transition-colors" style={{ backgroundColor: color || undefined }}>
       {/* Título e ações */}
@@ -124,6 +136,15 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
               className="h-10 w-10 shrink-0"
             >
               <Pin className={`h-4 w-4 ${note.is_pinned ? "fill-current" : ""}`} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleShare}
+              className="h-10 w-10 shrink-0"
+              title="Compartilhar nota"
+            >
+              <Share2 className="h-4 w-4" />
             </Button>
             <ColorPicker currentColor={color} onColorChange={handleColorChange} />
           </div>

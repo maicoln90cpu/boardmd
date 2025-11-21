@@ -1,8 +1,9 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat, Copy } from "lucide-react";
+import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat, Copy, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useWebShare } from "@/hooks/useWebShare";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -83,6 +84,7 @@ export function TaskCard({
   
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
+  const { share } = useWebShare();
 
   // Estado do checkbox para tarefas recorrentes
   const [localCompleted, setLocalCompleted] = useLocalStorage(`task-completed-${task.id}`, false);
@@ -142,6 +144,22 @@ export function TaskCard({
       });
       window.location.reload();
     }
+  };
+
+  const handleShare = () => {
+    const shareText = [
+      task.title,
+      task.description ? `\n${task.description}` : "",
+      task.due_date ? `\nPrazo: ${new Date(task.due_date).toLocaleDateString("pt-BR")}` : "",
+      task.priority ? `\nPrioridade: ${task.priority}` : "",
+      task.categories?.name ? `\nCategoria: ${task.categories.name}` : "",
+    ].filter(Boolean).join("");
+
+    share({
+      title: "Tarefa - " + task.title,
+      text: shareText,
+      url: window.location.href,
+    });
   };
 
   return (
@@ -312,6 +330,18 @@ export function TaskCard({
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="h-4 w-4 p-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShare();
+                    }}
+                    title="Compartilhar tarefa"
+                  >
+                    <Share2 className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     className="h-4 w-4 p-0 text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -444,6 +474,18 @@ export function TaskCard({
                         </div>
                       </PopoverContent>
                     </Popover>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare();
+                      }}
+                      title="Compartilhar tarefa"
+                    >
+                      <Share2 className="h-3 w-3" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
