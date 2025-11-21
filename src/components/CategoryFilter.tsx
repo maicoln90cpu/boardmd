@@ -48,7 +48,7 @@ export function CategoryFilter({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={`${compact ? "min-h-[40px] w-[180px]" : "min-h-[48px] w-full"} justify-start gap-2`}
+          className={`${compact ? "min-h-[40px] w-[120px]" : "min-h-[48px] w-[160px]"} justify-start gap-2`}
         >
           <Folder className="h-4 w-4" />
           <span className="flex-1 text-left truncate">
@@ -65,7 +65,7 @@ export function CategoryFilter({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
+      <PopoverContent className="w-56 p-0" align="start">
         <div className="p-3 border-b">
           <div className="flex items-center gap-2">
             <Checkbox
@@ -81,7 +81,7 @@ export function CategoryFilter({
             </label>
           </div>
         </div>
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="h-[200px]">
           <div className="p-2 space-y-1">
             {categories.map((category) => (
               <div

@@ -349,8 +349,8 @@ export function SearchFilters({
           </SheetContent>
         </Sheet>
       ) : (
-        /* Desktop: Filtros inline */
-        <div className="flex flex-wrap items-center gap-2">
+        /* Desktop: Filtros inline - reorganizado em 2 linhas */
+        <div className="flex flex-wrap items-center gap-2 max-w-full">
           {renderFilters()}
         </div>
       )}
