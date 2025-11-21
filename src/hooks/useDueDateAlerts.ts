@@ -31,6 +31,65 @@ function showBrowserNotification(title: string, body: string, urgent: boolean = 
   }
 }
 
+// Persistence utilities for notification state
+const STORAGE_KEY = "due-date-notifications";
+
+type NotificationEntry = {
+  key: string;
+  timestamp: number;
+};
+
+function loadNotifiedSet(snoozeMinutes: number): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    
+    const parsed: NotificationEntry[] = JSON.parse(raw);
+    const now = Date.now();
+    const snoozeMs = snoozeMinutes * 60 * 1000;
+
+    // Only keep entries within snooze window
+    return new Set(
+      parsed
+        .filter(entry => now - entry.timestamp < snoozeMs)
+        .map(entry => entry.key)
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function saveNotifiedSet(set: Set<string>) {
+  try {
+    const now = Date.now();
+    const entries: NotificationEntry[] = Array.from(set).map(key => ({
+      key,
+      timestamp: now,
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  } catch (error) {
+    console.error("Failed to save notification state:", error);
+  }
+}
+
+// Pure function to calculate task urgency (no side effects)
+export function getTaskUrgency(task: Task): "overdue" | "urgent" | "warning" | "normal" {
+  if (!task.due_date || task.column_id?.includes("done")) return "normal";
+
+  const dueDate = new Date(task.due_date);
+  const now = new Date();
+
+  if (isPast(dueDate)) return "overdue";
+
+  const minutesUntilDue = differenceInMinutes(dueDate, now);
+  const hoursUntilDue = differenceInHours(dueDate, now);
+
+  if (minutesUntilDue <= 60) return "urgent";
+  if (hoursUntilDue <= 24) return "warning";
+
+  return "normal";
+}
+
 export function useDueDateAlerts(tasks: Task[]) {
   const { toast } = useToast();
   const { settings } = useSettings();
@@ -42,6 +101,10 @@ export function useDueDateAlerts(tasks: Task[]) {
 
     // Request permission once
     requestNotificationPermission();
+
+    // Load persisted notification state with snooze
+    const snoozeMinutes = settings.notifications.snoozeMinutes || 30;
+    notifiedTasksRef.current = loadNotifiedSet(snoozeMinutes);
 
     const checkDueDates = async () => {
       const now = new Date();
@@ -71,6 +134,7 @@ export function useDueDateAlerts(tasks: Task[]) {
           notifiedTasksRef.current.delete(`${taskId}-warning`);
           notifiedTasksRef.current.delete(`${taskId}-urgent`);
           notifiedTasksRef.current.delete(`${taskId}-overdue`);
+          saveNotifiedSet(notifiedTasksRef.current);
           return;
         }
 
@@ -98,6 +162,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               true
             );
             notifiedTasksRef.current.add(`${taskId}-overdue`);
+            saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
         }
@@ -116,6 +181,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               true
             );
             notifiedTasksRef.current.add(`${taskId}-urgent`);
+            saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
         }
@@ -134,6 +200,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               false
             );
             notifiedTasksRef.current.add(`${taskId}-warning`);
+            saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
         }
@@ -152,6 +219,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               false
             );
             notifiedTasksRef.current.add(`${taskId}-early`);
+            saveNotifiedSet(notifiedTasksRef.current);
           }
         }
       });
@@ -166,24 +234,4 @@ export function useDueDateAlerts(tasks: Task[]) {
 
     return () => clearInterval(interval);
   }, [tasks, toast, settings.notifications]);
-
-  // Função para determinar o status de urgência
-  const getTaskUrgency = (task: Task): "overdue" | "urgent" | "warning" | "normal" => {
-    if (!task.due_date || task.column_id?.includes("done")) return "normal";
-
-    const dueDate = new Date(task.due_date);
-    const now = new Date();
-
-    if (isPast(dueDate)) return "overdue";
-
-    const minutesUntilDue = differenceInMinutes(dueDate, now);
-    const hoursUntilDue = differenceInHours(dueDate, now);
-
-    if (minutesUntilDue <= 60) return "urgent";
-    if (hoursUntilDue <= 24) return "warning";
-
-    return "normal";
-  };
-
-  return { getTaskUrgency };
 }
