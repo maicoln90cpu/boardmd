@@ -64,39 +64,47 @@ export function useDueDateAlerts(tasks: Task[]) {
         const isCompleted = columnName.toLowerCase().includes("concluí") || 
                            localStorage.getItem(`task-completed-${task.id}`) === "true";
         
-        if (!task.due_date || task.column_id?.includes("done") || isCompleted) return;
-
-        const dueDate = new Date(task.due_date);
-        const taskId = task.id;
-
-        // Se já notificou, não notificar novamente
-        if (notifiedTasksRef.current.has(taskId)) return;
-
-        // Verifica se está atrasada
-        if (isPast(dueDate) && !notifiedTasksRef.current.has(`${taskId}-overdue`)) {
-          toast({
-            title: "⏰ Tarefa Atrasada!",
-            description: `"${task.title}" já passou do prazo`,
-            variant: "destructive",
-          });
-          showBrowserNotification(
-            "⏰ Tarefa Atrasada!",
-            `"${task.title}" já passou do prazo`,
-            true
-          );
-          notifiedTasksRef.current.add(`${taskId}-overdue`);
+        if (!task.due_date || task.column_id?.includes("done") || isCompleted) {
+          // Limpar notificações antigas quando tarefa está concluída
+          const taskId = task.id;
+          notifiedTasksRef.current.delete(`${taskId}-early`);
+          notifiedTasksRef.current.delete(`${taskId}-warning`);
+          notifiedTasksRef.current.delete(`${taskId}-urgent`);
+          notifiedTasksRef.current.delete(`${taskId}-overdue`);
           return;
         }
 
-        const hoursUntilDue = differenceInHours(dueDate, now);
+        const dueDate = new Date(task.due_date);
+        const taskId = task.id;
         const minutesUntilDue = differenceInMinutes(dueDate, now);
 
-        // Item 4: Usar dueDateHours configurado
+        // Configurações
         const configuredHours = settings.notifications.dueDateHours || 24;
+        const urgentThreshold = 60; // Fixo: 1 hora em minutos
+        const warningThreshold = configuredHours * 60; // Configurável em minutos
+        const earlyThreshold = warningThreshold * 2; // Dobro do configurado
 
-        // Alerta 1 hora antes (sempre)
-        if (minutesUntilDue <= 60 && minutesUntilDue > 0) {
-          if (!notifiedTasksRef.current.has(`${taskId}-1h`)) {
+        // Verifica se está atrasada
+        if (isPast(dueDate)) {
+          if (!notifiedTasksRef.current.has(`${taskId}-overdue`)) {
+            toast({
+              title: "⏰ Tarefa Atrasada!",
+              description: `"${task.title}" já passou do prazo`,
+              variant: "destructive",
+            });
+            showBrowserNotification(
+              "⏰ Tarefa Atrasada!",
+              `"${task.title}" já passou do prazo`,
+              true
+            );
+            notifiedTasksRef.current.add(`${taskId}-overdue`);
+          }
+          return;
+        }
+
+        // Nível 3: Alerta urgente (1 hora antes)
+        if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
+          if (!notifiedTasksRef.current.has(`${taskId}-urgent`)) {
             toast({
               title: "🔥 Prazo Urgente!",
               description: `"${task.title}" vence em menos de 1 hora`,
@@ -107,24 +115,43 @@ export function useDueDateAlerts(tasks: Task[]) {
               `"${task.title}" vence em menos de 1 hora`,
               true
             );
-            notifiedTasksRef.current.add(`${taskId}-1h`);
+            notifiedTasksRef.current.add(`${taskId}-urgent`);
           }
           return;
         }
 
-        // Alerta configurado antes
-        if (hoursUntilDue <= configuredHours && hoursUntilDue > 1) {
-          if (!notifiedTasksRef.current.has(`${taskId}-configured`)) {
+        // Nível 2: Alerta de aviso (horas configuradas)
+        if (minutesUntilDue <= warningThreshold && minutesUntilDue > urgentThreshold) {
+          if (!notifiedTasksRef.current.has(`${taskId}-warning`)) {
+            const hoursUntilDue = Math.floor(minutesUntilDue / 60);
             toast({
               title: "⚠️ Prazo Próximo",
-              description: `"${task.title}" vence em ${hoursUntilDue} horas`,
+              description: `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`,
             });
             showBrowserNotification(
               "⚠️ Prazo Próximo",
+              `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`,
+              false
+            );
+            notifiedTasksRef.current.add(`${taskId}-warning`);
+          }
+          return;
+        }
+
+        // Nível 1: Alerta antecipado (dobro das horas configuradas)
+        if (minutesUntilDue <= earlyThreshold && minutesUntilDue > warningThreshold) {
+          if (!notifiedTasksRef.current.has(`${taskId}-early`)) {
+            const hoursUntilDue = Math.floor(minutesUntilDue / 60);
+            toast({
+              title: "📅 Prazo se Aproximando",
+              description: `"${task.title}" vence em ${hoursUntilDue} horas`,
+            });
+            showBrowserNotification(
+              "📅 Prazo se Aproximando",
               `"${task.title}" vence em ${hoursUntilDue} horas`,
               false
             );
-            notifiedTasksRef.current.add(`${taskId}-configured`);
+            notifiedTasksRef.current.add(`${taskId}-early`);
           }
         }
       });

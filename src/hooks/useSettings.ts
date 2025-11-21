@@ -11,6 +11,7 @@ export interface AppSettings {
     sound: boolean;
     dueDateHours: number;
     checkInterval: 5 | 15 | 30 | 60;
+    snoozeMinutes: number;
   };
   kanban: {
     autoReset: boolean;
@@ -48,6 +49,7 @@ const defaultSettings: AppSettings = {
     sound: false,
     dueDateHours: 24,
     checkInterval: 15,
+    snoozeMinutes: 30,
   },
   kanban: {
     autoReset: false,
