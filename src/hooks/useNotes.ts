@@ -3,6 +3,8 @@ import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { offlineSync } from "@/utils/offlineSync";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 export interface Note {
   id: string;
@@ -21,6 +23,7 @@ export function useNotes() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isOnline } = useOnlineStatus();
   
   // Ref para debounce do realtime
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -87,6 +90,16 @@ export function useNotes() {
     if (!user) return null;
 
     try {
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'note',
+          action: 'create',
+          data: { title, content: "", notebook_id: notebookId, user_id: user.id }
+        });
+        toast({ title: "Nota salva offline" });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from("notes")
         .insert({
@@ -98,7 +111,14 @@ export function useNotes() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        offlineSync.queueOperation({
+          type: 'note',
+          action: 'create',
+          data: { title, content: "", notebook_id: notebookId, user_id: user.id }
+        });
+        throw error;
+      }
 
       // Atualização otimista
       if (data) {
@@ -112,7 +132,7 @@ export function useNotes() {
         console.error("Error adding note:", error);
       }
       toast({
-        title: "Erro ao criar nota",
+        title: "Erro ao criar nota - salvo offline",
         variant: "destructive",
       });
       return null;
@@ -131,18 +151,34 @@ export function useNotes() {
     );
 
     try {
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'note',
+          action: 'update',
+          data: { id, ...updates }
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from("notes")
         .update(updates)
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        offlineSync.queueOperation({
+          type: 'note',
+          action: 'update',
+          data: { id, ...updates }
+        });
+        throw error;
+      }
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("Error updating note:", error);
       }
       toast({
-        title: "Erro ao atualizar nota",
+        title: "Erro ao atualizar nota - salvo offline",
         variant: "destructive",
       });
       // Revert on error
@@ -156,6 +192,16 @@ export function useNotes() {
     setNotes((prev) => prev.filter((note) => note.id !== id));
 
     try {
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'note',
+          action: 'delete',
+          data: { id }
+        });
+        toast({ title: "Exclusão salva offline" });
+        return;
+      }
+
       // Buscar nota
       const { data: note } = await supabase
         .from("notes")
@@ -183,8 +229,13 @@ export function useNotes() {
       if (import.meta.env.DEV) {
         console.error("Error deleting note:", error);
       }
+      offlineSync.queueOperation({
+        type: 'note',
+        action: 'delete',
+        data: { id }
+      });
       toast({
-        title: "Erro ao excluir nota",
+        title: "Erro ao excluir nota - salvo offline",
         variant: "destructive",
       });
       // Revert on error

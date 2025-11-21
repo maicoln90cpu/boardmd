@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { categorySchema } from "@/lib/validations";
 import { z } from "zod";
+import { offlineSync } from "@/utils/offlineSync";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 export interface Category {
   id: string;
@@ -18,6 +20,7 @@ export function useCategories() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isOnline } = useOnlineStatus();
 
   useEffect(() => {
     fetchCategories();
@@ -102,12 +105,29 @@ export function useCategories() {
         ? Math.max(...categories.map(c => c.position || 0))
         : -1;
 
+      const categoryData = { ...validated, position: maxPosition + 1 };
+
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'category',
+          action: 'create',
+          data: categoryData
+        });
+        toast({ title: "Categoria salva offline" });
+        return;
+      }
+
       const { error } = await supabase
         .from("categories")
-        .insert([{ ...validated, position: maxPosition + 1 } as any]);
+        .insert([categoryData as any]);
 
       if (error) {
-        toast({ title: "Erro ao criar categoria", variant: "destructive" });
+        offlineSync.queueOperation({
+          type: 'category',
+          action: 'create',
+          data: categoryData
+        });
+        toast({ title: "Erro - salvo offline", variant: "destructive" });
       }
     } catch (e) {
       if (e instanceof z.ZodError) {
@@ -121,10 +141,25 @@ export function useCategories() {
   };
 
   const deleteCategory = async (id: string) => {
+    if (!isOnline) {
+      offlineSync.queueOperation({
+        type: 'category',
+        action: 'delete',
+        data: { id }
+      });
+      toast({ title: "Exclusão salva offline" });
+      return;
+    }
+
     const { error } = await supabase.from("categories").delete().eq("id", id);
 
     if (error) {
-      toast({ title: "Erro ao deletar categoria", variant: "destructive" });
+      offlineSync.queueOperation({
+        type: 'category',
+        action: 'delete',
+        data: { id }
+      });
+      toast({ title: "Erro - salvo offline", variant: "destructive" });
     }
   };
 

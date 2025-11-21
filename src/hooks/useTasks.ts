@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { taskSchema } from "@/lib/validations";
 import { z } from "zod";
+import { offlineSync } from "@/utils/offlineSync";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 export interface Task {
   id: string;
@@ -32,6 +34,7 @@ export function useTasks(categoryId: string | null | "all") {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isOnline } = useOnlineStatus();
 
   useEffect(() => {
     if (categoryId) {
@@ -125,6 +128,16 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(taskData);
 
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'task',
+          action: 'create',
+          data: validated
+        });
+        toast({ title: "Tarefa salva offline. Será sincronizada ao reconectar." });
+        return;
+      }
+
       const { data, error } = await supabase
         .from("tasks")
         .insert([validated as any])
@@ -132,9 +145,14 @@ export function useTasks(categoryId: string | null | "all") {
         .single();
 
       if (error) {
+        offlineSync.queueOperation({
+          type: 'task',
+          action: 'create',
+          data: validated
+        });
         toast({
           title: "Erro ao criar tarefa",
-          description: error.message,
+          description: "Salvo offline para sincronização posterior",
           variant: "destructive",
         });
         return;
@@ -169,6 +187,16 @@ export function useTasks(categoryId: string | null | "all") {
     try {
       const validated = taskSchema.partial().parse(updates);
 
+      if (!isOnline) {
+        offlineSync.queueOperation({
+          type: 'task',
+          action: 'update',
+          data: { id, ...validated }
+        });
+        toast({ title: "Atualização salva offline" });
+        return;
+      }
+
       const { error } = await supabase
         .from("tasks")
         .update({
@@ -178,9 +206,14 @@ export function useTasks(categoryId: string | null | "all") {
         .eq("id", id);
 
       if (error) {
+        offlineSync.queueOperation({
+          type: 'task',
+          action: 'update',
+          data: { id, ...validated }
+        });
         toast({
           title: "Erro ao atualizar tarefa",
-          description: error.message,
+          description: "Salvo offline para sincronização",
           variant: "destructive",
         });
         return;
@@ -211,10 +244,25 @@ export function useTasks(categoryId: string | null | "all") {
   const deleteTask = async (id: string) => {
     if (!user) return;
 
+    if (!isOnline) {
+      offlineSync.queueOperation({
+        type: 'task',
+        action: 'delete',
+        data: { id }
+      });
+      toast({ title: "Exclusão salva offline" });
+      return;
+    }
+
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (error) {
-      toast({ title: "Erro ao deletar tarefa", variant: "destructive" });
+      offlineSync.queueOperation({
+        type: 'task',
+        action: 'delete',
+        data: { id }
+      });
+      toast({ title: "Erro ao deletar. Salvo offline", variant: "destructive" });
     } else {
       // Registrar no histórico antes de deletar
       await supabase.from("task_history").insert([{

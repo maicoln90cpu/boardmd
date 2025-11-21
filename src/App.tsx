@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
+import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
@@ -23,6 +24,7 @@ const App = () => (
         <ThemeProvider>
           <Toaster />
           <Sonner />
+          <OnlineStatusIndicator />
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<Auth />} />
