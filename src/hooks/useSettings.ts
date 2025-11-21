@@ -101,8 +101,32 @@ export function useSettings() {
         console.error("Error loading settings:", error);
         setSettings(defaultSettings);
       } else if (data?.settings) {
-        // Merge with default settings to ensure all properties exist
-        setSettings({ ...defaultSettings, ...(data.settings as Partial<AppSettings>) });
+        // Deep merge with default settings to ensure all nested properties exist
+        const loadedSettings = data.settings as Partial<AppSettings>;
+        setSettings({
+          ...defaultSettings,
+          ...loadedSettings,
+          notifications: {
+            ...defaultSettings.notifications,
+            ...(loadedSettings.notifications || {}),
+          },
+          kanban: {
+            ...defaultSettings.kanban,
+            ...(loadedSettings.kanban || {}),
+          },
+          productivity: {
+            ...defaultSettings.productivity,
+            ...(loadedSettings.productivity || {}),
+          },
+          interface: {
+            ...defaultSettings.interface,
+            ...(loadedSettings.interface || {}),
+          },
+          mobile: {
+            ...defaultSettings.mobile,
+            ...(loadedSettings.mobile || {}),
+          },
+        });
       } else {
         setSettings(defaultSettings);
       }
@@ -124,7 +148,32 @@ export function useSettings() {
         },
         (payload) => {
           if (payload.new?.settings) {
-            setSettings({ ...defaultSettings, ...(payload.new.settings as Partial<AppSettings>) });
+            // Deep merge realtime updates
+            const loadedSettings = payload.new.settings as Partial<AppSettings>;
+            setSettings({
+              ...defaultSettings,
+              ...loadedSettings,
+              notifications: {
+                ...defaultSettings.notifications,
+                ...(loadedSettings.notifications || {}),
+              },
+              kanban: {
+                ...defaultSettings.kanban,
+                ...(loadedSettings.kanban || {}),
+              },
+              productivity: {
+                ...defaultSettings.productivity,
+                ...(loadedSettings.productivity || {}),
+              },
+              interface: {
+                ...defaultSettings.interface,
+                ...(loadedSettings.interface || {}),
+              },
+              mobile: {
+                ...defaultSettings.mobile,
+                ...(loadedSettings.mobile || {}),
+              },
+            });
             setIsDirty(false);
           }
         }
