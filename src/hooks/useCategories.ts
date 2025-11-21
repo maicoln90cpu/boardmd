@@ -10,6 +10,7 @@ export interface Category {
   name: string;
   user_id: string;
   created_at: string;
+  position: number;
 }
 
 export function useCategories() {
@@ -28,7 +29,7 @@ export function useCategories() {
     const { data, error } = await supabase
       .from("categories")
       .select("*")
-      .order("created_at");
+      .order("position");
 
     if (error) {
       toast({ title: "Erro ao carregar categorias", variant: "destructive" });
@@ -96,9 +97,14 @@ export function useCategories() {
     try {
       const validated = categorySchema.parse({ name, user_id: user.id });
 
+      // Get the highest position to append at the end
+      const maxPosition = categories.length > 0 
+        ? Math.max(...categories.map(c => c.position || 0))
+        : -1;
+
       const { error } = await supabase
         .from("categories")
-        .insert([validated as any]);
+        .insert([{ ...validated, position: maxPosition + 1 } as any]);
 
       if (error) {
         toast({ title: "Erro ao criar categoria", variant: "destructive" });
@@ -122,5 +128,28 @@ export function useCategories() {
     }
   };
 
-  return { categories, loading, addCategory, deleteCategory };
+  const reorderCategories = async (reorderedCategories: Category[]) => {
+    try {
+      // Update all positions in a single transaction
+      const updates = reorderedCategories.map((category, index) => ({
+        id: category.id,
+        position: index,
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("categories")
+          .update({ position: update.position })
+          .eq("id", update.id);
+
+        if (error) throw error;
+      }
+
+      setCategories(reorderedCategories);
+    } catch (error) {
+      toast({ title: "Erro ao reordenar categorias", variant: "destructive" });
+    }
+  };
+
+  return { categories, loading, addCategory, deleteCategory, reorderCategories };
 }

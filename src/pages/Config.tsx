@@ -15,14 +15,131 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Sortable category item component
+function SortableCategoryItem({ 
+  category, 
+  editingId, 
+  editingName, 
+  setEditingId, 
+  setEditingName,
+  handleEditCategory,
+  handleDeleteCategory 
+}: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      {editingId === category.id ? (
+        <>
+          <Input
+            value={editingName}
+            onChange={(e) => setEditingName(e.target.value)}
+            className="flex-1"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                handleEditCategory(category.id, editingName);
+              }
+              if (e.key === "Escape") {
+                setEditingId(null);
+                setEditingName("");
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            onClick={() => handleEditCategory(category.id, editingName)}
+          >
+            Salvar
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setEditingId(null);
+              setEditingName("");
+            }}
+          >
+            Cancelar
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="flex-1 text-sm">{category.name}</span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8"
+            onClick={() => {
+              setEditingId(category.id);
+              setEditingName(category.name);
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+            onClick={() => handleDeleteCategory(category.id)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading } = useSettings();
   const { theme, setTheme } = useTheme();
-  const { categories, addCategory, deleteCategory } = useCategories();
+  const { categories, addCategory, deleteCategory, reorderCategories } = useCategories();
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -44,6 +161,32 @@ export default function Config() {
     reorderColumns,
     addColumn
   } = useColumns();
+
+  // Setup drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const nonDiarioCategories = categories.filter(cat => cat.name !== "Diário");
+      const oldIndex = nonDiarioCategories.findIndex((cat) => cat.id === active.id);
+      const newIndex = nonDiarioCategories.findIndex((cat) => cat.id === over.id);
+
+      const reordered = arrayMove(nonDiarioCategories, oldIndex, newIndex);
+      
+      // Include "Diário" back if it exists
+      const diarioCategory = categories.find(cat => cat.name === "Diário");
+      const finalCategories = diarioCategory ? [diarioCategory, ...reordered] : reordered;
+      
+      reorderCategories(finalCategories);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -649,73 +792,31 @@ export default function Config() {
                 )}
 
                 <div className="space-y-2">
-                  {categories
-                    .filter(cat => cat.name !== "Diário")
-                    .map((category) => (
-                      <div
-                        key={category.id}
-                        className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
-                      >
-                        {editingId === category.id ? (
-                          <>
-                            <Input
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              className="flex-1"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  handleEditCategory(category.id, editingName);
-                                }
-                                if (e.key === "Escape") {
-                                  setEditingId(null);
-                                  setEditingName("");
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => handleEditCategory(category.id, editingName)}
-                            >
-                              Salvar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setEditingId(null);
-                                setEditingName("");
-                              }}
-                            >
-                              Cancelar
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <span className="flex-1 text-sm">{category.name}</span>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                              onClick={() => {
-                                setEditingId(category.id);
-                                setEditingName(category.name);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDeleteCategory(category.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    ))}
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={categories.filter(cat => cat.name !== "Diário").map(cat => cat.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {categories
+                        .filter(cat => cat.name !== "Diário")
+                        .map((category) => (
+                          <SortableCategoryItem
+                            key={category.id}
+                            category={category}
+                            editingId={editingId}
+                            editingName={editingName}
+                            setEditingId={setEditingId}
+                            setEditingName={setEditingName}
+                            handleEditCategory={handleEditCategory}
+                            handleDeleteCategory={handleDeleteCategory}
+                          />
+                        ))}
+                    </SortableContext>
+                  </DndContext>
                 </div>
               </CardContent>
             </Card>
