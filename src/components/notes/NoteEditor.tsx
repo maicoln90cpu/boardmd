@@ -185,16 +185,16 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       {/* Editor de conteúdo */}
       <div className="flex-1 flex flex-col min-h-0">
         <RichTextToolbar editor={editor} />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-[180px] md:pb-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6">
           <EditorContent
             editor={editor}
-            className="prose prose-sm max-w-none focus:outline-none h-full [&_.ProseMirror]:min-h-full [&_.ProseMirror]:outline-none"
+            className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none"
           />
         </div>
       </div>
 
       {/* Botões de ação */}
-      <div className="fixed bottom-10 left-0 right-0 md:relative p-10 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
+      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar

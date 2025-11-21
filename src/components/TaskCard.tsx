@@ -18,7 +18,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
+import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
@@ -63,7 +63,6 @@ export function TaskCard({
     isDragging,
   } = useSortable({ id: task.id });
 
-  const { getTaskUrgency } = useDueDateAlerts([task]);
   const urgency = getTaskUrgency(task);
 
   const style = {
