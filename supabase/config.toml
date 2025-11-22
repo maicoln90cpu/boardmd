@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.daily-assistant]
 verify_jwt = false
+
+[functions.productivity-insights]
+verify_jwt = false
