@@ -1,1 +1,4 @@
 project_id = "ipcxjmbcfzvkfixvsrft"
+
+[functions.format-note]
+verify_jwt = false

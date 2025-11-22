@@ -44,7 +44,9 @@ export function NoteEditor({
   } = useWebShare();
   const editor = useEditor({
     extensions: [StarterKit, Underline, Link.configure({
-      openOnClick: false
+      openOnClick: false,
+      autolink: false,
+      linkOnPaste: true
     }), TextAlign.configure({
       types: ["heading", "paragraph"]
     }), TextStyle, Color, Highlight.configure({

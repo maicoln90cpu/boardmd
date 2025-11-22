@@ -13,10 +13,19 @@ import {
   Highlighter,
   Palette,
   RemoveFormatting,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RichTextToolbarProps {
   editor: Editor | null;
@@ -41,6 +50,7 @@ const HIGHLIGHT_COLORS = [
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
+  const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
 
   if (!editor) return null;
 
@@ -54,6 +64,46 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
 
   const removeLink = () => {
     editor.chain().focus().unsetLink().run();
+  };
+
+  const formatWithAI = async (action: string) => {
+    if (!editor) return;
+    
+    const content = editor.getHTML();
+    if (!content || content === "<p></p>") {
+      toast.error("Adicione algum conteúdo antes de formatar");
+      return;
+    }
+
+    setIsFormattingWithAI(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("format-note", {
+        body: { content, action },
+      });
+
+      if (error) {
+        if (error.message?.includes("429")) {
+          toast.error("Muitas requisições. Aguarde um momento.");
+        } else if (error.message?.includes("402")) {
+          toast.error("Créditos insuficientes. Adicione em Settings → Workspace → Usage.");
+        } else {
+          toast.error("Erro ao formatar nota");
+        }
+        console.error("Format error:", error);
+        return;
+      }
+
+      if (data?.formattedContent) {
+        editor.commands.setContent(data.formattedContent);
+        toast.success("Nota formatada com sucesso!");
+      }
+    } catch (error) {
+      console.error("Format error:", error);
+      toast.error("Erro ao formatar nota");
+    } finally {
+      setIsFormattingWithAI(false);
+    }
   };
 
   return (
@@ -251,6 +301,44 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       >
         <RemoveFormatting className="h-4 w-4" />
       </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* AI Formatting */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Formatar com IA"
+            disabled={isFormattingWithAI}
+          >
+            <Sparkles className={`h-4 w-4 ${isFormattingWithAI ? "animate-pulse" : ""}`} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => formatWithAI("improve")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Melhorar legibilidade
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("grammar")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Corrigir gramática
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("summarize")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Resumir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("expand")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Expandir
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("professional")}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Tornar profissional
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
