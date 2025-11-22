@@ -17,15 +17,18 @@ import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
-
 interface NoteEditorProps {
   note: Note;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onSave?: () => void;
 }
-
-export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorProps) {
+export function NoteEditor({
+  note,
+  onUpdate,
+  onTogglePin,
+  onSave
+}: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
@@ -33,23 +36,26 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
 
   // Buscar tarefas disponíveis
-  const { tasks } = useTasks("all");
-  const { share } = useWebShare();
-
+  const {
+    tasks
+  } = useTasks("all");
+  const {
+    share
+  } = useWebShare();
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      Link.configure({ openOnClick: false }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-    ],
+    extensions: [StarterKit, Underline, Link.configure({
+      openOnClick: false
+    }), TextAlign.configure({
+      types: ["heading", "paragraph"]
+    }), TextStyle, Color, Highlight.configure({
+      multicolor: true
+    })],
     content: note.content || "",
-    onUpdate: ({ editor }) => {
+    onUpdate: ({
+      editor
+    }) => {
       setContent(editor.getHTML());
-    },
+    }
   });
 
   // Sincronizar com mudanças externas da nota
@@ -69,81 +75,55 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
         handleSave();
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [title, content, color]);
-
   const handleSave = () => {
     if (!title.trim() && !content.trim()) {
       toast.error("Adicione um título ou conteúdo");
       return;
     }
-
     onUpdate(note.id, {
       title: title.trim() || "Sem título",
       content: content.trim(),
-      color,
+      color
     });
-
     toast.success("Nota salva!");
-
     setShowSavedIndicator(true);
     setTimeout(() => setShowSavedIndicator(false), 2000);
-
     if (onSave) {
       onSave();
     }
   };
-
   const handleCancel = () => {
     setTitle(note.title);
     setContent(note.content || "");
     setColor(note.color || null);
     toast.info("Alterações descartadas");
   };
-
   const handleColorChange = (newColor: string | null) => {
     setColor(newColor);
   };
-
   const handleShare = () => {
     const plainText = editor?.getText() || "";
-    
     share({
       title: "Nota - " + (title || "Sem título"),
       text: plainText.substring(0, 500) + (plainText.length > 500 ? "..." : ""),
-      url: window.location.href,
+      url: window.location.href
     });
   };
-
-  return (
-    <div className="flex flex-col min-h-[100dvh] transition-colors" style={{ backgroundColor: color || undefined }}>
+  return <div className="flex flex-col min-h-[100dvh] transition-colors" style={{
+    backgroundColor: color || undefined
+  }}>
       {/* Título e ações */}
       <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
         <div className="flex items-start gap-2">
-          <Input
-            placeholder="Título da anotação..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent"
-          />
+          <Input placeholder="Título da anotação..." value={title} onChange={e => setTitle(e.target.value)} className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent" />
           <div className="flex gap-2">
-            <Button
-              variant={note.is_pinned ? "default" : "outline"}
-              size="icon"
-              onClick={() => onTogglePin(note.id)}
-              className="h-10 w-10 shrink-0"
-            >
+            <Button variant={note.is_pinned ? "default" : "outline"} size="icon" onClick={() => onTogglePin(note.id)} className="h-10 w-10 shrink-0">
               <Pin className={`h-4 w-4 ${note.is_pinned ? "fill-current" : ""}`} />
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleShare}
-              className="h-10 w-10 shrink-0"
-              title="Compartilhar nota"
-            >
+            <Button variant="outline" size="icon" onClick={handleShare} className="h-10 w-10 shrink-0" title="Compartilhar nota">
               <Share2 className="h-4 w-4" />
             </Button>
             <ColorPicker currentColor={color} onColorChange={handleColorChange} />
@@ -151,20 +131,15 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
         </div>
 
         {/* Indicador de salvamento */}
-        {showSavedIndicator && (
-          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+        {showSavedIndicator && <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 text-primary" />
             <span>Nota salva</span>
-          </div>
-        )}
+          </div>}
 
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
           <Link2 className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={linkedTaskId || "none"}
-            onValueChange={(value) => setLinkedTaskId(value === "none" ? null : value)}
-          >
+          <Select value={linkedTaskId || "none"} onValueChange={value => setLinkedTaskId(value === "none" ? null : value)}>
             <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
               <SelectValue placeholder="Vincular a uma tarefa..." />
             </SelectTrigger>
@@ -172,11 +147,9 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
               <SelectItem value="none">
                 <span className="text-muted-foreground">Nenhuma tarefa vinculada</span>
               </SelectItem>
-              {tasks.map((task) => (
-                <SelectItem key={task.id} value={task.id}>
+              {tasks.map(task => <SelectItem key={task.id} value={task.id}>
                   {task.title}
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -185,16 +158,13 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
       {/* Editor de conteúdo */}
       <div className="flex-1 flex flex-col min-h-0">
         <RichTextToolbar editor={editor} />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6">
-          <EditorContent
-            editor={editor}
-            className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none"
-          />
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
+          <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
         </div>
       </div>
 
       {/* Botões de ação */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t flex gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10">
+      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10 items-end justify-center flex flex-row">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
@@ -207,6 +177,5 @@ export function NoteEditor({ note, onUpdate, onTogglePin, onSave }: NoteEditorPr
           Cancelar
         </Button>
       </div>
-    </div>
-  );
+    </div>;
 }
