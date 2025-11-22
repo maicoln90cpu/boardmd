@@ -7,6 +7,7 @@ import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { WeeklyProgress } from "@/components/dashboard/WeeklyProgress";
 import { GamificationPanel } from "@/components/dashboard/GamificationPanel";
 import { DashboardStats } from "@/components/DashboardStats";
+import { ProductivityInsights } from "@/components/dashboard/ProductivityInsights";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -85,7 +86,10 @@ export default function Dashboard() {
           <DashboardStats tasks={tasks} />
 
           {/* Main Content Grid */}
-          <div className="p-6 max-w-7xl mx-auto">
+          <div className="p-6 max-w-7xl mx-auto space-y-6">
+            {/* AI Insights - Full Width */}
+            <ProductivityInsights stats={stats} tasks={tasks} />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Charts */}
               <div className="lg:col-span-2 space-y-6">
