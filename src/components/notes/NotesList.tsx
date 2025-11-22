@@ -29,7 +29,7 @@ export function NotesList({
         </Button>
       </div>
 
-      <NoneDropArea className="rounded" />
+      <NoneDropArea />
 
       {/* Notas soltas */}
       {looseNotes.length > 0 && <div className="space-y-1">
