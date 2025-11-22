@@ -117,7 +117,10 @@ function Index() {
   }, []);
   
   const { tasks } = useTasks(viewMode === "all" ? "all" : dailyCategory);
-  const { resetAllTasksToFirstColumn: resetDailyTasks } = useTasks(dailyCategory);
+  const { 
+    resetAllTasksToFirstColumn: resetDailyTasks,
+    updateTask: updateDailyTask 
+  } = useTasks(dailyCategory);
 
   // Filtrar tasks baseado no viewMode e filtros
   const filteredTasks = useMemo(() => {
@@ -272,6 +275,29 @@ function Index() {
   const handleTaskSelect = (task: Task) => {
     setSelectedTaskForHistory(task.id);
     setShowHistory(true);
+  };
+
+  const handleReorderDailyTasks = async (reorderedTasks: Array<{ id: string; position: number }>) => {
+    if (!updateDailyTask) return;
+
+    try {
+      // Update all tasks with new positions
+      await Promise.all(
+        reorderedTasks.map(({ id, position }) => 
+          updateDailyTask(id, { position })
+        )
+      );
+
+      // Força refresh do board
+      setDailyBoardKey(k => k + 1);
+      addActivity("ai_organize", "Tarefas organizadas com IA");
+    } catch (error) {
+      console.error("Error reordering tasks:", error);
+      toast({ 
+        title: "Erro ao reordenar tarefas", 
+        variant: "destructive" 
+      });
+    }
   };
 
   // Calcular colunas visíveis considerando modo simplificado
@@ -431,6 +457,8 @@ function Index() {
                   onSortOrderChange={setDailySortOrder}
                   densityMode={densityMode}
                   onDensityChange={setDensityMode}
+                  tasks={viewMode === "daily" ? filteredTasks : undefined}
+                  onReorderTasks={handleReorderDailyTasks}
                 />
               </div>
             </div>
