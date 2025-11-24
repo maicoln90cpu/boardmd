@@ -14,6 +14,8 @@ export interface Column {
   created_at: string;
   color: string | null;
   kanban_type?: 'daily' | 'projects' | 'shared';
+  show_in_daily?: boolean;
+  show_in_projects?: boolean;
 }
 
 export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
@@ -186,8 +188,17 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     });
   };
 
-  const getVisibleColumns = () => {
-    return columns.filter((col) => !hiddenColumns.includes(col.id));
+  const getVisibleColumns = (kanbanType?: 'daily' | 'projects') => {
+    let filtered = columns.filter((col) => !hiddenColumns.includes(col.id));
+    
+    // Filtrar baseado no tipo de kanban se especificado
+    if (kanbanType === 'daily') {
+      filtered = filtered.filter((col) => col.show_in_daily !== false);
+    } else if (kanbanType === 'projects') {
+      filtered = filtered.filter((col) => col.show_in_projects !== false);
+    }
+    
+    return filtered;
   };
 
   const resetToDefaultView = () => {
@@ -255,6 +266,26 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     }
   };
 
+  const toggleColumnKanbanVisibility = async (columnId: string, kanbanType: 'daily' | 'projects', visible: boolean) => {
+    try {
+      const field = kanbanType === 'daily' ? 'show_in_daily' : 'show_in_projects';
+      
+      const { error } = await supabase
+        .from("columns")
+        .update({ [field]: visible })
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      toast({ title: `Visibilidade atualizada` });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar visibilidade",
+        variant: "destructive",
+      });
+    }
+  };
+
   return { 
     columns, 
     loading, 
@@ -266,6 +297,7 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     getVisibleColumns,
     resetToDefaultView,
     renameColumn,
-    reorderColumns
+    reorderColumns,
+    toggleColumnKanbanVisibility
   };
 }

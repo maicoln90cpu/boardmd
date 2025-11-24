@@ -53,6 +53,7 @@ interface ColumnManagerProps {
   onRenameColumn: (columnId: string, newName: string) => void;
   onReorderColumns: (newOrder: Column[]) => void;
   onAddColumn: (name: string) => void;
+  onToggleKanbanVisibility: (columnId: string, kanbanType: 'daily' | 'projects', visible: boolean) => void;
 }
 
 interface SortableColumnItemProps {
@@ -64,6 +65,7 @@ interface SortableColumnItemProps {
   onToggleVisibility: () => void;
   onDelete: () => void;
   onRename: (newName: string) => void;
+  onToggleKanbanVisibility: (kanbanType: 'daily' | 'projects', visible: boolean) => void;
 }
 
 function SortableColumnItem({
@@ -75,6 +77,7 @@ function SortableColumnItem({
   onToggleVisibility,
   onDelete,
   onRename,
+  onToggleKanbanVisibility,
 }: SortableColumnItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -114,88 +117,109 @@ function SortableColumnItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+      className="flex flex-col gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
     >
-      <div className="flex items-center gap-3 flex-1">
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing"
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 flex-1">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          
+          <Checkbox
+            checked={visible}
+            onCheckedChange={onToggleVisibility}
+            id={`column-${column.id}`}
+          />
+          
+          <div className="flex items-center gap-2 flex-1">
+            {visible ? (
+              <Eye className="h-4 w-4 text-green-600" />
+            ) : (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            )}
+            
+            {isEditing ? (
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={handleSaveRename}
+                onKeyDown={handleKeyDown}
+                className="h-7 max-w-[200px]"
+                autoFocus
+              />
+            ) : (
+              <label
+                htmlFor={`column-${column.id}`}
+                className="flex items-center gap-2 flex-1 cursor-pointer"
+              >
+                <span className={visible ? "font-medium" : "text-muted-foreground"}>
+                  {column.name}
+                </span>
+                {isOriginal && (
+                  <Badge variant="secondary" className="text-xs">
+                    Original
+                  </Badge>
+                )}
+              </label>
+            )}
+            
+            <Badge variant="outline" className="ml-auto">
+              {taskCount} {taskCount === 1 ? "tarefa" : "tarefas"}
+            </Badge>
+          </div>
         </div>
-        
-        <Checkbox
-          checked={visible}
-          onCheckedChange={onToggleVisibility}
-          id={`column-${column.id}`}
-        />
-        
-        <div className="flex items-center gap-2 flex-1">
-          {visible ? (
-            <Eye className="h-4 w-4 text-green-600" />
-          ) : (
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
-          )}
+
+        <div className="flex items-center gap-1 ml-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditing(true)}
+            className="h-8 w-8"
+            title="Renomear coluna"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
           
-          {isEditing ? (
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onBlur={handleSaveRename}
-              onKeyDown={handleKeyDown}
-              className="h-7 max-w-[200px]"
-              autoFocus
-            />
-          ) : (
-            <label
-              htmlFor={`column-${column.id}`}
-              className="flex items-center gap-2 flex-1 cursor-pointer"
-            >
-              <span className={visible ? "font-medium" : "text-muted-foreground"}>
-                {column.name}
-              </span>
-              {isOriginal && (
-                <Badge variant="secondary" className="text-xs">
-                  Original
-                </Badge>
-              )}
-            </label>
-          )}
-          
-          <Badge variant="outline" className="ml-auto">
-            {taskCount} {taskCount === 1 ? "tarefa" : "tarefas"}
-          </Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDelete}
+            disabled={taskCount > 0 || isOriginal}
+            className="h-8 w-8"
+            title={
+              isOriginal
+                ? "Colunas originais não podem ser deletadas"
+                : taskCount > 0
+                ? `Mova as ${taskCount} tarefas antes de deletar`
+                : "Deletar coluna"
+            }
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
       </div>
 
-      <div className="flex items-center gap-1 ml-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsEditing(true)}
-          className="h-8 w-8"
-          title="Renomear coluna"
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
+      {/* Checkboxes para controlar visibilidade por Kanban */}
+      <div className="flex items-center gap-4 pl-11">
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox
+            checked={column.show_in_daily ?? true}
+            onCheckedChange={(checked) => onToggleKanbanVisibility('daily', checked as boolean)}
+          />
+          <span className="text-muted-foreground">Kanban Diário</span>
+        </label>
         
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onDelete}
-          disabled={taskCount > 0 || isOriginal}
-          className="h-8 w-8"
-          title={
-            isOriginal
-              ? "Colunas originais não podem ser deletadas"
-              : taskCount > 0
-              ? `Mova as ${taskCount} tarefas antes de deletar`
-              : "Deletar coluna"
-          }
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <Checkbox
+            checked={column.show_in_projects ?? true}
+            onCheckedChange={(checked) => onToggleKanbanVisibility('projects', checked as boolean)}
+          />
+          <span className="text-muted-foreground">Kanban Projetos</span>
+        </label>
       </div>
     </div>
   );
@@ -212,6 +236,7 @@ export function ColumnManager({
   onRenameColumn,
   onReorderColumns,
   onAddColumn,
+  onToggleKanbanVisibility,
 }: ColumnManagerProps) {
   const { tasks } = useTasks("all");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -360,6 +385,9 @@ export function ColumnManager({
                         onToggleVisibility={() => onToggleVisibility(column.id)}
                         onDelete={() => setDeleteTarget(column.id)}
                         onRename={(newName) => onRenameColumn(column.id, newName)}
+                        onToggleKanbanVisibility={(kanbanType, visible) => 
+                          onToggleKanbanVisibility(column.id, kanbanType, visible)
+                        }
                       />
                     );
                   })}

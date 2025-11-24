@@ -41,7 +41,8 @@ function Index() {
     deleteColumn,
     renameColumn,
     reorderColumns,
-    addColumn
+    addColumn,
+    toggleColumnKanbanVisibility
   } = useColumns();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
@@ -302,7 +303,8 @@ function Index() {
 
   // Calcular colunas visíveis considerando modo simplificado
   const visibleColumns = useMemo(() => {
-    const baseColumns = getVisibleColumns();
+    const kanbanType = viewMode === "daily" ? 'daily' : 'projects';
+    const baseColumns = getVisibleColumns(kanbanType);
     
     if (simplifiedMode && viewMode === "all") {
       // Modo simplificado: mostrar apenas as primeiras 3 colunas por position
@@ -713,6 +715,7 @@ function Index() {
         onRenameColumn={renameColumn}
         onAddColumn={addColumn}
         onReorderColumns={reorderColumns}
+        onToggleKanbanVisibility={toggleColumnKanbanVisibility}
       />
 
       {/* Dialog de Histórico */}
