@@ -190,6 +190,43 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
               onOpenChange(false);
               return;
+            } else {
+              // Espelho já existe, ATUALIZAR ele também
+              console.log("[ESPELHAMENTO] Atualizando espelho existente:", existingMirror.id);
+              
+              // 1. Salvar tarefa original
+              onSave(taskData);
+
+              // 2. Atualizar espelho com mesmos dados (mantendo category_id e column_id do espelho)
+              const mirrorUpdate = {
+                title,
+                description: description || null,
+                priority,
+                due_date: dueDateTimestamp,
+                tags: tags ? tags.split(",").map((t) => t.trim()) : null,
+                subtasks,
+                recurrence_rule: recurrence,
+                updated_at: new Date().toISOString()
+              };
+
+              const { error: updateError } = await supabase
+                .from("tasks")
+                .update(mirrorUpdate as any)
+                .eq("id", existingMirror.id);
+
+              if (!updateError) {
+                console.log("[ESPELHAMENTO] Espelho atualizado com sucesso");
+                toast({
+                  title: "✅ Tarefa atualizada!",
+                  description: "A tarefa e seu espelho no Kanban Diário foram atualizados.",
+                  duration: 3000,
+                });
+              } else {
+                console.error("[ESPELHAMENTO] Erro ao atualizar espelho:", updateError);
+              }
+
+              onOpenChange(false);
+              return;
             }
           } else {
             // Se está criando nova tarefa recorrente, criar ambas diretamente no banco
