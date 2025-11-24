@@ -38,6 +38,7 @@ export interface AppSettings {
     projectsGridColumns: 1 | 2;
     hideBadges: boolean;
   };
+  aiPrompts?: Record<string, string>;
 }
 
 const defaultSettings: AppSettings = {
@@ -247,6 +248,34 @@ export function useSettings() {
     setIsDirty(true);
   };
 
+  const getAIPrompt = (key: string): string => {
+    return settings?.aiPrompts?.[key] || '';
+  };
+
+  const updateAIPrompt = (key: string, value: string) => {
+    setSettings((prev) => ({
+      ...prev,
+      aiPrompts: {
+        ...(prev.aiPrompts || {}),
+        [key]: value,
+      },
+    }));
+    setIsDirty(true);
+  };
+
+  const resetAIPrompt = (key: string) => {
+    const { getDefaultPrompt } = require('@/lib/defaultAIPrompts');
+    updateAIPrompt(key, getDefaultPrompt(key));
+  };
+
+  const resetAllAIPrompts = () => {
+    setSettings((prev) => ({
+      ...prev,
+      aiPrompts: undefined,
+    }));
+    setIsDirty(true);
+  };
+
   return {
     settings,
     updateSettings,
@@ -254,5 +283,9 @@ export function useSettings() {
     resetSettings,
     isLoading,
     isDirty,
+    getAIPrompt,
+    updateAIPrompt,
+    resetAIPrompt,
+    resetAllAIPrompts,
   };
 }

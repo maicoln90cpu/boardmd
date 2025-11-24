@@ -14,6 +14,8 @@ import {
   Palette,
   RemoveFormatting,
   Sparkles,
+  CheckSquare,
+  SortAsc,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -255,6 +257,61 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         title="Lista numerada"
       >
         <ListOrdered className="h-4 w-4" />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        className={editor.isActive("taskList") ? "bg-accent" : ""}
+        title="Lista com checkboxes"
+      >
+        <CheckSquare className="h-4 w-4" />
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Ordenação alfabética */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => {
+          if (!editor) return;
+          
+          const { from, to } = editor.state.selection;
+          if (from === to) {
+            toast.error("Selecione o texto que deseja ordenar");
+            return;
+          }
+          
+          const text = editor.state.doc.textBetween(from, to, '\n');
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          if (lines.length < 2) {
+            toast.error("Selecione pelo menos 2 linhas");
+            return;
+          }
+          
+          const sorted = lines.sort((a, b) => 
+            a.trim().localeCompare(b.trim(), 'pt-BR', { 
+              sensitivity: 'base',
+              ignorePunctuation: true 
+            })
+          );
+          
+          const sortedText = sorted.join('\n');
+          
+          editor.chain()
+            .focus()
+            .deleteRange({ from, to })
+            .insertContentAt(from, sortedText)
+            .run();
+            
+          toast.success(`${lines.length} linhas ordenadas alfabeticamente`);
+        }}
+        title="Ordenar seleção alfabeticamente (A-Z)"
+      >
+        <SortAsc className="h-4 w-4" />
       </Button>
 
       <div className="w-px h-6 bg-border mx-1" />
