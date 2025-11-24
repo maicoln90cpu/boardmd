@@ -87,17 +87,15 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     let dueDateTimestamp: string | null = null;
     
     if (dueDate) {
-      if (isDailyKanban) {
-        if (dueTime) {
-          const local = new Date(`${dueDate}T${dueTime}`);
-          dueDateTimestamp = local.toISOString();
-        } else if (task?.due_date) {
-          dueDateTimestamp = task.due_date;
-        } else {
-          const local = new Date(`${dueDate}T00:00`);
-          dueDateTimestamp = local.toISOString();
-        }
+      if (dueTime) {
+        // Se tem horário, usar data + horário
+        const local = new Date(`${dueDate}T${dueTime}`);
+        dueDateTimestamp = local.toISOString();
+      } else if (task?.due_date) {
+        // Se está editando e tinha horário antes, manter
+        dueDateTimestamp = task.due_date;
       } else {
+        // Se não tem horário, usar meia-noite
         const local = new Date(`${dueDate}T00:00`);
         dueDateTimestamp = local.toISOString();
       }
@@ -433,17 +431,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               />
             </div>
 
-            {isDailyKanban && (
-              <div>
-                <Label>Horário (opcional)</Label>
-                <Input
-                  type="time"
-                  value={dueTime}
-                  onChange={(e) => setDueTime(e.target.value)}
-                  className={isMobile ? 'min-h-[48px] text-base' : ''}
-                />
-              </div>
-            )}
+            <div>
+              <Label>Horário (opcional)</Label>
+              <Input
+                type="time"
+                value={dueTime}
+                onChange={(e) => setDueTime(e.target.value)}
+                placeholder="Selecione um horário"
+                className={isMobile ? 'min-h-[48px] text-base' : ''}
+              />
+            </div>
 
             <div>
               <Label>Tags</Label>
