@@ -88,6 +88,33 @@ export function TaskCard({
   // Estado do checkbox para tarefas recorrentes
   const [localCompleted, setLocalCompleted] = useLocalStorage(`task-completed-${task.id}`, false);
   
+  // Escutar eventos de atualização de localStorage para forçar re-render
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      // Verificar se a chave específica desta tarefa foi removida
+      const stored = localStorage.getItem(`task-completed-${task.id}`);
+      if (stored === null) {
+        setLocalCompleted(false);
+      }
+    };
+    
+    const handleTasksUnchecked = () => {
+      // Forçar atualização quando tarefas são desmarcadas
+      const stored = localStorage.getItem(`task-completed-${task.id}`);
+      if (stored === null) {
+        setLocalCompleted(false);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('tasks-unchecked', handleTasksUnchecked);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tasks-unchecked', handleTasksUnchecked);
+    };
+  }, [task.id, setLocalCompleted]);
+  
   // Verificar se a tarefa está na coluna "Concluído" via column_id
   // Se estiver, forçar isCompleted = true
   const [columnName, setColumnName] = React.useState<string>("");
