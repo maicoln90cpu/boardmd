@@ -15,6 +15,13 @@ import { TextStyle } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
+import { Image } from "@tiptap/extension-image";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { common, createLowlight } from "lowlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks } from "@/hooks/useTasks";
@@ -44,6 +51,10 @@ export function NoteEditor({
   const {
     share
   } = useWebShare();
+
+  // Initialize lowlight for syntax highlighting
+  const lowlight = createLowlight(common);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -58,6 +69,7 @@ export function NoteEditor({
         listItem: {
           HTMLAttributes: { class: 'ml-1' },
         },
+        codeBlock: false, // Disable default code block to use lowlight version
       }),
       Underline,
       Link.configure({
@@ -77,6 +89,36 @@ export function NoteEditor({
       TaskItem.configure({
         nested: true,
         HTMLAttributes: { class: 'flex items-start gap-2 my-1' },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full my-4',
+        },
+      }),
+      TableRow,
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-border bg-muted font-bold',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-border p-2',
+        },
+      }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg my-2',
+        },
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto',
+        },
       }),
     ],
     content: note.content || "",
