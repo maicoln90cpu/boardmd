@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { 
   CheckCircle2, 
   Sparkles, 
@@ -21,6 +22,62 @@ import {
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6 }
+    }
+  };
+
+  const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { duration: 0.6 }
+    }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const scaleIn = {
+    hidden: { scale: 0.8, opacity: 0 },
+    visible: { 
+      scale: 1, 
+      opacity: 1,
+      transition: { duration: 0.5 }
+    }
+  };
+
+  const slideInLeft = {
+    hidden: { x: -50, opacity: 0 },
+    visible: { 
+      x: 0, 
+      opacity: 1,
+      transition: { duration: 0.6 }
+    }
+  };
+
+  const slideInRight = {
+    hidden: { x: 50, opacity: 0 },
+    visible: { 
+      x: 0, 
+      opacity: 1,
+      transition: { duration: 0.6 }
+    }
+  };
 
   const features = [
     {
@@ -120,59 +177,103 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" 
+        />
         
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            <Badge className="mx-auto" variant="secondary">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Gestão de Tarefas com Inteligência Artificial
-            </Badge>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Badge className="mx-auto" variant="secondary">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Gestão de Tarefas com Inteligência Artificial
+              </Badge>
+            </motion.div>
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight"
+            >
               Pare de Gerenciar.
               <br />
               <span className="text-primary">Comece a Realizar.</span>
-            </h1>
+            </motion.h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto"
+            >
               O sistema de produtividade que pensa com você. Organização automática, 
               prioridades inteligentes e insights que transformam intenção em resultado.
-            </p>
+            </motion.p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Button 
-                size="lg" 
-                className="text-lg px-8 py-6"
-                onClick={() => navigate('/auth')}
-              >
-                Começar Gratuitamente
-                <ChevronRight className="ml-2 w-5 h-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                className="text-lg px-8 py-6"
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                Ver Como Funciona
-              </Button>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4"
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6"
+                  onClick={() => navigate('/auth')}
+                >
+                  Começar Gratuitamente
+                  <ChevronRight className="ml-2 w-5 h-5" />
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="text-lg px-8 py-6"
+                  onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Ver Como Funciona
+                </Button>
+              </motion.div>
+            </motion.div>
             
-            <div className="flex items-center justify-center gap-6 pt-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 1 }}
+              className="flex items-center justify-center gap-6 pt-8 text-sm text-muted-foreground"
+            >
+              <motion.div 
+                className="flex items-center gap-2"
+                whileHover={{ y: -2 }}
+              >
                 <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Sem cartão de crédito</span>
-              </div>
-              <div className="flex items-center gap-2">
+              </motion.div>
+              <motion.div 
+                className="flex items-center gap-2"
+                whileHover={{ y: -2 }}
+              >
                 <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Setup em 2 minutos</span>
-              </div>
-              <div className="flex items-center gap-2">
+              </motion.div>
+              <motion.div 
+                className="flex items-center gap-2"
+                whileHover={{ y: -2 }}
+              >
                 <CheckCircle2 className="w-4 h-4 text-primary" />
                 <span>Funciona offline</span>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -180,27 +281,39 @@ export default function Landing() {
       {/* Social Proof */}
       <section className="py-12 border-y bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
-            <div className="text-center">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16"
+          >
+            <motion.div variants={fadeInUp} className="text-center">
               <div className="text-3xl font-bold text-primary">98%</div>
               <div className="text-sm text-muted-foreground">Taxa de conclusão</div>
-            </div>
-            <div className="text-center">
+            </motion.div>
+            <motion.div variants={fadeInUp} className="text-center">
               <div className="text-3xl font-bold text-primary">30min</div>
               <div className="text-sm text-muted-foreground">Economizados/dia</div>
-            </div>
-            <div className="text-center">
+            </motion.div>
+            <motion.div variants={fadeInUp} className="text-center">
               <div className="text-3xl font-bold text-primary">5.0</div>
               <div className="text-sm text-muted-foreground">Avaliação média</div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            className="text-center max-w-3xl mx-auto mb-16"
+          >
             <Badge className="mb-4" variant="outline">
               <Zap className="w-3 h-3 mr-1" />
               Funcionalidades
@@ -211,37 +324,64 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground">
               Não é só mais um app de tarefas. É um sistema completo que trabalha para você.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
             {features.map((feature, index) => (
-              <Card key={index} className="relative overflow-hidden group hover:shadow-lg transition-all">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl">{feature.title}</CardTitle>
-                  <CardDescription className="text-base">
-                    {feature.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant="secondary" className="font-normal">
-                    <CheckCircle2 className="w-3 h-3 mr-1" />
-                    {feature.benefit}
-                  </Badge>
-                </CardContent>
-              </Card>
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              >
+                <Card className="relative overflow-hidden group hover:shadow-lg transition-shadow h-full">
+                  <motion.div 
+                    className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                  <CardHeader>
+                    <motion.div 
+                      className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4"
+                      whileHover={{ rotate: 360, scale: 1.1 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      <feature.icon className="w-6 h-6 text-primary" />
+                    </motion.div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardDescription className="text-base">
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant="secondary" className="font-normal">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      {feature.benefit}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Benefits Section */}
       <section className="py-20 md:py-32 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            className="text-center max-w-3xl mx-auto mb-16"
+          >
             <Badge className="mb-4" variant="outline">
               <Shield className="w-3 h-3 mr-1" />
               Benefícios Reais
@@ -252,28 +392,52 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground">
               Além das funcionalidades, veja como sua vida muda no dia a dia.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          >
             {benefits.map((benefit, index) => (
-              <Card key={index} className="text-center hover:scale-105 transition-transform">
-                <CardHeader>
-                  <div className="text-5xl mb-4">{benefit.emoji}</div>
-                  <CardTitle className="text-xl">{benefit.title}</CardTitle>
-                  <CardDescription className="text-base">
-                    {benefit.description}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+              <motion.div
+                key={index}
+                variants={scaleIn}
+                whileHover={{ scale: 1.08, transition: { duration: 0.2 } }}
+              >
+                <Card className="text-center h-full">
+                  <CardHeader>
+                    <motion.div 
+                      className="text-5xl mb-4"
+                      whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      {benefit.emoji}
+                    </motion.div>
+                    <CardTitle className="text-xl">{benefit.title}</CardTitle>
+                    <CardDescription className="text-base">
+                      {benefit.description}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Testimonials Section */}
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={fadeInUp}
+            className="text-center max-w-3xl mx-auto mb-16"
+          >
             <Badge className="mb-4" variant="outline">
               <Users className="w-3 h-3 mr-1" />
               Depoimentos
@@ -284,78 +448,132 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground">
               Veja como profissionais de diferentes áreas estão transformando sua produtividade.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto"
+          >
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="relative">
-                <CardHeader>
-                  <div className="flex gap-1 mb-4">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <CardDescription className="text-base italic">
-                    "{testimonial.content}"
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                </CardContent>
-              </Card>
+              <motion.div
+                key={index}
+                variants={index % 2 === 0 ? slideInLeft : slideInRight}
+                whileHover={{ y: -8, transition: { duration: 0.2 } }}
+              >
+                <Card className="relative h-full hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <motion.div 
+                      className="flex gap-1 mb-4"
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ delay: 0.5, duration: 0.5 }}
+                    >
+                      {Array.from({ length: testimonial.rating }).map((_, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ scale: 0 }}
+                          whileInView={{ scale: 1 }}
+                          transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
+                        >
+                          <Star className="w-4 h-4 fill-primary text-primary" />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                    <CardDescription className="text-base italic">
+                      "{testimonial.content}"
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="font-semibold">{testimonial.name}</div>
+                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                  </CardContent>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-20 md:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" 
+        />
         
         <div className="relative container mx-auto px-4">
-          <Card className="max-w-4xl mx-auto text-center p-8 md:p-12 shadow-2xl">
-            <CardHeader>
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-primary" />
-                </div>
-              </div>
-              <CardTitle className="text-3xl md:text-5xl font-bold mb-4">
-                Pronto para recuperar seu tempo?
-              </CardTitle>
-              <CardDescription className="text-lg md:text-xl">
-                Junte-se a milhares de profissionais que já transformaram sua rotina.
-                <br />
-                Configure em 2 minutos. Sem cartão de crédito. Sem compromisso.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Button 
-                size="lg" 
-                className="text-lg px-12 py-6"
-                onClick={() => navigate('/auth')}
-              >
-                <Zap className="mr-2 w-5 h-5" />
-                Começar Agora Gratuitamente
-              </Button>
-              
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground pt-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  <span>Setup em 2 minutos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
-                  <span>Dados criptografados</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-primary" />
-                  <span>Suporte prioritário</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={scaleIn}
+          >
+            <Card className="max-w-4xl mx-auto text-center p-8 md:p-12 shadow-2xl">
+              <CardHeader>
+                <motion.div 
+                  className="flex justify-center mb-6"
+                  whileHover={{ scale: 1.2, rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="w-8 h-8 text-primary" />
+                  </div>
+                </motion.div>
+                <motion.div variants={fadeInUp}>
+                  <CardTitle className="text-3xl md:text-5xl font-bold mb-4">
+                    Pronto para recuperar seu tempo?
+                  </CardTitle>
+                </motion.div>
+                <motion.div variants={fadeInUp}>
+                  <CardDescription className="text-lg md:text-xl">
+                    Junte-se a milhares de profissionais que já transformaram sua rotina.
+                    <br />
+                    Configure em 2 minutos. Sem cartão de crédito. Sem compromisso.
+                  </CardDescription>
+                </motion.div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <motion.div
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    size="lg" 
+                    className="text-lg px-12 py-6"
+                    onClick={() => navigate('/auth')}
+                  >
+                    <Zap className="mr-2 w-5 h-5" />
+                    Começar Agora Gratuitamente
+                  </Button>
+                </motion.div>
+                
+                <motion.div 
+                  variants={staggerContainer}
+                  className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground pt-4"
+                >
+                  <motion.div variants={fadeIn} className="flex items-center gap-2" whileHover={{ y: -2 }}>
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>Setup em 2 minutos</span>
+                  </motion.div>
+                  <motion.div variants={fadeIn} className="flex items-center gap-2" whileHover={{ y: -2 }}>
+                    <Shield className="w-4 h-4 text-primary" />
+                    <span>Dados criptografados</span>
+                  </motion.div>
+                  <motion.div variants={fadeIn} className="flex items-center gap-2" whileHover={{ y: -2 }}>
+                    <Bell className="w-4 h-4 text-primary" />
+                    <span>Suporte prioritário</span>
+                  </motion.div>
+                </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </section>
 
