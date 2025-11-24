@@ -163,7 +163,8 @@ export default function Config() {
     deleteColumn,
     renameColumn,
     reorderColumns,
-    addColumn
+    addColumn,
+    toggleColumnKanbanVisibility
   } = useColumns();
 
   // Setup drag and drop sensors
@@ -1142,6 +1143,7 @@ export default function Config() {
         onRenameColumn={renameColumn}
         onAddColumn={addColumn}
         onReorderColumns={reorderColumns}
+        onToggleKanbanVisibility={toggleColumnKanbanVisibility}
       />
     </div>
   );

@@ -70,6 +70,8 @@ export type Database = {
           kanban_type: string | null
           name: string
           position: number
+          show_in_daily: boolean | null
+          show_in_projects: boolean | null
           user_id: string
         }
         Insert: {
@@ -79,6 +81,8 @@ export type Database = {
           kanban_type?: string | null
           name: string
           position: number
+          show_in_daily?: boolean | null
+          show_in_projects?: boolean | null
           user_id: string
         }
         Update: {
@@ -88,6 +92,8 @@ export type Database = {
           kanban_type?: string | null
           name?: string
           position?: number
+          show_in_daily?: boolean | null
+          show_in_projects?: boolean | null
           user_id?: string
         }
         Relationships: []
