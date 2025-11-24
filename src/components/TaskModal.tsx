@@ -385,7 +385,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
           {task ? "Formulário para editar uma tarefa existente" : "Formulário para criar uma nova tarefa"}
         </p>
         
-        <ScrollArea className="flex-1 px-4 pb-4">
+        <ScrollArea className="flex-1 px-4 pb-4 max-h-[60vh] overflow-y-auto">
           <div className="space-y-4">
             <div>
               <Label>Título</Label>
