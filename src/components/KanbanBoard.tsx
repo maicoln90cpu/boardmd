@@ -186,22 +186,23 @@ export function KanbanBoard({
 
   const handleUncheckRecurrentTasks = (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
+    
+    // Remover do localStorage
     columnTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
     });
-    // Forçar re-render com pequeno delay
-    setTimeout(() => {
-      import("@/hooks/use-toast").then(({ toast }) => {
-        toast({
-          title: "✅ Tarefas desmarcadas",
-          description: "Todas as tarefas recorrentes foram desmarcadas",
-        });
+    
+    // Disparar evento customizado para forçar re-render global
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new CustomEvent('tasks-unchecked'));
+    
+    // Toast de sucesso
+    import("@/hooks/use-toast").then(({ toast }) => {
+      toast({
+        title: "✅ Tarefas desmarcadas",
+        description: "Todas as tarefas recorrentes foram desmarcadas",
       });
-      // Re-renderizar forçando atualização do estado
-      setModalOpen(false);
-      setModalOpen(true);
-      setModalOpen(false);
-    }, 100);
+    });
   };
 
   const getTasksForColumn = (columnId: string) => {
