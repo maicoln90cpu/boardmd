@@ -14,11 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
+import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import {
   DndContext,
   closestCenter,
@@ -138,7 +141,7 @@ function SortableCategoryItem({
 }
 
 export default function Config() {
-  const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading } = useSettings();
+  const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading, getAIPrompt, updateAIPrompt, resetAIPrompt, resetAllAIPrompts } = useSettings();
   const { theme, setTheme } = useTheme();
   const { categories, addCategory, deleteCategory, reorderCategories } = useCategories();
   const { toast } = useToast();
@@ -342,12 +345,13 @@ export default function Config() {
 
       <div className="container max-w-6xl mx-auto p-6 pb-24">
         <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-8">
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="productivity">Produtividade</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
+            <TabsTrigger value="ai-prompts">IA & Prompts</TabsTrigger>
             <TabsTrigger value="advanced">Avançado</TabsTrigger>
             <TabsTrigger value="data">Dados</TabsTrigger>
           </TabsList>
@@ -879,6 +883,226 @@ export default function Config() {
                   <LogOut className="h-4 w-4 mr-2" />
                   Sair da Conta
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba IA & Prompts */}
+          <TabsContent value="ai-prompts" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>🤖 Prompts de IA</CardTitle>
+                <CardDescription>
+                  Personalize os prompts usados pelos assistentes de IA do aplicativo
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                {/* Seção: Formatação de Notas */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    📝 Formatação de Notas
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Usados ao formatar notas com IA</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </h3>
+                  <div className="space-y-6">
+                    {getAllPrompts()
+                      .filter(p => p.category === 'notes')
+                      .map(prompt => {
+                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
+                        const isCustom = !!getAIPrompt(prompt.key);
+                        
+                        return (
+                          <div key={prompt.key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={prompt.key} className="font-medium">
+                                {prompt.label}
+                              </Label>
+                              {isCustom && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetAIPrompt(prompt.key)}
+                                  className="text-xs"
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Restaurar padrão
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
+                            <Textarea
+                              id={prompt.key}
+                              value={currentValue}
+                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
+                              rows={6}
+                              className="font-mono text-xs"
+                              placeholder={prompt.defaultValue}
+                            />
+                            <p className="text-xs text-muted-foreground text-right">
+                              {currentValue.length} caracteres
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Seção: Kanban Diário */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    📅 Kanban Diário
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Usado ao organizar tarefas com IA</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </h3>
+                  <div className="space-y-6">
+                    {getAllPrompts()
+                      .filter(p => p.category === 'kanban')
+                      .map(prompt => {
+                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
+                        const isCustom = !!getAIPrompt(prompt.key);
+                        
+                        return (
+                          <div key={prompt.key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={prompt.key} className="font-medium">
+                                {prompt.label}
+                              </Label>
+                              {isCustom && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetAIPrompt(prompt.key)}
+                                  className="text-xs"
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Restaurar padrão
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
+                            <Textarea
+                              id={prompt.key}
+                              value={currentValue}
+                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
+                              rows={8}
+                              className="font-mono text-xs"
+                              placeholder={prompt.defaultValue}
+                            />
+                            <p className="text-xs text-muted-foreground text-right">
+                              {currentValue.length} caracteres
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Seção: Análise de Produtividade */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    📊 Análise de Produtividade
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Usado ao gerar insights de produtividade</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </h3>
+                  <div className="space-y-6">
+                    {getAllPrompts()
+                      .filter(p => p.category === 'productivity')
+                      .map(prompt => {
+                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
+                        const isCustom = !!getAIPrompt(prompt.key);
+                        
+                        return (
+                          <div key={prompt.key} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={prompt.key} className="font-medium">
+                                {prompt.label}
+                              </Label>
+                              {isCustom && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetAIPrompt(prompt.key)}
+                                  className="text-xs"
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Restaurar padrão
+                                </Button>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
+                            <Textarea
+                              id={prompt.key}
+                              value={currentValue}
+                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
+                              rows={10}
+                              className="font-mono text-xs"
+                              placeholder={prompt.defaultValue}
+                            />
+                            <p className="text-xs text-muted-foreground text-right">
+                              {currentValue.length} caracteres
+                            </p>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Botão para restaurar todos */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restaurar Todos os Prompts para Padrão
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Restaurar todos os prompts?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso irá resetar todos os prompts customizados para os valores padrão. Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => {
+                        resetAllAIPrompts();
+                        toast({ title: "Prompts restaurados", description: "Todos os prompts foram restaurados aos valores padrão" });
+                      }}>
+                        Restaurar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           </TabsContent>

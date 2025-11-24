@@ -25,7 +25,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompts: Record<string, string> = {
+    // Default prompts
+    const defaultPrompts: Record<string, string> = {
       improve: "Você é um assistente de formatação de texto. Melhore a legibilidade e formatação do texto sem alterar o conteúdo principal. Adicione títulos, listas, negrito e itálico onde apropriado. Mantenha o HTML válido para TipTap editor.",
       grammar: "Você é um revisor de texto. Corrija erros gramaticais e de ortografia mantendo o estilo original. Retorne HTML válido para TipTap editor.",
       summarize: "Você é um especialista em resumos. Crie um resumo conciso do texto mantendo os pontos principais. Retorne HTML válido para TipTap editor.",
@@ -33,7 +34,38 @@ serve(async (req) => {
       professional: "Você é um editor profissional. Transforme o texto em um formato mais profissional e formal. Retorne HTML válido para TipTap editor."
     };
 
-    const systemPrompt = systemPrompts[action] || systemPrompts.improve;
+    let systemPrompt = defaultPrompts[action] || defaultPrompts.improve;
+
+    // Get custom prompt from user settings if authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: { user } } = await supabase.auth.getUser(token);
+        
+        if (user) {
+          const { data: settings } = await supabase
+            .from('user_settings')
+            .select('settings')
+            .eq('user_id', user.id)
+            .single();
+          
+          const promptKey = `format${action.charAt(0).toUpperCase() + action.slice(1)}`;
+          if (settings?.settings?.aiPrompts?.[promptKey]) {
+            systemPrompt = settings.settings.aiPrompts[promptKey];
+            console.log(`[format-note] Using custom prompt for ${promptKey}`);
+          }
+        }
+      } catch (authError) {
+        console.log('[format-note] Auth error, using default prompt:', authError);
+      }
+    }
 
     console.log(`[format-note] Processing action: ${action}`);
 

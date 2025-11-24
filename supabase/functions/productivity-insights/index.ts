@@ -44,7 +44,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Você é um analista de produtividade especializado em padrões de trabalho.
+    // Default system prompt
+    let systemPrompt = `Você é um analista de produtividade especializado em padrões de trabalho.
 
 Analise os dados fornecidos e retorne insights acionáveis sobre produtividade.
 
@@ -89,6 +90,36 @@ IMPORTANTE:
 - Insights devem ser específicos e acionáveis
 - Tom motivacional mas realista
 - Máximo 4 patterns e 4 suggestions`;
+
+    // Get custom prompt from user settings if authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: { user } } = await supabase.auth.getUser(token);
+        
+        if (user) {
+          const { data: settings } = await supabase
+            .from('user_settings')
+            .select('settings')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (settings?.settings?.aiPrompts?.productivityInsights) {
+            systemPrompt = settings.settings.aiPrompts.productivityInsights;
+            console.log('[productivity-insights] Using custom prompt for productivityInsights');
+          }
+        }
+      } catch (authError) {
+        console.log('[productivity-insights] Auth error, using default prompt:', authError);
+      }
+    }
 
     const statsContext = {
       stats: {

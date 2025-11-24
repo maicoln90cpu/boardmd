@@ -13,6 +13,8 @@ import TextAlign from "@tiptap/extension-text-align";
 import Color from "@tiptap/extension-color";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks } from "@/hooks/useTasks";
@@ -43,15 +45,40 @@ export function NoteEditor({
     share
   } = useWebShare();
   const editor = useEditor({
-    extensions: [StarterKit, Underline, Link.configure({
-      openOnClick: false,
-      autolink: false,
-      linkOnPaste: true
-    }), TextAlign.configure({
-      types: ["heading", "paragraph"]
-    }), TextStyle, Color, Highlight.configure({
-      multicolor: true
-    })],
+    extensions: [
+      StarterKit.configure({
+        bulletList: {
+          HTMLAttributes: { class: 'list-disc pl-6 my-2' },
+          keepMarks: true,
+        },
+        orderedList: {
+          HTMLAttributes: { class: 'list-decimal pl-6 my-2' },
+          keepMarks: true,
+        },
+        listItem: {
+          HTMLAttributes: { class: 'ml-1' },
+        },
+      }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: false,
+        linkOnPaste: true
+      }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"]
+      }),
+      TextStyle,
+      Color,
+      Highlight.configure({
+        multicolor: true
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: { class: 'flex items-start gap-2 my-1' },
+      }),
+    ],
     content: note.content || "",
     onUpdate: ({
       editor

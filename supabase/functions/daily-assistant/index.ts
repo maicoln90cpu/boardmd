@@ -37,7 +37,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Você é um assistente de produtividade especializado em organizar tarefas diárias.
+    // Default system prompt
+    let systemPrompt = `Você é um assistente de produtividade especializado em organizar tarefas diárias.
 
 Analise as tarefas fornecidas e retorne uma sugestão de organização inteligente considerando:
 1. URGÊNCIA: Prazos próximos têm prioridade
@@ -63,6 +64,36 @@ IMPORTANTE:
 - Retorne apenas o JSON, sem texto adicional
 - Inclua todos os IDs das tarefas fornecidas
 - Insights devem ser concisos e acionáveis`;
+
+    // Get custom prompt from user settings if authenticated
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: { user } } = await supabase.auth.getUser(token);
+        
+        if (user) {
+          const { data: settings } = await supabase
+            .from('user_settings')
+            .select('settings')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (settings?.settings?.aiPrompts?.dailyAssistant) {
+            systemPrompt = settings.settings.aiPrompts.dailyAssistant;
+            console.log('[daily-assistant] Using custom prompt for dailyAssistant');
+          }
+        }
+      } catch (authError) {
+        console.log('[daily-assistant] Auth error, using default prompt:', authError);
+      }
+    }
 
     const tasksContext = tasks.map((t: Task) => ({
       id: t.id,
