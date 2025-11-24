@@ -16,6 +16,10 @@ import {
   Sparkles,
   CheckSquare,
   SortAsc,
+  Table,
+  TableProperties,
+  Image as ImageIcon,
+  Code2,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -53,6 +57,8 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [showImageInput, setShowImageInput] = useState(false);
 
   if (!editor) return null;
 
@@ -66,6 +72,32 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
 
   const removeLink = () => {
     editor.chain().focus().unsetLink().run();
+  };
+
+  const addImage = () => {
+    if (imageUrl) {
+      editor.chain().focus().setImage({ src: imageUrl }).run();
+      setImageUrl("");
+      setShowImageInput(false);
+    }
+  };
+
+  const addImageFromFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target?.result as string;
+          editor.chain().focus().setImage({ src: dataUrl }).run();
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   const formatWithAI = async (action: string) => {
@@ -109,7 +141,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   };
 
   return (
-    <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10">
+    <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10 overflow-x-auto">
       {/* Formatação básica */}
       <Button
         variant="ghost"
@@ -357,6 +389,93 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         title="Limpar formatação"
       >
         <RemoveFormatting className="h-4 w-4" />
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Tabela */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Inserir tabela"
+          >
+            <Table className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            <TableProperties className="mr-2 h-4 w-4" />
+            Inserir tabela 3x3
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>
+            Adicionar coluna antes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+            Adicionar coluna depois
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
+            Excluir coluna
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+            Adicionar linha antes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+            Adicionar linha depois
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
+            Excluir linha
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-destructive">
+            Excluir tabela
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Imagem */}
+      <Popover open={showImageInput} onOpenChange={setShowImageInput}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Inserir imagem"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 bg-popover z-50">
+          <div className="flex flex-col gap-2">
+            <Input
+              placeholder="URL da imagem"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addImage();
+                if (e.key === "Escape") setShowImageInput(false);
+              }}
+            />
+            <div className="flex gap-2">
+              <Button onClick={addImage} size="sm" className="flex-1">
+                Adicionar URL
+              </Button>
+              <Button onClick={addImageFromFile} variant="outline" size="sm" className="flex-1">
+                Upload
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Bloco de código */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        className={editor.isActive("codeBlock") ? "bg-accent" : ""}
+        title="Bloco de código"
+      >
+        <Code2 className="h-4 w-4" />
       </Button>
 
       <div className="w-px h-6 bg-border mx-1" />
