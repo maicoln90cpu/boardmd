@@ -3,7 +3,7 @@ import { Column } from "@/hooks/useColumns";
 import { Task } from "@/hooks/useTasks";
 import { TaskCard } from "../TaskCard";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { getColumnColorClass } from "./ColumnColorPicker";
@@ -19,6 +19,7 @@ interface MobileKanbanViewProps {
   toggleFavorite: (taskId: string) => void;
   duplicateTask: (taskId: string) => void;
   handleMoveTask: (taskId: string, direction: "left" | "right") => void;
+  handleUncheckRecurrentTasks: (columnId: string) => void;
   isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
@@ -36,6 +37,7 @@ export function MobileKanbanView({
   toggleFavorite,
   duplicateTask,
   handleMoveTask,
+  handleUncheckRecurrentTasks,
   isDailyKanban = false,
   showCategoryBadge = false,
   densityMode = "compact",
@@ -64,8 +66,28 @@ export function MobileKanbanView({
               >
                 {/* Header da coluna */}
                 <div className={`p-2 border-b sticky top-0 bg-card z-10 rounded-t-lg ${getColumnColorClass(column.color)}`}>
-                  <h4 className="text-xs font-semibold truncate">{column.name}</h4>
-                  <span className="text-[10px] text-muted-foreground">({columnTasks.length})</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <h4 className="text-xs font-semibold truncate">{column.name}</h4>
+                      <span className="text-[10px] text-muted-foreground">({columnTasks.length})</span>
+                      {column.name.toLowerCase() === "recorrente" && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-medium whitespace-nowrap">
+                          🔄
+                        </span>
+                      )}
+                    </div>
+                    {column.name.toLowerCase() === "recorrente" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={() => handleUncheckRecurrentTasks(column.id)}
+                        title="Desmarcar todas as tarefas recorrentes"
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Lista de tasks */}

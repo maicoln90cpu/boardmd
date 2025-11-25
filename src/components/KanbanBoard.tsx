@@ -187,9 +187,23 @@ export function KanbanBoard({
   const handleUncheckRecurrentTasks = (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
     
-    // Remover do localStorage
+    // Data atual em UTC
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0, 0, 0, 0
+    ));
+    
+    // Remover do localStorage e atualizar due_date
     columnTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
+      
+      // Atualizar due_date para hoje (UTC)
+      updateTask(task.id, {
+        due_date: todayUTC.toISOString()
+      });
     });
     
     // Disparar evento customizado para forçar re-render global
@@ -200,7 +214,7 @@ export function KanbanBoard({
     import("@/hooks/use-toast").then(({ toast }) => {
       toast({
         title: "✅ Tarefas desmarcadas",
-        description: "Todas as tarefas recorrentes foram desmarcadas",
+        description: "Todas as tarefas recorrentes foram desmarcadas e atualizadas para hoje",
       });
     });
   };
@@ -312,6 +326,7 @@ export function KanbanBoard({
           toggleFavorite={toggleFavorite}
           duplicateTask={duplicateTask}
           handleMoveTask={handleMoveTask}
+          handleUncheckRecurrentTasks={handleUncheckRecurrentTasks}
           isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
           densityMode={densityMode}
