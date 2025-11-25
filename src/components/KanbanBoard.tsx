@@ -13,6 +13,7 @@ import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { MobileKanbanView } from "./kanban/MobileKanbanView";
+import { useEffect } from "react";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -51,6 +52,9 @@ export function KanbanBoard({
   const { updateColumnColor } = useColumns();
   const isMobile = useBreakpoint() === 'mobile';
   
+  // Estado para forçar re-render quando hideCompletedTasks mudar
+  const [, setForceUpdate] = useState(0);
+  
   // Modo compacto automático em mobile ou quando forçado via prop
   const compact = isMobile || compactProp;
   
@@ -65,6 +69,25 @@ export function KanbanBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+
+  // Listener para eventos de mudança no hideCompletedTasks
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setForceUpdate(prev => prev + 1);
+    };
+    
+    const handleTaskUpdate = () => {
+      setForceUpdate(prev => prev + 1);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('task-updated', handleTaskUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('task-updated', handleTaskUpdate);
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
