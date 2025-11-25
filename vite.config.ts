@@ -64,14 +64,10 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // Supabase Auth - Network Only
+          // Supabase Auth - Network Only (no caching for security)
           {
             urlPattern: /^https:\/\/ipcxjmbcfzvkfixvsrft\.supabase\.co\/auth\/.*/i,
-            handler: 'NetworkOnly',
-            options: {
-              cacheName: 'supabase-auth',
-              networkTimeoutSeconds: 10
-            }
+            handler: 'NetworkOnly'
           },
           // Supabase Storage - Cache First with network fallback
           {
