@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +16,6 @@ export function useNotebooks() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const isEditingRef = React.useRef(false);
 
   const fetchNotebooks = async () => {
     if (!user) return;
@@ -65,6 +63,18 @@ export function useNotebooks() {
   const addNotebook = async (name: string) => {
     if (!user) return;
 
+    // Update otimista: criar notebook temporário
+    const tempId = `temp-${Date.now()}`;
+    const tempNotebook: Notebook = {
+      id: tempId,
+      name,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    
+    setNotebooks((prev) => [tempNotebook, ...prev]);
+
     try {
       const { data, error } = await supabase
         .from("notebooks")
@@ -77,11 +87,18 @@ export function useNotebooks() {
 
       if (error) throw error;
 
+      // Substituir notebook temporário pelo real
+      setNotebooks((prev) =>
+        prev.map((n) => (n.id === tempId ? data : n))
+      );
+
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("Error adding notebook:", error);
       }
+      // Remover notebook temporário em caso de erro
+      setNotebooks((prev) => prev.filter((n) => n.id !== tempId));
       toast({
         title: "Erro ao criar caderno",
         variant: "destructive",
