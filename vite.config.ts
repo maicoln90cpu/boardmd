@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'pwa-icon.png', 'robots.txt'],
+      includeAssets: ['favicon.png', 'pwa-icon.png', 'robots.txt', 'sw-push.js'],
       manifest: {
         name: 'To do Tasks',
         short_name: 'Tasks',
@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        importScripts: ['/sw-push.js'],
         runtimeCaching: [
           // Supabase API - Network First with fallback
           {

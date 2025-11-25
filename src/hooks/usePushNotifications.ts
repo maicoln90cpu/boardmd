@@ -102,6 +102,9 @@ export function usePushNotifications(tasks: Task[]) {
     
     const columnMap = new Map(columnsData?.map(c => [c.id, c.name]) || []);
 
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+
     tasks.forEach((task) => {
       if (!task.due_date) return;
 
@@ -120,44 +123,64 @@ export function usePushNotifications(tasks: Task[]) {
       const warningThreshold = configuredHours * 60;
       const earlyThreshold = warningThreshold * 2;
 
+      // Enviar notificações via Edge Function para maior confiabilidade
+      const sendPushViaEdgeFunction = async (title: string, body: string) => {
+        if (user && isSubscribed) {
+          try {
+            await pushNotifications.sendPushNotification({
+              user_id: user.id,
+              title,
+              body,
+              data: { taskId: task.id },
+              url: `/`,
+            });
+          } catch (error) {
+            console.error('Error sending push notification:', error);
+            // Fallback para notificação local
+            pushNotifications.scheduleLocalNotification(title, body, 0, `task-${task.id}`);
+          }
+        } else {
+          // Usar notificação local se não estiver inscrito
+          pushNotifications.scheduleLocalNotification(title, body, 0, `task-${task.id}`);
+        }
+      };
+
       // Agendar notificações baseadas nos thresholds
       if (isPast(dueDate)) {
         // Notificação imediata para tarefas atrasadas
-        pushNotifications.scheduleLocalNotification(
+        sendPushViaEdgeFunction(
           "⏰ Tarefa Atrasada!",
-          `"${task.title}" já passou do prazo`,
-          0,
-          `task-overdue-${task.id}`
+          `"${task.title}" já passou do prazo`
         );
       } else if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
         // Notificação urgente (1 hora antes)
         const delay = Math.max(0, (minutesUntilDue - 60) * 60 * 1000);
-        pushNotifications.scheduleLocalNotification(
-          "🔥 Prazo Urgente!",
-          `"${task.title}" vence em menos de 1 hora`,
-          delay,
-          `task-urgent-${task.id}`
-        );
+        setTimeout(() => {
+          sendPushViaEdgeFunction(
+            "🔥 Prazo Urgente!",
+            `"${task.title}" vence em menos de 1 hora`
+          );
+        }, delay);
       } else if (minutesUntilDue <= warningThreshold) {
         // Notificação de aviso (horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - warningThreshold) * 60 * 1000);
         const hours = Math.floor(minutesUntilDue / 60);
-        pushNotifications.scheduleLocalNotification(
-          "⚠️ Prazo Próximo",
-          `"${task.title}" vence em ${hours} hora${hours > 1 ? 's' : ''}`,
-          delay,
-          `task-warning-${task.id}`
-        );
+        setTimeout(() => {
+          sendPushViaEdgeFunction(
+            "⚠️ Prazo Próximo",
+            `"${task.title}" vence em ${hours} hora${hours > 1 ? 's' : ''}`
+          );
+        }, delay);
       } else if (minutesUntilDue <= earlyThreshold) {
         // Notificação antecipada (dobro das horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - earlyThreshold) * 60 * 1000);
         const hours = Math.floor(minutesUntilDue / 60);
-        pushNotifications.scheduleLocalNotification(
-          "📅 Prazo se Aproximando",
-          `"${task.title}" vence em ${hours} horas`,
-          delay,
-          `task-early-${task.id}`
-        );
+        setTimeout(() => {
+          sendPushViaEdgeFunction(
+            "📅 Prazo se Aproximando",
+            `"${task.title}" vence em ${hours} horas`
+          );
+        }, delay);
       }
     });
   };
