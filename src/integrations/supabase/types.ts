@@ -342,6 +342,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_completed: boolean | null
           is_favorite: boolean
           mirror_task_id: string | null
           position: number
@@ -360,6 +361,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_completed?: boolean | null
           is_favorite?: boolean
           mirror_task_id?: string | null
           position?: number
@@ -378,6 +380,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_completed?: boolean | null
           is_favorite?: boolean
           mirror_task_id?: string | null
           position?: number

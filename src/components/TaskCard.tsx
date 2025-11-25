@@ -13,7 +13,6 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import React from "react";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
@@ -85,57 +84,26 @@ export function TaskCard({
   const { toast } = useToast();
   const { share } = useWebShare();
 
-  // Estado do checkbox para tarefas recorrentes
-  const [localCompleted, setLocalCompleted] = useLocalStorage(`task-completed-${task.id}`, false);
+  // Estado do checkbox sincronizado com Supabase
+  const isCompleted = task.is_completed;
   
-  // Escutar eventos de atualização de localStorage para forçar re-render
-  React.useEffect(() => {
-    const handleStorageChange = () => {
-      // Verificar se a chave específica desta tarefa foi removida
-      const stored = localStorage.getItem(`task-completed-${task.id}`);
-      if (stored === null) {
-        setLocalCompleted(false);
-      }
-    };
-    
-    const handleTasksUnchecked = () => {
-      // Forçar atualização quando tarefas são desmarcadas
-      const stored = localStorage.getItem(`task-completed-${task.id}`);
-      if (stored === null) {
-        setLocalCompleted(false);
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('tasks-unchecked', handleTasksUnchecked);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('tasks-unchecked', handleTasksUnchecked);
-    };
-  }, [task.id, setLocalCompleted]);
-  
-  // Verificar se a tarefa está na coluna "Concluído" via column_id
-  // Se estiver, forçar isCompleted = true
-  const [columnName, setColumnName] = React.useState<string>("");
-  
-  React.useEffect(() => {
-    const fetchColumnName = async () => {
-      const { data } = await supabase
-        .from("columns")
-        .select("name")
-        .eq("id", task.column_id)
-        .single();
+  const handleToggleCompleted = async (checked: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ is_completed: checked })
+        .eq("id", task.id);
       
-      if (data) {
-        setColumnName(data.name);
-      }
-    };
-    
-    fetchColumnName();
-  }, [task.column_id]);
-  
-  const isCompleted = columnName.toLowerCase().includes("concluí") || localCompleted;
+      if (error) throw error;
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+      toast({
+        title: "Erro ao atualizar tarefa",
+        description: "Não foi possível salvar a alteração. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(!!task.recurrence_rule);
   const [recurrenceFrequency, setRecurrenceFrequency] = React.useState<"daily" | "weekly" | "monthly">(
@@ -213,7 +181,7 @@ export function TaskCard({
                 {task.recurrence_rule && (
                   <Checkbox
                     checked={isCompleted}
-                    onCheckedChange={(checked) => setLocalCompleted(!!checked)}
+                    onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
                     className="h-3 w-3 shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -386,7 +354,7 @@ export function TaskCard({
                     {task.recurrence_rule && (
                       <Checkbox
                         checked={isCompleted}
-                        onCheckedChange={(checked) => setLocalCompleted(!!checked)}
+                        onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
                         className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
                         onClick={(e) => e.stopPropagation()}
                       />

@@ -14,9 +14,15 @@ export function InstallPrompt() {
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isDismissed = localStorage.getItem('pwa_install_dismissed') === 'true';
+    const dismissedDate = localStorage.getItem('pwa_install_dismissed');
     
-    if (isStandalone || isDismissed) return;
+    if (isStandalone) return;
+    
+    // Mostrar novamente após 7 dias
+    if (dismissedDate) {
+      const daysSinceDismiss = (Date.now() - parseInt(dismissedDate)) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismiss < 7) return;
+    }
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -24,15 +30,25 @@ export function InstallPrompt() {
       setShowPrompt(true);
     };
 
+    // Handler para forçar exibição do prompt
+    const forceShowHandler = () => {
+      setShowPrompt(true);
+    };
+
     window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('show-install-prompt', forceShowHandler);
 
     // Show Safari instructions if needed
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isSafari && !isStandalone) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if ((isSafari || isIOS) && !isStandalone) {
       setTimeout(() => setShowPrompt(true), 3000);
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('show-install-prompt', forceShowHandler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -56,7 +72,7 @@ export function InstallPrompt() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('pwa_install_dismissed', 'true');
+    localStorage.setItem('pwa_install_dismissed', Date.now().toString());
     setShowPrompt(false);
   };
 

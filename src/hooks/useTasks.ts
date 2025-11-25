@@ -21,6 +21,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   is_favorite: boolean;
+  is_completed: boolean;
   subtasks: Array<{ id: string; title: string; completed: boolean }> | null;
   recurrence_rule: {
     frequency: 'daily' | 'weekly' | 'monthly';
