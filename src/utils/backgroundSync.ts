@@ -1,5 +1,6 @@
 import { offlineSync } from './offlineSync';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const SYNC_TAG = 'supabase-sync';
 
@@ -45,14 +46,29 @@ export const backgroundSync = {
     if (queue.length === 0) return true;
 
     let hasErrors = false;
+    let successCount = 0;
+
+    toast.info(`Sincronizando ${queue.length} alterações pendentes...`);
 
     for (const operation of queue) {
       try {
         await this.processOperation(operation);
         offlineSync.removeOperation(operation.id);
+        successCount++;
       } catch (error) {
         console.error('Failed to sync operation:', error);
         hasErrors = true;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} alterações sincronizadas com sucesso!`);
+    }
+
+    if (hasErrors) {
+      const remaining = offlineSync.getQueue().length;
+      if (remaining > 0) {
+        toast.error(`${remaining} alterações não puderam ser sincronizadas. Tentando novamente...`);
       }
     }
 

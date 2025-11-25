@@ -1,13 +1,25 @@
 {
-  "name": "To do Tasks",
+  "name": "To do Tasks - Gerenciador de Tarefas e Notas",
   "short_name": "Tasks",
-  "description": "Gerenciador de tarefas com Kanban e notas",
+  "description": "Gerenciador completo de tarefas com Kanban, notas e produtividade. Funciona offline com sincronização automática.",
   "theme_color": "#000000",
   "background_color": "#ffffff",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "scope": "/",
   "start_url": "/",
+  "categories": ["productivity", "utilities", "business"],
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "label": "To do Tasks Dashboard"
+    }
+  ],
   "icons": [
     {
       "src": "/pwa-icon.png",
@@ -20,6 +32,53 @@
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-icon.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova Tarefa",
+      "short_name": "Nova Tarefa",
+      "description": "Criar nova tarefa rapidamente",
+      "url": "/",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nova Nota",
+      "short_name": "Nova Nota",
+      "description": "Criar nova nota rapidamente",
+      "url": "/notes",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Ver estatísticas e produtividade",
+      "url": "/dashboard",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
     }
   ]
 }
