@@ -65,7 +65,7 @@ export function NotificationTemplatesEditor() {
     toast.success("Template restaurado para o padrão");
   };
 
-  const handleTestTemplate = () => {
+  const handleTestTemplate = async () => {
     if (!selectedTemplate) return;
 
     const testVariables: Record<string, string> = {
@@ -79,17 +79,30 @@ export function NotificationTemplatesEditor() {
 
     const formatted = formatNotificationTemplate(selectedTemplate, testVariables);
 
-    if ("Notification" in window && Notification.permission === "granted") {
-      new Notification(formatted.title, {
+    // Try to send via push notification system for real device testing
+    try {
+      const { pushNotifications } = await import("@/utils/pushNotifications");
+      await pushNotifications.sendPushNotification({
+        title: formatted.title,
         body: formatted.body,
-        icon: "/pwa-icon.png",
-        badge: "/favicon.png",
+        data: { test: true, template: selectedTemplate.id },
+        notification_type: `test_${selectedTemplate.id}`,
       });
-      toast.success("Notificação de teste enviada!");
-    } else {
-      toast.info(formatted.title, {
-        description: formatted.body,
-      });
+      toast.success("Notificação de teste enviada para todos os dispositivos!");
+    } catch (error) {
+      // Fallback to local notification
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(formatted.title, {
+          body: formatted.body,
+          icon: "/pwa-icon.png",
+          badge: "/favicon.png",
+        });
+        toast.success("Notificação de teste enviada!");
+      } else {
+        toast.info(formatted.title, {
+          description: formatted.body,
+        });
+      }
     }
   };
 
@@ -260,16 +273,30 @@ export function NotificationTemplatesEditor() {
                   <Separator />
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Preview</Label>
+                    <Label className="text-xs">Preview (com variáveis substituídas)</Label>
                     <Card className="p-3 bg-background space-y-2">
                       <div className="flex items-start gap-2">
                         <span className="text-2xl">{selectedTemplate.emoji}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold">
-                            {selectedTemplate.title}
+                            {formatNotificationTemplate(selectedTemplate, {
+                              taskTitle: "Exemplo de Tarefa",
+                              columnName: "Em Progresso",
+                              timeRemaining: "2 horas",
+                              streakDays: "7",
+                              totalTasks: "50",
+                              level: "5",
+                            }).title}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {selectedTemplate.body}
+                            {formatNotificationTemplate(selectedTemplate, {
+                              taskTitle: "Exemplo de Tarefa",
+                              columnName: "Em Progresso",
+                              timeRemaining: "2 horas",
+                              streakDays: "7",
+                              totalTasks: "50",
+                              level: "5",
+                            }).body}
                           </p>
                         </div>
                       </div>

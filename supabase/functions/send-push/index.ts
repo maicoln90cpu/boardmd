@@ -11,6 +11,7 @@ interface PushPayload {
   body: string;
   data?: any;
   url?: string;
+  notification_type?: string;
 }
 
 interface PushSubscription {
@@ -129,6 +130,7 @@ Deno.serve(async (req) => {
     // Send notifications
     const results = await Promise.allSettled(
       subscriptions.map(async (sub: PushSubscription) => {
+        const startTime = Date.now();
         try {
           // Use Web Push API compatible library (web-push)
           // For now, using native Notification API simulation
@@ -156,10 +158,11 @@ Deno.serve(async (req) => {
             body: webPushPayload,
           });
 
-          // Log result
-          const status = response.ok ? 'sent' : 'failed';
+          const latency = Date.now() - startTime;
+          const status = response.ok ? 'delivered' : 'failed';
           const errorMessage = response.ok ? null : await response.text();
 
+          // Log result with enhanced analytics
           await supabase.from('push_logs').insert({
             user_id: sub.user_id,
             title: payload.title,
@@ -167,6 +170,10 @@ Deno.serve(async (req) => {
             status,
             error_message: errorMessage,
             data: payload.data,
+            notification_type: payload.notification_type || 'manual',
+            device_name: sub.device_name,
+            delivered_at: response.ok ? new Date().toISOString() : null,
+            latency_ms: latency,
           });
 
           // Remove expired subscriptions
@@ -175,8 +182,14 @@ Deno.serve(async (req) => {
             console.log(`Removed expired subscription: ${sub.id}`);
           }
 
-          return { success: response.ok, subscription: sub.id };
+          return { 
+            success: response.ok, 
+            subscription: sub.id,
+            device_name: sub.device_name,
+            latency 
+          };
         } catch (error) {
+          const latency = Date.now() - startTime;
           console.error(`Error sending to ${sub.id}:`, error);
           
           await supabase.from('push_logs').insert({
@@ -186,9 +199,17 @@ Deno.serve(async (req) => {
             status: 'failed',
             error_message: error instanceof Error ? error.message : 'Unknown error',
             data: payload.data,
+            notification_type: payload.notification_type || 'manual',
+            device_name: sub.device_name,
+            latency_ms: latency,
           });
 
-          return { success: false, subscription: sub.id, error };
+          return { 
+            success: false, 
+            subscription: sub.id, 
+            device_name: sub.device_name,
+            error 
+          };
         }
       })
     );

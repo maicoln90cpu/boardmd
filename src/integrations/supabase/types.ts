@@ -229,9 +229,14 @@ export type Database = {
       push_logs: {
         Row: {
           body: string
+          clicked_at: string | null
           data: Json | null
+          delivered_at: string | null
+          device_name: string | null
           error_message: string | null
           id: string
+          latency_ms: number | null
+          notification_type: string | null
           status: string
           timestamp: string
           title: string
@@ -239,9 +244,14 @@ export type Database = {
         }
         Insert: {
           body: string
+          clicked_at?: string | null
           data?: Json | null
+          delivered_at?: string | null
+          device_name?: string | null
           error_message?: string | null
           id?: string
+          latency_ms?: number | null
+          notification_type?: string | null
           status: string
           timestamp?: string
           title: string
@@ -249,9 +259,14 @@ export type Database = {
         }
         Update: {
           body?: string
+          clicked_at?: string | null
           data?: Json | null
+          delivered_at?: string | null
+          device_name?: string | null
           error_message?: string | null
           id?: string
+          latency_ms?: number | null
+          notification_type?: string | null
           status?: string
           timestamp?: string
           title?: string

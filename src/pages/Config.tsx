@@ -22,6 +22,7 @@ import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
 import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
+import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import {
   DndContext,
@@ -347,9 +348,10 @@ export default function Config() {
 
       <div className="container max-w-6xl mx-auto p-6 pb-24">
         <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-8">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9">
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
+            <TabsTrigger value="monitoring">Monitoramento</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="productivity">Produtividade</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
@@ -580,6 +582,21 @@ export default function Config() {
             <PushNotificationsSettings />
 
             <NotificationTemplatesEditor />
+          </TabsContent>
+
+          {/* Aba Monitoramento */}
+          <TabsContent value="monitoring" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>📊 Monitoramento de Push</CardTitle>
+                <CardDescription>
+                  Análise em tempo real das notificações push
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PushNotificationMonitor />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Aba Kanban */}
