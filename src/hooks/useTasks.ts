@@ -41,7 +41,18 @@ export function useTasks(categoryId: string | null | "all") {
     if (categoryId) {
       fetchTasks();
       const cleanup = subscribeToTasks();
-      return cleanup;
+      
+      // Listener para updates otimistas
+      const handleTaskUpdate = (event: CustomEvent) => {
+        fetchTasks();
+      };
+      
+      window.addEventListener('task-updated', handleTaskUpdate as EventListener);
+      
+      return () => {
+        cleanup();
+        window.removeEventListener('task-updated', handleTaskUpdate as EventListener);
+      };
     } else {
       setTasks([]);
       setLoading(false);

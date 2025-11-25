@@ -84,10 +84,18 @@ export function TaskCard({
   const { toast } = useToast();
   const { share } = useWebShare();
 
-  // Estado do checkbox sincronizado com Supabase
-  const isCompleted = task.is_completed;
+  // Estado local otimista para animação instantânea
+  const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
+  
+  // Sincronizar estado local quando task.is_completed mudar (por realtime ou fetch)
+  React.useEffect(() => {
+    setIsLocalCompleted(task.is_completed);
+  }, [task.is_completed]);
   
   const handleToggleCompleted = async (checked: boolean) => {
+    // Update otimista imediato
+    setIsLocalCompleted(checked);
+    
     try {
       const { error } = await supabase
         .from("tasks")
@@ -95,8 +103,13 @@ export function TaskCard({
         .eq("id", task.id);
       
       if (error) throw error;
+      
+      // Disparar evento para atualizar lista de tasks
+      window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId: task.id } }));
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
+      // Reverter se falhar
+      setIsLocalCompleted(!checked);
       toast({
         title: "Erro ao atualizar tarefa",
         description: "Não foi possível salvar a alteração. Tente novamente.",
@@ -179,7 +192,7 @@ export function TaskCard({
               // Layout ultra-compacto: tudo em 1 linha
               <div className="flex items-center gap-1 text-[10px]">
                 <Checkbox
-                  checked={isCompleted}
+                  checked={isLocalCompleted}
                   onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
                   className="h-3 w-3 shrink-0"
                   onClick={(e) => e.stopPropagation()}
@@ -200,7 +213,7 @@ export function TaskCard({
                 <span 
                   className={cn(
                     "font-medium truncate flex-1 min-w-0 cursor-pointer",
-                    isCompleted && "line-through opacity-50"
+                    isLocalCompleted && "line-through opacity-50"
                   )}
                   onClick={() => onEdit(task)}
                 >
@@ -284,7 +297,7 @@ export function TaskCard({
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="flex items-center gap-2 flex-1">
                     <Checkbox
-                      checked={isCompleted}
+                      checked={isLocalCompleted}
                       onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
                       className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
                       onClick={(e) => e.stopPropagation()}
@@ -293,7 +306,7 @@ export function TaskCard({
                       className={cn(
                         "font-medium flex-1",
                         compact ? "text-xs" : "text-sm",
-                        isCompleted && "line-through opacity-50"
+                        isLocalCompleted && "line-through opacity-50"
                       )}
                     >
                       {task.title}

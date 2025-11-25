@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings, Layers, BarChart3, Bell } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
@@ -348,9 +348,25 @@ export default function Config() {
               <Calendar className="h-4 w-4" />
               Diário
             </Button>
+            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
+              <Layers className="h-4 w-4" />
+              Projetos
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/calendar")} className="justify-start gap-3">
+              <Calendar className="h-4 w-4" />
+              Calendário
+            </Button>
             <Button variant="ghost" onClick={() => navigate("/notes")} className="justify-start gap-3">
               <FileText className="h-4 w-4" />
               Anotações
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="justify-start gap-3">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/notifications")} className="justify-start gap-3">
+              <Bell className="h-4 w-4" />
+              Notificações
             </Button>
             <Button variant="secondary" className="justify-start gap-3">
               <Settings className="h-4 w-4" />
