@@ -73,8 +73,14 @@ async function generateVAPIDJWT(
 
   const now = Math.floor(Date.now() / 1000);
 
-  // 🔍 DEBUG: Prevent duplicate "mailto:" prefix
-  const subject = email.startsWith('mailto:') ? email : `mailto:${email}`;
+  // 🔍 DEBUG: Normalize email format - remove "mailto:" prefix if present, trim spaces, then add proper prefix
+  console.log(`📧 Original VAPID_EMAIL: "${email}"`);
+  let normalizedEmail = email.trim();
+  if (normalizedEmail.toLowerCase().startsWith('mailto:')) {
+    normalizedEmail = normalizedEmail.substring(7).trim();
+  }
+  const subject = `mailto:${normalizedEmail}`;
+  console.log(`✅ Normalized subject: "${subject}"`);
   
   const jwt = await new jose.SignJWT({})
     .setProtectedHeader({ alg: 'ES256', typ: 'JWT' })
