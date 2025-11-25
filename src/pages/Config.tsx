@@ -20,10 +20,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings, Layers, BarChart3, Bell } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
-import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
-import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
-import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
-import { PushNotificationDiagnostics } from "@/components/PushNotificationDiagnostics";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import {
   DndContext,
@@ -396,10 +392,8 @@ export default function Config() {
 
         <div className="container max-w-6xl mx-auto p-6 pb-24">
           <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
-            <TabsTrigger value="notifications">Notificações</TabsTrigger>
-            <TabsTrigger value="monitoring">Monitoramento</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="productivity">Produtividade</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
@@ -675,24 +669,120 @@ export default function Config() {
               </CardContent>
             </Card>
 
-            <PushNotificationsSettings />
-
-            <NotificationTemplatesEditor />
-
-            <PushNotificationDiagnostics />
-          </TabsContent>
-
-          {/* Aba Monitoramento */}
-          <TabsContent value="monitoring" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>📊 Monitoramento de Push</CardTitle>
-                <CardDescription>
-                  Análise em tempo real das notificações push
-                </CardDescription>
+                <CardTitle>🔔 Notificações</CardTitle>
+                <CardDescription>Configure os alertas do sistema</CardDescription>
               </CardHeader>
-              <CardContent>
-                <PushNotificationMonitor />
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="due-date">Alertas de Prazo</Label>
+                    <p className="text-sm text-muted-foreground">Receba notificações quando tarefas estiverem próximas do prazo</p>
+                  </div>
+                  <Switch
+                    id="due-date"
+                    checked={settings.notifications.dueDate}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="due-hours">Horas antes do prazo</Label>
+                  <Input
+                    id="due-hours"
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={settings.notifications.dueDateHours}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: parseInt(e.target.value) || 24 } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="check-interval">Periodicidade de Verificação</Label>
+                  <Select 
+                    value={settings.notifications.checkInterval.toString()} 
+                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
+                  >
+                    <SelectTrigger id="check-interval">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">A cada 5 minutos</SelectItem>
+                      <SelectItem value="15">A cada 15 minutos</SelectItem>
+                      <SelectItem value="30">A cada 30 minutos</SelectItem>
+                      <SelectItem value="60">A cada hora</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label htmlFor="snooze-minutes">Intervalo de Repetição (Snooze)</Label>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Repetir notificação a cada quantos minutos se a tarefa não for concluída
+                  </div>
+                  <Input
+                    id="snooze-minutes"
+                    type="number"
+                    min="5"
+                    max="120"
+                    step="5"
+                    value={settings.notifications.snoozeMinutes}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: parseInt(e.target.value) || 30 } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="achievements">Notificações de Conquistas</Label>
+                    <p className="text-sm text-muted-foreground">Receba avisos ao completar metas e conquistas</p>
+                  </div>
+                  <Switch
+                    id="achievements"
+                    checked={settings.notifications.achievements}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, achievements: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="sound">Sons de Notificação</Label>
+                    <p className="text-sm text-muted-foreground">Reproduzir sons ao receber notificações</p>
+                  </div>
+                  <Switch
+                    id="sound"
+                    checked={settings.notifications.sound}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, sound: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Central de Notificações Push</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Configure notificações push, templates e monitore entregas na central dedicada
+                  </p>
+                  <Button 
+                    onClick={() => navigate("/notifications")}
+                    variant="outline"
+                    className="w-full justify-start gap-3"
+                  >
+                    <Bell className="h-4 w-4" />
+                    Ir para Central de Notificações
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

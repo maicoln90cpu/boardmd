@@ -93,6 +93,8 @@ export function useTasks(categoryId: string | null | "all") {
   };
 
   const subscribeToTasks = () => {
+    // Para categoryId="all", precisamos monitorar todas as categorias exceto "Diário"
+    // Não podemos usar filtro direto na subscription, então monitoramos tudo
     const channel = supabase
       .channel(`tasks-${categoryId}`)
       .on(
@@ -100,10 +102,10 @@ export function useTasks(categoryId: string | null | "all") {
         { 
           event: "*", 
           schema: "public", 
-          table: "tasks",
-          ...(categoryId && categoryId !== "all" ? { filter: `category_id=eq.${categoryId}` } : {})
+          table: "tasks"
         }, 
         () => {
+          // Sempre refetch para aplicar filtros localmente
           fetchTasks();
         }
       )
