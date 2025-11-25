@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter, X } from "lucide-react";
@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/Sidebar";
-import { useTasks } from "@/hooks/useTasks";
 import { useColumns } from "@/hooks/useColumns";
 import { useCategories } from "@/hooks/useCategories";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -21,16 +21,71 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  priority: string | null;
+  tags: string[] | null;
+  column_id: string;
+  category_id: string;
+  position: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  is_favorite: boolean;
+  subtasks: any;
+  recurrence_rule: any;
+  mirror_task_id: string | null;
+}
+
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<"daily" | "all">("all");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   
-  const { tasks } = useTasks("all");
   const { columns } = useColumns();
   const { categories } = useCategories();
+
+  // Fetch ALL tasks from all kanbans and categories
+  useEffect(() => {
+    const fetchAllTasks = async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .order("position");
+
+      if (!error && data) {
+        setTasks(data as Task[]);
+      }
+    };
+
+    fetchAllTasks();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('calendar-tasks')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        () => {
+          fetchAllTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
