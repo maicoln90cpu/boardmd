@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,23 +10,50 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar } from "@/components/Sidebar";
 import { useTasks } from "@/hooks/useTasks";
 import { useColumns } from "@/hooks/useColumns";
+import { useCategories } from "@/hooks/useCategories";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<"daily" | "all">("all");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   
   const { tasks } = useTasks("all");
   const { columns } = useColumns();
+  const { categories } = useCategories();
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  // Filter tasks based on selected categories and columns
+  const filteredTasks = useMemo(() => {
+    let filtered = tasks;
+    
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter(task => selectedCategories.includes(task.category_id));
+    }
+    
+    if (selectedColumns.length > 0) {
+      filtered = filtered.filter(task => selectedColumns.includes(task.column_id));
+    }
+    
+    return filtered;
+  }, [tasks, selectedCategories, selectedColumns]);
+
   // Get tasks for a specific date
   const getTasksForDate = (date: Date) => {
-    return tasks.filter(task => {
+    return filteredTasks.filter(task => {
       if (!task.due_date) return false;
       return isSameDay(new Date(task.due_date), date);
     });
@@ -36,7 +63,33 @@ export default function Calendar() {
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return [];
     return getTasksForDate(selectedDate);
-  }, [selectedDate, tasks]);
+  }, [selectedDate, filteredTasks]);
+
+  // Toggle category filter
+  const toggleCategory = (categoryId: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  // Toggle column filter
+  const toggleColumn = (columnId: string) => {
+    setSelectedColumns(prev =>
+      prev.includes(columnId)
+        ? prev.filter(id => id !== columnId)
+        : [...prev, columnId]
+    );
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedColumns([]);
+  };
+
+  const hasActiveFilters = selectedCategories.length > 0 || selectedColumns.length > 0;
 
   const getPriorityColor = (priority?: string | null) => {
     switch (priority) {
@@ -88,7 +141,85 @@ export default function Calendar() {
                   Calendário de Tarefas
                 </CardTitle>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Filters */}
+                  <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Filter className="h-4 w-4" />
+                          Categorias
+                          {selectedCategories.length > 0 && (
+                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
+                              {selectedCategories.length}
+                            </Badge>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Filtrar por Categoria</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {categories.map((category) => (
+                          <DropdownMenuCheckboxItem
+                            key={category.id}
+                            checked={selectedCategories.includes(category.id)}
+                            onCheckedChange={() => toggleCategory(category.id)}
+                          >
+                            {category.name}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Filter className="h-4 w-4" />
+                          Status
+                          {selectedColumns.length > 0 && (
+                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
+                              {selectedColumns.length}
+                            </Badge>
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Filtrar por Status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {columns.map((column) => (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            checked={selectedColumns.includes(column.id)}
+                            onCheckedChange={() => toggleColumn(column.id)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: column.color }}
+                              />
+                              {column.name}
+                            </div>
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Limpar
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="h-6 w-px bg-border" />
+
+                  {/* Navigation */}
                   <Button variant="outline" size="sm" onClick={goToToday}>
                     Hoje
                   </Button>
