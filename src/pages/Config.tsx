@@ -474,6 +474,54 @@ export default function Config() {
                     />
                   </div>
                 </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Progressive Web App (PWA)</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Instale o aplicativo para acesso rápido, uso offline e notificações push
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                      if (isStandalone) {
+                        toast({
+                          title: "App já instalado",
+                          description: "O aplicativo já está instalado neste dispositivo",
+                        });
+                        return;
+                      }
+
+                      // Forçar mostrar o prompt removendo o timestamp de dismiss
+                      localStorage.removeItem('pwa_install_dismissed');
+                      
+                      // Disparar evento customizado para mostrar o InstallPrompt
+                      window.dispatchEvent(new Event('show-install-prompt'));
+                      
+                      // Se estiver no Safari/iOS, mostrar instruções
+                      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                      
+                      if (isSafari || isIOS) {
+                        toast({
+                          title: "Como instalar no iOS/Safari",
+                          description: "Toque no botão Compartilhar (⎙) e selecione 'Adicionar à Tela de Início'",
+                          duration: 8000,
+                        });
+                      } else {
+                        toast({
+                          title: "Prompt de instalação",
+                          description: "Se disponível, o prompt de instalação aparecerá em breve",
+                        });
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    📱 Instalar Aplicativo
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
