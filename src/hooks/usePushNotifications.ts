@@ -140,6 +140,15 @@ export function usePushNotifications(tasks: Task[]) {
 
         if (user && isSubscribed) {
           try {
+            // iOS-specific: Show immediate toast feedback
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            if (isIOS) {
+              toast({
+                title: "📲 Notificação agendada",
+                description: `${formatted.title} - ${formatted.body}`,
+              });
+            }
+
             await pushNotifications.sendPushNotification({
               user_id: user.id,
               title: formatted.title,
@@ -150,13 +159,23 @@ export function usePushNotifications(tasks: Task[]) {
             });
           } catch (error) {
             console.error('Error sending push notification:', error);
-            // Fallback para notificação local
+            // Fallback 1: Local notification
             pushNotifications.scheduleLocalNotification(
               formatted.title, 
               formatted.body, 
               0, 
               `task-${task.id}`
             );
+            
+            // Fallback 2: Schedule local reminder for iOS
+            if (task.due_date) {
+              pushNotifications.scheduleLocalReminder(
+                formatted.title,
+                formatted.body,
+                new Date(task.due_date),
+                task.id
+              );
+            }
           }
         } else {
           // Usar notificação local se não estiver inscrito
@@ -166,6 +185,16 @@ export function usePushNotifications(tasks: Task[]) {
             0, 
             `task-${task.id}`
           );
+          
+          // iOS fallback: Schedule local reminders
+          if (task.due_date) {
+            pushNotifications.scheduleLocalReminder(
+              formatted.title,
+              formatted.body,
+              new Date(task.due_date),
+              task.id
+            );
+          }
         }
       };
 

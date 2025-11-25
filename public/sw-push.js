@@ -1,7 +1,7 @@
 // Custom Push Notification Service Worker
 // This handles push events and notification clicks
 
-self.addEventListener('push', (event) => {
+self.addEventListener('push', async (event) => {
   console.log('Push notification received:', event);
 
   let notificationData = {
@@ -37,19 +37,40 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const promiseChain = self.registration.showNotification(
-    notificationData.title,
-    {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      data: notificationData.data,
-      requireInteraction: false,
-      tag: 'app-notification',
-    }
-  );
+  // Check if app is in foreground
+  const windowClients = await clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
 
-  event.waitUntil(promiseChain);
+  const appIsOpen = windowClients.some(client => client.visibilityState === 'visible');
+
+  if (appIsOpen) {
+    // App is open - send message to client to show custom toast instead of system notification
+    windowClients.forEach(client => {
+      if (client.visibilityState === 'visible') {
+        client.postMessage({
+          type: 'PUSH_NOTIFICATION_FOREGROUND',
+          notification: notificationData,
+        });
+      }
+    });
+  } else {
+    // App is closed/background - show system notification
+    const promiseChain = self.registration.showNotification(
+      notificationData.title,
+      {
+        body: notificationData.body,
+        icon: notificationData.icon,
+        badge: notificationData.badge,
+        data: notificationData.data,
+        requireInteraction: false,
+        tag: 'app-notification',
+      }
+    );
+
+    event.waitUntil(promiseChain);
+  }
 });
 
 self.addEventListener('notificationclick', (event) => {
