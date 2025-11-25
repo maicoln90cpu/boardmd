@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus, BarChart3 } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus, BarChart3, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -140,6 +140,11 @@ export function Sidebar({
     active: location.pathname === "/dashboard",
     onClick: () => navigate("/dashboard")
   }, {
+    icon: Bell,
+    label: "Notificações",
+    active: location.pathname === "/notifications",
+    onClick: () => navigate("/notifications")
+  }, {
     icon: Settings,
     label: "Config",
     active: location.pathname === "/config",
@@ -161,7 +166,7 @@ export function Sidebar({
 
       {/* Mobile menu - bottom navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
-        <div className="grid grid-cols-6 gap-1 p-1.5">
+        <div className="grid grid-cols-7 gap-0.5 p-1.5">
           {menuItems.map(item => <Button key={item.label} variant={item.active ? "secondary" : "ghost"} className="flex-col gap-0.5 h-auto py-2 text-[10px]" onClick={item.onClick}>
               <item.icon className="h-4 w-4" />
               <span className="truncate w-full text-center">{item.label}</span>

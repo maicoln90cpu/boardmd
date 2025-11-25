@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
+import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
@@ -16,18 +17,15 @@ import Settings from "./pages/Settings";
 import Config from "./pages/Config";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
+import NotificationsDashboard from "./pages/NotificationsDashboard";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <ThemeProvider>
-          <Toaster />
-          <Sonner />
-          <OnlineStatusIndicator />
-          <BrowserRouter>
+function AppContent() {
+  useForegroundPushHandler();
+  
+  return (
+    <BrowserRouter>
             <Routes>
               <Route path="/landing" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
@@ -79,9 +77,29 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/notifications" 
+                element={
+                  <ProtectedRoute>
+                    <NotificationsDashboard />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+  );
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <ThemeProvider>
+          <Toaster />
+          <Sonner />
+          <OnlineStatusIndicator />
+          <AppContent />
         </ThemeProvider>
       </TooltipProvider>
     </AuthProvider>
