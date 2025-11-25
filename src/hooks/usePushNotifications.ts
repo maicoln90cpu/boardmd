@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
 import { pushNotifications } from "@/utils/pushNotifications";
-import { useToast } from "./use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "./useSettings";
 import { Task } from "./useTasks";
 import { differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  defaultNotificationTemplates, 
+  formatNotificationTemplate,
+  getTemplateById 
+} from "@/lib/defaultNotificationTemplates";
 
 export function usePushNotifications(tasks: Task[]) {
   const [isSupported, setIsSupported] = useState(false);
@@ -105,6 +110,9 @@ export function usePushNotifications(tasks: Task[]) {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Get user's notification templates (or use defaults)
+    const userTemplates = settings.notificationTemplates || defaultNotificationTemplates;
+
     tasks.forEach((task) => {
       if (!task.due_date) return;
 
@@ -124,62 +132,81 @@ export function usePushNotifications(tasks: Task[]) {
       const earlyThreshold = warningThreshold * 2;
 
       // Enviar notificações via Edge Function para maior confiabilidade
-      const sendPushViaEdgeFunction = async (title: string, body: string) => {
+      const sendPushViaEdgeFunction = async (templateId: string, variables: Record<string, string>) => {
+        const template = getTemplateById(userTemplates, templateId);
+        if (!template) return;
+
+        const formatted = formatNotificationTemplate(template, variables);
+
         if (user && isSubscribed) {
           try {
             await pushNotifications.sendPushNotification({
               user_id: user.id,
-              title,
-              body,
+              title: formatted.title,
+              body: formatted.body,
               data: { taskId: task.id },
               url: `/`,
             });
           } catch (error) {
             console.error('Error sending push notification:', error);
             // Fallback para notificação local
-            pushNotifications.scheduleLocalNotification(title, body, 0, `task-${task.id}`);
+            pushNotifications.scheduleLocalNotification(
+              formatted.title, 
+              formatted.body, 
+              0, 
+              `task-${task.id}`
+            );
           }
         } else {
           // Usar notificação local se não estiver inscrito
-          pushNotifications.scheduleLocalNotification(title, body, 0, `task-${task.id}`);
+          pushNotifications.scheduleLocalNotification(
+            formatted.title, 
+            formatted.body, 
+            0, 
+            `task-${task.id}`
+          );
         }
       };
 
-      // Agendar notificações baseadas nos thresholds
+      const hours = Math.floor(minutesUntilDue / 60);
+      const timeRemaining = hours > 1 
+        ? `${hours} horas` 
+        : minutesUntilDue > 1 
+          ? `${minutesUntilDue} minutos`
+          : "menos de 1 minuto";
+
+      // Agendar notificações baseadas nos thresholds usando templates
       if (isPast(dueDate)) {
         // Notificação imediata para tarefas atrasadas
-        sendPushViaEdgeFunction(
-          "⏰ Tarefa Atrasada!",
-          `"${task.title}" já passou do prazo`
-        );
+        sendPushViaEdgeFunction('due_overdue', { 
+          taskTitle: task.title 
+        });
       } else if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
         // Notificação urgente (1 hora antes)
         const delay = Math.max(0, (minutesUntilDue - 60) * 60 * 1000);
         setTimeout(() => {
-          sendPushViaEdgeFunction(
-            "🔥 Prazo Urgente!",
-            `"${task.title}" vence em menos de 1 hora`
-          );
+          sendPushViaEdgeFunction('due_urgent', { 
+            taskTitle: task.title,
+            timeRemaining: "menos de 1 hora"
+          });
         }, delay);
       } else if (minutesUntilDue <= warningThreshold) {
         // Notificação de aviso (horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - warningThreshold) * 60 * 1000);
-        const hours = Math.floor(minutesUntilDue / 60);
         setTimeout(() => {
-          sendPushViaEdgeFunction(
-            "⚠️ Prazo Próximo",
-            `"${task.title}" vence em ${hours} hora${hours > 1 ? 's' : ''}`
-          );
+          sendPushViaEdgeFunction('due_warning', { 
+            taskTitle: task.title,
+            timeRemaining: `${hours} hora${hours > 1 ? 's' : ''}`
+          });
         }, delay);
       } else if (minutesUntilDue <= earlyThreshold) {
         // Notificação antecipada (dobro das horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - earlyThreshold) * 60 * 1000);
-        const hours = Math.floor(minutesUntilDue / 60);
         setTimeout(() => {
-          sendPushViaEdgeFunction(
-            "📅 Prazo se Aproximando",
-            `"${task.title}" vence em ${hours} horas`
-          );
+          sendPushViaEdgeFunction('due_early', { 
+            taskTitle: task.title,
+            timeRemaining: `${hours} horas`
+          });
         }, delay);
       }
     });
