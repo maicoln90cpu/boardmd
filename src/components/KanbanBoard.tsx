@@ -126,6 +126,12 @@ export function KanbanBoard({
       if (!allowCrossCategoryDrag && categoryId !== "all") {
         updates.category_id = categoryId;
       }
+
+      // Auto-completar ao mover para coluna "Concluído"
+      const destinationColumn = columns.find(col => col.id === newColumnId);
+      if (destinationColumn?.name.toLowerCase() === "concluído") {
+        updates.is_completed = true;
+      }
       
       updateTask(taskId, updates);
     }
@@ -244,6 +250,12 @@ export function KanbanBoard({
       if (tagFilter !== "all" && !t.tags?.includes(tagFilter)) {
         return false;
       }
+
+      // Ocultar tarefas concluídas se configurado
+      const hideCompletedSetting = localStorage.getItem('hideCompletedTasks');
+      if (hideCompletedSetting === 'true' && t.is_completed) {
+        return false;
+      }
       
       return true;
     });
@@ -322,7 +334,12 @@ export function KanbanBoard({
   // Se for mobile, usar view mobile otimizada
   if (isMobile) {
     return (
-      <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={(e) => setActiveId(e.active.id as string)}
+        onDragEnd={handleDragEnd}
+      >
         <MobileKanbanView
           columns={columns}
           tasks={tasks}
@@ -367,7 +384,7 @@ export function KanbanBoard({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </>
+      </DndContext>
     );
   }
 

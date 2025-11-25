@@ -146,7 +146,7 @@ export function Sidebar({
     onClick: () => navigate("/notifications")
   }, {
     icon: Settings,
-    label: "Config",
+    label: "Setup",
     active: location.pathname === "/config",
     onClick: () => navigate("/config")
   }];

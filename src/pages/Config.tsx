@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings } from "lucide-react";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
@@ -150,6 +150,14 @@ export default function Config() {
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Sincronizar hideCompletedTasks com localStorage
+  const handleToggleHideCompleted = (checked: boolean) => {
+    localStorage.setItem('hideCompletedTasks', checked.toString());
+    updateSettings({ kanban: { ...settings.kanban, hideCompletedTasks: checked } });
+    // Disparar evento para forçar re-render dos kanbans
+    window.dispatchEvent(new Event('storage'));
+  };
   
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -329,26 +337,49 @@ export default function Config() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header com botão voltar e salvar */}
-      <div className="sticky top-0 z-10 bg-background border-b">
-        <div className="px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
+    <div className="min-h-screen bg-background flex">
+      <div className="hidden md:block">
+        <div className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card">
+          <div className="px-6 py-4 border-b">
+            <h1 className="text-xl font-bold">Kanban Board</h1>
           </div>
-          {isDirty && (
-            <Button onClick={handleSave} className="font-semibold">
-              💾 Salvar Alterações
+          <nav className="flex flex-col gap-1 p-4">
+            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
+              <Calendar className="h-4 w-4" />
+              Diário
             </Button>
-          )}
+            <Button variant="ghost" onClick={() => navigate("/notes")} className="justify-start gap-3">
+              <FileText className="h-4 w-4" />
+              Anotações
+            </Button>
+            <Button variant="secondary" className="justify-start gap-3">
+              <Settings className="h-4 w-4" />
+              Setup
+            </Button>
+          </nav>
         </div>
       </div>
 
-      <div className="container max-w-6xl mx-auto p-6 pb-24">
-        <Tabs defaultValue="appearance" className="space-y-6">
+      <div className="flex-1 md:ml-64">
+        {/* Header com botão voltar e salvar */}
+        <div className="sticky top-0 z-10 bg-background border-b">
+          <div className="px-6 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/")} className="md:hidden">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
+            </div>
+            {isDirty && (
+              <Button onClick={handleSave} className="font-semibold">
+                💾 Salvar Alterações
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="container max-w-6xl mx-auto p-6 pb-24">
+          <Tabs defaultValue="appearance" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9">
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="notifications">Notificações</TabsTrigger>
@@ -721,6 +752,20 @@ export default function Config() {
                     id="favorites-panel"
                     checked={settings.kanban.showFavoritesPanel}
                     onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-completed">Ocultar Tarefas Concluídas</Label>
+                    <p className="text-sm text-muted-foreground">Esconder tarefas marcadas como concluídas</p>
+                  </div>
+                  <Switch
+                    id="hide-completed"
+                    checked={settings.kanban.hideCompletedTasks}
+                    onCheckedChange={handleToggleHideCompleted}
                   />
                 </div>
 
@@ -1216,6 +1261,7 @@ export default function Config() {
         onReorderColumns={reorderColumns}
         onToggleKanbanVisibility={toggleColumnKanbanVisibility}
       />
+      </div>
     </div>
   );
 }

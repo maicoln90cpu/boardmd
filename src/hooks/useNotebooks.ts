@@ -52,9 +52,7 @@ export function useNotebooks() {
         "postgres_changes",
         { event: "*", schema: "public", table: "notebooks" },
         () => {
-          if (!isEditingRef.current) {
-            fetchNotebooks();
-          }
+          fetchNotebooks();
         }
       )
       .subscribe();
@@ -78,11 +76,6 @@ export function useNotebooks() {
         .single();
 
       if (error) throw error;
-
-      // Atualização otimista
-      if (data) {
-        setNotebooks((prev) => [data, ...prev]);
-      }
 
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
@@ -175,10 +168,6 @@ export function useNotebooks() {
     }
   };
 
-  const setIsEditing = (editing: boolean) => {
-    isEditingRef.current = editing;
-  };
-
   return {
     notebooks,
     loading,
@@ -186,6 +175,5 @@ export function useNotebooks() {
     updateNotebook,
     deleteNotebook,
     fetchNotebooks,
-    setIsEditing,
   };
 }
