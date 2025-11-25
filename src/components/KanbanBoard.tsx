@@ -187,23 +187,30 @@ export function KanbanBoard({
   const handleUncheckRecurrentTasks = (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
     
-    // Data atual em UTC
+    // Data atual em UTC (apenas dia/mês/ano)
     const now = new Date();
-    const todayUTC = new Date(Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      0, 0, 0, 0
-    ));
     
     // Remover do localStorage e atualizar due_date
     columnTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
       
-      // Atualizar due_date para hoje (UTC)
-      updateTask(task.id, {
-        due_date: todayUTC.toISOString()
-      });
+      // Preservar horário original, atualizar apenas a data
+      if (task.due_date) {
+        const originalDate = new Date(task.due_date);
+        const newDate = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          originalDate.getUTCHours(),
+          originalDate.getUTCMinutes(),
+          originalDate.getUTCSeconds(),
+          originalDate.getUTCMilliseconds()
+        ));
+        
+        updateTask(task.id, {
+          due_date: newDate.toISOString()
+        });
+      }
     });
     
     // Disparar evento customizado para forçar re-render global
