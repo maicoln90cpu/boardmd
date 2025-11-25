@@ -193,7 +193,8 @@ export const pushNotifications = {
     body: string;
     data?: any;
     url?: string;
-  }): Promise<void> {
+    notification_type?: string;
+  }): Promise<any> {
     try {
       const { data, error } = await supabase.functions.invoke('send-push', {
         body: payload,
@@ -202,6 +203,7 @@ export const pushNotifications = {
       if (error) throw error;
       
       console.log('Push notification sent:', data);
+      return data;
     } catch (error) {
       console.error('Error sending push notification:', error);
       throw error;

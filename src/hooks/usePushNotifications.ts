@@ -146,6 +146,7 @@ export function usePushNotifications(tasks: Task[]) {
               body: formatted.body,
               data: { taskId: task.id },
               url: `/`,
+              notification_type: templateId,
             });
           } catch (error) {
             console.error('Error sending push notification:', error);

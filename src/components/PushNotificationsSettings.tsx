@@ -24,6 +24,7 @@ export function PushNotificationsSettings() {
   const [devices, setDevices] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (isSubscribed) {
@@ -77,31 +78,45 @@ export function PushNotificationsSettings() {
   };
 
   const handleTestNotification = async () => {
+    setTesting(true);
     try {
-      setLoading(true);
-      
-      // Get current user
+      // Get current user and all devices
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Usuário não autenticado');
         return;
       }
 
-      // Send test notification via Edge Function
-      await pushNotifications.sendPushNotification({
+      const allDevices = await pushNotifications.getActiveSubscriptions();
+      if (allDevices.length === 0) {
+        toast.error('Nenhum dispositivo registrado');
+        return;
+      }
+
+      // Send test notification to all user's devices via Edge Function
+      const result = await pushNotifications.sendPushNotification({
         user_id: user.id,
         title: '🧪 Teste de Notificação',
         body: 'Se você está vendo isto, suas notificações push estão funcionando perfeitamente!',
         data: { test: true },
         url: '/',
+        notification_type: 'test',
       });
 
-      toast.success('Notificação de teste enviada! Verifique seus dispositivos.');
+      // Show per-device results
+      const deviceNames = allDevices.map(d => d.device_name || 'Dispositivo Desconhecido');
+      toast.success(`Notificação enviada para ${allDevices.length} dispositivo(s)`, {
+        description: deviceNames.join(", "),
+      });
+
+      // Refresh data
+      await loadDevices();
+      await loadLogs();
     } catch (error) {
       console.error('Error sending test notification:', error);
       toast.error('Erro ao enviar notificação de teste');
     } finally {
-      setLoading(false);
+      setTesting(false);
     }
   };
 
@@ -186,10 +201,10 @@ export function PushNotificationsSettings() {
               variant="secondary"
               size="sm"
               className="w-full"
-              disabled={loading}
+              disabled={testing}
             >
               <TestTube2 className="h-4 w-4 mr-2" />
-              Testar Notificação
+              {testing ? 'Enviando...' : 'Testar em Todos Dispositivos'}
             </Button>
           )}
 
@@ -262,10 +277,10 @@ export function PushNotificationsSettings() {
                           <div className="flex items-start justify-between gap-2">
                             <p className="text-xs font-medium">{log.title}</p>
                             <Badge 
-                              variant={log.status === 'sent' ? 'secondary' : 'destructive'}
+                              variant={log.status === 'delivered' ? 'secondary' : 'destructive'}
                               className="text-[9px] h-4"
                             >
-                              {log.status}
+                              {log.status === 'delivered' ? '✅' : '❌'} {log.status}
                             </Badge>
                           </div>
                           <p className="text-[10px] text-muted-foreground line-clamp-1">

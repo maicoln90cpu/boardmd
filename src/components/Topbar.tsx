@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PushStatusIndicator } from "@/components/PushStatusIndicator";
 
 interface TopbarProps {
   categories: Category[];
@@ -89,6 +90,11 @@ export function Topbar({ categories, selectedCategory, onCategoryChange, onAddCa
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Status indicators */}
+        <div className="flex items-center justify-end gap-2 ml-auto">
+          <PushStatusIndicator />
         </div>
       </div>
       <InstallPrompt />
