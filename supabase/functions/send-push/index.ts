@@ -73,22 +73,27 @@ async function generateVAPIDJWT(
 
   const now = Math.floor(Date.now() / 1000);
 
+  // 🔍 DEBUG: Prevent duplicate "mailto:" prefix
+  const subject = email.startsWith('mailto:') ? email : `mailto:${email}`;
+  
   const jwt = await new jose.SignJWT({})
     .setProtectedHeader({ alg: 'ES256', typ: 'JWT' })
     .setAudience(audience)
     .setExpirationTime(now + 12 * 60 * 60) // 12 hours
-    .setSubject(`mailto:${email}`)
+    .setSubject(subject)
     .sign(cryptoKey);
+
+  console.log(`🔍 JWT Details - Audience: ${audience}, Subject: ${subject}`);
 
   return jwt;
 }
 
-// Encrypt payload using AES128GCM (Web Push encryption)
+// Encrypt payload using AES128GCM (Web Push encryption) - RFC8188 format
 async function encryptPayload(
   payload: string,
   userPublicKey: string,
   userAuthSecret: string
-): Promise<{ ciphertext: Uint8Array<ArrayBuffer>; salt: Uint8Array<ArrayBuffer>; publicKey: Uint8Array<ArrayBuffer> }> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const encoder = new TextEncoder();
   const payloadBytes = encoder.encode(payload);
 
@@ -217,11 +222,30 @@ async function encryptPayload(
     paddedPayload
   );
 
-  return {
-    ciphertext: new Uint8Array(encrypted as ArrayBuffer),
-    salt,
-    publicKey: localPublicKeyBytes,
-  };
+  const ciphertext = new Uint8Array(encrypted as ArrayBuffer);
+
+  // Construir payload no formato RFC8188 aes128gcm
+  // Formato: salt(16) + recordSize(4) + keyIdLen(1) + publicKey(65) + ciphertext
+  const recordSize = 4096;
+  const keyIdLen = 65; // Tamanho da chave pública
+
+  // Criar header: 16 bytes salt + 4 bytes recordSize + 1 byte keyIdLen + 65 bytes publicKey
+  const header = new Uint8Array(16 + 4 + 1 + 65);
+  header.set(salt, 0);                    // 16 bytes de salt
+  // Record size em big-endian (4096 = 0x00001000)
+  header[16] = 0;
+  header[17] = 0;
+  header[18] = 0x10;
+  header[19] = 0;
+  header[20] = keyIdLen;                  // 1 byte: key ID length
+  header.set(localPublicKeyBytes, 21);    // 65 bytes: public key
+
+  // Concatenar header + ciphertext
+  const fullPayload = new Uint8Array(header.length + ciphertext.length);
+  fullPayload.set(header, 0);
+  fullPayload.set(ciphertext, header.length);
+
+  return fullPayload;
 }
 
 Deno.serve(async (req) => {
@@ -325,7 +349,7 @@ Deno.serve(async (req) => {
           data: { url: '/', test: true },
         });
 
-        const { ciphertext, salt, publicKey } = await encryptPayload(
+        const encryptedPayload = await encryptPayload(
           notificationPayload,
           device.p256dh,
           device.auth
@@ -338,10 +362,8 @@ Deno.serve(async (req) => {
             'Content-Encoding': 'aes128gcm',
             'Authorization': `vapid t=${vapidJWT}, k=${vapidPublicKey}`,
             'TTL': '86400',
-            'Crypto-Key': `dh=${uint8ArrayToBase64Url(publicKey)}`,
-            'Encryption': `salt=${uint8ArrayToBase64Url(salt)}`,
           },
-          body: ciphertext.buffer,
+          body: encryptedPayload.buffer,
         });
 
         const latency_ms = Date.now() - startTime;
@@ -483,21 +505,31 @@ Deno.serve(async (req) => {
           const endpointUrl = new URL(sub.endpoint);
           const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
 
-          // 🔍 DEBUG: Log endpoint details
+          // 🔍 DEBUG: Detect platform
+          const platform = endpointUrl.hostname.includes('fcm') 
+            ? 'FCM (Android)' 
+            : endpointUrl.hostname.includes('push.apple') 
+            ? 'APNS (iOS)' 
+            : endpointUrl.hostname.includes('notify.windows') 
+            ? 'WNS (Windows)' 
+            : endpointUrl.hostname.includes('mozilla') 
+            ? 'Mozilla Autopush (Firefox)' 
+            : 'Unknown';
+
           console.log(`\n📱 Processing device: ${sub.device_name || sub.id}`);
+          console.log(`  - Platform: ${platform}`);
           console.log(`  - Endpoint: ${sub.endpoint.substring(0, 50)}...`);
           console.log(`  - Audience: ${audience}`);
-          console.log(`  - Platform: ${endpointUrl.hostname.includes('fcm') ? 'FCM (Android)' : endpointUrl.hostname.includes('push.apple') ? 'APNS (iOS)' : 'Unknown'}`);
 
           // Generate VAPID JWT
           const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey, vapidEmail);
           
           // 🔍 DEBUG: Validate JWT
-          console.log(`  - JWT Generated: ${vapidJWT.substring(0, 30)}...${vapidJWT.substring(vapidJWT.length - 30)}`);
+          console.log(`  - JWT (first 40): ${vapidJWT.substring(0, 40)}...`);
           console.log(`  - JWT Length: ${vapidJWT.length} chars`);
 
-          // Encrypt payload
-          const { ciphertext, salt, publicKey } = await encryptPayload(
+          // Encrypt payload (returns RFC8188 format with header included)
+          const encryptedPayload = await encryptPayload(
             notificationPayload,
             sub.p256dh,
             sub.auth
@@ -505,11 +537,9 @@ Deno.serve(async (req) => {
 
           // 🔍 DEBUG: Log encryption details
           console.log(`  - Payload Size: ${notificationPayload.length} chars`);
-          console.log(`  - Encrypted Size: ${ciphertext.length} bytes`);
-          console.log(`  - Salt: ${uint8ArrayToBase64Url(salt).substring(0, 20)}...`);
-          console.log(`  - DH Public Key: ${uint8ArrayToBase64Url(publicKey).substring(0, 20)}...`);
+          console.log(`  - Encrypted Payload Size (RFC8188): ${encryptedPayload.length} bytes`);
 
-          // Send push notification
+          // Send push notification with RFC8188 compliant headers
           const response = await fetch(sub.endpoint, {
             method: 'POST',
             headers: {
@@ -517,10 +547,8 @@ Deno.serve(async (req) => {
               'Content-Encoding': 'aes128gcm',
               'Authorization': `vapid t=${vapidJWT}, k=${vapidPublicKey}`,
               'TTL': '86400',
-              'Crypto-Key': `dh=${uint8ArrayToBase64Url(publicKey)}`,
-              'Encryption': `salt=${uint8ArrayToBase64Url(salt)}`,
             },
-            body: ciphertext.buffer,
+            body: encryptedPayload.buffer,
           });
 
           const latency = Date.now() - startTime;
