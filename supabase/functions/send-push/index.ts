@@ -294,6 +294,26 @@ Deno.serve(async (req) => {
       throw new Error('VAPID keys not configured in Lovable Cloud');
     }
 
+    // 🔍 DEBUG: Validate VAPID keys
+    console.log('🔑 VAPID Keys Loaded:');
+    console.log(`  - Public Key Length: ${vapidPublicKey.length} chars`);
+    console.log(`  - Private Key Length: ${vapidPrivateKey.length} chars`);
+    console.log(`  - Email: ${vapidEmail}`);
+    console.log(`  - Public Key (first 20 chars): ${vapidPublicKey.substring(0, 20)}...`);
+    
+    // Validate key format
+    const publicKeyBytes = urlBase64ToUint8Array(vapidPublicKey);
+    const privateKeyBytes = urlBase64ToUint8Array(vapidPrivateKey);
+    console.log(`  - Public Key Bytes: ${publicKeyBytes.length} (expected: 65 for uncompressed P-256)`);
+    console.log(`  - Private Key Bytes: ${privateKeyBytes.length} (expected: 32 for P-256)`);
+    
+    if (publicKeyBytes.length !== 65 || publicKeyBytes[0] !== 0x04) {
+      console.error('❌ Invalid public key format! Expected 65 bytes starting with 0x04');
+    }
+    if (privateKeyBytes.length !== 32) {
+      console.error('❌ Invalid private key format! Expected 32 bytes');
+    }
+
     const payload: PushPayload = await req.json();
 
     if (!payload.title || !payload.body) {
@@ -348,8 +368,18 @@ Deno.serve(async (req) => {
           const endpointUrl = new URL(sub.endpoint);
           const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
 
+          // 🔍 DEBUG: Log endpoint details
+          console.log(`\n📱 Processing device: ${sub.device_name || sub.id}`);
+          console.log(`  - Endpoint: ${sub.endpoint.substring(0, 50)}...`);
+          console.log(`  - Audience: ${audience}`);
+          console.log(`  - Platform: ${endpointUrl.hostname.includes('fcm') ? 'FCM (Android)' : endpointUrl.hostname.includes('push.apple') ? 'APNS (iOS)' : 'Unknown'}`);
+
           // Generate VAPID JWT
           const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey);
+          
+          // 🔍 DEBUG: Validate JWT
+          console.log(`  - JWT Generated: ${vapidJWT.substring(0, 30)}...${vapidJWT.substring(vapidJWT.length - 30)}`);
+          console.log(`  - JWT Length: ${vapidJWT.length} chars`);
 
           // Encrypt payload
           const { ciphertext, salt, publicKey } = await encryptPayload(
@@ -357,6 +387,12 @@ Deno.serve(async (req) => {
             sub.p256dh,
             sub.auth
           );
+
+          // 🔍 DEBUG: Log encryption details
+          console.log(`  - Payload Size: ${notificationPayload.length} chars`);
+          console.log(`  - Encrypted Size: ${ciphertext.length} bytes`);
+          console.log(`  - Salt: ${uint8ArrayToBase64Url(salt).substring(0, 20)}...`);
+          console.log(`  - DH Public Key: ${uint8ArrayToBase64Url(publicKey).substring(0, 20)}...`);
 
           // Send push notification
           const response = await fetch(sub.endpoint, {
@@ -374,8 +410,13 @@ Deno.serve(async (req) => {
 
           const latency = Date.now() - startTime;
 
+          // 🔍 DEBUG: Log HTTP response
+          console.log(`  - HTTP Status: ${response.status} ${response.statusText}`);
+          console.log(`  - Response Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`);
+
           if (!response.ok) {
             const errorText = await response.text();
+            console.error(`  ❌ Push Service Error Response: ${errorText}`);
             throw new Error(`HTTP ${response.status}: ${errorText}`);
           }
 
