@@ -9,7 +9,7 @@ export interface PushSubscription {
 }
 
 export const pushNotifications = {
-  // Solicitar permissão para notificações
+  // Request permission for notifications
   async requestPermission(): Promise<NotificationPermission> {
     if (!("Notification" in window)) {
       throw new Error("Este navegador não suporta notificações");
@@ -22,27 +22,32 @@ export const pushNotifications = {
     return await Notification.requestPermission();
   },
 
-  // Registrar subscription de push
+  // Subscribe to push notifications
   async subscribe(): Promise<PushSubscriptionJSON | null> {
     if (!("serviceWorker" in navigator)) return null;
 
     try {
       const registration = await navigator.serviceWorker.ready;
       
-      // Verificar se já tem subscription
+      // Check for existing subscription
       let subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
-        // Criar nova subscription
+        // Create new subscription
         const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
         
+        if (!vapidPublicKey) {
+          console.error('VAPID public key not configured');
+          return null;
+        }
+
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: vapidPublicKey,
         });
       }
 
-      // Salvar subscription no Supabase (se necessário)
+      // Save subscription to Supabase
       const subscriptionJson = subscription.toJSON();
       await this.saveSubscription(subscriptionJson);
 
@@ -53,19 +58,38 @@ export const pushNotifications = {
     }
   },
 
-  // Salvar subscription no backend
+  // Save subscription to Supabase
   async saveSubscription(subscription: PushSubscriptionJSON): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user || !subscription.endpoint || !subscription.keys) return;
 
-    // Salvar em localStorage por enquanto (pode ser expandido para o backend)
-    localStorage.setItem(
-      `push-subscription-${user.id}`,
-      JSON.stringify(subscription)
-    );
+    try {
+      // Get device name
+      const deviceName = this.getDeviceName();
+
+      // Insert or update subscription
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          endpoint: subscription.endpoint,
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+          device_name: deviceName,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id,endpoint',
+        });
+
+      if (error) {
+        console.error('Error saving subscription:', error);
+      }
+    } catch (error) {
+      console.error('Error saving subscription:', error);
+    }
   },
 
-  // Cancelar subscription
+  // Remove subscription
   async unsubscribe(): Promise<void> {
     if (!("serviceWorker" in navigator)) return;
 
@@ -77,8 +101,12 @@ export const pushNotifications = {
         await subscription.unsubscribe();
         
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          localStorage.removeItem(`push-subscription-${user.id}`);
+        if (user && subscription.endpoint) {
+          await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('endpoint', subscription.endpoint);
         }
       }
     } catch (error) {
@@ -86,7 +114,59 @@ export const pushNotifications = {
     }
   },
 
-  // Agendar notificação local (fallback para quando push não está disponível)
+  // Get active subscriptions for current user
+  async getActiveSubscriptions() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching subscriptions:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  // Remove specific subscription by ID
+  async removeSubscription(subscriptionId: string): Promise<void> {
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('id', subscriptionId);
+
+    if (error) {
+      console.error('Error removing subscription:', error);
+      throw error;
+    }
+  },
+
+  // Get push logs for current user
+  async getPushLogs(limit = 50) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('push_logs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching push logs:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  // Schedule local notification (fallback when push not available)
   scheduleLocalNotification(
     title: string,
     body: string,
@@ -106,7 +186,29 @@ export const pushNotifications = {
     }, delay);
   },
 
-  // Verificar se push notifications estão disponíveis
+  // Send push notification via Edge Function
+  async sendPushNotification(payload: {
+    user_id?: string;
+    title: string;
+    body: string;
+    data?: any;
+    url?: string;
+  }): Promise<void> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-push', {
+        body: payload,
+      });
+
+      if (error) throw error;
+      
+      console.log('Push notification sent:', data);
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      throw error;
+    }
+  },
+
+  // Check if push notifications are supported
   isSupported(): boolean {
     return (
       "Notification" in window &&
@@ -115,9 +217,28 @@ export const pushNotifications = {
     );
   },
 
-  // Obter status da permissão
+  // Get permission status
   getPermissionStatus(): NotificationPermission {
     if (!("Notification" in window)) return "denied";
     return Notification.permission;
+  },
+
+  // Get device name for identification
+  getDeviceName(): string {
+    const ua = navigator.userAgent;
+    
+    if (/iPhone|iPad|iPod/.test(ua)) {
+      return 'iOS Device';
+    } else if (/Android/.test(ua)) {
+      return 'Android Device';
+    } else if (/Mac/.test(ua)) {
+      return 'Mac';
+    } else if (/Win/.test(ua)) {
+      return 'Windows PC';
+    } else if (/Linux/.test(ua)) {
+      return 'Linux PC';
+    }
+    
+    return 'Unknown Device';
   },
 };
