@@ -11,6 +11,7 @@ import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
+import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import Config from "./pages/Config";
 import Landing from "./pages/Landing";
@@ -51,6 +52,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Notes />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/calendar" 
+                element={
+                  <ProtectedRoute>
+                    <Calendar />
                   </ProtectedRoute>
                 } 
               />
