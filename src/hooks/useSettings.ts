@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -39,6 +40,7 @@ export interface AppSettings {
     hideBadges: boolean;
   };
   aiPrompts?: Record<string, string>;
+  notificationTemplates?: NotificationTemplate[];
 }
 
 const defaultSettings: AppSettings = {

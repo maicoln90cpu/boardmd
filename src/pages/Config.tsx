@@ -21,6 +21,7 @@ import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
+import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import {
   DndContext,
@@ -577,6 +578,8 @@ export default function Config() {
             </Card>
 
             <PushNotificationsSettings />
+
+            <NotificationTemplatesEditor />
           </TabsContent>
 
           {/* Aba Kanban */}

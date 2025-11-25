@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bell, BellOff, Trash2, RefreshCw } from "lucide-react";
+import { Bell, BellOff, Trash2, RefreshCw, TestTube2 } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useTasks } from "@/hooks/useTasks";
 import { Badge } from "./ui/badge";
@@ -9,6 +9,7 @@ import { pushNotifications } from "@/utils/pushNotifications";
 import { toast } from "sonner";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
 
 export function PushNotificationsSettings() {
   const { tasks } = useTasks("all");
@@ -70,6 +71,35 @@ export function PushNotificationsSettings() {
       toast.success('Atualizado');
     } catch (error) {
       toast.error('Erro ao atualizar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      // Send test notification via Edge Function
+      await pushNotifications.sendPushNotification({
+        user_id: user.id,
+        title: '🧪 Teste de Notificação',
+        body: 'Se você está vendo isto, suas notificações push estão funcionando perfeitamente!',
+        data: { test: true },
+        url: '/',
+      });
+
+      toast.success('Notificação de teste enviada! Verifique seus dispositivos.');
+    } catch (error) {
+      console.error('Error sending test notification:', error);
+      toast.error('Erro ao enviar notificação de teste');
     } finally {
       setLoading(false);
     }
@@ -147,6 +177,19 @@ export function PushNotificationsSettings() {
             >
               <BellOff className="h-4 w-4 mr-2" />
               Desativar Push
+            </Button>
+          )}
+
+          {permission === "granted" && isSubscribed && (
+            <Button 
+              onClick={handleTestNotification}
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              disabled={loading}
+            >
+              <TestTube2 className="h-4 w-4 mr-2" />
+              Testar Notificação
             </Button>
           )}
 
