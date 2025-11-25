@@ -20,6 +20,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface Task {
   id: string;
@@ -312,41 +317,111 @@ export default function Calendar() {
                   const isCurrentDay = isToday(day);
 
                   return (
-                    <button
+                    <div
                       key={day.toISOString()}
-                      onClick={() => setSelectedDate(day)}
                       className={cn(
-                        "aspect-square border rounded-lg p-2 hover:bg-accent transition-colors relative",
+                        "aspect-square border rounded-lg relative",
                         isCurrentDay && "border-primary border-2 bg-primary/5"
                       )}
                     >
-                      <div className="text-sm font-medium mb-1">
-                        {format(day, "d")}
-                      </div>
-                      
-                      {/* Task indicators */}
-                      {dayTasks.length > 0 && (
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {dayTasks.slice(0, 3).map((task) => (
-                            <div
-                              key={task.id}
-                              className={cn(
-                                "w-2 h-2 rounded-full",
-                                getPriorityColor(task.priority)
-                              )}
-                              style={{
-                                boxShadow: `0 0 4px ${getColumnColor(task.column_id)}`
-                              }}
-                            />
-                          ))}
-                          {dayTasks.length > 3 && (
-                            <span className="text-[10px] text-muted-foreground">
-                              +{dayTasks.length - 3}
-                            </span>
-                          )}
+                      <button
+                        onClick={() => setSelectedDate(day)}
+                        className="w-full h-full p-2 hover:bg-accent transition-colors"
+                      >
+                        <div className="text-sm font-medium mb-1">
+                          {format(day, "d")}
                         </div>
-                      )}
-                    </button>
+                        
+                        {/* Task indicators with preview */}
+                        {dayTasks.length > 0 && (
+                          <HoverCard openDelay={200}>
+                            <HoverCardTrigger asChild>
+                              <div className="flex flex-wrap gap-1 justify-center cursor-help">
+                                {dayTasks.slice(0, 3).map((task) => (
+                                  <div
+                                    key={task.id}
+                                    className={cn(
+                                      "w-2 h-2 rounded-full",
+                                      getPriorityColor(task.priority)
+                                    )}
+                                    style={{
+                                      boxShadow: `0 0 4px ${getColumnColor(task.column_id)}`
+                                    }}
+                                  />
+                                ))}
+                                {dayTasks.length > 3 && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    +{dayTasks.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            </HoverCardTrigger>
+                            <HoverCardContent className="w-80 p-3" align="center">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold text-sm">
+                                    {format(day, "d 'de' MMMM", { locale: ptBR })}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {dayTasks.length} {dayTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                                  {dayTasks.slice(0, 5).map((task) => {
+                                    const column = columns.find(c => c.id === task.column_id);
+                                    return (
+                                      <div
+                                        key={task.id}
+                                        className="flex items-start gap-2 p-1.5 rounded hover:bg-accent/50 transition-colors"
+                                      >
+                                        <div
+                                          className={cn(
+                                            "w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
+                                            getPriorityColor(task.priority)
+                                          )}
+                                        />
+                                        <div className="flex-1 min-w-0 space-y-0.5">
+                                          <p className="text-sm font-medium truncate">
+                                            {task.title}
+                                          </p>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            {column && (
+                                              <Badge
+                                                variant="outline"
+                                                className="text-[10px] px-1 py-0 h-4"
+                                                style={{
+                                                  borderColor: column.color,
+                                                  color: column.color
+                                                }}
+                                              >
+                                                {column.name}
+                                              </Badge>
+                                            )}
+                                            {task.due_date && (
+                                              <span className="text-[10px] text-muted-foreground">
+                                                {format(new Date(task.due_date), "HH:mm")}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {dayTasks.length > 5 && (
+                                    <div className="text-xs text-muted-foreground text-center pt-1">
+                                      +{dayTasks.length - 5} mais {dayTasks.length - 5 === 1 ? 'tarefa' : 'tarefas'}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="pt-1 border-t text-xs text-muted-foreground text-center">
+                                  Clique no dia para ver detalhes
+                                </div>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
+                        )}
+                      </button>
+                    </div>
                   );
                 })}
               </div>
