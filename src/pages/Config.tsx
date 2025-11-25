@@ -23,6 +23,7 @@ import { useColumns } from "@/hooks/useColumns";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
 import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
 import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
+import { PushNotificationDiagnostics } from "@/components/PushNotificationDiagnostics";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import {
   DndContext,
@@ -582,6 +583,8 @@ export default function Config() {
             <PushNotificationsSettings />
 
             <NotificationTemplatesEditor />
+
+            <PushNotificationDiagnostics />
           </TabsContent>
 
           {/* Aba Monitoramento */}
