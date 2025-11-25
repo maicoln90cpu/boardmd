@@ -7,7 +7,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
@@ -39,6 +39,8 @@ export function Sidebar({
     signOut
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
   const handleLogout = async () => {
     if (confirm("Deseja realmente sair?")) {
       await signOut();
@@ -103,31 +105,44 @@ export function Sidebar({
     setNewCategoryName("");
     setIsAddingCategory(false);
   };
+  
+  const handleNavigation = (path: string, mode?: "daily" | "all") => {
+    navigate(path);
+    if (mode) {
+      // Pequeno delay para garantir que a navegação aconteça primeiro
+      setTimeout(() => onViewChange(mode), 50);
+    }
+  };
+
   const menuItems = [{
     icon: Calendar,
     label: "Diário",
-    active: viewMode === "daily",
-    onClick: () => onViewChange("daily")
+    active: viewMode === "daily" && location.pathname === "/",
+    onClick: () => handleNavigation("/", "daily")
   }, {
     icon: Layers,
     label: "Projetos",
-    active: viewMode === "all",
-    onClick: () => onViewChange("all")
+    active: viewMode === "all" && location.pathname === "/",
+    onClick: () => handleNavigation("/", "all")
   }, {
     icon: Calendar,
     label: "Calendário",
+    active: location.pathname === "/calendar",
     onClick: () => navigate("/calendar")
   }, {
     icon: FileText,
     label: "Anotações",
+    active: location.pathname === "/notes",
     onClick: () => navigate("/notes")
   }, {
     icon: BarChart3,
     label: "Dashboard",
+    active: location.pathname === "/dashboard",
     onClick: () => navigate("/dashboard")
   }, {
     icon: Settings,
     label: "Config",
+    active: location.pathname === "/config",
     onClick: () => navigate("/config")
   }];
   return <>
