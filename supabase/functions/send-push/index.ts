@@ -231,7 +231,172 @@ Deno.serve(async (req) => {
       throw new Error('VAPID keys not configured in Lovable Cloud');
     }
 
-    // 🔍 DEBUG: Validate VAPID keys
+    const requestBody: any = await req.json();
+
+    // Handle VAPID validation request
+    if (requestBody.action === 'validate_vapid') {
+      console.log('🔍 Validating VAPID configuration...');
+      
+      try {
+        // Validate key format
+        const publicKeyBytes = urlBase64ToUint8Array(vapidPublicKey);
+        const privateKeyBytes = urlBase64ToUint8Array(vapidPrivateKey);
+        
+        const isPublicKeyValid = publicKeyBytes.length === 65 && publicKeyBytes[0] === 0x04;
+        const isPrivateKeyValid = privateKeyBytes.length === 32;
+        
+        // Try to generate a test JWT
+        let jwtValid = false;
+        try {
+          const testJWT = await generateVAPIDJWT('https://fcm.googleapis.com', vapidPrivateKey, vapidEmail);
+          jwtValid = testJWT.length > 0;
+        } catch (error) {
+          console.error('JWT generation failed:', error);
+        }
+        
+        const valid = isPublicKeyValid && isPrivateKeyValid && jwtValid;
+        
+        console.log(`✅ VAPID Validation Result: ${valid ? 'VALID' : 'INVALID'}`);
+        console.log(`  - Public Key: ${isPublicKeyValid ? '✅' : '❌'} (${publicKeyBytes.length} bytes)`);
+        console.log(`  - Private Key: ${isPrivateKeyValid ? '✅' : '❌'} (${privateKeyBytes.length} bytes)`);
+        console.log(`  - JWT Generation: ${jwtValid ? '✅' : '❌'}`);
+        
+        return new Response(
+          JSON.stringify({ 
+            valid,
+            publicKeyLength: publicKeyBytes.length,
+            privateKeyLength: privateKeyBytes.length,
+            jwtValid,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (error) {
+        console.error('❌ VAPID validation error:', error);
+        return new Response(
+          JSON.stringify({ valid: false, error: error instanceof Error ? error.message : 'Unknown error' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Handle single device test request
+    if (requestBody.action === 'test_single' && requestBody.device_id) {
+      console.log(`🧪 Testing single device: ${requestBody.device_id}`);
+      
+      const { data: device, error: deviceError } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('id', requestBody.device_id)
+        .single();
+
+      if (deviceError || !device) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Device not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const startTime = Date.now();
+      
+      try {
+        const endpointUrl = new URL(device.endpoint);
+        const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
+        
+        const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidEmail);
+        
+        const notificationPayload = JSON.stringify({
+          title: requestBody.title,
+          body: requestBody.body,
+          icon: '/pwa-icon.png',
+          badge: '/favicon.png',
+          data: { url: '/', test: true },
+        });
+
+        const { ciphertext, salt, publicKey } = await encryptPayload(
+          notificationPayload,
+          device.p256dh,
+          device.auth
+        );
+
+        const response = await fetch(device.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Encoding': 'aes128gcm',
+            'Authorization': `vapid t=${vapidJWT}, k=${vapidPublicKey}`,
+            'TTL': '86400',
+            'Crypto-Key': `dh=${uint8ArrayToBase64Url(publicKey)}`,
+            'Encryption': `salt=${uint8ArrayToBase64Url(salt)}`,
+          },
+          body: ciphertext.buffer,
+        });
+
+        const latency_ms = Date.now() - startTime;
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Test failed: HTTP ${response.status} - ${errorText}`);
+          
+          await supabase.from('push_logs').insert({
+            user_id: requestBody.user_id,
+            title: requestBody.title,
+            body: requestBody.body,
+            status: 'failed',
+            error_message: `HTTP ${response.status}: ${errorText}`,
+            notification_type: 'test_single',
+            device_name: device.device_name,
+            latency_ms,
+          });
+
+          return new Response(
+            JSON.stringify({ success: false, error: `HTTP ${response.status}: ${errorText}`, latency_ms }),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        await supabase.from('push_logs').insert({
+          user_id: requestBody.user_id,
+          title: requestBody.title,
+          body: requestBody.body,
+          status: 'delivered',
+          notification_type: 'test_single',
+          device_name: device.device_name,
+          delivered_at: new Date().toISOString(),
+          latency_ms,
+        });
+
+        console.log(`✅ Test successful! Latency: ${latency_ms}ms`);
+
+        return new Response(
+          JSON.stringify({ success: true, latency_ms, device_name: device.device_name }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+
+      } catch (error) {
+        const latency_ms = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        console.error(`❌ Test error:`, errorMessage);
+
+        await supabase.from('push_logs').insert({
+          user_id: requestBody.user_id,
+          title: requestBody.title,
+          body: requestBody.body,
+          status: 'failed',
+          error_message: errorMessage,
+          notification_type: 'test_single',
+          device_name: device.device_name,
+          latency_ms,
+        });
+
+        return new Response(
+          JSON.stringify({ success: false, error: errorMessage, latency_ms }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // 🔍 DEBUG: Validate VAPID keys for regular push
     console.log('🔑 VAPID Keys Loaded:');
     console.log(`  - Public Key Length: ${vapidPublicKey.length} chars`);
     console.log(`  - Private Key Length: ${vapidPrivateKey.length} chars`);
@@ -251,7 +416,7 @@ Deno.serve(async (req) => {
       console.error('❌ Invalid private key format! Expected 32 bytes');
     }
 
-    const payload: PushPayload = await req.json();
+    const payload: PushPayload = requestBody;
 
     if (!payload.title || !payload.body) {
       return new Response(
