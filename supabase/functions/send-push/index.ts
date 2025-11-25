@@ -47,14 +47,27 @@ function uint8ArrayToBase64Url(array: Uint8Array<ArrayBuffer>): string {
 async function generateVAPIDJWT(
   audience: string,
   privateKeyBase64: string,
+  publicKeyBase64: string,
   email: string,
 ): Promise<string> {
-  // The private key from web-push is the base64url-encoded 32-byte "d" parameter
+  // Extract x and y coordinates from the public key (uncompressed P-256 format: 0x04 + 32 bytes x + 32 bytes y)
+  const publicKeyBytes = urlBase64ToUint8Array(publicKeyBase64);
+  
+  if (publicKeyBytes.length !== 65 || publicKeyBytes[0] !== 0x04) {
+    throw new Error('Invalid public key format: expected 65 bytes starting with 0x04');
+  }
+  
+  const x = publicKeyBytes.slice(1, 33);   // X coordinate (32 bytes)
+  const y = publicKeyBytes.slice(33, 65);  // Y coordinate (32 bytes)
+  
+  // Create complete JWK with x, y, and d
   const jwk = {
     kty: 'EC',
     crv: 'P-256',
     d: privateKeyBase64,
-  } as const;
+    x: uint8ArrayToBase64Url(x),
+    y: uint8ArrayToBase64Url(y),
+  };
 
   const cryptoKey = await jose.importJWK(jwk, 'ES256');
 
@@ -248,7 +261,7 @@ Deno.serve(async (req) => {
         // Try to generate a test JWT
         let jwtValid = false;
         try {
-          const testJWT = await generateVAPIDJWT('https://fcm.googleapis.com', vapidPrivateKey, vapidEmail);
+          const testJWT = await generateVAPIDJWT('https://fcm.googleapis.com', vapidPrivateKey, vapidPublicKey, vapidEmail);
           jwtValid = testJWT.length > 0;
         } catch (error) {
           console.error('JWT generation failed:', error);
@@ -302,7 +315,7 @@ Deno.serve(async (req) => {
         const endpointUrl = new URL(device.endpoint);
         const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
         
-        const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidEmail);
+        const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey, vapidEmail);
         
         const notificationPayload = JSON.stringify({
           title: requestBody.title,
@@ -477,7 +490,7 @@ Deno.serve(async (req) => {
           console.log(`  - Platform: ${endpointUrl.hostname.includes('fcm') ? 'FCM (Android)' : endpointUrl.hostname.includes('push.apple') ? 'APNS (iOS)' : 'Unknown'}`);
 
           // Generate VAPID JWT
-          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidEmail);
+          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey, vapidEmail);
           
           // 🔍 DEBUG: Validate JWT
           console.log(`  - JWT Generated: ${vapidJWT.substring(0, 30)}...${vapidJWT.substring(vapidJWT.length - 30)}`);
