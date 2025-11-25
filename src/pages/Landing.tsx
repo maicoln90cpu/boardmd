@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { 
   CheckCircle2, 
   Sparkles, 
@@ -22,6 +22,14 @@ import {
 
 export default function Landing() {
   const navigate = useNavigate();
+
+  // Parallax scroll effects
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 500], [0, 150]);
+  const y2 = useTransform(scrollY, [0, 500], [0, -100]);
+  const y3 = useTransform(scrollY, [0, 500], [0, 200]);
+  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
+  const scale = useTransform(scrollY, [0, 300], [1, 0.8]);
 
   // Animation variants
   const fadeInUp = {
@@ -175,16 +183,139 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        {/* Background gradient */}
+      <section className="relative overflow-hidden min-h-screen flex items-center">
+        {/* Animated Background Gradients */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
-          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" 
+          className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background"
         />
         
-        <div className="relative container mx-auto px-4 py-20 md:py-32">
+        <motion.div
+          className="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+        
+        <motion.div
+          className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+
+        {/* Floating Elements with Parallax */}
+        <motion.div
+          style={{ y: y1, opacity }}
+          className="absolute top-32 right-1/4 hidden lg:block"
+        >
+          <motion.div
+            animate={{ 
+              rotate: 360,
+              scale: [1, 1.1, 1]
+            }}
+            transition={{ 
+              rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+              scale: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className="w-16 h-16 rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 backdrop-blur-sm border border-primary/20 flex items-center justify-center"
+          >
+            <Target className="w-8 h-8 text-primary" />
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          style={{ y: y2, opacity }}
+          className="absolute top-48 left-1/4 hidden lg:block"
+        >
+          <motion.div
+            animate={{ 
+              rotate: -360,
+              y: [0, -20, 0]
+            }}
+            transition={{ 
+              rotate: { duration: 25, repeat: Infinity, ease: "linear" },
+              y: { duration: 5, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary/30 to-secondary/10 backdrop-blur-sm border border-secondary/20 flex items-center justify-center"
+          >
+            <Brain className="w-10 h-10 text-secondary" />
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          style={{ y: y3, opacity }}
+          className="absolute bottom-40 left-1/3 hidden lg:block"
+        >
+          <motion.div
+            animate={{ 
+              rotate: 360,
+              scale: [1, 1.2, 1]
+            }}
+            transition={{ 
+              rotate: { duration: 30, repeat: Infinity, ease: "linear" },
+              scale: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+            }}
+            className="w-12 h-12 rounded-lg bg-gradient-to-br from-accent/30 to-accent/10 backdrop-blur-sm border border-accent/20 flex items-center justify-center"
+          >
+            <Zap className="w-6 h-6 text-accent" />
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          style={{ y: y1, opacity, scale }}
+          className="absolute top-64 right-1/3 hidden md:block"
+        >
+          <motion.div
+            animate={{ 
+              y: [0, 30, 0],
+              rotate: [0, 180, 360]
+            }}
+            transition={{ 
+              duration: 15,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="w-8 h-8 rounded-full bg-primary/40 backdrop-blur-sm"
+          />
+        </motion.div>
+
+        <motion.div
+          style={{ y: y2, opacity }}
+          className="absolute bottom-32 right-1/2 hidden md:block"
+        >
+          <motion.div
+            animate={{ 
+              y: [0, -40, 0],
+              scale: [1, 1.3, 1]
+            }}
+            transition={{ 
+              duration: 12,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="w-6 h-6 rounded-full bg-secondary/40 backdrop-blur-sm"
+          />
+        </motion.div>
+        
+        <motion.div
+          style={{ scale, opacity }}
+          className="relative container mx-auto px-4 py-20 md:py-32 z-10"
+        >
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -275,7 +406,7 @@ export default function Landing() {
               </motion.div>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* Social Proof */}
