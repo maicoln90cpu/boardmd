@@ -43,12 +43,29 @@ function uint8ArrayToBase64Url(array: Uint8Array<ArrayBuffer>): string {
 }
 
 // Generate VAPID JWT for authentication
-async function generateVAPIDJWT(audience: string, privateKey: string): Promise<string> {
-  const vapidPrivateKeyArray = urlBase64ToUint8Array(privateKey);
+async function generateVAPIDJWT(audience: string, privateKeyBase64: string, publicKeyBase64: string): Promise<string> {
+  // Decode base64url private and public keys
+  const privateKeyBytes = urlBase64ToUint8Array(privateKeyBase64);
+  const publicKeyBytes = urlBase64ToUint8Array(publicKeyBase64);
   
+  // Extract x and y coordinates from uncompressed public key (65 bytes: 0x04 + 32 bytes x + 32 bytes y)
+  const x = publicKeyBytes.slice(1, 33);
+  const y = publicKeyBytes.slice(33, 65);
+  
+  // Construct JWK for the private key
+  const jwk = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: uint8ArrayToBase64Url(x),
+    y: uint8ArrayToBase64Url(y),
+    d: uint8ArrayToBase64Url(privateKeyBytes),
+    ext: true,
+  };
+
+  // Import the private key as JWK
   const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    vapidPrivateKeyArray,
+    'jwk',
+    jwk,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
@@ -67,12 +84,52 @@ async function generateVAPIDJWT(audience: string, privateKey: string): Promise<s
   const unsignedToken = `${headerB64}.${payloadB64}`;
 
   const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
+    { name: 'ECDSA', hash: { name: 'SHA-256' } },
     cryptoKey,
     encoder.encode(unsignedToken)
   );
 
-  const signatureB64 = uint8ArrayToBase64Url(new Uint8Array(signature));
+  // Convert DER signature to IEEE P1363 format (raw r || s, 64 bytes)
+  const derSig = new Uint8Array(signature);
+  
+  // Parse DER: SEQUENCE { r INTEGER, s INTEGER }
+  // DER structure: 0x30 [len] 0x02 [rLen] [r bytes] 0x02 [sLen] [s bytes]
+  let offset = 2; // Skip 0x30 and total length
+  
+  // Parse r
+  offset++; // Skip 0x02
+  const rLen = derSig[offset++];
+  const rOffset = rLen === 33 && derSig[offset] === 0 ? offset + 1 : offset; // Remove leading zero if present
+  const r = derSig.slice(rOffset, rOffset + 32);
+  offset = rOffset + (rLen === 33 ? 33 : rLen);
+  
+  // Parse s
+  offset++; // Skip 0x02
+  const sLen = derSig[offset++];
+  const sOffset = sLen === 33 && derSig[offset] === 0 ? offset + 1 : offset; // Remove leading zero if present
+  const s = derSig.slice(sOffset, sOffset + 32);
+  
+  // Concatenate r and s (each must be exactly 32 bytes)
+  const rawSignature = new Uint8Array(64);
+  
+  // Pad r if needed
+  if (r.length < 32) {
+    rawSignature.set(new Uint8Array(32 - r.length), 0);
+    rawSignature.set(r, 32 - r.length);
+  } else {
+    rawSignature.set(r.slice(-32), 0);
+  }
+  
+  // Pad s if needed
+  if (s.length < 32) {
+    rawSignature.set(new Uint8Array(32 - s.length), 32);
+    rawSignature.set(s, 32 + (32 - s.length));
+  } else {
+    rawSignature.set(s.slice(-32), 32);
+  }
+  
+  const signatureB64 = uint8ArrayToBase64Url(rawSignature);
+  
   return `${unsignedToken}.${signatureB64}`;
 }
 
@@ -292,7 +349,7 @@ Deno.serve(async (req) => {
           const audience = `${endpointUrl.protocol}//${endpointUrl.host}`;
 
           // Generate VAPID JWT
-          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey);
+          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey);
 
           // Encrypt payload
           const { ciphertext, salt, publicKey } = await encryptPayload(
