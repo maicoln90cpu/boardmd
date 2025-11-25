@@ -24,6 +24,7 @@ export interface AppSettings {
     dailySortOption: 'time' | 'name' | 'priority';
     dailySortOrder: 'asc' | 'desc';
     simplifiedMode: boolean;
+    hideCompletedTasks: boolean;
   };
   productivity: {
     dailyGoal: number;
@@ -64,6 +65,7 @@ const defaultSettings: AppSettings = {
     dailySortOption: 'time',
     dailySortOrder: 'asc',
     simplifiedMode: false,
+    hideCompletedTasks: false,
   },
   productivity: {
     dailyGoal: 5,

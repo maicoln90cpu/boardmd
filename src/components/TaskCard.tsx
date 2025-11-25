@@ -178,14 +178,12 @@ export function TaskCard({
             {isUltraCompact ? (
               // Layout ultra-compacto: tudo em 1 linha
               <div className="flex items-center gap-1 text-[10px]">
-                {task.recurrence_rule && (
-                  <Checkbox
-                    checked={isCompleted}
-                    onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
-                    className="h-3 w-3 shrink-0"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
+                <Checkbox
+                  checked={isCompleted}
+                  onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
+                  className="h-3 w-3 shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                />
                 {onToggleFavorite && (
                   <Button
                     size="icon"
@@ -255,60 +253,6 @@ export function TaskCard({
                       <ChevronRight className="h-3 w-3" />
                     </Button>
                   )}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-4 w-4 p-0"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Repeat className={`h-3 w-3 ${task.recurrence_rule ? "text-purple-500" : ""}`} />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="rec-toggle" className="text-xs">Recorrente</Label>
-                          <Switch
-                            id="rec-toggle"
-                            checked={recurrenceEnabled}
-                            onCheckedChange={setRecurrenceEnabled}
-                          />
-                        </div>
-                        {recurrenceEnabled && (
-                          <>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Frequência</Label>
-                              <Select value={recurrenceFrequency} onValueChange={(v: any) => setRecurrenceFrequency(v)}>
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Diária</SelectItem>
-                                  <SelectItem value="weekly">Semanal</SelectItem>
-                                  <SelectItem value="monthly">Mensal</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-xs">Intervalo</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                className="h-8 text-xs"
-                                value={recurrenceInterval}
-                                onChange={(e) => setRecurrenceInterval(Number(e.target.value))}
-                              />
-                            </div>
-                          </>
-                        )}
-                        <Button onClick={handleRecurrenceUpdate} size="sm" className="w-full h-8 text-xs">
-                          Salvar
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -320,18 +264,6 @@ export function TaskCard({
                     title="Duplicar tarefa"
                   >
                     <Copy className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-4 w-4 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShare();
-                    }}
-                    title="Compartilhar tarefa"
-                  >
-                    <Share2 className="h-3 w-3" />
                   </Button>
                   <Button
                     size="icon"
@@ -351,14 +283,12 @@ export function TaskCard({
               <div className={compact ? "space-y-0.5" : "space-y-1"}>
                 <div className="flex items-start justify-between gap-1.5">
                   <div className="flex items-center gap-2 flex-1">
-                    {task.recurrence_rule && (
-                      <Checkbox
-                        checked={isCompleted}
-                        onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
-                        className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    )}
+                    <Checkbox
+                      checked={isCompleted}
+                      onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
+                      className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                     <h3 
                       className={cn(
                         "font-medium flex-1",
@@ -409,77 +339,19 @@ export function TaskCard({
                       >
                         <ChevronRight className="h-3 w-3" />
                       </Button>
-                    )}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Repeat className={`h-3 w-3 ${task.recurrence_rule ? "text-purple-500" : ""}`} />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80" onClick={(e) => e.stopPropagation()}>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor="recurrence-toggle-compact">Tarefa Recorrente</Label>
-                            <Switch
-                              id="recurrence-toggle-compact"
-                              checked={recurrenceEnabled}
-                              onCheckedChange={setRecurrenceEnabled}
-                            />
-                          </div>
-                          {recurrenceEnabled && (
-                            <>
-                              <div className="space-y-2">
-                                <Label>Frequência</Label>
-                                <Select
-                                  value={recurrenceFrequency}
-                                  onValueChange={(value: "daily" | "weekly" | "monthly") =>
-                                    setRecurrenceFrequency(value)
-                                  }
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="daily">Diária</SelectItem>
-                                    <SelectItem value="weekly">Semanal</SelectItem>
-                                    <SelectItem value="monthly">Mensal</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Intervalo</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  value={recurrenceInterval}
-                                  onChange={(e) => setRecurrenceInterval(Number(e.target.value))}
-                                />
-                              </div>
-                            </>
-                          )}
-                          <Button onClick={handleRecurrenceUpdate} className="w-full">
-                            Salvar Recorrência
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShare();
-                      }}
-                      title="Compartilhar tarefa"
-                    >
-                      <Share2 className="h-3 w-3" />
-                    </Button>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate?.(task.id);
+                    }}
+                    title="Duplicar tarefa"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
                     <Button
                       size="icon"
                       variant="ghost"

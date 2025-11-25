@@ -25,8 +25,7 @@ export function NotebooksList({
   const {
     addNotebook,
     updateNotebook,
-    deleteNotebook,
-    setIsEditing
+    deleteNotebook
   } = useNotebooks();
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -43,12 +42,9 @@ export function NotebooksList({
     setExpandedNotebooks(newExpanded);
   };
   const handleAddNotebook = async () => {
-    setIsEditing(true);
     await addNotebook("Novo Caderno");
-    setIsEditing(false);
   };
   const handleEditStart = (notebook: Notebook) => {
-    setIsEditing(true);
     setEditingId(notebook.id);
     setEditingName(notebook.name);
   };
@@ -57,7 +53,6 @@ export function NotebooksList({
       await updateNotebook(id, editingName.trim());
     }
     setEditingId(null);
-    setIsEditing(false);
   };
   const handleDeleteClick = (notebook: Notebook) => {
     setNotebookToDelete(notebook);
@@ -65,11 +60,9 @@ export function NotebooksList({
   };
   const handleDeleteConfirm = async () => {
     if (notebookToDelete) {
-      setIsEditing(true);
       await deleteNotebook(notebookToDelete.id);
       setNotebookToDelete(null);
       setDeleteDialogOpen(false);
-      setIsEditing(false);
     }
   };
   const getNotebookNotes = (notebookId: string) => {
@@ -92,9 +85,8 @@ export function NotebooksList({
         const isExpanded = expandedNotebooks.has(notebook.id);
         const count = notesCount(notebook.id);
         return <div key={notebook.id} className="space-y-1">
-              <NotebookHeader notebook={notebook} isExpanded={isExpanded} count={count} editingId={editingId} editingName={editingName} onToggle={() => toggleNotebook(notebook.id)} onEditStart={() => handleEditStart(notebook)} onEditSave={() => handleEditSave(notebook.id)} onEditChange={setEditingName} onEditCancel={() => {
+               <NotebookHeader notebook={notebook} isExpanded={isExpanded} count={count} editingId={editingId} editingName={editingName} onToggle={() => toggleNotebook(notebook.id)} onEditStart={() => handleEditStart(notebook)} onEditSave={() => handleEditSave(notebook.id)} onEditChange={setEditingName} onEditCancel={() => {
             setEditingId(null);
-            setIsEditing(false);
           }} onDelete={() => handleDeleteClick(notebook)} onAddNote={() => onAddNote(notebook.id)} />
 
               {isExpanded && notebookNotes.length > 0 && <div className="ml-6 space-y-1">
