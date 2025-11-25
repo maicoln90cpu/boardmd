@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.79.0';
+import * as jose from 'https://deno.land/x/jose@v4.3.8/index.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,95 +43,31 @@ function uint8ArrayToBase64Url(array: Uint8Array<ArrayBuffer>): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Generate VAPID JWT for authentication
-async function generateVAPIDJWT(audience: string, privateKeyBase64: string, publicKeyBase64: string): Promise<string> {
-  // Decode base64url private and public keys
-  const privateKeyBytes = urlBase64ToUint8Array(privateKeyBase64);
-  const publicKeyBytes = urlBase64ToUint8Array(publicKeyBase64);
-  
-  // Extract x and y coordinates from uncompressed public key (65 bytes: 0x04 + 32 bytes x + 32 bytes y)
-  const x = publicKeyBytes.slice(1, 33);
-  const y = publicKeyBytes.slice(33, 65);
-  
-  // Construct JWK for the private key
+// Generate VAPID JWT for authentication using jose (ES256)
+async function generateVAPIDJWT(
+  audience: string,
+  privateKeyBase64: string,
+  email: string,
+): Promise<string> {
+  // The private key from web-push is the base64url-encoded 32-byte "d" parameter
   const jwk = {
     kty: 'EC',
     crv: 'P-256',
-    x: uint8ArrayToBase64Url(x),
-    y: uint8ArrayToBase64Url(y),
-    d: uint8ArrayToBase64Url(privateKeyBytes),
-    ext: true,
-  };
+    d: privateKeyBase64,
+  } as const;
 
-  // Import the private key as JWK
-  const cryptoKey = await crypto.subtle.importKey(
-    'jwk',
-    jwk,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
+  const cryptoKey = await jose.importJWK(jwk, 'ES256');
 
-  const jwtHeader = { typ: 'JWT', alg: 'ES256' };
-  const jwtPayload = {
-    aud: audience,
-    exp: Math.floor(Date.now() / 1000) + 12 * 60 * 60, // 12 hours
-    sub: `mailto:${Deno.env.get('VAPID_EMAIL')}`,
-  };
+  const now = Math.floor(Date.now() / 1000);
 
-  const encoder = new TextEncoder();
-  const headerB64 = uint8ArrayToBase64Url(encoder.encode(JSON.stringify(jwtHeader)));
-  const payloadB64 = uint8ArrayToBase64Url(encoder.encode(JSON.stringify(jwtPayload)));
-  const unsignedToken = `${headerB64}.${payloadB64}`;
+  const jwt = await new jose.SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', typ: 'JWT' })
+    .setAudience(audience)
+    .setExpirationTime(now + 12 * 60 * 60) // 12 hours
+    .setSubject(`mailto:${email}`)
+    .sign(cryptoKey);
 
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: { name: 'SHA-256' } },
-    cryptoKey,
-    encoder.encode(unsignedToken)
-  );
-
-  // Convert DER signature to IEEE P1363 format (raw r || s, 64 bytes)
-  const derSig = new Uint8Array(signature);
-  
-  // Parse DER: SEQUENCE { r INTEGER, s INTEGER }
-  // DER structure: 0x30 [len] 0x02 [rLen] [r bytes] 0x02 [sLen] [s bytes]
-  let offset = 2; // Skip 0x30 and total length
-  
-  // Parse r
-  offset++; // Skip 0x02
-  const rLen = derSig[offset++];
-  const rOffset = rLen === 33 && derSig[offset] === 0 ? offset + 1 : offset; // Remove leading zero if present
-  const r = derSig.slice(rOffset, rOffset + 32);
-  offset = rOffset + (rLen === 33 ? 33 : rLen);
-  
-  // Parse s
-  offset++; // Skip 0x02
-  const sLen = derSig[offset++];
-  const sOffset = sLen === 33 && derSig[offset] === 0 ? offset + 1 : offset; // Remove leading zero if present
-  const s = derSig.slice(sOffset, sOffset + 32);
-  
-  // Concatenate r and s (each must be exactly 32 bytes)
-  const rawSignature = new Uint8Array(64);
-  
-  // Pad r if needed
-  if (r.length < 32) {
-    rawSignature.set(new Uint8Array(32 - r.length), 0);
-    rawSignature.set(r, 32 - r.length);
-  } else {
-    rawSignature.set(r.slice(-32), 0);
-  }
-  
-  // Pad s if needed
-  if (s.length < 32) {
-    rawSignature.set(new Uint8Array(32 - s.length), 32);
-    rawSignature.set(s, 32 + (32 - s.length));
-  } else {
-    rawSignature.set(s.slice(-32), 32);
-  }
-  
-  const signatureB64 = uint8ArrayToBase64Url(rawSignature);
-  
-  return `${unsignedToken}.${signatureB64}`;
+  return jwt;
 }
 
 // Encrypt payload using AES128GCM (Web Push encryption)
@@ -375,7 +312,7 @@ Deno.serve(async (req) => {
           console.log(`  - Platform: ${endpointUrl.hostname.includes('fcm') ? 'FCM (Android)' : endpointUrl.hostname.includes('push.apple') ? 'APNS (iOS)' : 'Unknown'}`);
 
           // Generate VAPID JWT
-          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidPublicKey);
+          const vapidJWT = await generateVAPIDJWT(audience, vapidPrivateKey, vapidEmail);
           
           // 🔍 DEBUG: Validate JWT
           console.log(`  - JWT Generated: ${vapidJWT.substring(0, 30)}...${vapidJWT.substring(vapidJWT.length - 30)}`);
