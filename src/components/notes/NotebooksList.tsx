@@ -178,7 +178,7 @@ function NotebookHeader({
       {editingId === notebook.id ? <Input value={editingName} onChange={e => onEditChange(e.target.value)} className="h-6 px-1 py-0 text-sm flex-1" autoFocus onKeyDown={e => {
       if (e.key === "Enter") onEditSave();
       if (e.key === "Escape") onEditCancel();
-    }} onBlur={onEditSave} /> : <span className="flex-1 truncate text-base">{notebook.name}</span>}
+    }} onBlur={onEditSave} /> : <span className="flex-1 truncate text-sm">{notebook.name}</span>}
 
       <span className="text-muted-foreground text-base">({count})</span>
 

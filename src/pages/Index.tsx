@@ -363,9 +363,9 @@ function Index() {
         {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && <div className="h-full flex flex-col overflow-hidden">
             {/* Cabeçalho Kanban Diário */}
             <div className="sticky top-0 z-10 bg-background border-b">
-              <div className="px-6 py-3 border-b flex items-center justify-between flex-wrap gap-2">
-                <h2 className="text-lg font-semibold">📅 Kanban Diário</h2>
-                <div className="flex gap-2 items-center flex-wrap">
+              <div className="px-6 py-3 border-b flex-wrap gap-2 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-center">📅 Kanban Diário</h2>
+                <div className="gap-2 flex-wrap items-center justify-center flex flex-row">
                   <Button variant="outline" size="sm" onClick={() => setShowFavoritesPanel(!showFavoritesPanel)} className="flex items-center gap-2">
                     <Star className="h-4 w-4" />
                     {showFavoritesPanel ? "Ocultar" : "Mostrar"} Favoritos

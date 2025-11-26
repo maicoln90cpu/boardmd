@@ -109,7 +109,7 @@ function DraggableNote({
       `}>
       <div onClick={() => onSelect(note.id)} className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
         <FileText className="h-4 w-4 text-muted-foreground" />
-        <span className="truncate text-base">{note.title}</span>
+        <span className="truncate text-sm">{note.title}</span>
       </div>
       <Button variant="ghost" size="sm" onClick={e => {
       e.stopPropagation();
