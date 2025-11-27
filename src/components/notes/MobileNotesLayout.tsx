@@ -19,6 +19,7 @@ interface MobileNotesLayoutProps {
   onDeleteNote: (noteId: string) => void;
   onUpdateNote: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (noteId: string) => void;
+  onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
 }
 
 export function MobileNotesLayout({
@@ -29,7 +30,8 @@ export function MobileNotesLayout({
   onAddNote,
   onDeleteNote,
   onUpdateNote,
-  onTogglePin
+  onTogglePin,
+  onMoveToNotebook
 }: MobileNotesLayoutProps) {
   const [view, setView] = useState<MobileView>("notebooks");
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
@@ -193,8 +195,10 @@ export function MobileNotesLayout({
             <NoteEditor
               key={`${selectedNote.id}-${editorSaveTriggered}`}
               note={selectedNote}
+              notebooks={notebooks}
               onUpdate={onUpdateNote}
               onTogglePin={onTogglePin}
+              onMoveToNotebook={onMoveToNotebook}
               onSave={handleBackFromEditor}
             />
           </div>
