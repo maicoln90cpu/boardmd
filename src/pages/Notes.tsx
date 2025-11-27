@@ -154,6 +154,7 @@ export default function Notes() {
           onDeleteNote={handleDeleteNote}
           onUpdateNote={handleUpdateNote}
           onTogglePin={togglePin}
+          onMoveToNotebook={moveNoteToNotebook}
         />
 
         <Sidebar
@@ -229,9 +230,11 @@ export default function Notes() {
           {selectedNote ? (
             <NoteEditor 
               key={selectedNote.id} 
-              note={selectedNote} 
+              note={selectedNote}
+              notebooks={notebooks}
               onUpdate={handleUpdateNote}
               onTogglePin={togglePin}
+              onMoveToNotebook={moveNoteToNotebook}
             />
           ) : (
             <div className="flex-1 flex items-center justify-center text-center p-8">

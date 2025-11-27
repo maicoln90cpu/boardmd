@@ -1,9 +1,10 @@
 import { Note } from "@/hooks/useNotes";
+import { Notebook } from "@/hooks/useNotebooks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { Check, X, Pin, Link2, CheckCircle2, Share2 } from "lucide-react";
+import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -28,14 +29,18 @@ import { useTasks } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 interface NoteEditorProps {
   note: Note;
+  notebooks: Notebook[];
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
+  onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
   onSave?: () => void;
 }
 export function NoteEditor({
   note,
+  notebooks,
   onUpdate,
   onTogglePin,
+  onMoveToNotebook,
   onSave
 }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
@@ -206,6 +211,32 @@ export function NoteEditor({
             <CheckCircle2 className="h-4 w-4 text-primary" />
             <span>Nota salva</span>
           </div>}
+
+        {/* Mover para caderno */}
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-muted-foreground" />
+          <Select 
+            value={note.notebook_id || "none"} 
+            onValueChange={(value) => {
+              const notebookId = value === "none" ? null : value;
+              onMoveToNotebook(note.id, notebookId);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
+              <SelectValue placeholder="Selecione um caderno..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">
+                <span className="text-muted-foreground">Nenhum caderno</span>
+              </SelectItem>
+              {notebooks.map(notebook => (
+                <SelectItem key={notebook.id} value={notebook.id}>
+                  {notebook.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
