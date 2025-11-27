@@ -180,10 +180,10 @@ export default function Notes() {
         viewMode="daily"
       />
 
-      <main className="ml-64 flex-1 flex h-screen">
+      <main className="ml-52 flex-1 flex h-screen">
         {/* Painel esquerdo - Cadernos e Notas */}
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="w-80 border-r flex flex-col bg-card">
+          <div className="w-72 border-r flex flex-col bg-card">
             <div className="p-4 border-b flex items-center justify-between">
               <h2 className="text-xl font-bold">📝 Anotações</h2>
               <Button
