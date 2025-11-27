@@ -149,12 +149,12 @@ export function Sidebar({
   }];
   return <>
       {/* Sidebar responsiva - mobile drawer, desktop fixa */}
-      <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card hidden md:block">
-        <div className="px-6 py-4 border-b">
-          <h1 className="text-xl font-bold">Kanban Board</h1>
+      <aside className="fixed left-0 top-0 h-screen w-52 border-r border-border bg-card hidden md:block">
+        <div className="px-4 py-4 border-b">
+          <h1 className="text-lg font-bold">Kanban Board</h1>
         </div>
-        <nav className="flex flex-col gap-1 p-4">
-          {menuItems.map(item => <Button key={item.label} variant={item.active ? "secondary" : "ghost"} onClick={item.onClick} className="justify-start gap-3 min-h-[48px] rounded-md text-lg text-[#342e2e] font-bold">
+        <nav className="flex flex-col gap-1 p-3">
+          {menuItems.map(item => <Button key={item.label} variant={item.active ? "secondary" : "ghost"} onClick={item.onClick} className="justify-start gap-2 min-h-[44px] rounded-md text-sm text-[#342e2e] font-semibold">
               <item.icon className="h-4 w-4" />
               {item.label}
             </Button>)}
