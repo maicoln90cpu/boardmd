@@ -40,7 +40,6 @@ export function Sidebar({
   } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
   const handleLogout = async () => {
     if (confirm("Deseja realmente sair?")) {
       await signOut();
@@ -105,7 +104,6 @@ export function Sidebar({
     setNewCategoryName("");
     setIsAddingCategory(false);
   };
-  
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
     if (mode) {
@@ -113,7 +111,6 @@ export function Sidebar({
       setTimeout(() => onViewChange(mode), 50);
     }
   };
-
   const menuItems = [{
     icon: Calendar,
     label: "Diário",
@@ -157,7 +154,7 @@ export function Sidebar({
           <h1 className="text-xl font-bold">Kanban Board</h1>
         </div>
         <nav className="flex flex-col gap-1 p-4">
-          {menuItems.map(item => <Button key={item.label} variant={item.active ? "secondary" : "ghost"} onClick={item.onClick} className="justify-start gap-3 min-h-[48px] rounded-md text-lg text-red-500">
+          {menuItems.map(item => <Button key={item.label} variant={item.active ? "secondary" : "ghost"} onClick={item.onClick} className="justify-start gap-3 min-h-[48px] rounded-md text-lg text-[#342e2e] font-bold">
               <item.icon className="h-4 w-4" />
               {item.label}
             </Button>)}
