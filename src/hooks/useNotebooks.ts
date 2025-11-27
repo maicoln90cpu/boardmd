@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,9 @@ export function useNotebooks() {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Ref para debounce do realtime
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchNotebooks = async () => {
     if (!user) return;
@@ -44,18 +47,40 @@ export function useNotebooks() {
   useEffect(() => {
     fetchNotebooks();
 
+    // Listener para evento customizado
+    const handleNotebookUpdated = () => {
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
+      fetchDebounceRef.current = setTimeout(() => {
+        fetchNotebooks();
+      }, 300);
+    };
+
+    window.addEventListener('notebook-updated', handleNotebookUpdated);
+
     const channel = supabase
       .channel("notebooks_changes")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notebooks" },
         () => {
-          fetchNotebooks();
+          // Debounce de 300ms para evitar fetches consecutivos
+          if (fetchDebounceRef.current) {
+            clearTimeout(fetchDebounceRef.current);
+          }
+          fetchDebounceRef.current = setTimeout(() => {
+            fetchNotebooks();
+          }, 300);
         }
       )
       .subscribe();
 
     return () => {
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
+      window.removeEventListener('notebook-updated', handleNotebookUpdated);
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -92,6 +117,9 @@ export function useNotebooks() {
         prev.map((n) => (n.id === tempId ? data : n))
       );
 
+      // Disparar evento customizado para forçar refresh
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
+
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -121,6 +149,9 @@ export function useNotebooks() {
         .eq("id", id);
 
       if (error) throw error;
+
+      // Disparar evento customizado para forçar refresh
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
 
       toast({ title: "Caderno atualizado!" });
     } catch (error) {
@@ -168,6 +199,9 @@ export function useNotebooks() {
       const { error } = await supabase.from("notebooks").delete().eq("id", id);
 
       if (error) throw error;
+
+      // Disparar evento customizado para forçar refresh
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
 
       toast({ title: "Caderno movido para lixeira" });
     } catch (error) {
