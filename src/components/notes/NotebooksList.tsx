@@ -3,9 +3,11 @@ import { Notebook, useNotebooks } from "@/hooks/useNotebooks";
 import { Note, useNotes } from "@/hooks/useNotes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText, ArrowUpDown } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface NotebooksListProps {
   notebooks: Notebook[];
   notes: Note[];
@@ -13,6 +15,8 @@ interface NotebooksListProps {
   onSelectNote: (noteId: string) => void;
   onAddNote: (notebookId: string | null) => void;
   onDeleteNote: (noteId: string) => void;
+  sortBy?: 'updated' | 'alphabetical' | 'created';
+  onSortChange?: (value: 'updated' | 'alphabetical' | 'created') => void;
 }
 export function NotebooksList({
   notebooks,
@@ -20,7 +24,9 @@ export function NotebooksList({
   selectedNoteId,
   onSelectNote,
   onAddNote,
-  onDeleteNote
+  onDeleteNote,
+  sortBy = 'updated',
+  onSortChange
 }: NotebooksListProps) {
   const {
     addNotebook,
@@ -75,9 +81,23 @@ export function NotebooksList({
       <div className="space-y-1">
         <div className="flex items-center justify-between p-2">
           <h3 className="text-sm font-semibold text-muted-foreground">CADERNOS</h3>
-          <Button variant="ghost" size="sm" onClick={handleAddNotebook}>
-            <Plus className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onSortChange && (
+              <Select value={sortBy} onValueChange={onSortChange}>
+                <SelectTrigger className="h-8 w-8 p-0 border-0 hover:bg-accent">
+                  <ArrowUpDown className="h-4 w-4" />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="updated">Mais recentes</SelectItem>
+                  <SelectItem value="alphabetical">A-Z</SelectItem>
+                  <SelectItem value="created">Data de criação</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleAddNotebook}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {notebooks.map(notebook => {
@@ -178,7 +198,7 @@ function NotebookHeader({
       {editingId === notebook.id ? <Input value={editingName} onChange={e => onEditChange(e.target.value)} className="h-6 px-1 py-0 text-sm flex-1" autoFocus onKeyDown={e => {
       if (e.key === "Enter") onEditSave();
       if (e.key === "Escape") onEditCancel();
-    }} onBlur={onEditSave} /> : <span className="flex-1 truncate text-sm">{notebook.name}</span>}
+    }} onBlur={onEditSave} /> : <span className="flex-1 truncate text-sm cursor-pointer" onClick={onToggle}>{notebook.name}</span>}
 
       <span className="text-muted-foreground text-base">({count})</span>
 
