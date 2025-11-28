@@ -3,7 +3,7 @@ import { Notebook } from "@/hooks/useNotebooks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -48,6 +48,10 @@ export function NoteEditor({
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  
+  // Refs para rastrear mudanças e auto-save
+  const hasUnsavedChanges = useRef(false);
+  const currentNoteRef = useRef(note);
 
   // Buscar tarefas disponíveis
   const {
@@ -141,7 +145,62 @@ export function NoteEditor({
     if (editor && note.content !== editor.getHTML()) {
       editor.commands.setContent(note.content || "");
     }
+    currentNoteRef.current = note;
+    hasUnsavedChanges.current = false;
   }, [note.id, note.title, note.content, note.color, editor]);
+
+  // Rastrear mudanças para auto-save
+  useEffect(() => {
+    if (title !== note.title || content !== note.content || color !== note.color) {
+      hasUnsavedChanges.current = true;
+    }
+  }, [title, content, color, note.title, note.content, note.color]);
+
+  // Função de auto-save (silenciosa)
+  const autoSave = () => {
+    if (!hasUnsavedChanges.current) return;
+    if (!title.trim() && !content.trim()) return;
+
+    onUpdate(currentNoteRef.current.id, {
+      title: title.trim() || "Sem título",
+      content: content.trim(),
+      color
+    });
+    hasUnsavedChanges.current = false;
+  };
+
+  // Auto-save ao trocar de nota (cleanup do useEffect)
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChanges.current) {
+        autoSave();
+      }
+    };
+  }, [note.id]);
+
+  // Auto-save ao recarregar página ou fechar aba
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges.current) {
+        autoSave();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [title, content, color]);
+
+  // Listener para evento customizado de salvamento
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      if (hasUnsavedChanges.current) {
+        autoSave();
+      }
+    };
+
+    window.addEventListener('save-current-note', handleSaveEvent);
+    return () => window.removeEventListener('save-current-note', handleSaveEvent);
+  }, [title, content, color]);
 
   // Atalho de teclado para salvar (Ctrl+Enter / Cmd+Enter)
   useEffect(() => {
@@ -164,6 +223,7 @@ export function NoteEditor({
       content: content.trim(),
       color
     });
+    hasUnsavedChanges.current = false;
     toast.success("Nota salva!");
     setShowSavedIndicator(true);
     setTimeout(() => setShowSavedIndicator(false), 2000);

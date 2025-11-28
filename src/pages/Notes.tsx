@@ -22,6 +22,7 @@ export default function Notes() {
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
+  const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
@@ -34,6 +35,23 @@ export default function Notes() {
       },
     })
   );
+
+  // Ordenar cadernos
+  const sortedNotebooks = useMemo(() => {
+    let sorted = [...notebooks];
+    switch (notebookSortBy) {
+      case 'alphabetical':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'created':
+        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+      case 'updated':
+      default:
+        sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    }
+    return sorted;
+  }, [notebooks, notebookSortBy]);
 
   // Filtrar e ordenar notas
   const filteredAndSortedNotes = useMemo(() => {
@@ -86,6 +104,10 @@ export default function Notes() {
   };
 
   const handleSelectNote = (noteId: string) => {
+    // Se há uma nota sendo editada, dispara evento para salvá-la antes de trocar
+    if (selectedNoteId && selectedNoteId !== noteId) {
+      window.dispatchEvent(new CustomEvent('save-current-note'));
+    }
     setSelectedNoteId(noteId);
     setIsEditing(true); // Pausa real-time durante edição
   };
@@ -206,12 +228,14 @@ export default function Notes() {
 
             <div className="flex-1 overflow-y-auto p-2 space-y-4">
               <NotebooksList
-                notebooks={notebooks}
+                notebooks={sortedNotebooks}
                 notes={filteredAndSortedNotes}
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
                 onAddNote={handleAddNote}
                 onDeleteNote={handleDeleteNote}
+                sortBy={notebookSortBy}
+                onSortChange={setNotebookSortBy}
               />
 
               <NotesList
