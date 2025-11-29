@@ -268,6 +268,31 @@ function Index() {
 
     const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
     await resetDailyTasks(targetColumn.id, excludeIds);
+
+    // Desriscar tarefas recorrentes (permanecem na coluna Recorrente)
+    if (recurrentColumn) {
+      const recurrentTasks = tasks.filter(t => t.column_id === recurrentColumn.id);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      // Limpar checkboxes do localStorage para tarefas recorrentes
+      recurrentTasks.forEach(task => {
+        if (task.recurrence_rule) {
+          localStorage.removeItem(`task-completed-${task.id}`);
+        }
+      });
+
+      await Promise.all(
+        recurrentTasks.map(task =>
+          updateDailyTask(task.id, {
+            is_completed: false,
+            due_date: todayISO
+          })
+        )
+      );
+    }
+
     addActivity("daily_reset", "Kanban Diário resetado");
     setDailyBoardKey(k => k + 1); // Força refresh do board diário
   };
