@@ -52,6 +52,9 @@ export function NoteEditor({
   // Refs para rastrear mudanças e auto-save
   const hasUnsavedChanges = useRef(false);
   const currentNoteRef = useRef(note);
+  const titleRef = useRef(title);
+  const contentRef = useRef(content);
+  const colorRef = useRef(color);
 
   // Buscar tarefas disponíveis
   const {
@@ -149,6 +152,13 @@ export function NoteEditor({
     hasUnsavedChanges.current = false;
   }, [note.id, note.title, note.content, note.color, editor]);
 
+  // Sincronizar refs com states atuais
+  useEffect(() => {
+    titleRef.current = title;
+    contentRef.current = content;
+    colorRef.current = color;
+  }, [title, content, color]);
+
   // Rastrear mudanças para auto-save
   useEffect(() => {
     if (title !== note.title || content !== note.content || color !== note.color) {
@@ -201,6 +211,25 @@ export function NoteEditor({
     window.addEventListener('save-current-note', handleSaveEvent);
     return () => window.removeEventListener('save-current-note', handleSaveEvent);
   }, [title, content, color]);
+
+  // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChanges.current) {
+        const currentTitle = titleRef.current;
+        const currentContent = contentRef.current;
+        const currentColor = colorRef.current;
+        
+        if (!currentTitle.trim() && !currentContent.trim()) return;
+        
+        onUpdate(currentNoteRef.current.id, {
+          title: currentTitle.trim() || "Sem título",
+          content: currentContent.trim(),
+          color: currentColor
+        });
+      }
+    };
+  }, []);
 
   // Atalho de teclado para salvar (Ctrl+Enter / Cmd+Enter)
   useEffect(() => {

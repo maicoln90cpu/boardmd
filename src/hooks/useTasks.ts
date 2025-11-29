@@ -320,7 +320,8 @@ export function useTasks(categoryId: string | null | "all") {
         .update({ 
           column_id: firstColumnId,
           position: index,
-          due_date: todayISO
+          due_date: todayISO,
+          is_completed: false
         })
         .eq("id", task.id)
     );
