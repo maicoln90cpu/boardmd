@@ -257,6 +257,60 @@ function Index() {
     setSortOption("manual");
     setDisplayMode("by_category");
   };
+  const handleResetRecurrentTasks = async () => {
+    const recurrentColumn = columns.find(
+      (col) =>
+        col.name.toLowerCase() === "recorrente" &&
+        (col.kanban_type === "daily" || !col.kanban_type)
+    );
+
+    if (!recurrentColumn) {
+      toast({
+        title: "Coluna não encontrada",
+        description: "Coluna 'Recorrente' não existe",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const recurrentTasks = tasks.filter(t => t.column_id === recurrentColumn.id);
+    
+    if (recurrentTasks.length === 0) {
+      toast({
+        title: "Nenhuma tarefa",
+        description: "Não há tarefas recorrentes para resetar"
+      });
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    // Limpar checkboxes do localStorage para tarefas recorrentes
+    recurrentTasks.forEach(task => {
+      if (task.recurrence_rule) {
+        localStorage.removeItem(`task-completed-${task.id}`);
+      }
+    });
+
+    await Promise.all(
+      recurrentTasks.map(task =>
+        updateDailyTask(task.id, {
+          is_completed: false,
+          due_date: todayISO
+        })
+      )
+    );
+
+    addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
+    toast({
+      title: "Tarefas resetadas",
+      description: `${recurrentTasks.length} tarefa(s) recorrente(s) resetada(s)`
+    });
+    setDailyBoardKey(k => k + 1);
+  };
+
   const handleResetDaily = async () => {
     if (!columns.length) return;
 
@@ -269,32 +323,12 @@ function Index() {
     const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
     await resetDailyTasks(targetColumn.id, excludeIds);
 
-    // Desriscar tarefas recorrentes (permanecem na coluna Recorrente)
-    if (recurrentColumn) {
-      const recurrentTasks = tasks.filter(t => t.column_id === recurrentColumn.id);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayISO = today.toISOString();
-
-      // Limpar checkboxes do localStorage para tarefas recorrentes
-      recurrentTasks.forEach(task => {
-        if (task.recurrence_rule) {
-          localStorage.removeItem(`task-completed-${task.id}`);
-        }
-      });
-
-      await Promise.all(
-        recurrentTasks.map(task =>
-          updateDailyTask(task.id, {
-            is_completed: false,
-            due_date: todayISO
-          })
-        )
-      );
-    }
-
     addActivity("daily_reset", "Kanban Diário resetado");
-    setDailyBoardKey(k => k + 1); // Força refresh do board diário
+    toast({
+      title: "Kanban resetado",
+      description: "Todas as tarefas (exceto recorrentes) foram movidas"
+    });
+    setDailyBoardKey(k => k + 1);
   };
   const handleTaskSelect = (task: Task) => {
     setSelectedTaskForHistory(task.id);
@@ -402,6 +436,10 @@ function Index() {
                   <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Templates
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleResetRecurrentTasks} className="flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Resetar Recorrentes
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleResetDaily} className="flex items-center gap-2">
                     <RotateCcw className="h-4 w-4" />
