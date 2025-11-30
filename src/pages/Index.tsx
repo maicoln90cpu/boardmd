@@ -283,10 +283,6 @@ function Index() {
       return;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-
     // Limpar checkboxes do localStorage para tarefas recorrentes
     recurrentTasks.forEach(task => {
       if (task.recurrence_rule) {
@@ -295,13 +291,25 @@ function Index() {
     });
 
     await Promise.all(
-      recurrentTasks.map(task =>
-        updateDailyTask(task.id, {
+      recurrentTasks.map(task => {
+        // Preservar horário original da tarefa, mudar apenas a data para hoje
+        const today = new Date();
+        if (task.due_date) {
+          const originalDate = new Date(task.due_date);
+          today.setHours(originalDate.getHours(), originalDate.getMinutes(), originalDate.getSeconds(), originalDate.getMilliseconds());
+        } else {
+          today.setHours(0, 0, 0, 0);
+        }
+        
+        return updateDailyTask(task.id, {
           is_completed: false,
-          due_date: todayISO
-        })
-      )
+          due_date: today.toISOString()
+        });
+      })
     );
+
+    // Disparar evento para forçar todas as instâncias do hook a refazerem fetch
+    window.dispatchEvent(new CustomEvent('task-updated'));
 
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
     toast({
