@@ -38,7 +38,9 @@ export const taskSchema = z.object({
     .max(50, "Máximo de 50 subtarefas permitidas")
     .nullable()
     .optional(),
-  recurrence_rule: recurrenceRuleSchema.nullable().optional()
+  recurrence_rule: recurrenceRuleSchema.nullable().optional(),
+  is_completed: z.boolean().default(false).optional(),
+  is_favorite: z.boolean().default(false).optional()
 });
 
 export const categorySchema = z.object({
