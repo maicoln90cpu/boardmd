@@ -147,12 +147,10 @@ export default function Config() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
-  // Sincronizar hideCompletedTasks com localStorage
+  // OTIMIZAÇÃO: Remover disparo de evento storage - não mais necessário
   const handleToggleHideCompleted = (checked: boolean) => {
     localStorage.setItem('hideCompletedTasks', checked.toString());
     updateSettings({ kanban: { ...settings.kanban, hideCompletedTasks: checked } });
-    // Disparar evento para forçar re-render dos kanbans
-    window.dispatchEvent(new Event('storage'));
   };
   
   const [editingId, setEditingId] = useState<string | null>(null);

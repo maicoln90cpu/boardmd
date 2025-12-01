@@ -106,17 +106,25 @@ export function useDueDateAlerts(tasks: Task[]) {
     const snoozeMinutes = settings.notifications.snoozeMinutes || 30;
     notifiedTasksRef.current = loadNotifiedSet(snoozeMinutes);
 
-    const checkDueDates = async () => {
-      const now = new Date();
-
-      // Buscar nomes das colunas para verificar se estão concluídas
+    // OTIMIZAÇÃO: Cachear dados de colunas fora do loop
+    let columnMapRef: Map<string, string> | null = null;
+    
+    const getColumnMap = async () => {
+      if (columnMapRef) return columnMapRef;
+      
       const columnIds = [...new Set(tasks.map(t => t.column_id))];
       const { data: columnsData } = await supabase
         .from("columns")
         .select("id, name")
         .in("id", columnIds);
       
-      const columnMap = new Map(columnsData?.map(c => [c.id, c.name]) || []);
+      columnMapRef = new Map(columnsData?.map(c => [c.id, c.name]) || []);
+      return columnMapRef;
+    };
+
+    const checkDueDates = async () => {
+      const now = new Date();
+      const columnMap = await getColumnMap();
 
       tasks.forEach((task) => {
         // Não notificar se:

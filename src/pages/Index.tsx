@@ -95,14 +95,6 @@ function Index() {
   const [dailyGridColumnsMobile, setDailyGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-daily-grid-columns-mobile", 2);
   const [projectsGridColumnsMobile, setProjectsGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-projects-grid-columns-mobile", 2);
 
-  // Buscar todas as tarefas para notificações
-  const {
-    tasks: allTasks
-  } = useTasks(undefined);
-
-  // Hook de notificações de prazo - monitora TODAS as tarefas
-  useDueDateAlerts(allTasks);
-
   // Atalhos de teclado globais
   useKeyboardShortcuts({
     onSearch: () => {
@@ -126,13 +118,25 @@ function Index() {
       setViewMode(view);
     }
   }, []);
+  
+  // OTIMIZAÇÃO: Consolidar em uma única instância de useTasks
+  // Busca todas as tarefas uma vez e usa filtros locais para diferentes views
   const {
-    tasks
-  } = useTasks(viewMode === "all" ? "all" : dailyCategory);
-  const {
+    tasks: allTasks,
     resetAllTasksToFirstColumn: resetDailyTasks,
     updateTask: updateDailyTask
-  } = useTasks(dailyCategory);
+  } = useTasks("all");
+
+  // Hook de notificações de prazo - monitora TODAS as tarefas
+  useDueDateAlerts(allTasks);
+
+  // Filtrar tasks baseado no viewMode
+  const tasks = useMemo(() => {
+    if (viewMode === "daily" && dailyCategory) {
+      return allTasks.filter(task => task.category_id === dailyCategory);
+    }
+    return allTasks;
+  }, [allTasks, viewMode, dailyCategory]);
 
   // Filtrar tasks baseado no viewMode e filtros
   const filteredTasks = useMemo(() => {
