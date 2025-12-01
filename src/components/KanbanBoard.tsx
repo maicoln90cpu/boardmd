@@ -14,6 +14,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { useEffect } from "react";
+import { useSettings } from "@/hooks/useSettings";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -50,10 +51,8 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
+  const { settings } = useSettings(); // OTIMIZAÇÃO: usar settings em vez de localStorage direto
   const isMobile = useBreakpoint() === 'mobile';
-  
-  // Estado para forçar re-render quando hideCompletedTasks mudar
-  const [, setForceUpdate] = useState(0);
   
   // Modo compacto automático em mobile ou quando forçado via prop
   const compact = isMobile || compactProp;
@@ -69,25 +68,6 @@ export function KanbanBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
-
-  // Listener para eventos de mudança no hideCompletedTasks
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setForceUpdate(prev => prev + 1);
-    };
-    
-    const handleTaskUpdate = () => {
-      setForceUpdate(prev => prev + 1);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('task-updated', handleTaskUpdate);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('task-updated', handleTaskUpdate);
-    };
-  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -242,8 +222,7 @@ export function KanbanBoard({
       }
     });
     
-    // Disparar evento customizado para forçar re-render global
-    window.dispatchEvent(new Event('storage'));
+    // OTIMIZAÇÃO: Remover evento 'storage' - não mais necessário
     window.dispatchEvent(new CustomEvent('tasks-unchecked'));
     
     // Toast de sucesso
@@ -274,9 +253,8 @@ export function KanbanBoard({
         return false;
       }
 
-      // Ocultar tarefas concluídas se configurado
-      const hideCompletedSetting = localStorage.getItem('hideCompletedTasks');
-      if (hideCompletedSetting === 'true' && t.is_completed) {
+      // OTIMIZAÇÃO: Usar settings em vez de localStorage direto
+      if (settings.kanban.hideCompletedTasks && t.is_completed) {
         return false;
       }
       
