@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings, Layers, BarChart3, Bell } from "lucide-react";
+import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
@@ -322,12 +323,9 @@ export default function Config() {
     toast({ title: "Configurações resetadas", description: "Todas as configurações foram restauradas aos valores padrão" });
   };
 
+  // OTIMIZAÇÃO FASE 3: Skeleton loading
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Carregando configurações...</div>
-      </div>
-    );
+    return <SettingsLoadingSkeleton />;
   }
 
   return (

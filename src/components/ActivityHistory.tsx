@@ -1,5 +1,6 @@
 import { useTaskHistory } from "@/hooks/useTaskHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Edit, Trash2, Plus, MoveRight } from "lucide-react";
 import { format } from "date-fns";
@@ -68,7 +69,7 @@ export function ActivityHistory({ taskId }: ActivityHistoryProps) {
           <CardTitle className="text-sm font-medium">Histórico de Atividades</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+          <ListLoadingSkeleton count={3} />
         </CardContent>
       </Card>
     );
