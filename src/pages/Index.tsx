@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 function Index() {
   const isMobile = useIsMobile();
   const {
@@ -421,10 +422,9 @@ function Index() {
     });
     return counters;
   }, [filteredTasks, visibleColumns, viewMode]);
+  // OTIMIZAÇÃO FASE 3: Skeleton loading em vez de texto
   if (loadingCategories || loadingColumns) {
-    return <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>;
+    return <KanbanLoadingSkeleton />;
   }
   return <div className="min-h-screen bg-background pb-[140px] md:pb-0">
       <Sidebar onExport={handleExport} onImport={handleImport} onThemeToggle={toggleTheme} onViewChange={setViewMode} viewMode={viewMode} />

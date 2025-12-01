@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { StatsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
@@ -30,14 +31,9 @@ export default function Dashboard() {
     fetchAllTasks();
   }, []);
 
+  // OTIMIZAÇÃO FASE 3: Adicionar imports de skeleton loading
   if (isLoading) {
-    return (
-      <div className="flex h-screen">
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-muted-foreground">Carregando estatísticas...</div>
-        </div>
-      </div>
-    );
+    return <StatsLoadingSkeleton />;
   }
 
   const level = stats?.level || 1;

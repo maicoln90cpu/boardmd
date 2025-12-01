@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import { CheckCircle2, XCircle, Clock, Smartphone, TrendingUp, Activity } from "lucide-react";
 import { format } from "date-fns";
+import { MonitorLoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 interface PushLog {
   id: string;
@@ -170,10 +171,11 @@ export function PushNotificationMonitor() {
     value,
   }));
 
+  // OTIMIZAÇÃO FASE 3: Skeleton loading
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">Carregando dados de monitoramento...</div>
+        <MonitorLoadingSkeleton />
       </div>
     );
   }

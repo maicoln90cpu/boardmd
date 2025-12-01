@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, RotateCcw, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,8 +67,8 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
           </DialogHeader>
 
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">
-              Carregando...
+            <div className="py-8 text-center">
+              <ListLoadingSkeleton count={3} />
             </div>
           ) : trashItems.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
