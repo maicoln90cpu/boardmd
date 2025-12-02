@@ -184,14 +184,16 @@ export function DataIntegrityMonitor() {
         if (error) throw error;
         toast.success('Referência quebrada removida');
       } else if (issue.type === 'missing_mutual') {
-        // Remover referência quebrada (restaurar causa recursão no trigger)
-        const { error } = await supabase
-          .from('tasks')
-          .update({ mirror_task_id: null })
-          .eq('id', issue.taskId);
-        
-        if (error) throw error;
-        toast.success('Referência quebrada removida');
+        // Estabelecer referência bidirecional (o espelho deve apontar de volta)
+        if (issue.mirrorTaskId) {
+          const { error } = await supabase
+            .from('tasks')
+            .update({ mirror_task_id: issue.taskId })
+            .eq('id', issue.mirrorTaskId);
+          
+          if (error) throw error;
+          toast.success('Referência bidirecional estabelecida');
+        }
       }
       await runIntegrityCheck();
     } catch (err) {
@@ -224,17 +226,19 @@ export function DataIntegrityMonitor() {
             fixed++;
           }
         } else if (issue.type === 'missing_mutual') {
-          // Remover referência quebrada (restaurar causa recursão no trigger)
-          const { error } = await supabase
-            .from('tasks')
-            .update({ mirror_task_id: null })
-            .eq('id', issue.taskId);
-          
-          if (error) {
-            console.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
-            failed++;
-          } else {
-            fixed++;
+          // Estabelecer referência bidirecional
+          if (issue.mirrorTaskId) {
+            const { error } = await supabase
+              .from('tasks')
+              .update({ mirror_task_id: issue.taskId })
+              .eq('id', issue.mirrorTaskId);
+            
+            if (error) {
+              console.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
+              failed++;
+            } else {
+              fixed++;
+            }
           }
         }
       } catch (err) {
