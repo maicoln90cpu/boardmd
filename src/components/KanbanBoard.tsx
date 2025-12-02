@@ -217,7 +217,8 @@ export function KanbanBoard({
         ));
         
         updateTask(task.id, {
-          due_date: newDate.toISOString()
+          due_date: newDate.toISOString(),
+          is_completed: false
         });
       }
     });

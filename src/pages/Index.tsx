@@ -265,9 +265,7 @@ function Index() {
   };
   const handleResetRecurrentTasks = async () => {
     const recurrentColumn = columns.find(
-      (col) =>
-        col.name.toLowerCase() === "recorrente" &&
-        (col.kanban_type === "daily" || !col.kanban_type)
+      (col) => col.name.toLowerCase() === "recorrente"
     );
 
     if (!recurrentColumn) {
