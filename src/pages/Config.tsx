@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings, Layers, BarChart3, Bell } from "lucide-react";
+import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
@@ -1345,6 +1346,9 @@ export default function Config() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Monitoramento de Integridade */}
+            <DataIntegrityMonitor />
           </TabsContent>
         </Tabs>
       </div>

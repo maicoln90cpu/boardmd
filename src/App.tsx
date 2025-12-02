@@ -18,7 +18,6 @@ import Config from "./pages/Config";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import NotificationsDashboard from "./pages/NotificationsDashboard";
-import DataCleanup from "./pages/DataCleanup";
 
 const queryClient = new QueryClient();
 
@@ -83,14 +82,6 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <NotificationsDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/data-cleanup" 
-                element={
-                  <ProtectedRoute>
-                    <DataCleanup />
                   </ProtectedRoute>
                 } 
               />

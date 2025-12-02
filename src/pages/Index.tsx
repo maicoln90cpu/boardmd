@@ -279,21 +279,32 @@ function Index() {
       return;
     }
 
-    console.log("[DEBUG RESET] Total de tarefas disponíveis:", allTasks.length);
-    console.log("[DEBUG RESET] Coluna recorrente ID:", recurrentColumn.id);
+    // CORREÇÃO: Query direta ao Supabase para buscar TODAS as tarefas
+    // na coluna Recorrente, independente da categoria (allTasks exclui Diário)
+    const { data: recurrentTasks, error: fetchError } = await supabase
+      .from("tasks")
+      .select("id, title, is_completed, recurrence_rule, tags")
+      .eq("column_id", recurrentColumn.id)
+      .not("recurrence_rule", "is", null);
 
-    // Usar allTasks (consolidado) em vez de tasks (filtrado)
-    // Filtrar explicitamente por recurrence_rule !== null
-    const recurrentTasks = allTasks.filter(
-      task => task.column_id === recurrentColumn.id && 
-      task.recurrence_rule !== null &&
-      !task.tags?.includes("espelho-diário")
-    );
+    if (fetchError) {
+      console.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
+      toast({
+        title: "Erro ao buscar tarefas",
+        description: fetchError.message,
+        variant: "destructive"
+      });
+      return;
+    }
 
-    console.log("[DEBUG RESET] Tarefas recorrentes encontradas:", recurrentTasks.length);
-    console.log("[DEBUG RESET] IDs:", recurrentTasks.map(t => ({ id: t.id, title: t.title, completed: t.is_completed })));
+    // Filtrar espelhos
+    const tasksToReset = recurrentTasks?.filter(
+      task => !task.tags?.includes("espelho-diário")
+    ) || [];
+
+    console.log("[DEBUG RESET] Tarefas recorrentes encontradas:", tasksToReset.length);
     
-    if (recurrentTasks.length === 0) {
+    if (tasksToReset.length === 0) {
       toast({
         title: "Nenhuma tarefa",
         description: "Não há tarefas recorrentes para resetar"
@@ -301,15 +312,13 @@ function Index() {
       return;
     }
 
-    // Limpar checkboxes do localStorage para tarefas recorrentes
-    recurrentTasks.forEach(task => {
-      if (task.recurrence_rule) {
-        localStorage.removeItem(`task-completed-${task.id}`);
-      }
+    // Limpar checkboxes do localStorage
+    tasksToReset.forEach(task => {
+      localStorage.removeItem(`task-completed-${task.id}`);
     });
 
-    // Usar update direto do Supabase (evita validação Zod)
-    const taskIds = recurrentTasks.map(t => t.id);
+    // Update direto no Supabase
+    const taskIds = tasksToReset.map(t => t.id);
     
     const { error } = await supabase
       .from("tasks")
@@ -326,15 +335,13 @@ function Index() {
       return;
     }
 
-    console.log("[DEBUG RESET] Atualização concluída com sucesso");
-
     // Disparar evento para forçar refetch
     window.dispatchEvent(new CustomEvent('task-updated'));
 
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
     toast({
       title: "Tarefas resetadas",
-      description: `${recurrentTasks.length} tarefa(s) recorrente(s) resetada(s)`
+      description: `${tasksToReset.length} tarefa(s) recorrente(s) resetada(s)`
     });
     setDailyBoardKey(k => k + 1);
   };
