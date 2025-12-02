@@ -137,12 +137,22 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
           // Se está editando tarefa existente
           if (task?.id) {
-            // Verificar se já tem espelho criado
-            const { data: existingMirror } = await (supabase
-              .from("tasks")
-              .select("id") as any)
-              .eq("mirror_task_id", task.id)
-              .maybeSingle();
+            // PRIORIDADE: Verificar se a tarefa original já tem mirror_task_id definido
+            let existingMirror = null;
+            
+            if (task.mirror_task_id) {
+              // Já tem referência direta ao espelho
+              console.log("[ESPELHAMENTO] Espelho já vinculado na tarefa:", task.mirror_task_id);
+              existingMirror = { id: task.mirror_task_id };
+            } else {
+              // Fallback: buscar espelho que aponta para esta tarefa
+              const { data } = await (supabase
+                .from("tasks")
+                .select("id") as any)
+                .eq("mirror_task_id", task.id)
+                .maybeSingle();
+              existingMirror = data;
+            }
 
             if (!existingMirror) {
               console.log("[ESPELHAMENTO] Criando espelho para tarefa existente:", task.id);

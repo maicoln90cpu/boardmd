@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { supabase } from "@/integrations/supabase/client";
 function Index() {
   const isMobile = useIsMobile();
   const {
@@ -278,7 +279,19 @@ function Index() {
       return;
     }
 
-    const recurrentTasks = tasks.filter(t => t.column_id === recurrentColumn.id);
+    console.log("[DEBUG RESET] Total de tarefas disponíveis:", allTasks.length);
+    console.log("[DEBUG RESET] Coluna recorrente ID:", recurrentColumn.id);
+
+    // Usar allTasks (consolidado) em vez de tasks (filtrado)
+    // Filtrar explicitamente por recurrence_rule !== null
+    const recurrentTasks = allTasks.filter(
+      task => task.column_id === recurrentColumn.id && 
+      task.recurrence_rule !== null &&
+      !task.tags?.includes("espelho-diário")
+    );
+
+    console.log("[DEBUG RESET] Tarefas recorrentes encontradas:", recurrentTasks.length);
+    console.log("[DEBUG RESET] IDs:", recurrentTasks.map(t => ({ id: t.id, title: t.title, completed: t.is_completed })));
     
     if (recurrentTasks.length === 0) {
       toast({
@@ -295,25 +308,27 @@ function Index() {
       }
     });
 
-    await Promise.all(
-      recurrentTasks.map(task => {
-        // Preservar horário original da tarefa, mudar apenas a data para hoje
-        const today = new Date();
-        if (task.due_date) {
-          const originalDate = new Date(task.due_date);
-          today.setHours(originalDate.getHours(), originalDate.getMinutes(), originalDate.getSeconds(), originalDate.getMilliseconds());
-        } else {
-          today.setHours(0, 0, 0, 0);
-        }
-        
-        return updateDailyTask(task.id, {
-          is_completed: false,
-          due_date: today.toISOString()
-        });
-      })
-    );
+    // Usar update direto do Supabase (evita validação Zod)
+    const taskIds = recurrentTasks.map(t => t.id);
+    
+    const { error } = await supabase
+      .from("tasks")
+      .update({ is_completed: false })
+      .in("id", taskIds);
 
-    // Disparar evento para forçar todas as instâncias do hook a refazerem fetch
+    if (error) {
+      console.error("[DEBUG RESET] Erro ao atualizar:", error);
+      toast({
+        title: "❌ Erro ao desmarcar tarefas",
+        description: error.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log("[DEBUG RESET] Atualização concluída com sucesso");
+
+    // Disparar evento para forçar refetch
     window.dispatchEvent(new CustomEvent('task-updated'));
 
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
