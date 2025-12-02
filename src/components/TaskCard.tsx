@@ -19,6 +19,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
+import { formatDateShortBR, formatTimeOnlyBR, formatDateOnlyBR } from "@/lib/dateUtils";
 
 interface TaskCardProps {
   task: Task & { categories?: { name: string } };
@@ -104,6 +105,14 @@ export function TaskCard({
       
       if (error) throw error;
       
+      // SINCRONIZAÇÃO BIDIRECIONAL: Atualizar tarefa espelhada também
+      if (task.mirror_task_id) {
+        await supabase
+          .from("tasks")
+          .update({ is_completed: checked })
+          .eq("id", task.mirror_task_id);
+      }
+      
       // Disparar evento para atualizar lista de tasks
       window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId: task.id } }));
     } catch (error) {
@@ -157,7 +166,7 @@ export function TaskCard({
     const shareText = [
       task.title,
       task.description ? `\n${task.description}` : "",
-      task.due_date ? `\nPrazo: ${new Date(task.due_date).toLocaleDateString("pt-BR")}` : "",
+      task.due_date ? `\nPrazo: ${formatDateOnlyBR(task.due_date)}` : "",
       task.priority ? `\nPrioridade: ${task.priority}` : "",
       task.categories?.name ? `\nCategoria: ${task.categories.name}` : "",
     ].filter(Boolean).join("");
@@ -231,7 +240,7 @@ export function TaskCard({
                 )}
                 {!hideBadges && task.due_date && (
                   <span className={`text-[9px] shrink-0 ${isOverdue ? 'text-destructive' : isUrgent ? 'text-orange-600' : 'text-muted-foreground'}`}>
-                    {new Date(task.due_date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}
+                    {formatDateShortBR(task.due_date)}
                   </span>
                 )}
                 {!hideBadges && task.mirror_task_id && (
@@ -420,10 +429,7 @@ export function TaskCard({
                   {task.due_date && isDailyKanban && (
                     <div className="flex items-center gap-0.5 px-1 py-0 bg-muted rounded text-[10px]">
                       <Clock className="h-2.5 w-2.5" />
-                      {new Date(task.due_date).toLocaleTimeString("pt-BR", {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
                   
@@ -438,7 +444,7 @@ export function TaskCard({
                       ) : (
                         <Calendar className="h-2.5 w-2.5" />
                       )}
-                      {new Date(task.due_date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}
+                      {formatDateShortBR(task.due_date)}
                     </div>
                   )}
                   

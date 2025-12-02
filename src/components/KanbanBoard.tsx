@@ -135,6 +135,10 @@ export function KanbanBoard({
       if (destinationColumn?.name.toLowerCase() === "concluído") {
         updates.is_completed = true;
       }
+      // Auto-desmarcar ao sair de "Concluído"
+      else if (sourceColumn?.name.toLowerCase() === "concluído") {
+        updates.is_completed = false;
+      }
       
       updateTask(taskId, updates);
     }
@@ -184,12 +188,24 @@ export function KanbanBoard({
     
     if (targetIndex >= 0 && targetIndex < columns.length) {
       const targetColumn = columns[targetIndex];
+      const sourceColumn = columns[currentColumnIndex];
       const destinationTasks = tasks.filter(t => t.column_id === targetColumn.id);
       
-      updateTask(taskId, {
+      const updates: Partial<Task> = {
         column_id: targetColumn.id,
         position: destinationTasks.length
-      });
+      };
+      
+      // Auto-completar ao mover para coluna "Concluído"
+      if (targetColumn.name.toLowerCase() === "concluído") {
+        updates.is_completed = true;
+      }
+      // Auto-desmarcar ao sair de "Concluído"
+      else if (sourceColumn?.name.toLowerCase() === "concluído") {
+        updates.is_completed = false;
+      }
+      
+      updateTask(taskId, updates);
     }
   };
 
