@@ -55,6 +55,7 @@ export function NoteEditor({
   const titleRef = useRef(title);
   const contentRef = useRef(content);
   const colorRef = useRef(color);
+  const onUpdateRef = useRef(onUpdate);
 
   // Buscar tarefas disponíveis
   const {
@@ -157,7 +158,8 @@ export function NoteEditor({
     titleRef.current = title;
     contentRef.current = content;
     colorRef.current = color;
-  }, [title, content, color]);
+    onUpdateRef.current = onUpdate;
+  }, [title, content, color, onUpdate]);
 
   // Rastrear mudanças para auto-save
   useEffect(() => {
@@ -166,15 +168,20 @@ export function NoteEditor({
     }
   }, [title, content, color, note.title, note.content, note.color]);
 
-  // Função de auto-save (silenciosa)
+  // Função de auto-save (silenciosa) - usa refs para garantir valores mais recentes
   const autoSave = () => {
     if (!hasUnsavedChanges.current) return;
-    if (!title.trim() && !content.trim()) return;
+    
+    const currentTitle = titleRef.current;
+    const currentContent = contentRef.current;
+    const currentColor = colorRef.current;
+    
+    if (!currentTitle.trim() && !currentContent.trim()) return;
 
-    onUpdate(currentNoteRef.current.id, {
-      title: title.trim() || "Sem título",
-      content: content.trim(),
-      color
+    onUpdateRef.current(currentNoteRef.current.id, {
+      title: currentTitle.trim() || "Sem título",
+      content: currentContent.trim(),
+      color: currentColor
     });
     hasUnsavedChanges.current = false;
   };
@@ -203,26 +210,30 @@ export function NoteEditor({
   // Listener para evento customizado de salvamento
   useEffect(() => {
     const handleSaveEvent = () => {
+      console.log("[NOTA AUTO-SAVE] Evento 'save-current-note' recebido");
       if (hasUnsavedChanges.current) {
+        console.log("[NOTA AUTO-SAVE] Salvando mudanças pendentes...");
         autoSave();
       }
     };
 
     window.addEventListener('save-current-note', handleSaveEvent);
     return () => window.removeEventListener('save-current-note', handleSaveEvent);
-  }, [title, content, color]);
+  }, []);
 
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
   useEffect(() => {
     return () => {
+      console.log("[NOTA AUTO-SAVE] Componente desmontando, verificando mudanças...");
       if (hasUnsavedChanges.current) {
+        console.log("[NOTA AUTO-SAVE] Salvando ao desmontar componente");
         const currentTitle = titleRef.current;
         const currentContent = contentRef.current;
         const currentColor = colorRef.current;
         
         if (!currentTitle.trim() && !currentContent.trim()) return;
         
-        onUpdate(currentNoteRef.current.id, {
+        onUpdateRef.current(currentNoteRef.current.id, {
           title: currentTitle.trim() || "Sem título",
           content: currentContent.trim(),
           color: currentColor

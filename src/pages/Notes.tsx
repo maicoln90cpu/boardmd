@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
 import { NotebooksList } from "@/components/notes/NotebooksList";
@@ -111,6 +111,16 @@ export default function Notes() {
     setSelectedNoteId(noteId);
     setIsEditing(true); // Pausa real-time durante edição
   };
+
+  // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
+  useEffect(() => {
+    return () => {
+      if (selectedNoteId) {
+        // Dispara evento para salvar a nota atual antes de sair da página
+        window.dispatchEvent(new CustomEvent('save-current-note'));
+      }
+    };
+  }, [selectedNoteId]);
 
   const handleDeleteNote = async (noteId: string) => {
     // Se a nota excluída estiver selecionada, limpar seleção
