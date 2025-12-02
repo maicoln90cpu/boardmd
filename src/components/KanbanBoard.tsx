@@ -294,13 +294,38 @@ export function KanbanBoard({
           return (priorityMap[b.priority || "medium"] || 2) - (priorityMap[a.priority || "medium"] || 2);
         }
         case "date_asc": {
-          const timeA = a.due_date ? new Date(a.due_date).getTime() : Number.POSITIVE_INFINITY;
-          const timeB = b.due_date ? new Date(b.due_date).getTime() : Number.POSITIVE_INFINITY;
+          // Extrair hora do dia no timezone de São Paulo para ordenar por horário
+          const getTimeOfDaySP = (dateStr: string | null) => {
+            if (!dateStr) return Number.POSITIVE_INFINITY;
+            const date = new Date(dateStr);
+            const timeStr = date.toLocaleTimeString("pt-BR", { 
+              timeZone: "America/Sao_Paulo",
+              hour: "2-digit", 
+              minute: "2-digit",
+              hour12: false 
+            });
+            const [hours, minutes] = timeStr.split(":").map(Number);
+            return hours * 60 + minutes;
+          };
+          const timeA = getTimeOfDaySP(a.due_date);
+          const timeB = getTimeOfDaySP(b.due_date);
           return timeA - timeB;
         }
         case "date_desc": {
-          const timeA = a.due_date ? new Date(a.due_date).getTime() : Number.NEGATIVE_INFINITY;
-          const timeB = b.due_date ? new Date(b.due_date).getTime() : Number.NEGATIVE_INFINITY;
+          const getTimeOfDaySP = (dateStr: string | null) => {
+            if (!dateStr) return Number.NEGATIVE_INFINITY;
+            const date = new Date(dateStr);
+            const timeStr = date.toLocaleTimeString("pt-BR", { 
+              timeZone: "America/Sao_Paulo",
+              hour: "2-digit", 
+              minute: "2-digit",
+              hour12: false 
+            });
+            const [hours, minutes] = timeStr.split(":").map(Number);
+            return hours * 60 + minutes;
+          };
+          const timeA = getTimeOfDaySP(a.due_date);
+          const timeB = getTimeOfDaySP(b.due_date);
           return timeB - timeA;
         }
         default:
