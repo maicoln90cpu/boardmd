@@ -183,15 +183,15 @@ export function DataIntegrityMonitor() {
         
         if (error) throw error;
         toast.success('Referência quebrada removida');
-      } else if (issue.type === 'missing_mutual' && issue.mirrorTaskId) {
-        // Restaurar referência mútua - fazer o espelho apontar de volta
+      } else if (issue.type === 'missing_mutual') {
+        // Remover referência quebrada (restaurar causa recursão no trigger)
         const { error } = await supabase
           .from('tasks')
-          .update({ mirror_task_id: issue.taskId })
-          .eq('id', issue.mirrorTaskId);
+          .update({ mirror_task_id: null })
+          .eq('id', issue.taskId);
         
         if (error) throw error;
-        toast.success('Referência mútua restaurada');
+        toast.success('Referência quebrada removida');
       }
       await runIntegrityCheck();
     } catch (err) {
@@ -223,15 +223,15 @@ export function DataIntegrityMonitor() {
           } else {
             fixed++;
           }
-        } else if (issue.type === 'missing_mutual' && issue.mirrorTaskId) {
-          // Atualizar diretamente usando o mirrorTaskId armazenado
+        } else if (issue.type === 'missing_mutual') {
+          // Remover referência quebrada (restaurar causa recursão no trigger)
           const { error } = await supabase
             .from('tasks')
-            .update({ mirror_task_id: issue.taskId })
-            .eq('id', issue.mirrorTaskId);
+            .update({ mirror_task_id: null })
+            .eq('id', issue.taskId);
           
           if (error) {
-            console.error('Erro ao corrigir missing_mutual:', issue.taskId, '->', issue.mirrorTaskId, error);
+            console.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
             failed++;
           } else {
             fixed++;
