@@ -8,9 +8,9 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ tasks }: DashboardStatsProps) {
   const total = tasks.length;
-  const completed = tasks.filter(t => t.column_id && t.column_id.includes("done")).length;
+  const completed = tasks.filter(t => t.is_completed === true).length;
   const overdue = tasks.filter(t => 
-    t.due_date && new Date(t.due_date) < new Date()
+    t.due_date && new Date(t.due_date) < new Date() && !t.is_completed
   ).length;
   const inProgress = total - completed;
 

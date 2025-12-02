@@ -19,7 +19,7 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3, FileText, Columns3, Star, Check, Square } from "lucide-react";
+import { RotateCcw, BarChart3, FileText, Columns3, Star, Check, Square, Equal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
@@ -393,6 +393,18 @@ function Index() {
     }
   };
 
+  // Função para equalizar largura das colunas
+  const handleEqualizeColumns = () => {
+    const categoryKey = viewMode === "daily" ? dailyCategory : "all";
+    const equalSize = 100 / visibleColumns.length;
+    localStorage.setItem(
+      `kanban-column-sizes-${categoryKey}`,
+      JSON.stringify(visibleColumns.map(() => equalSize))
+    );
+    // Forçar re-render do KanbanBoard
+    setDailyBoardKey(k => k + 1);
+  };
+
   // Calcular colunas visíveis considerando modo simplificado
   const visibleColumns = useMemo(() => {
     const kanbanType = viewMode === "daily" ? 'daily' : 'projects';
@@ -464,6 +476,9 @@ function Index() {
                   <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)} className="flex items-center gap-2">
                     <Columns3 className="h-4 w-4" />
                     Colunas
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleEqualizeColumns} title="Equalizar largura das colunas" className="h-9 w-9">
+                    <Equal className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
@@ -549,6 +564,9 @@ function Index() {
                     <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
                       <Columns3 className="h-4 w-4 mr-2" />
                       Colunas
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={handleEqualizeColumns} title="Equalizar largura das colunas" className="h-9 w-9">
+                      <Equal className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setShowStats(true)}>
                       <BarChart3 className="h-4 w-4 mr-2" />
