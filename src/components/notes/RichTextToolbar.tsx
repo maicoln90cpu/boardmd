@@ -20,6 +20,12 @@ import {
   TableProperties,
   Image as ImageIcon,
   Code2,
+  Quote,
+  Info,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Badge,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -29,6 +35,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -477,6 +484,106 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       >
         <Code2 className="h-4 w-4" />
       </Button>
+
+      {/* Blockquote */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        className={editor.isActive("blockquote") ? "bg-accent" : ""}
+        title="Citação/Blockquote"
+      >
+        <Quote className="h-4 w-4" />
+      </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Callouts */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" title="Inserir callout/alerta">
+            <Info className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<div class="callout callout-info"><p>💡 Informação importante aqui</p></div><p></p>').run();
+            }}
+          >
+            <Info className="mr-2 h-4 w-4 text-blue-500" />
+            Callout Info
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<div class="callout callout-warning"><p>⚠️ Atenção para este ponto</p></div><p></p>').run();
+            }}
+          >
+            <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" />
+            Callout Aviso
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<div class="callout callout-success"><p>✅ Sucesso ou ponto positivo</p></div><p></p>').run();
+            }}
+          >
+            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+            Callout Sucesso
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<div class="callout callout-error"><p>❌ Erro ou ponto crítico</p></div><p></p>').run();
+            }}
+          >
+            <XCircle className="mr-2 h-4 w-4 text-red-500" />
+            Callout Erro
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Badges de prioridade */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" title="Inserir badge de prioridade">
+            <Badge className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<span class="priority-badge priority-high">🔴 Alta</span> ').run();
+            }}
+          >
+            <span className="mr-2 w-3 h-3 rounded-full bg-red-500"></span>
+            Prioridade Alta
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<span class="priority-badge priority-medium">🟡 Média</span> ').run();
+            }}
+          >
+            <span className="mr-2 w-3 h-3 rounded-full bg-yellow-500"></span>
+            Prioridade Média
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<span class="priority-badge priority-low">🟢 Baixa</span> ').run();
+            }}
+          >
+            <span className="mr-2 w-3 h-3 rounded-full bg-green-500"></span>
+            Prioridade Baixa
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem 
+            onClick={() => {
+              editor.chain().focus().insertContent('<div class="metric-card"><span class="metric-value">0</span><span class="metric-label">Descrição da métrica</span></div><p></p>').run();
+            }}
+          >
+            <TableProperties className="mr-2 h-4 w-4" />
+            Card de Métrica
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="w-px h-6 bg-border mx-1" />
 

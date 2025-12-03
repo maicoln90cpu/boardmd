@@ -371,3 +371,221 @@ All colors MUST be HSL.
 .hljs-strong {
   font-weight: bold;
 }
+
+/* ============================================
+   ESTILOS AVANÇADOS PARA EDITOR DE NOTAS
+   ============================================ */
+
+/* Blockquotes estilizados */
+.ProseMirror blockquote {
+  border-left: 4px solid hsl(var(--primary));
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  background: hsl(var(--muted) / 0.5);
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
+.ProseMirror blockquote p {
+  margin: 0;
+}
+
+/* Badges de prioridade */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.priority-high {
+  background: hsl(0 84% 95%);
+  color: hsl(0 72% 50%);
+  border: 1px solid hsl(0 72% 80%);
+}
+
+.priority-medium {
+  background: hsl(45 93% 94%);
+  color: hsl(32 95% 44%);
+  border: 1px solid hsl(45 93% 70%);
+}
+
+.priority-low {
+  background: hsl(142 76% 94%);
+  color: hsl(142 71% 35%);
+  border: 1px solid hsl(142 76% 70%);
+}
+
+.dark .priority-high {
+  background: hsl(0 62% 30%);
+  color: hsl(0 84% 80%);
+  border-color: hsl(0 62% 45%);
+}
+
+.dark .priority-medium {
+  background: hsl(32 81% 30%);
+  color: hsl(45 93% 80%);
+  border-color: hsl(32 81% 45%);
+}
+
+.dark .priority-low {
+  background: hsl(142 50% 25%);
+  color: hsl(142 76% 70%);
+  border-color: hsl(142 50% 40%);
+}
+
+/* Cards de destaque para métricas */
+.metric-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-card .metric-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--primary));
+}
+
+.metric-card .metric-label {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Callouts/Alertas */
+.callout {
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.callout p {
+  margin: 0;
+}
+
+.callout-info {
+  background: hsl(214 95% 93%);
+  border-left-color: hsl(214 100% 50%);
+  color: hsl(214 100% 30%);
+}
+
+.callout-warning {
+  background: hsl(45 93% 94%);
+  border-left-color: hsl(45 93% 47%);
+  color: hsl(32 95% 30%);
+}
+
+.callout-success {
+  background: hsl(142 76% 94%);
+  border-left-color: hsl(142 71% 45%);
+  color: hsl(142 71% 25%);
+}
+
+.callout-error {
+  background: hsl(0 84% 95%);
+  border-left-color: hsl(0 72% 50%);
+  color: hsl(0 72% 35%);
+}
+
+.dark .callout-info {
+  background: hsl(214 50% 20%);
+  color: hsl(214 95% 80%);
+}
+
+.dark .callout-warning {
+  background: hsl(45 50% 20%);
+  color: hsl(45 93% 80%);
+}
+
+.dark .callout-success {
+  background: hsl(142 40% 18%);
+  color: hsl(142 76% 75%);
+}
+
+.dark .callout-error {
+  background: hsl(0 50% 20%);
+  color: hsl(0 84% 80%);
+}
+
+/* Listas com ícones customizados */
+.ProseMirror ul.icon-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ProseMirror ul.icon-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-left: 0;
+}
+
+.ProseMirror ul.icon-list li::before {
+  content: "✓";
+  color: hsl(var(--primary));
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Tabelas coloridas com alternância */
+.ProseMirror table.striped tbody tr:nth-child(even) td {
+  background: hsl(var(--muted) / 0.3);
+}
+
+.ProseMirror table.bordered {
+  border: 2px solid hsl(var(--primary) / 0.3);
+}
+
+.ProseMirror table.bordered th {
+  background: hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+/* Dividers decorativos */
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid hsl(var(--border));
+  margin: 1.5rem 0;
+}
+
+.ProseMirror hr.decorative {
+  border-top: 2px dashed hsl(var(--primary) / 0.5);
+}
+
+/* Títulos decorativos */
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.ProseMirror h1 {
+  font-size: 1.75rem;
+  border-bottom: 2px solid hsl(var(--primary) / 0.3);
+  padding-bottom: 0.5rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  color: hsl(var(--primary));
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+}
