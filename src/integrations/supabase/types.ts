@@ -166,6 +166,39 @@ export type Database = {
           },
         ]
       }
+      pomodoro_sessions: {
+        Row: {
+          completed: boolean | null
+          created_at: string | null
+          duration_minutes: number
+          ended_at: string | null
+          id: string
+          session_type: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number
+          ended_at?: string | null
+          id?: string
+          session_type?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number
+          ended_at?: string | null
+          id?: string
+          session_type?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
