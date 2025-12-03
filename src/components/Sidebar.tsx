@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus, BarChart3, Bell, MoreHorizontal } from "lucide-react";
+import { LayoutGrid, Download, Upload, Palette, Settings, LogOut, Pencil, Trash2, Layers, Calendar, FileText, Plus, BarChart3, Bell, MoreHorizontal, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { PomodoroTimer, PomodoroMiniTimer } from "@/components/PomodoroTimer";
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
@@ -154,7 +155,11 @@ export function Sidebar({
 
   const allMenuItems = [...primaryMenuItems, ...secondaryMenuItems];
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [pomodoroOpen, setPomodoroOpen] = useState(false);
+
   return <>
+      {/* Pomodoro Timer Dialog */}
+      <PomodoroTimer isOpen={pomodoroOpen} onClose={() => setPomodoroOpen(false)} />
       {/* Sidebar responsiva - mobile drawer, desktop fixa */}
       <aside className="fixed left-0 top-0 h-screen w-52 border-r border-border bg-card hidden md:block">
         <div className="px-4 py-4 border-b">
@@ -165,6 +170,11 @@ export function Sidebar({
               <item.icon className="h-4 w-4" />
               {item.label}
             </Button>)}
+          
+          {/* Pomodoro Timer - Desktop */}
+          <div className="mt-2 pt-2 border-t border-border">
+            <PomodoroMiniTimer onClick={() => setPomodoroOpen(true)} />
+          </div>
         </nav>
       </aside>
 
@@ -214,6 +224,21 @@ export function Sidebar({
                     {item.label}
                   </Button>
                 ))}
+                
+                {/* Pomodoro Timer - Mobile */}
+                <div className="mt-2 pt-2 border-t border-border">
+                  <Button 
+                    variant="ghost"
+                    onClick={() => {
+                      setPomodoroOpen(true);
+                      setMoreMenuOpen(false);
+                    }}
+                    className="justify-start gap-3 min-h-[48px] text-base w-full"
+                  >
+                    <Timer className="h-5 w-5" />
+                    Pomodoro
+                  </Button>
+                </div>
               </nav>
             </SheetContent>
           </Sheet>
