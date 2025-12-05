@@ -2,10 +2,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { WEEKDAY_NAMES } from "@/lib/recurrenceUtils";
 
 interface RecurrenceRule {
-  frequency: 'daily' | 'weekly' | 'monthly';
-  interval: number;
+  frequency?: 'daily' | 'weekly' | 'monthly';
+  interval?: number;
+  weekday?: number; // 0-6 (Domingo a Sábado)
 }
 
 interface RecurrenceEditorProps {
@@ -13,8 +16,19 @@ interface RecurrenceEditorProps {
   onChange: (recurrence: RecurrenceRule | null) => void;
 }
 
+type RecurrenceMode = 'frequency' | 'weekday';
+
 export function RecurrenceEditor({ recurrence, onChange }: RecurrenceEditorProps) {
   const isEnabled = recurrence !== null;
+  
+  // Determinar modo atual baseado na regra existente
+  const getCurrentMode = (): RecurrenceMode => {
+    if (!recurrence) return 'frequency';
+    if (recurrence.weekday !== undefined) return 'weekday';
+    return 'frequency';
+  };
+  
+  const mode = getCurrentMode();
 
   const toggleRecurrence = (enabled: boolean) => {
     if (enabled) {
@@ -24,16 +38,29 @@ export function RecurrenceEditor({ recurrence, onChange }: RecurrenceEditorProps
     }
   };
 
+  const setMode = (newMode: RecurrenceMode) => {
+    if (newMode === 'frequency') {
+      onChange({ frequency: 'daily', interval: 1 });
+    } else {
+      // Padrão: Segunda-feira (1)
+      onChange({ weekday: 1 });
+    }
+  };
+
   const updateFrequency = (frequency: 'daily' | 'weekly' | 'monthly') => {
     if (recurrence) {
-      onChange({ ...recurrence, frequency });
+      onChange({ frequency, interval: recurrence.interval || 1 });
     }
   };
 
   const updateInterval = (interval: number) => {
     if (recurrence && interval > 0) {
-      onChange({ ...recurrence, interval });
+      onChange({ ...recurrence, interval, weekday: undefined });
     }
+  };
+
+  const updateWeekday = (weekday: string) => {
+    onChange({ weekday: parseInt(weekday) });
   };
 
   return (
@@ -48,30 +75,97 @@ export function RecurrenceEditor({ recurrence, onChange }: RecurrenceEditorProps
       </div>
 
       {isEnabled && recurrence && (
-        <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-primary/20">
+        <div className="space-y-4 pl-2 border-l-2 border-primary/20">
+          {/* Seleção do modo de recorrência */}
           <div>
-            <Label className="text-xs">Frequência</Label>
-            <Select value={recurrence.frequency} onValueChange={updateFrequency}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Diária</SelectItem>
-                <SelectItem value="weekly">Semanal</SelectItem>
-                <SelectItem value="monthly">Mensal</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label className="text-xs text-muted-foreground mb-2 block">Modo de recorrência</Label>
+            <RadioGroup 
+              value={mode} 
+              onValueChange={(value) => setMode(value as RecurrenceMode)}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="frequency" id="mode-frequency" />
+                <Label htmlFor="mode-frequency" className="text-sm cursor-pointer">
+                  Por frequência
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="weekday" id="mode-weekday" />
+                <Label htmlFor="mode-weekday" className="text-sm cursor-pointer">
+                  Por dia da semana
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
 
-          <div>
-            <Label className="text-xs">Intervalo</Label>
-            <Input
-              type="number"
-              min="1"
-              value={recurrence.interval}
-              onChange={(e) => updateInterval(parseInt(e.target.value) || 1)}
-            />
-          </div>
+          {/* Campos para modo FREQUÊNCIA */}
+          {mode === 'frequency' && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Frequência</Label>
+                <Select 
+                  value={recurrence.frequency || 'daily'} 
+                  onValueChange={(v) => updateFrequency(v as 'daily' | 'weekly' | 'monthly')}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Diária</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs">Intervalo</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={recurrence.interval || 1}
+                  onChange={(e) => updateInterval(parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Campo para modo DIA DA SEMANA */}
+          {mode === 'weekday' && (
+            <div>
+              <Label className="text-xs">Repetir toda</Label>
+              <Select 
+                value={String(recurrence.weekday ?? 1)} 
+                onValueChange={updateWeekday}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {WEEKDAY_NAMES.map((name, index) => (
+                    <SelectItem key={index} value={String(index)}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Descrição do comportamento */}
+          <p className="text-xs text-muted-foreground">
+            {mode === 'frequency' ? (
+              <>
+                A cada {recurrence.interval || 1}{' '}
+                {recurrence.frequency === 'daily' && (recurrence.interval === 1 ? 'dia' : 'dias')}
+                {recurrence.frequency === 'weekly' && (recurrence.interval === 1 ? 'semana' : 'semanas')}
+                {recurrence.frequency === 'monthly' && (recurrence.interval === 1 ? 'mês' : 'meses')}
+              </>
+            ) : (
+              <>Toda {WEEKDAY_NAMES[recurrence.weekday ?? 1]}</>
+            )}
+          </p>
         </div>
       )}
     </div>

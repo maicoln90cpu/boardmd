@@ -15,6 +15,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { useEffect } from "react";
 import { useSettings } from "@/hooks/useSettings";
+import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -209,58 +210,25 @@ export function KanbanBoard({
     }
   };
 
-  // Função para calcular próxima data respeitando regra de recorrência
-  const calculateNextRecurrenceDate = (currentDueDate: string | null, recurrenceRule: any): string => {
-    const now = new Date();
-    
-    // Se não tem due_date, retornar data atual
-    if (!currentDueDate) {
-      return now.toISOString();
-    }
-    
-    const baseDate = new Date(currentDueDate);
-    const hours = baseDate.getUTCHours();
-    const minutes = baseDate.getUTCMinutes();
-    const seconds = baseDate.getUTCSeconds();
-    
-    // Se não tem regra de recorrência, apenas atualizar para hoje preservando horário
-    if (!recurrenceRule || typeof recurrenceRule !== 'object') {
-      return new Date(Date.UTC(
-        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
-        hours, minutes, seconds
-      )).toISOString();
-    }
-    
-    const frequency = recurrenceRule.frequency || 'daily';
-    const interval = recurrenceRule.interval || 1;
-    let nextDate = new Date(now);
-    
-    switch (frequency) {
-      case 'daily':
-        nextDate.setDate(nextDate.getDate() + interval);
-        break;
-      case 'weekly':
-        nextDate.setDate(nextDate.getDate() + (7 * interval));
-        break;
-      case 'monthly':
-        nextDate.setMonth(nextDate.getMonth() + interval);
-        break;
-      default:
-        nextDate.setDate(nextDate.getDate() + 1);
-    }
-    
-    // Retornar nova data preservando horário original
-    return new Date(Date.UTC(
-      nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate(),
-      hours, minutes, seconds
-    )).toISOString();
-  };
-
+  // handleUncheckRecurrentTasks: usa função utilitária importada - só processa tarefas RISCADAS
   const handleUncheckRecurrentTasks = (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
     
-    // Remover do localStorage e atualizar due_date respeitando recorrência
-    columnTasks.forEach(task => {
+    // NOVA REGRA: Só resetar tarefas que estão concluídas (riscadas)
+    const completedTasks = columnTasks.filter(task => task.is_completed === true);
+    
+    if (completedTasks.length === 0) {
+      import("@/hooks/use-toast").then(({ toast }) => {
+        toast({
+          title: "Nenhuma tarefa riscada",
+          description: "Não há tarefas concluídas para resetar nesta coluna",
+        });
+      });
+      return;
+    }
+    
+    // Processar apenas tarefas riscadas
+    completedTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
       
       // Calcular próxima data baseada na regra de recorrência
@@ -278,7 +246,7 @@ export function KanbanBoard({
     import("@/hooks/use-toast").then(({ toast }) => {
       toast({
         title: "✅ Tarefas resetadas",
-        description: "Próximas datas calculadas conforme intervalo de recorrência",
+        description: `${completedTasks.length} tarefa(s) riscada(s) resetada(s) com próxima data calculada`,
       });
     });
   };
