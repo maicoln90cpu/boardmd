@@ -875,7 +875,7 @@ export default function Config() {
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label htmlFor="daily-sort">Ordenação Padrão (Kanban Diário)</Label>
+                  <Label htmlFor="daily-sort">Ordenação Padrão (Todos os Kanbans)</Label>
                   <Select 
                     value={settings.kanban.dailySortOption} 
                     onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOption: value as 'time' | 'name' | 'priority' } })}

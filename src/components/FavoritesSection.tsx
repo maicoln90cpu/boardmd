@@ -105,7 +105,7 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                   {tasks.map((task: any) => {
                     const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
                     return (
-                      <div key={task.id} className="relative">
+                      <div key={task.id} className="relative pt-3 pr-3">
                         <TaskCard
                           task={task}
                           onEdit={handleEditTask}
@@ -126,7 +126,7 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                           showCategoryBadge
                           onToggleFavorite={toggleFavorite}
                         />
-                        {/* Botão de desfavoritar - posicionado fora do card para evitar sobreposição */}
+                        {/* Botão de desfavoritar - canto superior direito com espaço reservado */}
                         <Button
                           variant="secondary"
                           size="sm"
@@ -134,10 +134,10 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                             e.stopPropagation();
                             toggleFavorite(task.id);
                           }}
-                          className="absolute -top-2 -right-2 z-10 h-7 w-7 p-0 rounded-full shadow-md bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800"
+                          className="absolute top-0 right-0 z-10 h-6 w-6 p-0 rounded-full shadow-sm bg-yellow-100/90 hover:bg-yellow-200 dark:bg-yellow-900/90 dark:hover:bg-yellow-800"
                           title="Remover dos favoritos"
                         >
-                          <Star className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 fill-yellow-500" />
+                          <Star className="h-3 w-3 text-yellow-600 dark:text-yellow-400 fill-yellow-500" />
                         </Button>
                       </div>
                     );

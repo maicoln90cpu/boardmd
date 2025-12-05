@@ -3,7 +3,6 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchFilters } from "@/components/SearchFilters";
-import { DailySortControls } from "@/components/DailySortControls";
 import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
@@ -524,10 +523,6 @@ function Index() {
               <div className="px-6 py-3 border-b flex-wrap gap-2 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-center">📅 Kanban Diário</h2>
                 <div className="gap-2 flex-wrap items-center justify-center flex flex-row">
-                  <Button variant="outline" size="sm" onClick={() => setShowFavoritesPanel(!showFavoritesPanel)} className="flex items-center gap-2">
-                    <Star className="h-4 w-4" />
-                    {showFavoritesPanel ? "Ocultar" : "Mostrar"} Favoritos
-                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)} className="flex items-center gap-2">
                     <Columns3 className="h-4 w-4" />
                     Colunas
@@ -567,11 +562,9 @@ function Index() {
                   </Button>
                 </div>}
               
-              {/* Controles de ordenação e filtros do Kanban Diário */}
+              {/* Filtros do Kanban Diário (ordenação/densidade definidos em Setup) */}
               <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
-                <DailySortControls sortOption={dailySortOption} onSortChange={setDailySortOption} sortOrder={dailySortOrder} onSortOrderChange={setDailySortOrder} densityMode={densityMode} onDensityChange={setDensityMode} tasks={viewMode === "daily" ? filteredTasks : undefined} onReorderTasks={handleReorderDailyTasks} />
-                
-                {/* Filtros unificados: Prioridade e Tag */}
+                {/* Filtros contextuais: Prioridade e Tag */}
                 <Select value={dailyPriorityFilter} onValueChange={setDailyPriorityFilter}>
                   <SelectTrigger className="w-[110px] h-9">
                     <SelectValue placeholder="Prioridade" />
