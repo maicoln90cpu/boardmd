@@ -93,6 +93,11 @@ function Index() {
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [sortOption, setSortOption] = useLocalStorage<string>("filter-sort", "manual");
 
+  // Filtros do Kanban Diário (separados dos filtros de Projetos)
+  const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
+  const [dailyTagFilter, setDailyTagFilter] = useLocalStorage<string>("daily-tag-filter", "all");
+  const [dailySearchTerm, setDailySearchTerm] = useLocalStorage<string>("daily-search", "");
+
   // Estado para filtro de categoria no mobile (Kanban Projetos)
   const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
 
@@ -229,6 +234,19 @@ function Index() {
     });
     return Array.from(tags);
   }, [filteredTasks]);
+
+  // Tags disponíveis no Kanban Diário
+  const dailyAvailableTags = useMemo(() => {
+    if (!dailyCategory) return [];
+    const tags = new Set<string>();
+    allTasks
+      .filter(task => task.category_id === dailyCategory)
+      .forEach(task => {
+        task.tags?.forEach(tag => tags.add(tag));
+      });
+    return Array.from(tags);
+  }, [allTasks, dailyCategory]);
+
   const handleExport = () => {
     const data = {
       categories,
@@ -549,9 +567,50 @@ function Index() {
                   </Button>
                 </div>}
               
-              {/* Controles de ordenação do Kanban Diário */}
-              <div className="px-6 py-2 border-b bg-card">
+              {/* Controles de ordenação e filtros do Kanban Diário */}
+              <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
                 <DailySortControls sortOption={dailySortOption} onSortChange={setDailySortOption} sortOrder={dailySortOrder} onSortOrderChange={setDailySortOrder} densityMode={densityMode} onDensityChange={setDensityMode} tasks={viewMode === "daily" ? filteredTasks : undefined} onReorderTasks={handleReorderDailyTasks} />
+                
+                {/* Filtros unificados: Prioridade e Tag */}
+                <Select value={dailyPriorityFilter} onValueChange={setDailyPriorityFilter}>
+                  <SelectTrigger className="w-[110px] h-9">
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="high">🔴 Alta</SelectItem>
+                    <SelectItem value="medium">🟡 Média</SelectItem>
+                    <SelectItem value="low">🟢 Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {dailyAvailableTags.length > 0 && (
+                  <Select value={dailyTagFilter} onValueChange={setDailyTagFilter}>
+                    <SelectTrigger className="w-[110px] h-9">
+                      <SelectValue placeholder="Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {dailyAvailableTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all") && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setDailyPriorityFilter("all");
+                      setDailyTagFilter("all");
+                    }}
+                    className="h-9"
+                  >
+                    Limpar
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -559,7 +618,19 @@ function Index() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Kanban Board - ocupa tudo quando Favoritos oculto */}
               <div className={cn("overflow-y-auto", showFavoritesPanel ? "flex-1" : "w-full")}>
-                <KanbanBoard key={dailyBoardKey} columns={visibleColumns} categoryId={dailyCategory} compact isDailyKanban sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={dailyGridColumnsMobile} />
+                <KanbanBoard 
+                  key={dailyBoardKey} 
+                  columns={visibleColumns} 
+                  categoryId={dailyCategory} 
+                  compact 
+                  isDailyKanban 
+                  sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} 
+                  densityMode={densityMode} 
+                  hideBadges={hideBadgesMobile} 
+                  gridColumns={dailyGridColumnsMobile}
+                  priorityFilter={dailyPriorityFilter}
+                  tagFilter={dailyTagFilter}
+                />
               </div>
 
               {/* Favoritos - só renderiza se showFavoritesPanel = true */}
