@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useSettings } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, BarChart3, FileText, Columns3, Star, Check, Square, Equal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -63,6 +64,7 @@ function Index() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
+  const [projectsBoardKey, setProjectsBoardKey] = useState(0); // Nova key para Projetos
   const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -70,32 +72,63 @@ function Index() {
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
-  const [simplifiedMode, setSimplifiedMode] = useLocalStorage<boolean>("kanban-simplified-mode", false);
 
-  // Filtros (persistidos no localStorage)
+  // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
+  const { settings, updateSettings, saveSettings } = useSettings();
+  
+  // Valores derivados das configurações (somente leitura aqui - editar em Config)
+  const simplifiedMode = settings.kanban.simplifiedMode;
+  const dailySortOption = settings.kanban.dailySortOption;
+  const dailySortOrder = settings.kanban.dailySortOrder;
+  const densityMode = settings.defaultDensity;
+  const showFavoritesPanel = settings.kanban.showFavoritesPanel;
+  const hideBadgesMobile = settings.mobile.hideBadges;
+  const dailyGridColumnsMobile = settings.mobile.dailyGridColumns;
+  const projectsGridColumnsMobile = settings.mobile.projectsGridColumns;
+
+  // Filtros (persistidos no localStorage - são filtros temporários, não configs)
   const [searchTerm, setSearchTerm] = useLocalStorage<string>("filter-search", "");
   const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
   const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [sortOption, setSortOption] = useLocalStorage<string>("filter-sort", "manual");
 
-  // Estados de ordenação para Kanban Diário (persistidos)
-  const [dailySortOption, setDailySortOption] = useLocalStorage<"time" | "name" | "priority">("daily-sort-option", "time");
-  const [dailySortOrder, setDailySortOrder] = useLocalStorage<"asc" | "desc">("daily-sort-order", "asc");
-
-  // Estado de densidade (salvo no localStorage)
-  const [densityMode, setDensityMode] = useLocalStorage<"comfortable" | "compact" | "ultra-compact">("kanban-density-mode", "comfortable");
-
-  // Estado para mostrar/ocultar painel de favoritos no Kanban Diário
-  const [showFavoritesPanel, setShowFavoritesPanel] = useLocalStorage<boolean>("kanban-show-favorites", true);
-
   // Estado para filtro de categoria no mobile (Kanban Projetos)
   const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
 
-  // Estados para mobile - ocultar badges e escolher grid columns
-  const [hideBadgesMobile, setHideBadgesMobile] = useLocalStorage<boolean>("kanban-hide-badges-mobile", false);
-  const [dailyGridColumnsMobile, setDailyGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-daily-grid-columns-mobile", 2);
-  const [projectsGridColumnsMobile, setProjectsGridColumnsMobile] = useLocalStorage<1 | 2>("kanban-projects-grid-columns-mobile", 2);
+  // Funções para atualizar settings localmente (com sync para DB)
+  const setSimplifiedMode = async (value: boolean) => {
+    updateSettings({ kanban: { ...settings.kanban, simplifiedMode: value } });
+    await saveSettings();
+  };
+  const setDailySortOption = async (value: "time" | "name" | "priority") => {
+    updateSettings({ kanban: { ...settings.kanban, dailySortOption: value } });
+    await saveSettings();
+  };
+  const setDailySortOrder = async (value: "asc" | "desc") => {
+    updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value } });
+    await saveSettings();
+  };
+  const setDensityMode = async (value: "comfortable" | "compact" | "ultra-compact") => {
+    updateSettings({ defaultDensity: value });
+    await saveSettings();
+  };
+  const setShowFavoritesPanel = async (value: boolean) => {
+    updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: value } });
+    await saveSettings();
+  };
+  const setHideBadgesMobile = async (value: boolean) => {
+    updateSettings({ mobile: { ...settings.mobile, hideBadges: value } });
+    await saveSettings();
+  };
+  const setDailyGridColumnsMobile = async (value: 1 | 2) => {
+    updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: value } });
+    await saveSettings();
+  };
+  const setProjectsGridColumnsMobile = async (value: 1 | 2) => {
+    updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: value } });
+    await saveSettings();
+  };
 
   // Atalhos de teclado globais
   useKeyboardShortcuts({
@@ -401,8 +434,12 @@ function Index() {
       `kanban-column-sizes-${categoryKey}`,
       JSON.stringify(visibleColumns.map(() => equalSize))
     );
-    // Forçar re-render do KanbanBoard
-    setDailyBoardKey(k => k + 1);
+    // Forçar re-render do KanbanBoard correto
+    if (viewMode === "daily") {
+      setDailyBoardKey(k => k + 1);
+    } else {
+      setProjectsBoardKey(k => k + 1);
+    }
   };
 
   // Calcular colunas visíveis considerando modo simplificado
@@ -620,17 +657,17 @@ function Index() {
             <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={sortOption} onSortChange={setSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} densityMode={densityMode} onDensityChange={setDensityMode} simplifiedMode={simplifiedMode} onSimplifiedModeChange={setSimplifiedMode} />
 
             {/* Renderizar baseado no displayMode */}
-            {displayMode === "all_tasks" ? <div className="mb-8">
+            {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
                 <div className="px-6 py-3 bg-muted/50">
                   <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
                 </div>
-                <KanbanBoard columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
               </div> : (/* Renderizar Kanbans por categoria */
-        categories.filter(cat => cat.name !== "Diário").filter(cat => categoryFilter.length === 0 || categoryFilter.includes(cat.id)).map(category => <div key={category.id} className="mb-8">
+        categories.filter(cat => cat.name !== "Diário").filter(cat => categoryFilter.length === 0 || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
                     <div className="px-6 py-3 bg-muted/50">
                       <h3 className="text-lg font-semibold">{category.name}</h3>
                     </div>
-                    <KanbanBoard columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+                    <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
                   </div>))}
           </>}
       </main>
