@@ -209,44 +209,76 @@ export function KanbanBoard({
     }
   };
 
+  // Função para calcular próxima data respeitando regra de recorrência
+  const calculateNextRecurrenceDate = (currentDueDate: string | null, recurrenceRule: any): string => {
+    const now = new Date();
+    
+    // Se não tem due_date, retornar data atual
+    if (!currentDueDate) {
+      return now.toISOString();
+    }
+    
+    const baseDate = new Date(currentDueDate);
+    const hours = baseDate.getUTCHours();
+    const minutes = baseDate.getUTCMinutes();
+    const seconds = baseDate.getUTCSeconds();
+    
+    // Se não tem regra de recorrência, apenas atualizar para hoje preservando horário
+    if (!recurrenceRule || typeof recurrenceRule !== 'object') {
+      return new Date(Date.UTC(
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+        hours, minutes, seconds
+      )).toISOString();
+    }
+    
+    const frequency = recurrenceRule.frequency || 'daily';
+    const interval = recurrenceRule.interval || 1;
+    let nextDate = new Date(now);
+    
+    switch (frequency) {
+      case 'daily':
+        nextDate.setDate(nextDate.getDate() + interval);
+        break;
+      case 'weekly':
+        nextDate.setDate(nextDate.getDate() + (7 * interval));
+        break;
+      case 'monthly':
+        nextDate.setMonth(nextDate.getMonth() + interval);
+        break;
+      default:
+        nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    // Retornar nova data preservando horário original
+    return new Date(Date.UTC(
+      nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate(),
+      hours, minutes, seconds
+    )).toISOString();
+  };
+
   const handleUncheckRecurrentTasks = (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
     
-    // Data atual em UTC (apenas dia/mês/ano)
-    const now = new Date();
-    
-    // Remover do localStorage e atualizar due_date
+    // Remover do localStorage e atualizar due_date respeitando recorrência
     columnTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
       
-      // Preservar horário original, atualizar apenas a data
-      if (task.due_date) {
-        const originalDate = new Date(task.due_date);
-        const newDate = new Date(Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          originalDate.getUTCHours(),
-          originalDate.getUTCMinutes(),
-          originalDate.getUTCSeconds(),
-          originalDate.getUTCMilliseconds()
-        ));
-        
-        updateTask(task.id, {
-          due_date: newDate.toISOString(),
-          is_completed: false
-        });
-      }
+      // Calcular próxima data baseada na regra de recorrência
+      const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule);
+      
+      updateTask(task.id, {
+        due_date: nextDueDate,
+        is_completed: false
+      });
     });
     
-    // OTIMIZAÇÃO: Remover evento 'storage' - não mais necessário
     window.dispatchEvent(new CustomEvent('tasks-unchecked'));
     
     // Toast de sucesso
     import("@/hooks/use-toast").then(({ toast }) => {
       toast({
-        title: "✅ Tarefas desmarcadas",
-        description: "Todas as tarefas recorrentes foram desmarcadas e atualizadas para hoje",
+        title: "✅ Tarefas resetadas",
+        description: "Próximas datas calculadas conforme intervalo de recorrência",
       });
     });
   };
