@@ -105,41 +105,27 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                   {tasks.map((task: any) => {
                     const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
                     return (
-                      <div key={task.id} className="relative pt-3 pr-3">
-                        <TaskCard
-                          task={task}
-                          onEdit={handleEditTask}
-                          onDelete={deleteTask}
-                          onMoveLeft={
-                            currentColumnIndex > 0
-                              ? () => updateTask(task.id, { column_id: columns[currentColumnIndex - 1].id })
-                              : undefined
-                          }
-                          onMoveRight={
-                            currentColumnIndex < columns.length - 1
-                              ? () => updateTask(task.id, { column_id: columns[currentColumnIndex + 1].id })
-                              : undefined
-                          }
-                          canMoveLeft={currentColumnIndex > 0}
-                          canMoveRight={currentColumnIndex < columns.length - 1}
-                          densityMode="ultra-compact"
-                          showCategoryBadge
-                          onToggleFavorite={toggleFavorite}
-                        />
-                        {/* Botão de desfavoritar - canto superior direito com espaço reservado */}
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(task.id);
-                          }}
-                          className="absolute top-0 right-0 z-10 h-6 w-6 p-0 rounded-full shadow-sm bg-yellow-100/90 hover:bg-yellow-200 dark:bg-yellow-900/90 dark:hover:bg-yellow-800"
-                          title="Remover dos favoritos"
-                        >
-                          <Star className="h-3 w-3 text-yellow-600 dark:text-yellow-400 fill-yellow-500" />
-                        </Button>
-                      </div>
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={handleEditTask}
+                        onDelete={deleteTask}
+                        onMoveLeft={
+                          currentColumnIndex > 0
+                            ? () => updateTask(task.id, { column_id: columns[currentColumnIndex - 1].id })
+                            : undefined
+                        }
+                        onMoveRight={
+                          currentColumnIndex < columns.length - 1
+                            ? () => updateTask(task.id, { column_id: columns[currentColumnIndex + 1].id })
+                            : undefined
+                        }
+                        canMoveLeft={currentColumnIndex > 0}
+                        canMoveRight={currentColumnIndex < columns.length - 1}
+                        densityMode="ultra-compact"
+                        showCategoryBadge
+                        onToggleFavorite={toggleFavorite}
+                      />
                     );
                   })}
                 </div>
