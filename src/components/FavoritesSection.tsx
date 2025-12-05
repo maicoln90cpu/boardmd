@@ -105,21 +105,7 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                   {tasks.map((task: any) => {
                     const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
                     return (
-                      <div key={task.id} className="relative group">
-                        {/* Botão de desfavoritar no hover */}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(task.id);
-                          }}
-                          className="absolute top-2 right-2 z-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                          title="Remover dos favoritos"
-                        >
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                        </Button>
-                        
+                      <div key={task.id} className="relative">
                         <TaskCard
                           task={task}
                           onEdit={handleEditTask}
@@ -140,6 +126,19 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                           showCategoryBadge
                           onToggleFavorite={toggleFavorite}
                         />
+                        {/* Botão de desfavoritar - posicionado fora do card para evitar sobreposição */}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(task.id);
+                          }}
+                          className="absolute -top-2 -right-2 z-10 h-7 w-7 p-0 rounded-full shadow-md bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900 dark:hover:bg-yellow-800"
+                          title="Remover dos favoritos"
+                        >
+                          <Star className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400 fill-yellow-500" />
+                        </Button>
                       </div>
                     );
                   })}
