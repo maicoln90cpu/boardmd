@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { PomodoroTimer, PomodoroMiniTimer } from "@/components/PomodoroTimer";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
@@ -137,6 +137,11 @@ export function Sidebar({
   }];
 
   const secondaryMenuItems = [{
+    icon: Timer,
+    label: "Pomodoro",
+    active: false,
+    onClick: () => setPomodoroOpen(true)
+  }, {
     icon: Calendar,
     label: "Calendário",
     active: location.pathname === "/calendar",
@@ -170,11 +175,6 @@ export function Sidebar({
               <item.icon className="h-4 w-4" />
               {item.label}
             </Button>)}
-          
-          {/* Pomodoro Timer - Desktop */}
-          <div className="mt-2 pt-2 border-t border-border">
-            <PomodoroMiniTimer onClick={() => setPomodoroOpen(true)} />
-          </div>
         </nav>
       </aside>
 
@@ -216,7 +216,9 @@ export function Sidebar({
                     variant={item.active ? "secondary" : "ghost"} 
                     onClick={() => {
                       item.onClick();
-                      setMoreMenuOpen(false);
+                      if (item.label !== "Pomodoro") {
+                        setMoreMenuOpen(false);
+                      }
                     }}
                     className="justify-start gap-3 min-h-[48px] text-base"
                   >
@@ -224,21 +226,6 @@ export function Sidebar({
                     {item.label}
                   </Button>
                 ))}
-                
-                {/* Pomodoro Timer - Mobile */}
-                <div className="mt-2 pt-2 border-t border-border">
-                  <Button 
-                    variant="ghost"
-                    onClick={() => {
-                      setPomodoroOpen(true);
-                      setMoreMenuOpen(false);
-                    }}
-                    className="justify-start gap-3 min-h-[48px] text-base w-full"
-                  >
-                    <Timer className="h-5 w-5" />
-                    Pomodoro
-                  </Button>
-                </div>
               </nav>
             </SheetContent>
           </Sheet>

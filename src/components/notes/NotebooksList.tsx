@@ -17,6 +17,8 @@ interface NotebooksListProps {
   onDeleteNote: (noteId: string) => void;
   sortBy?: 'updated' | 'alphabetical' | 'created';
   onSortChange?: (value: 'updated' | 'alphabetical' | 'created') => void;
+  selectedNotebookId?: string | null;
+  onSelectNotebook?: (notebookId: string | null) => void;
 }
 export function NotebooksList({
   notebooks,
@@ -26,7 +28,9 @@ export function NotebooksList({
   onAddNote,
   onDeleteNote,
   sortBy = 'updated',
-  onSortChange
+  onSortChange,
+  selectedNotebookId,
+  onSelectNotebook
 }: NotebooksListProps) {
   const {
     addNotebook,
@@ -104,12 +108,13 @@ export function NotebooksList({
         const notebookNotes = getNotebookNotes(notebook.id);
         const isExpanded = expandedNotebooks.has(notebook.id);
         const count = notesCount(notebook.id);
+        const isSelected = selectedNotebookId === notebook.id;
         return <div key={notebook.id} className="space-y-1">
-               <NotebookHeader notebook={notebook} isExpanded={isExpanded} count={count} editingId={editingId} editingName={editingName} onToggle={() => toggleNotebook(notebook.id)} onEditStart={() => handleEditStart(notebook)} onEditSave={() => handleEditSave(notebook.id)} onEditChange={setEditingName} onEditCancel={() => {
+               <NotebookHeader notebook={notebook} isExpanded={isExpanded} count={count} editingId={editingId} editingName={editingName} isSelected={isSelected} onToggle={() => toggleNotebook(notebook.id)} onSelect={() => onSelectNotebook?.(notebook.id)} onEditStart={() => handleEditStart(notebook)} onEditSave={() => handleEditSave(notebook.id)} onEditChange={setEditingName} onEditCancel={() => {
             setEditingId(null);
           }} onDelete={() => handleDeleteClick(notebook)} onAddNote={() => onAddNote(notebook.id)} />
 
-              {isExpanded && notebookNotes.length > 0 && <div className="ml-6 space-y-1">
+              {isExpanded && notebookNotes.length > 0 && !onSelectNotebook && <div className="ml-6 space-y-1">
                   {notebookNotes.map(note => <div key={note.id} className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group ${selectedNoteId === note.id ? "bg-accent" : "hover:bg-accent/50"}`} onClick={() => onSelectNote(note.id)}>
                       <FileText className="h-3 w-3 text-muted-foreground" />
                       <span className="text-sm flex-1 truncate">{note.title}</span>
@@ -153,7 +158,9 @@ function NotebookHeader({
   count,
   editingId,
   editingName,
+  isSelected,
   onToggle,
+  onSelect,
   onEditStart,
   onEditSave,
   onEditChange,
@@ -166,7 +173,9 @@ function NotebookHeader({
   count: number;
   editingId: string | null;
   editingName: string;
+  isSelected?: boolean;
   onToggle: () => void;
+  onSelect?: () => void;
   onEditStart: () => void;
   onEditSave: () => void;
   onEditChange: (value: string) => void;
@@ -184,32 +193,44 @@ function NotebookHeader({
       notebookId: notebook.id
     }
   });
+  
+  const handleClick = () => {
+    if (onSelect) {
+      onSelect();
+    } else {
+      onToggle();
+    }
+  };
+  
   return <div ref={setNodeRef} className={`
         flex items-center gap-1 group hover:bg-accent rounded-md px-2 py-1
-        transition-colors
+        transition-colors cursor-pointer
         ${isOver ? "bg-accent/70 ring-2 ring-primary" : ""}
-      `}>
-      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onToggle}>
-        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-      </Button>
+        ${isSelected ? "bg-primary/10 text-primary font-medium" : ""}
+      `} onClick={handleClick}>
+      {!onSelect && (
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
+      )}
 
       <BookOpen className="h-4 w-4 text-muted-foreground" />
 
       {editingId === notebook.id ? <Input value={editingName} onChange={e => onEditChange(e.target.value)} className="h-6 px-1 py-0 text-sm flex-1" autoFocus onKeyDown={e => {
       if (e.key === "Enter") onEditSave();
       if (e.key === "Escape") onEditCancel();
-    }} onBlur={onEditSave} /> : <span className="flex-1 truncate text-sm cursor-pointer" onClick={onToggle}>{notebook.name}</span>}
+    }} onBlur={onEditSave} onClick={e => e.stopPropagation()} /> : <span className="flex-1 truncate text-sm">{notebook.name}</span>}
 
-      <span className="text-muted-foreground text-base">({count})</span>
+      <span className="text-muted-foreground text-xs">({count})</span>
 
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onEditStart}>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onEditStart(); }}>
           <Pencil className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={onDelete}>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
           <Trash2 className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onAddNote}>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onAddNote(); }}>
           <Plus className="h-3 w-3" />
         </Button>
       </div>

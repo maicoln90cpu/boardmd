@@ -202,6 +202,18 @@ export default function Notes() {
     );
   }
 
+  // Estado para caderno selecionado (para filtrar notas na coluna 2)
+  const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
+
+  // Filtrar notas pelo caderno selecionado
+  const notesForSelectedNotebook = useMemo(() => {
+    if (!selectedNotebookId) {
+      // Se nenhum caderno selecionado, mostrar notas sem caderno
+      return filteredAndSortedNotes.filter(n => !n.notebook_id);
+    }
+    return filteredAndSortedNotes.filter(n => n.notebook_id === selectedNotebookId);
+  }, [filteredAndSortedNotes, selectedNotebookId]);
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar Global */}
@@ -214,11 +226,11 @@ export default function Notes() {
       />
 
       <main className="ml-52 flex-1 flex h-screen">
-        {/* Painel esquerdo - Cadernos e Notas */}
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="w-72 border-r flex flex-col bg-card">
-            <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold">📝 Anotações</h2>
+          {/* Coluna 1 - Cadernos */}
+          <div className="w-56 border-r flex flex-col bg-card">
+            <div className="p-3 border-b flex items-center justify-between">
+              <h2 className="text-lg font-bold">📚 Cadernos</h2>
               <Button
                 variant="ghost"
                 size="sm"
@@ -229,14 +241,19 @@ export default function Notes() {
               </Button>
             </div>
 
-            <NotesSearch
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-            />
+            <div className="flex-1 overflow-y-auto p-2">
+              {/* Opção "Todas as Notas" */}
+              <button
+                onClick={() => setSelectedNotebookId(null)}
+                className={`w-full text-left p-2 rounded-md mb-2 transition-colors ${
+                  selectedNotebookId === null 
+                    ? "bg-primary/10 text-primary font-medium" 
+                    : "hover:bg-muted"
+                }`}
+              >
+                📄 Notas Soltas ({notes.filter(n => !n.notebook_id).length})
+              </button>
 
-            <div className="flex-1 overflow-y-auto p-2 space-y-4">
               <NotebooksList
                 notebooks={sortedNotebooks}
                 notes={filteredAndSortedNotes}
@@ -246,20 +263,42 @@ export default function Notes() {
                 onDeleteNote={handleDeleteNote}
                 sortBy={notebookSortBy}
                 onSortChange={setNotebookSortBy}
+                selectedNotebookId={selectedNotebookId}
+                onSelectNotebook={setSelectedNotebookId}
               />
+            </div>
+          </div>
 
+          {/* Coluna 2 - Lista de Notas */}
+          <div className="w-64 border-r flex flex-col bg-card/50">
+            <div className="p-3 border-b">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                {selectedNotebookId 
+                  ? sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
+                  : "Notas Soltas"
+                }
+              </h3>
+              <NotesSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
               <NotesList
-                notes={filteredAndSortedNotes}
+                notes={notesForSelectedNotebook}
                 selectedNoteId={selectedNoteId}
                 onSelectNote={handleSelectNote}
-                onAddNote={() => handleAddNote(null)}
+                onAddNote={() => handleAddNote(selectedNotebookId)}
                 onDeleteNote={handleDeleteNote}
               />
             </div>
           </div>
         </DndContext>
 
-        {/* Área principal - Editor */}
+        {/* Coluna 3 - Editor */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {selectedNote ? (
             <NoteEditor 
@@ -278,7 +317,7 @@ export default function Notes() {
                 <p className="text-muted-foreground mb-4">
                   Selecione uma nota existente ou crie uma nova para começar
                 </p>
-                <Button onClick={() => handleAddNote(null)}>
+                <Button onClick={() => handleAddNote(selectedNotebookId)}>
                   Criar Nova Nota
                 </Button>
               </div>
