@@ -130,10 +130,10 @@ export function useDueDateAlerts(tasks: Task[]) {
         // Não notificar se:
         // 1. Não tem due_date
         // 2. Está na coluna "Concluído" (ou similar)
-        // 3. Está marcada como concluída no localStorage
+        // 3. Está marcada como concluída (is_completed = true)
         const columnName = columnMap.get(task.column_id) || "";
-        const isCompleted = columnName.toLowerCase().includes("concluí") || 
-                           localStorage.getItem(`task-completed-${task.id}`) === "true";
+        const isInDoneColumn = columnName.toLowerCase().includes("concluí");
+        const isCompleted = task.is_completed === true || isInDoneColumn;
         
         if (!task.due_date || task.column_id?.includes("done") || isCompleted) {
           // Limpar notificações antigas quando tarefa está concluída
