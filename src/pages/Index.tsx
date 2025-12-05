@@ -313,6 +313,54 @@ function Index() {
     setSortOption("manual");
     setDisplayMode("by_category");
   };
+  // Função para calcular próxima data baseada na regra de recorrência
+  const calculateNextRecurrenceDate = (currentDueDate: string | null, recurrenceRule: any): string => {
+    const now = new Date();
+    const baseDate = currentDueDate ? new Date(currentDueDate) : now;
+    
+    // Preservar horário original
+    const hours = baseDate.getUTCHours();
+    const minutes = baseDate.getUTCMinutes();
+    const seconds = baseDate.getUTCSeconds();
+    
+    if (!recurrenceRule || typeof recurrenceRule !== 'object') {
+      // Sem regra definida: usar data atual preservando horário
+      return new Date(Date.UTC(
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+        hours, minutes, seconds
+      )).toISOString();
+    }
+    
+    const frequency = recurrenceRule.frequency || 'daily';
+    const interval = recurrenceRule.interval || 1;
+    
+    let nextDate = new Date(now);
+    
+    switch (frequency) {
+      case 'daily':
+        // Adicionar intervalo de dias
+        nextDate.setDate(nextDate.getDate() + interval);
+        break;
+      case 'weekly':
+        // Adicionar intervalo de semanas (7 dias * interval)
+        nextDate.setDate(nextDate.getDate() + (7 * interval));
+        break;
+      case 'monthly':
+        // Adicionar intervalo de meses
+        nextDate.setMonth(nextDate.getMonth() + interval);
+        break;
+      default:
+        // Fallback: adicionar 1 dia
+        nextDate.setDate(nextDate.getDate() + 1);
+    }
+    
+    // Retornar nova data com horário original preservado
+    return new Date(Date.UTC(
+      nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate(),
+      hours, minutes, seconds
+    )).toISOString();
+  };
+
   const handleResetRecurrentTasks = async () => {
     const recurrentColumn = columns.find(
       (col) => col.name.toLowerCase() === "recorrente"
@@ -327,11 +375,10 @@ function Index() {
       return;
     }
 
-    // CORREÇÃO: Query direta ao Supabase para buscar TODAS as tarefas
-    // na coluna Recorrente, independente da categoria (allTasks exclui Diário)
+    // Query direta ao Supabase para buscar TODAS as tarefas na coluna Recorrente
     const { data: recurrentTasks, error: fetchError } = await supabase
       .from("tasks")
-      .select("id, title, is_completed, recurrence_rule, tags")
+      .select("id, title, is_completed, recurrence_rule, tags, due_date")
       .eq("column_id", recurrentColumn.id)
       .not("recurrence_rule", "is", null);
 
@@ -365,22 +412,24 @@ function Index() {
       localStorage.removeItem(`task-completed-${task.id}`);
     });
 
-    // Update direto no Supabase
-    const taskIds = tasksToReset.map(t => t.id);
-    
-    const { error } = await supabase
-      .from("tasks")
-      .update({ is_completed: false })
-      .in("id", taskIds);
+    // Atualizar cada tarefa individualmente com a próxima data de recorrência
+    let successCount = 0;
+    for (const task of tasksToReset) {
+      const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule);
+      
+      const { error } = await supabase
+        .from("tasks")
+        .update({ 
+          is_completed: false,
+          due_date: nextDueDate
+        })
+        .eq("id", task.id);
 
-    if (error) {
-      console.error("[DEBUG RESET] Erro ao atualizar:", error);
-      toast({
-        title: "❌ Erro ao desmarcar tarefas",
-        description: error.message,
-        variant: "destructive"
-      });
-      return;
+      if (error) {
+        console.error(`[DEBUG RESET] Erro ao atualizar tarefa ${task.id}:`, error);
+      } else {
+        successCount++;
+      }
     }
 
     // Disparar evento para forçar refetch
@@ -389,7 +438,7 @@ function Index() {
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
     toast({
       title: "Tarefas resetadas",
-      description: `${tasksToReset.length} tarefa(s) recorrente(s) resetada(s)`
+      description: `${successCount} tarefa(s) recorrente(s) resetada(s) com próxima data calculada`
     });
     setDailyBoardKey(k => k + 1);
   };
@@ -445,16 +494,26 @@ function Index() {
 
   // Função para equalizar largura das colunas
   const handleEqualizeColumns = () => {
-    const categoryKey = viewMode === "daily" ? dailyCategory : "all";
     const equalSize = 100 / visibleColumns.length;
-    localStorage.setItem(
-      `kanban-column-sizes-${categoryKey}`,
-      JSON.stringify(visibleColumns.map(() => equalSize))
-    );
-    // Forçar re-render do KanbanBoard correto
+    const equalSizes = visibleColumns.map(() => equalSize);
+    
     if (viewMode === "daily") {
+      // Modo Diário: apenas uma categoria
+      localStorage.setItem(`kanban-column-sizes-${dailyCategory}`, JSON.stringify(equalSizes));
       setDailyBoardKey(k => k + 1);
     } else {
+      // Modo Projetos: atualizar TODAS as categorias visíveis + "all"
+      // Atualizar key "all" para modo all_tasks
+      localStorage.setItem(`kanban-column-sizes-all`, JSON.stringify(equalSizes));
+      
+      // Atualizar cada categoria individual para modo by_category
+      const nonDailyCategories = categories.filter(c => c.name !== "Diário");
+      nonDailyCategories.forEach(cat => {
+        localStorage.setItem(`kanban-column-sizes-${cat.id}`, JSON.stringify(equalSizes));
+      });
+      
+      // Disparar evento storage para forçar re-leitura
+      window.dispatchEvent(new Event('storage'));
       setProjectsBoardKey(k => k + 1);
     }
   };

@@ -294,10 +294,21 @@ export function KanbanBoard({
           return (priorityMap[b.priority || "medium"] || 2) - (priorityMap[a.priority || "medium"] || 2);
         }
         case "date_asc": {
-          // Extrair hora do dia no timezone de São Paulo para ordenar por horário
-          const getTimeOfDaySP = (dateStr: string | null) => {
-            if (!dateStr) return Number.POSITIVE_INFINITY;
+          // Ordenar por DATA primeiro (dia), depois HORA como desempate
+          const getDateTimeSP = (dateStr: string | null) => {
+            if (!dateStr) return { date: Number.POSITIVE_INFINITY, time: Number.POSITIVE_INFINITY };
             const date = new Date(dateStr);
+            // Extrair data no timezone de São Paulo
+            const dateOnlySP = date.toLocaleDateString("pt-BR", { 
+              timeZone: "America/Sao_Paulo",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            });
+            // Converter para número comparável (AAAAMMDD)
+            const [day, month, year] = dateOnlySP.split("/").map(Number);
+            const dateNum = year * 10000 + month * 100 + day;
+            // Extrair hora no timezone de São Paulo
             const timeStr = date.toLocaleTimeString("pt-BR", { 
               timeZone: "America/Sao_Paulo",
               hour: "2-digit", 
@@ -305,16 +316,27 @@ export function KanbanBoard({
               hour12: false 
             });
             const [hours, minutes] = timeStr.split(":").map(Number);
-            return hours * 60 + minutes;
+            return { date: dateNum, time: hours * 60 + minutes };
           };
-          const timeA = getTimeOfDaySP(a.due_date);
-          const timeB = getTimeOfDaySP(b.due_date);
-          return timeA - timeB;
+          const dtA = getDateTimeSP(a.due_date);
+          const dtB = getDateTimeSP(b.due_date);
+          // Primeiro comparar por data
+          if (dtA.date !== dtB.date) return dtA.date - dtB.date;
+          // Depois por hora como desempate
+          return dtA.time - dtB.time;
         }
         case "date_desc": {
-          const getTimeOfDaySP = (dateStr: string | null) => {
-            if (!dateStr) return Number.NEGATIVE_INFINITY;
+          const getDateTimeSP = (dateStr: string | null) => {
+            if (!dateStr) return { date: Number.NEGATIVE_INFINITY, time: Number.NEGATIVE_INFINITY };
             const date = new Date(dateStr);
+            const dateOnlySP = date.toLocaleDateString("pt-BR", { 
+              timeZone: "America/Sao_Paulo",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit"
+            });
+            const [day, month, year] = dateOnlySP.split("/").map(Number);
+            const dateNum = year * 10000 + month * 100 + day;
             const timeStr = date.toLocaleTimeString("pt-BR", { 
               timeZone: "America/Sao_Paulo",
               hour: "2-digit", 
@@ -322,11 +344,14 @@ export function KanbanBoard({
               hour12: false 
             });
             const [hours, minutes] = timeStr.split(":").map(Number);
-            return hours * 60 + minutes;
+            return { date: dateNum, time: hours * 60 + minutes };
           };
-          const timeA = getTimeOfDaySP(a.due_date);
-          const timeB = getTimeOfDaySP(b.due_date);
-          return timeB - timeA;
+          const dtA = getDateTimeSP(a.due_date);
+          const dtB = getDateTimeSP(b.due_date);
+          // Primeiro comparar por data (descendente)
+          if (dtA.date !== dtB.date) return dtB.date - dtA.date;
+          // Depois por hora como desempate (descendente)
+          return dtB.time - dtA.time;
         }
         default:
           return a.position - b.position;
