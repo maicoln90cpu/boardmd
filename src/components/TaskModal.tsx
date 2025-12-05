@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task } from "@/hooks/useTasks";
 import { Label } from "@/components/ui/label";
 import { useCategories } from "@/hooks/useCategories";
+import { useColumns } from "@/hooks/useColumns";
 import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ interface TaskModalProps {
 
 export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns }: TaskModalProps) {
   const { categories } = useCategories();
+  const { columns: allColumns } = useColumns();
   const { user } = useAuth();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
@@ -39,9 +41,14 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [dueTime, setDueTime] = useState("");
   const [tags, setTags] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedColumn, setSelectedColumn] = useState<string>("");
+  const [selectedKanbanType, setSelectedKanbanType] = useState<"daily" | "projects">("projects");
   const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
   const [recurrence, setRecurrence] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; interval: number } | null>(null);
   const { toast } = useToast();
+
+  // Encontrar a categoria "Diário" para determinar tipo de Kanban
+  const dailyCategory = categories.find(c => c.name.toLowerCase() === "diário");
 
   useEffect(() => {
     if (task) {
@@ -49,8 +56,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setDescription(task.description || "");
       setPriority(task.priority || "medium");
       setSelectedCategory(task.category_id || "");
+      setSelectedColumn(task.column_id || columnId);
       setSubtasks(task.subtasks || []);
       setRecurrence(task.recurrence_rule);
+      
+      // Determinar tipo de Kanban baseado na categoria
+      if (dailyCategory && task.category_id === dailyCategory.id) {
+        setSelectedKanbanType("daily");
+      } else {
+        setSelectedKanbanType("projects");
+      }
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -68,6 +83,17 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setPriority("medium");
       setSubtasks([]);
       setRecurrence(null);
+      setSelectedColumn(columnId);
+      
+      // Determinar tipo de Kanban baseado no viewMode ou categoryId
+      if (isDailyKanban || (dailyCategory && categoryId === dailyCategory.id)) {
+        setSelectedKanbanType("daily");
+        setSelectedCategory(dailyCategory?.id || "");
+      } else {
+        setSelectedKanbanType("projects");
+        setSelectedCategory(categoryId || "");
+      }
+      
       // Se for Kanban Diário, data padrão é hoje
       if (isDailyKanban) {
         const today = new Date().toISOString().split("T")[0];
@@ -77,9 +103,8 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       }
       setDueTime("");
       setTags("");
-      setSelectedCategory(categoryId || "");
     }
-  }, [task, open, categoryId, isDailyKanban]);
+  }, [task, open, categoryId, isDailyKanban, dailyCategory]);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -101,8 +126,10 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       }
     }
     
-    let finalColumnId = columnId;
-    let finalCategoryId = selectedCategory || categoryId;
+    let finalColumnId = selectedColumn || columnId;
+    let finalCategoryId = selectedKanbanType === "daily" && dailyCategory 
+      ? dailyCategory.id 
+      : (selectedCategory || categoryId);
     
     // Auto-mover para Kanban Diário e coluna Recorrente se ativou recorrência
     if (recurrence) {
@@ -462,7 +489,37 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               />
             </div>
 
-            {viewMode !== "daily" && (
+            {/* Tipo de Kanban */}
+            <div>
+              <Label>Tipo de Kanban</Label>
+              <Select 
+                value={selectedKanbanType} 
+                onValueChange={(value: "daily" | "projects") => {
+                  setSelectedKanbanType(value);
+                  // Auto-selecionar categoria apropriada
+                  if (value === "daily" && dailyCategory) {
+                    setSelectedCategory(dailyCategory.id);
+                  } else if (value === "projects") {
+                    // Se estava em daily, limpar ou selecionar primeira categoria não-daily
+                    const firstProject = categories.find(c => c.id !== dailyCategory?.id);
+                    if (selectedCategory === dailyCategory?.id && firstProject) {
+                      setSelectedCategory(firstProject.id);
+                    }
+                  }
+                }}
+              >
+                <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">📅 Diário</SelectItem>
+                  <SelectItem value="projects">📁 Projetos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Categoria - apenas para Projetos */}
+            {selectedKanbanType === "projects" && (
               <div>
                 <Label>Categoria</Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -470,15 +527,34 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {categories
+                      .filter(c => c.id !== dailyCategory?.id)
+                      .map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
             )}
+
+            {/* Coluna */}
+            <div>
+              <Label>Coluna</Label>
+              <Select value={selectedColumn} onValueChange={setSelectedColumn}>
+                <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                  <SelectValue placeholder="Selecione uma coluna" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(columns || allColumns).map((col) => (
+                    <SelectItem key={col.id} value={col.id}>
+                      {col.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
             
