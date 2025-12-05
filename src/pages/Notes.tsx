@@ -90,9 +90,13 @@ export default function Notes() {
   }, [notes, searchTerm, sortBy]);
 
   // Filtrar notas pelo caderno selecionado (para layout 3 colunas)
+  // null = todas as notas, "loose" = notas soltas, string = caderno específico
   const notesForSelectedNotebook = useMemo(() => {
-    if (!selectedNotebookId) {
-      return filteredAndSortedNotes.filter(n => !n.notebook_id);
+    if (selectedNotebookId === null) {
+      return filteredAndSortedNotes; // Todas as notas
+    }
+    if (selectedNotebookId === "loose") {
+      return filteredAndSortedNotes.filter(n => !n.notebook_id); // Apenas notas soltas
     }
     return filteredAndSortedNotes.filter(n => n.notebook_id === selectedNotebookId);
   }, [filteredAndSortedNotes, selectedNotebookId]);
@@ -242,8 +246,20 @@ export default function Notes() {
               {/* Opção "Todas as Notas" */}
               <button
                 onClick={() => setSelectedNotebookId(null)}
-                className={`w-full text-left p-2 rounded-md mb-2 transition-colors ${
+                className={`w-full text-left p-2 rounded-md mb-1 transition-colors ${
                   selectedNotebookId === null 
+                    ? "bg-primary/10 text-primary font-medium" 
+                    : "hover:bg-muted"
+                }`}
+              >
+                📋 Todas as Notas ({notes.length})
+              </button>
+              
+              {/* Opção "Notas Soltas" */}
+              <button
+                onClick={() => setSelectedNotebookId("loose")}
+                className={`w-full text-left p-2 rounded-md mb-2 transition-colors ${
+                  selectedNotebookId === "loose" 
                     ? "bg-primary/10 text-primary font-medium" 
                     : "hover:bg-muted"
                 }`}
@@ -270,9 +286,11 @@ export default function Notes() {
           <div className="w-64 border-r flex flex-col bg-card/50">
             <div className="p-3 border-b">
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                {selectedNotebookId 
-                  ? sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
-                  : "Notas Soltas"
+                {selectedNotebookId === null
+                  ? "Todas as Notas"
+                  : selectedNotebookId === "loose"
+                    ? "Notas Soltas"
+                    : sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
                 }
               </h3>
               <NotesSearch
