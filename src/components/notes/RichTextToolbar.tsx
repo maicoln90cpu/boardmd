@@ -26,6 +26,9 @@ import {
   CheckCircle,
   XCircle,
   Badge,
+  ListTodo,
+  Target,
+  LayoutList,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -619,6 +622,23 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           <DropdownMenuItem onClick={() => formatWithAI("professional")}>
             <Sparkles className="mr-2 h-4 w-4" />
             Tornar profissional
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => formatWithAI("toList")}>
+            <LayoutList className="mr-2 h-4 w-4" />
+            Transformar em lista
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("toTable")}>
+            <Table className="mr-2 h-4 w-4" />
+            Transformar em tabela
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("extractActions")}>
+            <ListTodo className="mr-2 h-4 w-4" />
+            Extrair ações/tarefas
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => formatWithAI("keyPoints")}>
+            <Target className="mr-2 h-4 w-4" />
+            Extrair pontos-chave
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

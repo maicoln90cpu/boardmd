@@ -25,13 +25,48 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Default prompts
+    // Default prompts for all actions
     const defaultPrompts: Record<string, string> = {
       improve: "Você é um assistente de formatação de texto. Melhore a legibilidade e formatação do texto sem alterar o conteúdo principal. Adicione títulos, listas, negrito e itálico onde apropriado. Mantenha o HTML válido para TipTap editor.",
       grammar: "Você é um revisor de texto. Corrija erros gramaticais e de ortografia mantendo o estilo original. Retorne HTML válido para TipTap editor.",
       summarize: "Você é um especialista em resumos. Crie um resumo conciso do texto mantendo os pontos principais. Retorne HTML válido para TipTap editor.",
       expand: "Você é um escritor criativo. Expanda o texto adicionando mais detalhes e explicações mantendo o tema original. Retorne HTML válido para TipTap editor.",
-      professional: "Você é um editor profissional. Transforme o texto em um formato mais profissional e formal. Retorne HTML válido para TipTap editor."
+      professional: "Você é um editor profissional. Transforme o texto em um formato mais profissional e formal. Retorne HTML válido para TipTap editor.",
+      toList: `Você é um assistente de organização de texto. Transforme o texto fornecido em uma lista organizada de tópicos.
+
+Regras:
+- Use <ul> para listas não ordenadas ou <ol> para listas numeradas
+- Cada item deve ser um <li>
+- Mantenha apenas informações relevantes
+- Agrupe itens relacionados
+- Retorne APENAS HTML válido para TipTap editor, sem explicações`,
+      toTable: `Você é um especialista em estruturação de dados. Transforme o texto em uma tabela HTML organizada.
+
+Regras:
+- Use <table>, <thead>, <tbody>, <tr>, <th>, <td>
+- Identifique colunas lógicas nos dados
+- Use <th> para cabeçalhos
+- Mantenha dados bem organizados e legíveis
+- Retorne APENAS HTML válido para TipTap editor, sem explicações`,
+      extractActions: `Você é um assistente de produtividade. Analise o texto e extraia todos os itens de ação/tarefas.
+
+Regras:
+- Identifique tarefas, pendências, ações a fazer
+- Formate como lista de tarefas usando:
+  <ul data-type="taskList">
+    <li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Tarefa aqui</p></div></li>
+  </ul>
+- Priorize clareza e objetividade
+- Se não houver ações claras, crie sugestões baseadas no contexto
+- Retorne APENAS HTML válido para TipTap editor, sem explicações`,
+      keyPoints: `Você é um analista de conteúdo. Extraia os 5-7 pontos principais do texto.
+
+Regras:
+- Identifique os conceitos mais importantes
+- Seja conciso e direto
+- Formate como lista com marcadores usando <ul> e <li>
+- Destaque palavras-chave em <strong>
+- Retorne APENAS HTML válido para TipTap editor, sem explicações`
     };
 
     let systemPrompt = defaultPrompts[action] || defaultPrompts.improve;
@@ -79,7 +114,7 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Texto para formatar:\n\n${content}` }
+          { role: "user", content: `Texto para processar:\n\n${content}` }
         ],
         temperature: 0.7,
         max_tokens: 2000,
@@ -114,7 +149,7 @@ serve(async (req) => {
       throw new Error("No content returned from AI");
     }
 
-    console.log(`[format-note] Success - formatted ${content.length} chars to ${formattedContent.length} chars`);
+    console.log(`[format-note] Success - processed ${content.length} chars to ${formattedContent.length} chars`);
 
     return new Response(
       JSON.stringify({ formattedContent }),
