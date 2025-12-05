@@ -23,6 +23,7 @@ export default function Notes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
   const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
+  const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
@@ -87,6 +88,14 @@ export default function Notes() {
     
     return [...pinned, ...unpinned];
   }, [notes, searchTerm, sortBy]);
+
+  // Filtrar notas pelo caderno selecionado (para layout 3 colunas)
+  const notesForSelectedNotebook = useMemo(() => {
+    if (!selectedNotebookId) {
+      return filteredAndSortedNotes.filter(n => !n.notebook_id);
+    }
+    return filteredAndSortedNotes.filter(n => n.notebook_id === selectedNotebookId);
+  }, [filteredAndSortedNotes, selectedNotebookId]);
 
   const selectedNote = selectedNoteId
     ? notes.find((n) => n.id === selectedNoteId) || null
@@ -201,18 +210,6 @@ export default function Notes() {
       </div>
     );
   }
-
-  // Estado para caderno selecionado (para filtrar notas na coluna 2)
-  const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
-
-  // Filtrar notas pelo caderno selecionado
-  const notesForSelectedNotebook = useMemo(() => {
-    if (!selectedNotebookId) {
-      // Se nenhum caderno selecionado, mostrar notas sem caderno
-      return filteredAndSortedNotes.filter(n => !n.notebook_id);
-    }
-    return filteredAndSortedNotes.filter(n => n.notebook_id === selectedNotebookId);
-  }, [filteredAndSortedNotes, selectedNotebookId]);
 
   return (
     <div className="min-h-screen bg-background flex">
