@@ -7,6 +7,13 @@ import { z } from "zod";
 import { offlineSync } from "@/utils/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
+// Interface para recurrence_rule compatível com Json do Supabase
+export interface TaskRecurrenceRule {
+  frequency?: 'daily' | 'weekly' | 'monthly';
+  interval?: number;
+  weekday?: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -23,10 +30,7 @@ export interface Task {
   is_favorite: boolean;
   is_completed: boolean;
   subtasks: Array<{ id: string; title: string; completed: boolean }> | null;
-  recurrence_rule: {
-    frequency: 'daily' | 'weekly' | 'monthly';
-    interval: number;
-  } | null;
+  recurrence_rule: TaskRecurrenceRule | null;
   mirror_task_id: string | null;
 }
 
@@ -239,7 +243,7 @@ export function useTasks(categoryId: string | null | "all") {
         task_id: id,
         user_id: user.id,
         action,
-        changes: updates
+        changes: JSON.parse(JSON.stringify(updates))
       }]);
 
       toast({ title: "Tarefa atualizada com sucesso" });

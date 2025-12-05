@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 function Index() {
   const isMobile = useIsMobile();
   const {
@@ -313,54 +314,7 @@ function Index() {
     setSortOption("manual");
     setDisplayMode("by_category");
   };
-  // Função para calcular próxima data baseada na regra de recorrência
-  const calculateNextRecurrenceDate = (currentDueDate: string | null, recurrenceRule: any): string => {
-    const now = new Date();
-    const baseDate = currentDueDate ? new Date(currentDueDate) : now;
-    
-    // Preservar horário original
-    const hours = baseDate.getUTCHours();
-    const minutes = baseDate.getUTCMinutes();
-    const seconds = baseDate.getUTCSeconds();
-    
-    if (!recurrenceRule || typeof recurrenceRule !== 'object') {
-      // Sem regra definida: usar data atual preservando horário
-      return new Date(Date.UTC(
-        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
-        hours, minutes, seconds
-      )).toISOString();
-    }
-    
-    const frequency = recurrenceRule.frequency || 'daily';
-    const interval = recurrenceRule.interval || 1;
-    
-    let nextDate = new Date(now);
-    
-    switch (frequency) {
-      case 'daily':
-        // Adicionar intervalo de dias
-        nextDate.setDate(nextDate.getDate() + interval);
-        break;
-      case 'weekly':
-        // Adicionar intervalo de semanas (7 dias * interval)
-        nextDate.setDate(nextDate.getDate() + (7 * interval));
-        break;
-      case 'monthly':
-        // Adicionar intervalo de meses
-        nextDate.setMonth(nextDate.getMonth() + interval);
-        break;
-      default:
-        // Fallback: adicionar 1 dia
-        nextDate.setDate(nextDate.getDate() + 1);
-    }
-    
-    // Retornar nova data com horário original preservado
-    return new Date(Date.UTC(
-      nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate(),
-      hours, minutes, seconds
-    )).toISOString();
-  };
-
+  // handleResetRecurrentTasks usa função utilitária importada - só processa tarefas riscadas
   const handleResetRecurrentTasks = async () => {
     const recurrentColumn = columns.find(
       (col) => col.name.toLowerCase() === "recorrente"
@@ -392,17 +346,17 @@ function Index() {
       return;
     }
 
-    // Filtrar espelhos
+    // Filtrar: só tarefas riscadas (is_completed = true) e sem tag de espelho
     const tasksToReset = recurrentTasks?.filter(
-      task => !task.tags?.includes("espelho-diário")
+      task => !task.tags?.includes("espelho-diário") && task.is_completed === true
     ) || [];
 
-    console.log("[DEBUG RESET] Tarefas recorrentes encontradas:", tasksToReset.length);
+    console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
     
     if (tasksToReset.length === 0) {
       toast({
         title: "Nenhuma tarefa",
-        description: "Não há tarefas recorrentes para resetar"
+        description: "Não há tarefas recorrentes riscadas para resetar"
       });
       return;
     }
@@ -415,7 +369,7 @@ function Index() {
     // Atualizar cada tarefa individualmente com a próxima data de recorrência
     let successCount = 0;
     for (const task of tasksToReset) {
-      const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule);
+      const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
       
       const { error } = await supabase
         .from("tasks")

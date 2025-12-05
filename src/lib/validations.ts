@@ -7,11 +7,17 @@ const subtaskSchema = z.object({
   completed: z.boolean()
 });
 
-// Schema para recorrência
+// Schema para recorrência - suporta frequência OU dia da semana
 const recurrenceRuleSchema = z.object({
-  frequency: z.enum(['daily', 'weekly', 'monthly']),
-  interval: z.number().int().min(1).max(365)
-});
+  frequency: z.enum(['daily', 'weekly', 'monthly']).optional(),
+  interval: z.number().int().min(1).max(365).optional(),
+  weekday: z.number().int().min(0).max(6).optional() // 0=Dom, 1=Seg, ..., 6=Sáb
+}).refine(data => {
+  // Deve ter (frequency + interval) OU weekday
+  const hasFrequency = data.frequency !== undefined && data.interval !== undefined;
+  const hasWeekday = data.weekday !== undefined;
+  return hasFrequency || hasWeekday;
+}, { message: "Deve ter frequência com intervalo ou dia da semana" });
 
 export const taskSchema = z.object({
   title: z.string()

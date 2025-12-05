@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RecurrenceRule } from "@/lib/recurrenceUtils";
 
 interface TaskModalProps {
   open: boolean;
@@ -44,7 +45,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [selectedColumn, setSelectedColumn] = useState<string>("");
   const [selectedKanbanType, setSelectedKanbanType] = useState<"daily" | "projects">("projects");
   const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
-  const [recurrence, setRecurrence] = useState<{ frequency: 'daily' | 'weekly' | 'monthly'; interval: number } | null>(null);
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
   const { toast } = useToast();
 
   // Encontrar a categoria "Diário" para determinar tipo de Kanban
