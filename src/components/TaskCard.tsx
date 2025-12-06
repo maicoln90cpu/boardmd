@@ -105,12 +105,26 @@ export function TaskCard({
       
       if (error) throw error;
       
-      // SINCRONIZAÇÃO BIDIRECIONAL: Atualizar tarefa espelhada também
+      // SINCRONIZAÇÃO BIDIRECIONAL COMPLETA:
+      // 1. Se esta tarefa tem um mirror_task_id, atualizar o espelho
       if (task.mirror_task_id) {
         await supabase
           .from("tasks")
           .update({ is_completed: checked })
           .eq("id", task.mirror_task_id);
+      }
+      
+      // 2. Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
+      const { data: reverseMirrors } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("mirror_task_id", task.id);
+      
+      if (reverseMirrors && reverseMirrors.length > 0) {
+        await supabase
+          .from("tasks")
+          .update({ is_completed: checked })
+          .in("id", reverseMirrors.map(t => t.id));
       }
       
       // Disparar evento para atualizar lista de tasks

@@ -71,7 +71,7 @@ function Index() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("by_category");
+  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
 
   // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
   const { settings, updateSettings, saveSettings } = useSettings();
@@ -577,6 +577,25 @@ function Index() {
               
               {/* Filtros do Kanban Diário (ordenação/densidade definidos em Setup) */}
               <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
+                {/* Campo de Busca por Texto */}
+                <div className="relative flex-1 min-w-[150px] max-w-[250px]">
+                  <input
+                    type="text"
+                    placeholder="Buscar tarefas..."
+                    value={dailySearchTerm}
+                    onChange={(e) => setDailySearchTerm(e.target.value)}
+                    className="w-full h-9 px-3 pr-8 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  />
+                  {dailySearchTerm && (
+                    <button
+                      onClick={() => setDailySearchTerm("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+
                 {/* Filtros contextuais: Prioridade e Tag */}
                 <Select value={dailyPriorityFilter} onValueChange={setDailyPriorityFilter}>
                   <SelectTrigger className="w-[110px] h-9">
@@ -604,13 +623,14 @@ function Index() {
                   </Select>
                 )}
 
-                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all") && (
+                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all" || dailySearchTerm) && (
                   <Button 
                     variant="ghost" 
                     size="sm" 
                     onClick={() => {
                       setDailyPriorityFilter("all");
                       setDailyTagFilter("all");
+                      setDailySearchTerm("");
                     }}
                     className="h-9"
                   >
@@ -636,6 +656,7 @@ function Index() {
                   gridColumns={dailyGridColumnsMobile}
                   priorityFilter={dailyPriorityFilter}
                   tagFilter={dailyTagFilter}
+                  searchTerm={dailySearchTerm}
                 />
               </div>
 
