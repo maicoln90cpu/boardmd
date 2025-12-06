@@ -121,62 +121,75 @@ export function FavoritesSection({ columns, categories }: FavoritesSectionProps)
                           <div 
                             key={task.id} 
                             className={cn(
-                              "relative group rounded-lg overflow-hidden",
+                              "relative group rounded-lg",
                               "bg-gradient-to-br from-background to-muted/30",
                               "border border-border/50 hover:border-yellow-500/40",
                               "shadow-sm hover:shadow-md transition-all duration-200",
-                              "hover:scale-[1.02]"
+                              "hover:scale-[1.01]"
                             )}
                           >
                             {/* Glow effect on hover */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/0 to-amber-500/0 group-hover:from-yellow-500/5 group-hover:to-amber-500/5 transition-all duration-300 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-yellow-500/0 to-amber-500/0 group-hover:from-yellow-500/5 group-hover:to-amber-500/5 transition-all duration-300 pointer-events-none" />
                             
                             {/* Left accent border */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-amber-500 opacity-60 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-yellow-400 to-amber-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                             
-                            {/* Quick unfavorite button */}
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className={cn(
-                                "absolute top-2 right-2 z-10",
-                                "h-7 w-7 rounded-full",
-                                "bg-yellow-500/10 hover:bg-yellow-500/20",
-                                "text-yellow-600 dark:text-yellow-400",
-                                "opacity-70 group-hover:opacity-100 transition-opacity"
-                              )}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(task.id);
-                              }}
-                              title="Remover dos favoritos"
-                            >
-                              <Star className="h-4 w-4 fill-current" />
-                            </Button>
-                            
-                            {/* Task Card Content */}
-                            <div className="pl-3">
-                              <TaskCard
-                                task={task}
-                                onEdit={handleEditTask}
-                                onDelete={deleteTask}
-                                onMoveLeft={
-                                  currentColumnIndex > 0
-                                    ? () => updateTask(task.id, { column_id: columns[currentColumnIndex - 1].id })
-                                    : undefined
-                                }
-                                onMoveRight={
-                                  currentColumnIndex < columns.length - 1
-                                    ? () => updateTask(task.id, { column_id: columns[currentColumnIndex + 1].id })
-                                    : undefined
-                                }
-                                canMoveLeft={currentColumnIndex > 0}
-                                canMoveRight={currentColumnIndex < columns.length - 1}
-                                densityMode="compact"
-                                showCategoryBadge={false}
-                                onToggleFavorite={undefined} // Hide internal favorite button
-                                hideBadges={false}
-                              />
+                            {/* Card content with proper padding */}
+                            <div className="p-3 pl-4 flex items-start gap-3">
+                              {/* Task info */}
+                              <div 
+                                className="flex-1 min-w-0 cursor-pointer"
+                                onClick={() => handleEditTask(task)}
+                              >
+                                <h4 className={cn(
+                                  "text-sm font-medium truncate",
+                                  task.is_completed && "line-through opacity-50"
+                                )}>
+                                  {task.title}
+                                </h4>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                    {task.description}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                                  {task.priority && (
+                                    <Badge 
+                                      className={cn(
+                                        "text-[10px] px-1.5 py-0",
+                                        task.priority === "high" && "bg-destructive text-destructive-foreground",
+                                        task.priority === "medium" && "bg-yellow-500 text-white",
+                                        task.priority === "low" && "bg-green-500 text-white"
+                                      )}
+                                    >
+                                      {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
+                                    </Badge>
+                                  )}
+                                  {task.due_date && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                      {new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Unfavorite button */}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className={cn(
+                                  "shrink-0 h-8 w-8 rounded-full",
+                                  "bg-yellow-500/10 hover:bg-yellow-500/20",
+                                  "text-yellow-600 dark:text-yellow-400"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(task.id);
+                                }}
+                                title="Remover dos favoritos"
+                              >
+                                <Star className="h-4 w-4 fill-current" />
+                              </Button>
                             </div>
                           </div>
                         );
