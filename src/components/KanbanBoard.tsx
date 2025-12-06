@@ -16,6 +16,7 @@ import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { useEffect } from "react";
 import { useSettings } from "@/hooks/useSettings";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -211,7 +212,7 @@ export function KanbanBoard({
   };
 
   // handleUncheckRecurrentTasks: usa função utilitária importada - só processa tarefas RISCADAS
-  const handleUncheckRecurrentTasks = (columnId: string) => {
+  const handleUncheckRecurrentTasks = async (columnId: string) => {
     const columnTasks = getTasksForColumn(columnId);
     
     // NOVA REGRA: Só resetar tarefas que estão concluídas (riscadas)
@@ -228,17 +229,38 @@ export function KanbanBoard({
     }
     
     // Processar apenas tarefas riscadas
-    completedTasks.forEach(task => {
+    for (const task of completedTasks) {
       localStorage.removeItem(`task-completed-${task.id}`);
       
       // Calcular próxima data baseada na regra de recorrência
       const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule);
       
-      updateTask(task.id, {
+      await updateTask(task.id, {
         due_date: nextDueDate,
         is_completed: false
       });
-    });
+      
+      // BUG 1 FIX: Sincronização bidirecional - atualizar tarefa espelhada (projetos)
+      if (task.mirror_task_id) {
+        await supabase.from("tasks").update({
+          due_date: nextDueDate,
+          is_completed: false
+        }).eq("id", task.mirror_task_id);
+      }
+      
+      // Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
+      const { data: reverseMirrors } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("mirror_task_id", task.id);
+        
+      if (reverseMirrors && reverseMirrors.length > 0) {
+        await supabase.from("tasks").update({
+          due_date: nextDueDate,
+          is_completed: false
+        }).in("id", reverseMirrors.map(t => t.id));
+      }
+    }
     
     window.dispatchEvent(new CustomEvent('tasks-unchecked'));
     

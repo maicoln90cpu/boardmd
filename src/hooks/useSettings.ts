@@ -6,6 +6,7 @@ import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaul
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
   defaultDensity: 'comfortable' | 'compact' | 'ultra-compact';
+  timezone: string; // Timezone do usuário (ex: "America/Sao_Paulo")
   notifications: {
     dueDate: boolean;
     achievements: boolean;
@@ -40,6 +41,13 @@ export interface AppSettings {
     projectsGridColumns: 1 | 2;
     hideBadges: boolean;
   };
+  customization?: {
+    priorityColors?: {
+      high: { background: string; text: string };
+      medium: { background: string; text: string };
+      low: { background: string; text: string };
+    };
+  };
   aiPrompts?: Record<string, string>;
   notificationTemplates?: NotificationTemplate[];
 }
@@ -47,6 +55,7 @@ export interface AppSettings {
 const defaultSettings: AppSettings = {
   theme: 'auto',
   defaultDensity: 'comfortable',
+  timezone: 'America/Sao_Paulo', // Padrão Brasil
   notifications: {
     dueDate: true,
     achievements: true,
@@ -80,6 +89,13 @@ const defaultSettings: AppSettings = {
     dailyGridColumns: 2,
     projectsGridColumns: 2,
     hideBadges: false,
+  },
+  customization: {
+    priorityColors: {
+      high: { background: '#fee2e2', text: '#dc2626' },
+      medium: { background: '#fef3c7', text: '#d97706' },
+      low: { background: '#dcfce7', text: '#16a34a' },
+    },
   },
 };
 

@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR, formatDateOnlyBR } from "@/lib/dateUtils";
 
 interface TaskCardProps {
-  task: Task & { categories?: { name: string } };
+  task: Task & { categories?: { name: string }; originalCategory?: string };
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onMoveLeft?: () => void;
@@ -75,13 +75,14 @@ export function TaskCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Cores de prioridade (podem ser customizadas via settings)
   const priorityColors = {
     high: "bg-destructive text-destructive-foreground",
     medium: "bg-yellow-500 text-white",
     low: "bg-green-500 text-white",
   };
 
-  // Cores de fundo suave baseadas na prioridade
+  // Cores de fundo suave baseadas na prioridade (podem ser customizadas via settings)
   const priorityBackgroundColors = {
     high: "bg-red-500/10 dark:bg-red-500/15",
     medium: "bg-yellow-500/10 dark:bg-yellow-500/15",
@@ -98,11 +99,30 @@ export function TaskCard({
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
+  
+  // BUG 2 FIX: Estado para categoria original de tarefas espelhadas
+  const [originalCategoryName, setOriginalCategoryName] = React.useState<string | null>(null);
 
   // Sincronizar estado local quando task.is_completed mudar (por realtime ou fetch)
   React.useEffect(() => {
     setIsLocalCompleted(task.is_completed);
   }, [task.is_completed]);
+  
+  // BUG 2 FIX: Buscar categoria da tarefa original para tarefas espelhadas
+  React.useEffect(() => {
+    if (task.mirror_task_id && isDailyKanban) {
+      supabase
+        .from("tasks")
+        .select("category_id, categories:categories(name)")
+        .eq("id", task.mirror_task_id)
+        .single()
+        .then(({ data }) => {
+          if (data?.categories) {
+            setOriginalCategoryName((data.categories as any).name);
+          }
+        });
+    }
+  }, [task.mirror_task_id, isDailyKanban]);
 
   const handleToggleCompleted = async (checked: boolean) => {
     // Update otimista imediato
@@ -347,9 +367,12 @@ export function TaskCard({
 
                 {/* Linha 2: Data, Horário, Prioridade */}
                 <div className="flex items-center gap-1.5 flex-wrap">
+                  {/* BUG 4 FIX: Mostrar data + horário no diário */}
                   {task.due_date && isDailyKanban && (
                     <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-muted rounded text-[10px]">
-                      <Clock className="h-2.5 w-2.5" />
+                      <Calendar className="h-2.5 w-2.5" />
+                      {formatDateShortBR(task.due_date)}
+                      <Clock className="h-2.5 w-2.5 ml-1" />
                       {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
@@ -372,14 +395,17 @@ export function TaskCard({
                         <Calendar className="h-2.5 w-2.5" />
                       )}
                       {formatDateShortBR(task.due_date)}
+                      <Clock className="h-2.5 w-2.5 ml-1" />
+                      {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
 
+                  {/* BUG 3 FIX: Usar valores em inglês (high/medium/low) */}
                   {!hideBadges && task.priority && (
                     <Badge
                       className={`text-[10px] px-1.5 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
                     >
-                      {task.priority === "alta" ? "Alta" : task.priority === "média" ? "Média" : "Baixa"}
+                      {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
                     </Badge>
                   )}
 
@@ -458,10 +484,18 @@ export function TaskCard({
                 </div>
 
                 {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
+                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
                 {(!hideBadges && (task.recurrence_rule || task.mirror_task_id || showCategoryBadge || (task.tags && task.tags.length > 0))) && (
                   <div className="flex items-center gap-1 flex-wrap">
-                    {/* Mostrar categoria para tarefas recorrentes no diário */}
-                    {(task.recurrence_rule || showCategoryBadge) && task.categories?.name && (
+                    {/* BUG 2 FIX: Mostrar categoria ORIGINAL para tarefas espelhadas no diário */}
+                    {isDailyKanban && task.mirror_task_id && originalCategoryName && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                        {originalCategoryName}
+                      </Badge>
+                    )}
+                    
+                    {/* Mostrar categoria normal para tarefas recorrentes (não espelhadas) */}
+                    {(task.recurrence_rule || showCategoryBadge) && !task.mirror_task_id && task.categories?.name && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                         {task.categories.name}
                       </Badge>

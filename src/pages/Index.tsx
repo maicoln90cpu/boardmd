@@ -383,6 +383,34 @@ function Index() {
         console.error(`[DEBUG RESET] Erro ao atualizar tarefa ${task.id}:`, error);
       } else {
         successCount++;
+        
+        // BUG 1 FIX: Sincronização bidirecional - atualizar tarefa espelhada (projetos)
+        // Buscar mirror_task_id se existir
+        const { data: taskData } = await supabase
+          .from("tasks")
+          .select("mirror_task_id")
+          .eq("id", task.id)
+          .single();
+          
+        if (taskData?.mirror_task_id) {
+          await supabase.from("tasks").update({
+            is_completed: false,
+            due_date: nextDueDate
+          }).eq("id", taskData.mirror_task_id);
+        }
+        
+        // Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
+        const { data: reverseMirrors } = await supabase
+          .from("tasks")
+          .select("id")
+          .eq("mirror_task_id", task.id);
+          
+        if (reverseMirrors && reverseMirrors.length > 0) {
+          await supabase.from("tasks").update({
+            is_completed: false,
+            due_date: nextDueDate
+          }).in("id", reverseMirrors.map(t => t.id));
+        }
       }
     }
 

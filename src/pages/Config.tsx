@@ -468,6 +468,149 @@ export default function Config() {
 
                 <Separator />
 
+                {/* Timezone do usuário */}
+                <div className="space-y-2">
+                  <Label htmlFor="timezone">Fuso Horário</Label>
+                  <Select 
+                    value={settings.timezone || 'America/Sao_Paulo'} 
+                    onValueChange={(value) => updateSettings({ timezone: value })}
+                  >
+                    <SelectTrigger id="timezone">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="America/Sao_Paulo">São Paulo (UTC-3)</SelectItem>
+                      <SelectItem value="America/Manaus">Manaus (UTC-4)</SelectItem>
+                      <SelectItem value="America/Rio_Branco">Rio Branco (UTC-5)</SelectItem>
+                      <SelectItem value="America/Noronha">Fernando de Noronha (UTC-2)</SelectItem>
+                      <SelectItem value="America/New_York">Nova York (UTC-5)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Los Angeles (UTC-8)</SelectItem>
+                      <SelectItem value="Europe/London">Londres (UTC+0)</SelectItem>
+                      <SelectItem value="Europe/Paris">Paris (UTC+1)</SelectItem>
+                      <SelectItem value="Europe/Lisbon">Lisboa (UTC+0)</SelectItem>
+                      <SelectItem value="Asia/Tokyo">Tóquio (UTC+9)</SelectItem>
+                      <SelectItem value="Australia/Sydney">Sydney (UTC+11)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Define o fuso horário usado para exibir datas e horários em todo o sistema
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Cores de prioridade customizáveis */}
+                <div className="space-y-4">
+                  <Label>Cores de Prioridade</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Personalize as cores dos cards baseado na prioridade
+                  </p>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Alta</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="color" 
+                          className="w-10 h-10 p-1 cursor-pointer"
+                          value={settings.customization?.priorityColors?.high?.background || '#fee2e2'}
+                          onChange={(e) => updateSettings({
+                            customization: {
+                              ...settings.customization,
+                              priorityColors: {
+                                ...settings.customization?.priorityColors,
+                                high: { 
+                                  background: e.target.value, 
+                                  text: settings.customization?.priorityColors?.high?.text || '#dc2626' 
+                                },
+                                medium: settings.customization?.priorityColors?.medium || { background: '#fef3c7', text: '#d97706' },
+                                low: settings.customization?.priorityColors?.low || { background: '#dcfce7', text: '#16a34a' },
+                              }
+                            }
+                          })}
+                        />
+                        <div 
+                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
+                          style={{ 
+                            backgroundColor: settings.customization?.priorityColors?.high?.background || '#fee2e2',
+                            color: settings.customization?.priorityColors?.high?.text || '#dc2626'
+                          }}
+                        >
+                          Alta
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Média</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="color" 
+                          className="w-10 h-10 p-1 cursor-pointer"
+                          value={settings.customization?.priorityColors?.medium?.background || '#fef3c7'}
+                          onChange={(e) => updateSettings({
+                            customization: {
+                              ...settings.customization,
+                              priorityColors: {
+                                high: settings.customization?.priorityColors?.high || { background: '#fee2e2', text: '#dc2626' },
+                                medium: { 
+                                  background: e.target.value, 
+                                  text: settings.customization?.priorityColors?.medium?.text || '#d97706' 
+                                },
+                                low: settings.customization?.priorityColors?.low || { background: '#dcfce7', text: '#16a34a' },
+                              }
+                            }
+                          })}
+                        />
+                        <div 
+                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
+                          style={{ 
+                            backgroundColor: settings.customization?.priorityColors?.medium?.background || '#fef3c7',
+                            color: settings.customization?.priorityColors?.medium?.text || '#d97706'
+                          }}
+                        >
+                          Média
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs">Baixa</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="color" 
+                          className="w-10 h-10 p-1 cursor-pointer"
+                          value={settings.customization?.priorityColors?.low?.background || '#dcfce7'}
+                          onChange={(e) => updateSettings({
+                            customization: {
+                              ...settings.customization,
+                              priorityColors: {
+                                high: settings.customization?.priorityColors?.high || { background: '#fee2e2', text: '#dc2626' },
+                                medium: settings.customization?.priorityColors?.medium || { background: '#fef3c7', text: '#d97706' },
+                                low: { 
+                                  background: e.target.value, 
+                                  text: settings.customization?.priorityColors?.low?.text || '#16a34a' 
+                                },
+                              }
+                            }
+                          })}
+                        />
+                        <div 
+                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
+                          style={{ 
+                            backgroundColor: settings.customization?.priorityColors?.low?.background || '#dcfce7',
+                            color: settings.customization?.priorityColors?.low?.text || '#16a34a'
+                          }}
+                        >
+                          Baixa
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
                 <div className="space-y-4">
                   <Label>Mobile</Label>
                   
