@@ -74,13 +74,13 @@ export function FavoritesSection({
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent pointer-events-none" />
             
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full flex items-center justify-between p-4 hover:bg-yellow-500/5 transition-all duration-200">
-                <div className="flex items-center gap-3">
+              <Button variant="ghost" className="w-full items-center justify-between p-4 hover:bg-yellow-500/5 transition-all duration-200 flex flex-row">
+                <div className="flex-row flex items-center justify-center gap-[10px]">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 shadow-md">
                     <Star className="h-5 w-5 text-white fill-white" />
                   </div>
                   <div className="text-left">
-                    <h2 className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-yellow-400 dark:to-amber-400 bg-clip-text text-transparent">
+                    <h2 className="text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-yellow-400 dark:to-amber-400 bg-clip-text text-transparent">
                       Favoritos de Outros Projetos
                     </h2>
                     <p className="text-xs text-muted-foreground">
