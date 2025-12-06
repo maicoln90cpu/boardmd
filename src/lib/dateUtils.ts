@@ -1,42 +1,64 @@
-// Utilitários de data padronizados para timezone UTC-3 (São Paulo)
+// Utilitários de data padronizados - timezone configurável pelo usuário
 
-const TIMEZONE = "America/Sao_Paulo";
+// Timezone padrão (fallback)
+const DEFAULT_TIMEZONE = "America/Sao_Paulo";
+
+// Função para obter o timezone atual do settings (via localStorage como fallback)
+export const getTimezone = (): string => {
+  try {
+    // Tentar ler do localStorage onde o settings pode ter sido cacheado
+    const settingsStr = localStorage.getItem('app-timezone');
+    if (settingsStr) return settingsStr;
+  } catch {
+    // Ignorar erros de localStorage
+  }
+  return DEFAULT_TIMEZONE;
+};
+
+// Função para definir o timezone (chamada quando settings são carregados)
+export const setTimezone = (timezone: string): void => {
+  try {
+    localStorage.setItem('app-timezone', timezone);
+  } catch {
+    // Ignorar erros de localStorage
+  }
+};
 
 /**
- * Formata data e hora completas para pt-BR no timezone de São Paulo
+ * Formata data e hora completas para pt-BR no timezone configurado
  */
 export const formatDateTimeBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleString("pt-BR", { timeZone: TIMEZONE });
+  return d.toLocaleString("pt-BR", { timeZone: getTimezone() });
 };
 
 /**
- * Formata apenas a data para pt-BR no timezone de São Paulo
+ * Formata apenas a data para pt-BR no timezone configurado
  */
 export const formatDateOnlyBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("pt-BR", { timeZone: TIMEZONE });
+  return d.toLocaleDateString("pt-BR", { timeZone: getTimezone() });
 };
 
 /**
- * Formata data curta (dia/mês) para pt-BR no timezone de São Paulo
+ * Formata data curta (dia/mês) para pt-BR no timezone configurado
  */
 export const formatDateShortBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR", {
-    timeZone: TIMEZONE,
+    timeZone: getTimezone(),
     day: "2-digit",
     month: "2-digit",
   });
 };
 
 /**
- * Formata apenas o horário para pt-BR no timezone de São Paulo
+ * Formata apenas o horário para pt-BR no timezone configurado
  */
 export const formatTimeOnlyBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleTimeString("pt-BR", {
-    timeZone: TIMEZONE,
+    timeZone: getTimezone(),
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -48,23 +70,24 @@ export const formatTimeOnlyBR = (date: Date | string): string => {
 export const formatRelativeDateBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
   const now = new Date();
+  const tz = getTimezone();
   
-  // Converter para timezone de São Paulo para comparação
-  const dateInSP = new Date(d.toLocaleString("en-US", { timeZone: TIMEZONE }));
-  const nowInSP = new Date(now.toLocaleString("en-US", { timeZone: TIMEZONE }));
+  // Converter para timezone configurado para comparação
+  const dateInTZ = new Date(d.toLocaleString("en-US", { timeZone: tz }));
+  const nowInTZ = new Date(now.toLocaleString("en-US", { timeZone: tz }));
   
   const isToday =
-    dateInSP.getDate() === nowInSP.getDate() &&
-    dateInSP.getMonth() === nowInSP.getMonth() &&
-    dateInSP.getFullYear() === nowInSP.getFullYear();
+    dateInTZ.getDate() === nowInTZ.getDate() &&
+    dateInTZ.getMonth() === nowInTZ.getMonth() &&
+    dateInTZ.getFullYear() === nowInTZ.getFullYear();
     
-  const tomorrow = new Date(nowInSP);
+  const tomorrow = new Date(nowInTZ);
   tomorrow.setDate(tomorrow.getDate() + 1);
   
   const isTomorrow =
-    dateInSP.getDate() === tomorrow.getDate() &&
-    dateInSP.getMonth() === tomorrow.getMonth() &&
-    dateInSP.getFullYear() === tomorrow.getFullYear();
+    dateInTZ.getDate() === tomorrow.getDate() &&
+    dateInTZ.getMonth() === tomorrow.getMonth() &&
+    dateInTZ.getFullYear() === tomorrow.getFullYear();
 
   if (isToday) return "Hoje";
   if (isTomorrow) return "Amanhã";
@@ -73,12 +96,15 @@ export const formatRelativeDateBR = (date: Date | string): string => {
 };
 
 /**
- * Retorna a data atual no timezone de São Paulo
+ * Retorna a data atual no timezone configurado
  */
-export const getNowInSaoPaulo = (): Date => {
+export const getNowInTimezone = (): Date => {
   const now = new Date();
-  return new Date(now.toLocaleString("en-US", { timeZone: TIMEZONE }));
+  return new Date(now.toLocaleString("en-US", { timeZone: getTimezone() }));
 };
+
+// Alias para compatibilidade
+export const getNowInSaoPaulo = getNowInTimezone;
 
 /**
  * Formata data para exibição no calendário
@@ -86,7 +112,7 @@ export const getNowInSaoPaulo = (): Date => {
 export const formatCalendarDateBR = (date: Date | string): string => {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("pt-BR", {
-    timeZone: TIMEZONE,
+    timeZone: getTimezone(),
     weekday: "short",
     day: "2-digit",
     month: "short",
