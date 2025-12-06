@@ -77,6 +77,13 @@ export function TaskCard({
     low: "bg-green-500 text-white",
   };
 
+  // Cores de fundo suave baseadas na prioridade
+  const priorityBackgroundColors = {
+    high: "bg-red-500/10 dark:bg-red-500/15",
+    medium: "bg-yellow-500/10 dark:bg-yellow-500/15",
+    low: "bg-green-500/10 dark:bg-green-500/15",
+  };
+
   const isOverdue = urgency === "overdue";
   const isUrgent = urgency === "urgent";
   const isWarning = urgency === "warning";
@@ -206,9 +213,14 @@ export function TaskCard({
           transition={{ duration: 0.15 }}
         >
           <Card
-            className={`${isUltraCompact ? 'p-1' : compact ? 'p-1.5' : 'p-2'} cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
-              isOverdue ? 'border-2 border-destructive' : ''
-            } ${isUrgent ? 'border-2 border-orange-500' : ''} ${isWarning ? 'border-l-4 border-l-yellow-500' : ''}`}
+            className={cn(
+              isUltraCompact ? 'p-1' : compact ? 'p-1.5' : 'p-2',
+              "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
+              isOverdue && 'border-2 border-destructive',
+              isUrgent && 'border-2 border-orange-500',
+              isWarning && 'border-l-4 border-l-yellow-500',
+              task.priority && priorityBackgroundColors[task.priority as keyof typeof priorityBackgroundColors]
+            )}
             onDoubleClick={() => onEdit(task)}
           >
             {isUltraCompact ? (
