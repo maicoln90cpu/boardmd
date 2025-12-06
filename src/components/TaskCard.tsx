@@ -1,7 +1,18 @@
 import { Task } from "@/hooks/useTasks";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Trash2, ChevronLeft, ChevronRight, Clock, Star, AlertCircle, Repeat, Copy, Share2 } from "lucide-react";
+import {
+  Calendar,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Star,
+  AlertCircle,
+  Repeat,
+  Copy,
+  Share2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWebShare } from "@/hooks/useWebShare";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -52,16 +63,9 @@ export function TaskCard({
   onToggleFavorite,
   onDuplicate,
   densityMode = "comfortable",
-  hideBadges = false
+  hideBadges = false,
 }: TaskCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const urgency = getTaskUrgency(task);
 
@@ -87,55 +91,49 @@ export function TaskCard({
   const isOverdue = urgency === "overdue";
   const isUrgent = urgency === "urgent";
   const isWarning = urgency === "warning";
-  
+
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
   const { share } = useWebShare();
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
-  
+
   // Sincronizar estado local quando task.is_completed mudar (por realtime ou fetch)
   React.useEffect(() => {
     setIsLocalCompleted(task.is_completed);
   }, [task.is_completed]);
-  
+
   const handleToggleCompleted = async (checked: boolean) => {
     // Update otimista imediato
     setIsLocalCompleted(checked);
-    
+
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ is_completed: checked })
-        .eq("id", task.id);
-      
+      const { error } = await supabase.from("tasks").update({ is_completed: checked }).eq("id", task.id);
+
       if (error) throw error;
-      
+
       // SINCRONIZAÇÃO BIDIRECIONAL COMPLETA:
       // 1. Se esta tarefa tem um mirror_task_id, atualizar o espelho
       if (task.mirror_task_id) {
-        await supabase
-          .from("tasks")
-          .update({ is_completed: checked })
-          .eq("id", task.mirror_task_id);
+        await supabase.from("tasks").update({ is_completed: checked }).eq("id", task.mirror_task_id);
       }
-      
+
       // 2. Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
-      const { data: reverseMirrors } = await supabase
-        .from("tasks")
-        .select("id")
-        .eq("mirror_task_id", task.id);
-      
+      const { data: reverseMirrors } = await supabase.from("tasks").select("id").eq("mirror_task_id", task.id);
+
       if (reverseMirrors && reverseMirrors.length > 0) {
         await supabase
           .from("tasks")
           .update({ is_completed: checked })
-          .in("id", reverseMirrors.map(t => t.id));
+          .in(
+            "id",
+            reverseMirrors.map((t) => t.id),
+          );
       }
-      
+
       // Disparar evento para atualizar lista de tasks
-      window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId: task.id } }));
+      window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
       // Reverter se falhar
@@ -150,21 +148,14 @@ export function TaskCard({
 
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(!!task.recurrence_rule);
   const [recurrenceFrequency, setRecurrenceFrequency] = React.useState<"daily" | "weekly" | "monthly">(
-    task.recurrence_rule?.frequency || "daily"
+    task.recurrence_rule?.frequency || "daily",
   );
-  const [recurrenceInterval, setRecurrenceInterval] = React.useState(
-    task.recurrence_rule?.interval || 1
-  );
+  const [recurrenceInterval, setRecurrenceInterval] = React.useState(task.recurrence_rule?.interval || 1);
 
   const handleRecurrenceUpdate = async () => {
-    const newRecurrence = recurrenceEnabled
-      ? { frequency: recurrenceFrequency, interval: recurrenceInterval }
-      : null;
+    const newRecurrence = recurrenceEnabled ? { frequency: recurrenceFrequency, interval: recurrenceInterval } : null;
 
-    const { error } = await supabase
-      .from("tasks")
-      .update({ recurrence_rule: newRecurrence })
-      .eq("id", task.id);
+    const { error } = await supabase.from("tasks").update({ recurrence_rule: newRecurrence }).eq("id", task.id);
 
     if (error) {
       toast({
@@ -190,7 +181,9 @@ export function TaskCard({
       task.due_date ? `\nPrazo: ${formatDateOnlyBR(task.due_date)}` : "",
       task.priority ? `\nPrioridade: ${task.priority}` : "",
       task.categories?.name ? `\nCategoria: ${task.categories.name}` : "",
-    ].filter(Boolean).join("");
+    ]
+      .filter(Boolean)
+      .join("");
 
     share({
       title: "Tarefa - " + task.title,
@@ -214,12 +207,12 @@ export function TaskCard({
         >
           <Card
             className={cn(
-              isUltraCompact ? 'p-1' : compact ? 'p-1.5' : 'p-2',
+              isUltraCompact ? "p-1" : compact ? "p-2" : "p-2",
               "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
-              isOverdue && 'border-2 border-destructive',
-              isUrgent && 'border-2 border-orange-500',
-              isWarning && 'border-l-4 border-l-yellow-500',
-              task.priority && priorityBackgroundColors[task.priority as keyof typeof priorityBackgroundColors]
+              isOverdue && "border-2 border-destructive",
+              isUrgent && "border-2 border-orange-500",
+              isWarning && "border-l-4 border-l-yellow-500",
+              task.priority && priorityBackgroundColors[task.priority as keyof typeof priorityBackgroundColors],
             )}
             onDoubleClick={() => onEdit(task)}
           >
@@ -236,23 +229,23 @@ export function TaskCard({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className={`h-4 w-4 p-0 shrink-0 ${task.is_favorite ? 'text-yellow-500' : 'text-muted-foreground'}`}
+                    className={`h-4 w-4 p-0 shrink-0 ${task.is_favorite ? "text-yellow-500" : "text-muted-foreground"}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onToggleFavorite(task.id);
                     }}
                   >
-                    <Star className={`h-3 w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
+                    <Star className={`h-3 w-3 ${task.is_favorite ? "fill-yellow-500" : ""}`} />
                   </Button>
                 )}
-                <span 
+                <span
                   className={cn(
                     "font-medium truncate flex-1 min-w-0 cursor-pointer",
-                    isLocalCompleted && "line-through opacity-50"
+                    isLocalCompleted && "line-through opacity-50",
                   )}
                   onClick={() => onEdit(task)}
                 >
-                {task.title}
+                  {task.title}
                 </span>
                 {!hideBadges && showCategoryBadge && task.categories?.name && (
                   <Badge variant="outline" className="text-[9px] px-0.5 py-0 shrink-0">
@@ -260,12 +253,16 @@ export function TaskCard({
                   </Badge>
                 )}
                 {!hideBadges && task.priority && (
-                  <Badge className={`text-[9px] px-0.5 py-0 shrink-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
+                  <Badge
+                    className={`text-[9px] px-0.5 py-0 shrink-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
+                  >
                     {task.priority[0].toUpperCase()}
                   </Badge>
                 )}
                 {!hideBadges && task.due_date && (
-                  <span className={`text-[9px] shrink-0 ${isOverdue ? 'text-destructive' : isUrgent ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                  <span
+                    className={`text-[9px] shrink-0 ${isOverdue ? "text-destructive" : isUrgent ? "text-orange-600" : "text-muted-foreground"}`}
+                  >
                     {formatDateShortBR(task.due_date)}
                   </span>
                 )}
@@ -337,11 +334,11 @@ export function TaskCard({
                       className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
                       onClick={(e) => e.stopPropagation()}
                     />
-                    <h3 
+                    <h3
                       className={cn(
                         "font-medium flex-1",
                         compact ? "text-xs" : "text-sm",
-                        isLocalCompleted && "line-through opacity-50"
+                        isLocalCompleted && "line-through opacity-50",
                       )}
                     >
                       {task.title}
@@ -352,14 +349,14 @@ export function TaskCard({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className={`h-6 w-6 ${task.is_favorite ? 'text-yellow-500 hover:text-yellow-600' : 'text-muted-foreground hover:text-yellow-500'}`}
+                        className={`h-6 w-6 ${task.is_favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onToggleFavorite(task.id);
                         }}
                         title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                       >
-                        <Star className={`h-3 w-3 ${task.is_favorite ? 'fill-yellow-500' : ''}`} />
+                        <Star className={`h-3 w-3 ${task.is_favorite ? "fill-yellow-500" : ""}`} />
                       </Button>
                     )}
                     {canMoveLeft && (
@@ -387,19 +384,19 @@ export function TaskCard({
                       >
                         <ChevronRight className="h-3 w-3" />
                       </Button>
-                  )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDuplicate?.(task.id);
-                    }}
-                    title="Duplicar tarefa"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicate?.(task.id);
+                      }}
+                      title="Duplicar tarefa"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
@@ -415,13 +412,13 @@ export function TaskCard({
                 </div>
 
                 {task.description && (
-                  <p className={`${compact ? 'text-[10px]' : 'text-xs'} text-muted-foreground line-clamp-1`}>
+                  <p className={`${compact ? "text-[10px]" : "text-xs"} text-muted-foreground line-clamp-1`}>
                     {task.description}
                   </p>
                 )}
 
                 {/* Linha única com todos os badges e data */}
-                <div className={`flex items-center flex-wrap ${compact ? 'gap-1' : 'gap-1.5'}`}>
+                <div className={`flex items-center flex-wrap ${compact ? "gap-1" : "gap-1.5"}`}>
                   {!hideBadges && showCategoryBadge && task.categories?.name && (
                     <Badge variant="secondary" className="text-[10px] px-1 py-0">
                       {task.categories.name}
@@ -435,17 +432,20 @@ export function TaskCard({
                   )}
 
                   {!hideBadges && task.priority && (
-                    <Badge className={`text-[10px] px-1 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}>
+                    <Badge
+                      className={`text-[10px] px-1 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
+                    >
                       {task.priority[0].toUpperCase()}
                     </Badge>
                   )}
 
-                  {!hideBadges && task.tags?.slice(0, 2).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
-                      {tag}
-                    </Badge>
-                  ))}
-                  
+                  {!hideBadges &&
+                    task.tags?.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
+                        {tag}
+                      </Badge>
+                    ))}
+
                   {!hideBadges && task.tags && task.tags.length > 2 && (
                     <Badge variant="outline" className="text-[10px] px-1 py-0">
                       +{task.tags.length - 2}
@@ -458,13 +458,19 @@ export function TaskCard({
                       {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
-                  
+
                   {task.due_date && !isDailyKanban && (
-                    <div className={`flex items-center gap-0.5 px-1 py-0 rounded text-[10px] ${
-                      isOverdue ? 'bg-destructive/10 text-destructive' : 
-                      isUrgent ? 'bg-orange-500/10 text-orange-600' :
-                      isWarning ? 'bg-yellow-500/10 text-yellow-600' : 'bg-muted'
-                    }`}>
+                    <div
+                      className={`flex items-center gap-0.5 px-1 py-0 rounded text-[10px] ${
+                        isOverdue
+                          ? "bg-destructive/10 text-destructive"
+                          : isUrgent
+                            ? "bg-orange-500/10 text-orange-600"
+                            : isWarning
+                              ? "bg-yellow-500/10 text-yellow-600"
+                              : "bg-muted"
+                      }`}
+                    >
                       {isOverdue || isUrgent ? (
                         <AlertCircle className="h-2.5 w-2.5" />
                       ) : (
@@ -473,10 +479,10 @@ export function TaskCard({
                       {formatDateShortBR(task.due_date)}
                     </div>
                   )}
-                  
+
                   {task.subtasks && task.subtasks.length > 0 && (
                     <Badge variant="outline" className="text-[10px] px-1 py-0">
-                      ✓ {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
+                      ✓ {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
                     </Badge>
                   )}
                 </div>
@@ -488,16 +494,14 @@ export function TaskCard({
       <HoverCardContent side="right" className="w-80">
         <div className="space-y-2">
           <h4 className="text-sm font-semibold">{task.title}</h4>
-          {task.description && (
-            <p className="text-xs text-muted-foreground">{task.description}</p>
-          )}
+          {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
           {task.subtasks && task.subtasks.length > 0 && (
             <div className="space-y-1">
               <p className="text-xs font-medium">Subtarefas:</p>
               {task.subtasks.map((subtask) => (
                 <div key={subtask.id} className="flex items-center gap-2 text-xs">
-                  <span className={subtask.completed ? 'line-through text-muted-foreground' : ''}>
-                    {subtask.completed ? '✓' : '○'} {subtask.title}
+                  <span className={subtask.completed ? "line-through text-muted-foreground" : ""}>
+                    {subtask.completed ? "✓" : "○"} {subtask.title}
                   </span>
                 </div>
               ))}
