@@ -126,7 +126,7 @@ export function FavoritesSection({
                             <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-yellow-400 to-amber-500 opacity-60 group-hover:opacity-100 transition-opacity" />
                             
                             {/* Card content with proper padding */}
-                            <div className="p-1 pl-40 flex items-start gap-2">
+                            <div className="p-1 pl-4 flex items-start gap-3">
                               {/* Task info */}
                               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleEditTask(task)}>
                                 <h4 className={cn("text-sm font-medium truncate", task.is_completed && "line-through opacity-50")}>
