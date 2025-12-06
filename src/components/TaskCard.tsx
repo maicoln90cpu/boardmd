@@ -282,7 +282,7 @@ export function TaskCard({
                 {/* Linha 2: Data, Horário, Prioridade */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {/* BUG 4 FIX: Mostrar data + horário no diário */}
-                  {task.due_date && isDailyKanban && <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-muted rounded text-[10px]">
+                  {task.due_date && isDailyKanban && <div className="flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded text-[10px]">
                       <Calendar className="h-2.5 w-2.5" />
                       {formatDateShortBR(task.due_date)}
                       <Clock className="h-2.5 w-2.5 ml-1" />
