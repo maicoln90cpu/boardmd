@@ -326,17 +326,17 @@ export function TaskCard({
             ) : (
               // Layout normal - mais compacto e inline
               <div className={compact ? "space-y-0.5" : "space-y-1"}>
-                <div className="flex items-start justify-between gap-1.5">
-                  <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Checkbox
                       checked={isLocalCompleted}
                       onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
-                      className={compact ? "h-3.5 w-3.5" : "h-4 w-4"}
+                      className={cn("flex-shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
                       onClick={(e) => e.stopPropagation()}
                     />
                     <h3
                       className={cn(
-                        "font-medium flex-1",
+                        "font-medium truncate",
                         compact ? "text-xs" : "text-sm",
                         isLocalCompleted && "line-through opacity-50",
                       )}
@@ -344,7 +344,7 @@ export function TaskCard({
                       {task.title}
                     </h3>
                   </div>
-                  <div className="flex gap-0.5">
+                  <div className="flex flex-shrink-0 gap-0.5">
                     {onToggleFavorite && (
                       <Button
                         size="icon"
