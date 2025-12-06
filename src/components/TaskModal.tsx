@@ -387,6 +387,39 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       recurrence_rule: recurrence,
     };
 
+    // SINCRONIZAÇÃO BIDIRECIONAL: Se está editando uma tarefa espelhada (diário → projetos)
+    if (task?.id && task.mirror_task_id) {
+      console.log("[SINCRONIZAÇÃO BIDIRECIONAL] Atualizando tarefa original:", task.mirror_task_id);
+      
+      // Atualizar a tarefa original (projetos) com os mesmos dados
+      const mirrorUpdate = {
+        title,
+        description: description || null,
+        priority,
+        due_date: dueDateTimestamp,
+        tags: tags ? tags.split(",").map((t) => t.trim()).filter(t => t !== "espelho-diário") : null,
+        subtasks,
+        recurrence_rule: recurrence,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from("tasks")
+        .update(mirrorUpdate as any)
+        .eq("id", task.mirror_task_id);
+
+      if (!updateError) {
+        console.log("[SINCRONIZAÇÃO BIDIRECIONAL] Tarefa original atualizada com sucesso");
+        toast({
+          title: "✅ Tarefa sincronizada!",
+          description: "A tarefa e seu original em Projetos foram atualizados.",
+          duration: 3000,
+        });
+      } else {
+        console.error("[SINCRONIZAÇÃO BIDIRECIONAL] Erro ao atualizar original:", updateError);
+      }
+    }
+
     onSave(taskData);
     onOpenChange(false);
   };

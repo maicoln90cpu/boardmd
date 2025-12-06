@@ -457,11 +457,12 @@ export function TaskCard({
                   </Button>
                 </div>
 
-                {/* Linha 4: Badges categoria e espelhada (apenas para recorrentes) */}
-                {(!hideBadges && (showCategoryBadge || task.mirror_task_id || (task.tags && task.tags.length > 0))) && (
+                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
+                {(!hideBadges && (task.recurrence_rule || task.mirror_task_id || showCategoryBadge || (task.tags && task.tags.length > 0))) && (
                   <div className="flex items-center gap-1 flex-wrap">
-                    {showCategoryBadge && task.categories?.name && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {/* Mostrar categoria para tarefas recorrentes no diário */}
+                    {(task.recurrence_rule || showCategoryBadge) && task.categories?.name && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                         {task.categories.name}
                       </Badge>
                     )}
@@ -472,15 +473,15 @@ export function TaskCard({
                       </Badge>
                     )}
 
-                    {task.tags?.slice(0, 2).map((tag) => (
+                    {task.tags?.filter(tag => tag !== "espelho-diário").slice(0, 2).map((tag) => (
                       <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
                         {tag}
                       </Badge>
                     ))}
 
-                    {task.tags && task.tags.length > 2 && (
+                    {task.tags && task.tags.filter(tag => tag !== "espelho-diário").length > 2 && (
                       <Badge variant="outline" className="text-[10px] px-1 py-0">
-                        +{task.tags.length - 2}
+                        +{task.tags.filter(tag => tag !== "espelho-diário").length - 2}
                       </Badge>
                     )}
                   </div>
