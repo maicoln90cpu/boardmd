@@ -324,136 +324,31 @@ export function TaskCard({
                 </div>
               </div>
             ) : (
-              // Layout normal - mais compacto e inline
-              <div className={compact ? "space-y-0.5" : "space-y-1"}>
-                <div className="flex items-start justify-between gap-1">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Checkbox
-                      checked={isLocalCompleted}
-                      onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
-                      className={cn("flex-shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <h3
-                      className={cn(
-                        "font-medium truncate",
-                        compact ? "text-xs" : "text-sm",
-                        isLocalCompleted && "line-through opacity-50",
-                      )}
-                    >
-                      {task.title}
-                    </h3>
-                  </div>
-                  <div className="flex flex-shrink-0 gap-0.5">
-                    {onToggleFavorite && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className={`h-6 w-6 ${task.is_favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onToggleFavorite(task.id);
-                        }}
-                        title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
-                      >
-                        <Star className={`h-3 w-3 ${task.is_favorite ? "fill-yellow-500" : ""}`} />
-                      </Button>
+              // Layout 3 linhas (4 para recorrentes)
+              <div className="space-y-1">
+                {/* Linha 1: Checkbox + Título */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Checkbox
+                    checked={isLocalCompleted}
+                    onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
+                    className={cn("flex-shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <h3
+                    className={cn(
+                      "font-medium truncate flex-1",
+                      compact ? "text-xs" : "text-sm",
+                      isLocalCompleted && "line-through opacity-50",
                     )}
-                    {canMoveLeft && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMoveLeft?.();
-                        }}
-                      >
-                        <ChevronLeft className="h-3 w-3" />
-                      </Button>
-                    )}
-                    {canMoveRight && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMoveRight?.();
-                        }}
-                      >
-                        <ChevronRight className="h-3 w-3" />
-                      </Button>
-                    )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDuplicate?.(task.id);
-                      }}
-                      title="Duplicar tarefa"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(task.id);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  >
+                    {task.title}
+                  </h3>
                 </div>
 
-                {task.description && (
-                  <p className={`${compact ? "text-[10px]" : "text-xs"} text-muted-foreground line-clamp-1`}>
-                    {task.description}
-                  </p>
-                )}
-
-                {/* Linha única com todos os badges e data */}
-                <div className={`flex items-center flex-wrap ${compact ? "gap-1" : "gap-1.5"}`}>
-                  {!hideBadges && showCategoryBadge && task.categories?.name && (
-                    <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                      {task.categories.name}
-                    </Badge>
-                  )}
-
-                  {!hideBadges && task.mirror_task_id && (
-                    <Badge variant="secondary" className="text-[10px] px-1 py-0 gap-0.5">
-                      🪞 Espelhada
-                    </Badge>
-                  )}
-
-                  {!hideBadges && task.priority && (
-                    <Badge
-                      className={`text-[10px] px-1 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
-                    >
-                      {task.priority[0].toUpperCase()}
-                    </Badge>
-                  )}
-
-                  {!hideBadges &&
-                    task.tags?.slice(0, 2).map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
-                        {tag}
-                      </Badge>
-                    ))}
-
-                  {!hideBadges && task.tags && task.tags.length > 2 && (
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">
-                      +{task.tags.length - 2}
-                    </Badge>
-                  )}
-
+                {/* Linha 2: Data, Horário, Prioridade */}
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {task.due_date && isDailyKanban && (
-                    <div className="flex items-center gap-0.5 px-1 py-0 bg-muted rounded text-[10px]">
+                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-muted rounded text-[10px]">
                       <Clock className="h-2.5 w-2.5" />
                       {formatTimeOnlyBR(task.due_date)}
                     </div>
@@ -461,7 +356,7 @@ export function TaskCard({
 
                   {task.due_date && !isDailyKanban && (
                     <div
-                      className={`flex items-center gap-0.5 px-1 py-0 rounded text-[10px] ${
+                      className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] ${
                         isOverdue
                           ? "bg-destructive/10 text-destructive"
                           : isUrgent
@@ -480,12 +375,116 @@ export function TaskCard({
                     </div>
                   )}
 
+                  {!hideBadges && task.priority && (
+                    <Badge
+                      className={`text-[10px] px-1.5 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
+                    >
+                      {task.priority === "alta" ? "Alta" : task.priority === "média" ? "Média" : "Baixa"}
+                    </Badge>
+                  )}
+
                   {task.subtasks && task.subtasks.length > 0 && (
                     <Badge variant="outline" className="text-[10px] px-1 py-0">
                       ✓ {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
                     </Badge>
                   )}
                 </div>
+
+                {/* Linha 3: Ícones de ação */}
+                <div className="flex items-center gap-0.5">
+                  {onToggleFavorite && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className={`h-5 w-5 ${task.is_favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleFavorite(task.id);
+                      }}
+                      title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                    >
+                      <Star className={`h-3 w-3 ${task.is_favorite ? "fill-yellow-500" : ""}`} />
+                    </Button>
+                  )}
+                  {canMoveLeft && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMoveLeft?.();
+                      }}
+                    >
+                      <ChevronLeft className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {canMoveRight && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMoveRight?.();
+                      }}
+                    >
+                      <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate?.(task.id);
+                    }}
+                    title="Duplicar tarefa"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(task.id);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {/* Linha 4: Badges categoria e espelhada (apenas para recorrentes) */}
+                {(!hideBadges && (showCategoryBadge || task.mirror_task_id || (task.tags && task.tags.length > 0))) && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {showCategoryBadge && task.categories?.name && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        {task.categories.name}
+                      </Badge>
+                    )}
+
+                    {task.mirror_task_id && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                        🪞 Espelhada
+                      </Badge>
+                    )}
+
+                    {task.tags?.slice(0, 2).map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0">
+                        {tag}
+                      </Badge>
+                    ))}
+
+                    {task.tags && task.tags.length > 2 && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        +{task.tags.length - 2}
+                      </Badge>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </Card>
