@@ -74,8 +74,12 @@ function Index() {
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
 
   // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
-  const { settings, updateSettings, saveSettings } = useSettings();
-  
+  const {
+    settings,
+    updateSettings,
+    saveSettings
+  } = useSettings();
+
   // Valores derivados das configurações (somente leitura aqui - editar em Config)
   const simplifiedMode = settings.kanban.simplifiedMode;
   const dailySortOption = settings.kanban.dailySortOption;
@@ -103,35 +107,72 @@ function Index() {
 
   // Funções para atualizar settings localmente (com sync para DB)
   const setSimplifiedMode = async (value: boolean) => {
-    updateSettings({ kanban: { ...settings.kanban, simplifiedMode: value } });
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        simplifiedMode: value
+      }
+    });
     await saveSettings();
   };
   const setDailySortOption = async (value: "time" | "name" | "priority") => {
-    updateSettings({ kanban: { ...settings.kanban, dailySortOption: value } });
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        dailySortOption: value
+      }
+    });
     await saveSettings();
   };
   const setDailySortOrder = async (value: "asc" | "desc") => {
-    updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value } });
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        dailySortOrder: value
+      }
+    });
     await saveSettings();
   };
   const setDensityMode = async (value: "comfortable" | "compact" | "ultra-compact") => {
-    updateSettings({ defaultDensity: value });
+    updateSettings({
+      defaultDensity: value
+    });
     await saveSettings();
   };
   const setShowFavoritesPanel = async (value: boolean) => {
-    updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: value } });
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        showFavoritesPanel: value
+      }
+    });
     await saveSettings();
   };
   const setHideBadgesMobile = async (value: boolean) => {
-    updateSettings({ mobile: { ...settings.mobile, hideBadges: value } });
+    updateSettings({
+      mobile: {
+        ...settings.mobile,
+        hideBadges: value
+      }
+    });
     await saveSettings();
   };
   const setDailyGridColumnsMobile = async (value: 1 | 2) => {
-    updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: value } });
+    updateSettings({
+      mobile: {
+        ...settings.mobile,
+        dailyGridColumns: value
+      }
+    });
     await saveSettings();
   };
   const setProjectsGridColumnsMobile = async (value: 1 | 2) => {
-    updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: value } });
+    updateSettings({
+      mobile: {
+        ...settings.mobile,
+        projectsGridColumns: value
+      }
+    });
     await saveSettings();
   };
 
@@ -158,7 +199,7 @@ function Index() {
       setViewMode(view);
     }
   }, []);
-  
+
   // OTIMIZAÇÃO: Consolidar em uma única instância de useTasks
   // Busca todas as tarefas uma vez e usa filtros locais para diferentes views
   const {
@@ -239,14 +280,11 @@ function Index() {
   const dailyAvailableTags = useMemo(() => {
     if (!dailyCategory) return [];
     const tags = new Set<string>();
-    allTasks
-      .filter(task => task.category_id === dailyCategory)
-      .forEach(task => {
-        task.tags?.forEach(tag => tags.add(tag));
-      });
+    allTasks.filter(task => task.category_id === dailyCategory).forEach(task => {
+      task.tags?.forEach(tag => tags.add(tag));
+    });
     return Array.from(tags);
   }, [allTasks, dailyCategory]);
-
   const handleExport = () => {
     const data = {
       categories,
@@ -316,10 +354,7 @@ function Index() {
   };
   // handleResetRecurrentTasks usa função utilitária importada - só processa tarefas riscadas
   const handleResetRecurrentTasks = async () => {
-    const recurrentColumn = columns.find(
-      (col) => col.name.toLowerCase() === "recorrente"
-    );
-
+    const recurrentColumn = columns.find(col => col.name.toLowerCase() === "recorrente");
     if (!recurrentColumn) {
       toast({
         title: "Coluna não encontrada",
@@ -330,12 +365,10 @@ function Index() {
     }
 
     // Query direta ao Supabase para buscar TODAS as tarefas na coluna Recorrente
-    const { data: recurrentTasks, error: fetchError } = await supabase
-      .from("tasks")
-      .select("id, title, is_completed, recurrence_rule, tags, due_date")
-      .eq("column_id", recurrentColumn.id)
-      .not("recurrence_rule", "is", null);
-
+    const {
+      data: recurrentTasks,
+      error: fetchError
+    } = await supabase.from("tasks").select("id, title, is_completed, recurrence_rule, tags, due_date").eq("column_id", recurrentColumn.id).not("recurrence_rule", "is", null);
     if (fetchError) {
       console.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
       toast({
@@ -347,12 +380,8 @@ function Index() {
     }
 
     // Filtrar: só tarefas riscadas (is_completed = true) e sem tag de espelho
-    const tasksToReset = recurrentTasks?.filter(
-      task => !task.tags?.includes("espelho-diário") && task.is_completed === true
-    ) || [];
-
+    const tasksToReset = recurrentTasks?.filter(task => !task.tags?.includes("espelho-diário") && task.is_completed === true) || [];
     console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
-    
     if (tasksToReset.length === 0) {
       toast({
         title: "Nenhuma tarefa",
@@ -370,41 +399,33 @@ function Index() {
     let successCount = 0;
     for (const task of tasksToReset) {
       const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
-      
-      const { error } = await supabase
-        .from("tasks")
-        .update({ 
-          is_completed: false,
-          due_date: nextDueDate
-        })
-        .eq("id", task.id);
-
+      const {
+        error
+      } = await supabase.from("tasks").update({
+        is_completed: false,
+        due_date: nextDueDate
+      }).eq("id", task.id);
       if (error) {
         console.error(`[DEBUG RESET] Erro ao atualizar tarefa ${task.id}:`, error);
       } else {
         successCount++;
-        
+
         // BUG 1 FIX: Sincronização bidirecional - atualizar tarefa espelhada (projetos)
         // Buscar mirror_task_id se existir
-        const { data: taskData } = await supabase
-          .from("tasks")
-          .select("mirror_task_id")
-          .eq("id", task.id)
-          .single();
-          
+        const {
+          data: taskData
+        } = await supabase.from("tasks").select("mirror_task_id").eq("id", task.id).single();
         if (taskData?.mirror_task_id) {
           await supabase.from("tasks").update({
             is_completed: false,
             due_date: nextDueDate
           }).eq("id", taskData.mirror_task_id);
         }
-        
+
         // Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
-        const { data: reverseMirrors } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("mirror_task_id", task.id);
-          
+        const {
+          data: reverseMirrors
+        } = await supabase.from("tasks").select("id").eq("mirror_task_id", task.id);
         if (reverseMirrors && reverseMirrors.length > 0) {
           await supabase.from("tasks").update({
             is_completed: false,
@@ -416,7 +437,6 @@ function Index() {
 
     // Disparar evento para forçar refetch
     window.dispatchEvent(new CustomEvent('task-updated'));
-
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
     toast({
       title: "Tarefas resetadas",
@@ -424,7 +444,6 @@ function Index() {
     });
     setDailyBoardKey(k => k + 1);
   };
-
   const handleResetDaily = async () => {
     if (!columns.length) return;
 
@@ -436,7 +455,6 @@ function Index() {
 
     const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
     await resetDailyTasks(targetColumn.id, excludeIds);
-
     addActivity("daily_reset", "Kanban Diário resetado");
     toast({
       title: "Kanban resetado",
@@ -478,7 +496,6 @@ function Index() {
   const handleEqualizeColumns = () => {
     const equalSize = 100 / visibleColumns.length;
     const equalSizes = visibleColumns.map(() => equalSize);
-    
     if (viewMode === "daily") {
       // Modo Diário: apenas uma categoria
       localStorage.setItem(`kanban-column-sizes-${dailyCategory}`, JSON.stringify(equalSizes));
@@ -487,13 +504,13 @@ function Index() {
       // Modo Projetos: atualizar TODAS as categorias visíveis + "all"
       // Atualizar key "all" para modo all_tasks
       localStorage.setItem(`kanban-column-sizes-all`, JSON.stringify(equalSizes));
-      
+
       // Atualizar cada categoria individual para modo by_category
       const nonDailyCategories = categories.filter(c => c.name !== "Diário");
       nonDailyCategories.forEach(cat => {
         localStorage.setItem(`kanban-column-sizes-${cat.id}`, JSON.stringify(equalSizes));
       });
-      
+
       // Disparar evento storage para forçar re-leitura
       window.dispatchEvent(new Event('storage'));
       setProjectsBoardKey(k => k + 1);
@@ -607,21 +624,10 @@ function Index() {
               <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
                 {/* Campo de Busca por Texto */}
                 <div className="relative flex-1 min-w-[150px] max-w-[250px]">
-                  <input
-                    type="text"
-                    placeholder="Buscar tarefas..."
-                    value={dailySearchTerm}
-                    onChange={(e) => setDailySearchTerm(e.target.value)}
-                    className="w-full h-9 px-3 pr-8 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  />
-                  {dailySearchTerm && (
-                    <button
-                      onClick={() => setDailySearchTerm("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
+                  <input type="text" placeholder="Buscar tarefas..." value={dailySearchTerm} onChange={e => setDailySearchTerm(e.target.value)} className="w-full h-9 px-3 pr-8 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" />
+                  {dailySearchTerm && <button onClick={() => setDailySearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                       ×
-                    </button>
-                  )}
+                    </button>}
                 </div>
 
                 {/* Filtros contextuais: Prioridade e Tag */}
@@ -637,34 +643,23 @@ function Index() {
                   </SelectContent>
                 </Select>
 
-                {dailyAvailableTags.length > 0 && (
-                  <Select value={dailyTagFilter} onValueChange={setDailyTagFilter}>
+                {dailyAvailableTags.length > 0 && <Select value={dailyTagFilter} onValueChange={setDailyTagFilter}>
                     <SelectTrigger className="w-[110px] h-9">
                       <SelectValue placeholder="Tag" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
-                      {dailyAvailableTags.map(tag => (
-                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                      ))}
+                      {dailyAvailableTags.map(tag => <SelectItem key={tag} value={tag}>{tag}</SelectItem>)}
                     </SelectContent>
-                  </Select>
-                )}
+                  </Select>}
 
-                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all" || dailySearchTerm) && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => {
-                      setDailyPriorityFilter("all");
-                      setDailyTagFilter("all");
-                      setDailySearchTerm("");
-                    }}
-                    className="h-9"
-                  >
+                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all" || dailySearchTerm) && <Button variant="ghost" size="sm" onClick={() => {
+              setDailyPriorityFilter("all");
+              setDailyTagFilter("all");
+              setDailySearchTerm("");
+            }} className="h-9">
                     Limpar
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
 
@@ -672,20 +667,7 @@ function Index() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Kanban Board - ocupa tudo quando Favoritos oculto */}
               <div className={cn("overflow-y-auto", showFavoritesPanel ? "flex-1" : "w-full")}>
-                <KanbanBoard 
-                  key={dailyBoardKey} 
-                  columns={visibleColumns} 
-                  categoryId={dailyCategory} 
-                  compact 
-                  isDailyKanban 
-                  sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} 
-                  densityMode={densityMode} 
-                  hideBadges={hideBadgesMobile} 
-                  gridColumns={dailyGridColumnsMobile}
-                  priorityFilter={dailyPriorityFilter}
-                  tagFilter={dailyTagFilter}
-                  searchTerm={dailySearchTerm}
-                />
+                <KanbanBoard key={dailyBoardKey} columns={visibleColumns} categoryId={dailyCategory} compact isDailyKanban sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={dailyGridColumnsMobile} priorityFilter={dailyPriorityFilter} tagFilter={dailyTagFilter} searchTerm={dailySearchTerm} />
               </div>
 
               {/* Favoritos - só renderiza se showFavoritesPanel = true */}
@@ -704,7 +686,7 @@ function Index() {
                     <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
                     {simplifiedMode && <Badge variant="secondary" className="text-xs">Modo Simplificado</Badge>}
                     {/* Item 2: Badges com contadores */}
-                    {taskCounters && <div className="flex gap-2">
+                    {taskCounters && <div className="flex gap-3">
                         <Badge variant="outline" className="text-xs">
                           Total: {taskCounters.total}
                         </Badge>
