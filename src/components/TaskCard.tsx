@@ -31,6 +31,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR, formatDateOnlyBR } from "@/lib/dateUtils";
+interface PriorityColors {
+  high: { background: string; text: string };
+  medium: { background: string; text: string };
+  low: { background: string; text: string };
+}
+
 interface TaskCardProps {
   task: Task & {
     categories?: {
@@ -51,7 +57,15 @@ interface TaskCardProps {
   onDuplicate?: (taskId: string) => void;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
+  priorityColors?: PriorityColors;
 }
+// Default priority colors
+const defaultPriorityColors: PriorityColors = {
+  high: { background: '#fee2e2', text: '#dc2626' },
+  medium: { background: '#fef3c7', text: '#d97706' },
+  low: { background: '#dcfce7', text: '#16a34a' },
+};
+
 export function TaskCard({
   task,
   onEdit,
@@ -67,6 +81,7 @@ export function TaskCard({
   onDuplicate,
   densityMode = "comfortable",
   hideBadges = false,
+  priorityColors = defaultPriorityColors,
 }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -78,18 +93,23 @@ export function TaskCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  // Cores de prioridade (podem ser customizadas via settings)
-  const priorityColors = {
-    high: "bg-destructive text-destructive-foreground",
-    medium: "bg-yellow-500 text-white",
-    low: "bg-green-500 text-white",
+  // Compute priority classes from custom colors
+  const getPriorityBadgeStyle = (priority: string) => {
+    const colors = priorityColors[priority as keyof PriorityColors] || defaultPriorityColors.low;
+    return {
+      backgroundColor: colors.text,
+      color: '#ffffff',
+    };
   };
 
-  // Cores de fundo suave baseadas na prioridade (podem ser customizadas via settings)
-  const priorityBackgroundColors = {
-    high: "bg-red-500/10 dark:bg-red-500/15",
-    medium: "bg-yellow-500/10 dark:bg-yellow-500/15",
-    low: "bg-green-500/10 dark:bg-green-500/15",
+  // Get background style for card based on priority
+  const getCardBackgroundStyle = (priority: string | null | undefined) => {
+    if (!priority) return {};
+    const colors = priorityColors[priority as keyof PriorityColors];
+    if (!colors) return {};
+    return {
+      backgroundColor: colors.background,
+    };
   };
   const isOverdue = urgency === "overdue";
   const isUrgent = urgency === "urgent";
@@ -261,8 +281,8 @@ export function TaskCard({
               isOverdue && "border-2 border-destructive",
               isUrgent && "border-2 border-orange-500",
               isWarning && "border-l-4 border-l-yellow-500",
-              task.priority && priorityBackgroundColors[task.priority as keyof typeof priorityBackgroundColors],
             )}
+            style={getCardBackgroundStyle(task.priority)}
             onDoubleClick={() => onEdit(task)}
           >
             {isUltraCompact ? (
@@ -303,7 +323,8 @@ export function TaskCard({
                 )}
                 {!hideBadges && task.priority && (
                   <Badge
-                    className={`text-[9px] px-0.5 py-0 shrink-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
+                    className="text-[9px] px-0.5 py-0 shrink-0"
+                    style={getPriorityBadgeStyle(task.priority)}
                   >
                     {task.priority[0].toUpperCase()}
                   </Badge>
@@ -424,7 +445,8 @@ export function TaskCard({
                   {/* BUG 3 FIX: Usar valores em inglês (high/medium/low) */}
                   {!hideBadges && task.priority && (
                     <Badge
-                      className={`text-[10px] px-2 py-0 ${priorityColors[task.priority as keyof typeof priorityColors]}`}
+                      className="text-[10px] px-2 py-0"
+                      style={getPriorityBadgeStyle(task.priority)}
                     >
                       {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
                     </Badge>

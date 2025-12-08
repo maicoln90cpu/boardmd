@@ -105,6 +105,41 @@ export function useSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
 
+  // Deep merge helper for settings
+  const deepMergeSettings = (loaded: Partial<AppSettings>): AppSettings => ({
+    ...defaultSettings,
+    ...loaded,
+    notifications: {
+      ...defaultSettings.notifications,
+      ...(loaded.notifications || {}),
+    },
+    kanban: {
+      ...defaultSettings.kanban,
+      ...(loaded.kanban || {}),
+    },
+    productivity: {
+      ...defaultSettings.productivity,
+      ...(loaded.productivity || {}),
+    },
+    interface: {
+      ...defaultSettings.interface,
+      ...(loaded.interface || {}),
+    },
+    mobile: {
+      ...defaultSettings.mobile,
+      ...(loaded.mobile || {}),
+    },
+    // BUG 1 FIX: Deep merge customization.priorityColors
+    customization: {
+      ...defaultSettings.customization,
+      ...(loaded.customization || {}),
+      priorityColors: {
+        ...defaultSettings.customization?.priorityColors,
+        ...(loaded.customization?.priorityColors || {}),
+      },
+    },
+  });
+
   // Load settings from database + Realtime sync
   useEffect(() => {
     if (!user) {
@@ -124,32 +159,8 @@ export function useSettings() {
         console.error("Error loading settings:", error);
         setSettings(defaultSettings);
       } else if (data?.settings) {
-        // Deep merge with default settings to ensure all nested properties exist
         const loadedSettings = data.settings as Partial<AppSettings>;
-        setSettings({
-          ...defaultSettings,
-          ...loadedSettings,
-          notifications: {
-            ...defaultSettings.notifications,
-            ...(loadedSettings.notifications || {}),
-          },
-          kanban: {
-            ...defaultSettings.kanban,
-            ...(loadedSettings.kanban || {}),
-          },
-          productivity: {
-            ...defaultSettings.productivity,
-            ...(loadedSettings.productivity || {}),
-          },
-          interface: {
-            ...defaultSettings.interface,
-            ...(loadedSettings.interface || {}),
-          },
-          mobile: {
-            ...defaultSettings.mobile,
-            ...(loadedSettings.mobile || {}),
-          },
-        });
+        setSettings(deepMergeSettings(loadedSettings));
       } else {
         setSettings(defaultSettings);
       }
@@ -158,7 +169,7 @@ export function useSettings() {
 
     loadSettings();
 
-    // Item 1: Subscribe to realtime changes
+    // Subscribe to realtime changes
     const channel = supabase
       .channel('user_settings_changes')
       .on(
@@ -171,32 +182,8 @@ export function useSettings() {
         },
         (payload) => {
           if (payload.new?.settings) {
-            // Deep merge realtime updates
             const loadedSettings = payload.new.settings as Partial<AppSettings>;
-            setSettings({
-              ...defaultSettings,
-              ...loadedSettings,
-              notifications: {
-                ...defaultSettings.notifications,
-                ...(loadedSettings.notifications || {}),
-              },
-              kanban: {
-                ...defaultSettings.kanban,
-                ...(loadedSettings.kanban || {}),
-              },
-              productivity: {
-                ...defaultSettings.productivity,
-                ...(loadedSettings.productivity || {}),
-              },
-              interface: {
-                ...defaultSettings.interface,
-                ...(loadedSettings.interface || {}),
-              },
-              mobile: {
-                ...defaultSettings.mobile,
-                ...(loadedSettings.mobile || {}),
-              },
-            });
+            setSettings(deepMergeSettings(loadedSettings));
             setIsDirty(false);
           }
         }
@@ -231,6 +218,15 @@ export function useSettings() {
       mobile: {
         ...prev.mobile,
         ...(newSettings.mobile || {}),
+      },
+      // BUG 1 FIX: Deep merge customization.priorityColors
+      customization: {
+        ...prev.customization,
+        ...(newSettings.customization || {}),
+        priorityColors: {
+          ...prev.customization?.priorityColors,
+          ...(newSettings.customization?.priorityColors || {}),
+        },
       },
     }));
     setIsDirty(true);

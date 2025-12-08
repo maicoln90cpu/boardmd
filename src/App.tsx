@@ -18,6 +18,7 @@ import Config from "./pages/Config";
 import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import NotificationsDashboard from "./pages/NotificationsDashboard";
+import Pomodoro from "./pages/Pomodoro";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,14 @@ function AppContent() {
                 element={
                   <ProtectedRoute>
                     <NotificationsDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pomodoro" 
+                element={
+                  <ProtectedRoute>
+                    <Pomodoro />
                   </ProtectedRoute>
                 } 
               />
