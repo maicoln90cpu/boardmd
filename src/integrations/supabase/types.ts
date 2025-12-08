@@ -175,6 +175,7 @@ export type Database = {
           id: string
           session_type: string
           started_at: string
+          task_id: string | null
           user_id: string
         }
         Insert: {
@@ -185,6 +186,7 @@ export type Database = {
           id?: string
           session_type?: string
           started_at?: string
+          task_id?: string | null
           user_id: string
         }
         Update: {
@@ -195,7 +197,52 @@ export type Database = {
           id?: string
           session_type?: string
           started_at?: string
+          task_id?: string | null
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pomodoro_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pomodoro_templates: {
+        Row: {
+          created_at: string
+          id: string
+          long_break: number
+          name: string
+          sessions_until_long: number
+          short_break: number
+          updated_at: string
+          user_id: string
+          work_duration: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          long_break?: number
+          name: string
+          sessions_until_long?: number
+          short_break?: number
+          updated_at?: string
+          user_id: string
+          work_duration?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          long_break?: number
+          name?: string
+          sessions_until_long?: number
+          short_break?: number
+          updated_at?: string
+          user_id?: string
+          work_duration?: number
         }
         Relationships: []
       }

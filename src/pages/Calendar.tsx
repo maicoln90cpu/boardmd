@@ -332,26 +332,34 @@ export default function Calendar() {
                           {format(day, "d")}
                         </div>
                         
-                        {/* Task indicators with preview */}
+                        {/* BUG 3 FIX: Task list with full names instead of dots */}
                         {dayTasks.length > 0 && (
                           <HoverCard openDelay={200}>
                             <HoverCardTrigger asChild>
-                              <div className="flex flex-wrap gap-1 justify-center cursor-help">
+                              <div className="flex flex-col gap-0.5 w-full overflow-hidden cursor-help">
                                 {dayTasks.slice(0, 3).map((task) => (
                                   <div
                                     key={task.id}
-                                    className={cn(
-                                      "w-2 h-2 rounded-full",
-                                      getPriorityColor(task.priority)
-                                    )}
+                                    className="flex items-center gap-1 px-1 py-0.5 rounded text-[8px] truncate"
                                     style={{
-                                      boxShadow: `0 0 4px ${getColumnColor(task.column_id)}`
+                                      backgroundColor: task.priority === "high" ? "#fee2e2" : 
+                                                       task.priority === "medium" ? "#fef3c7" : "#dcfce7"
                                     }}
-                                  />
+                                  >
+                                    <div
+                                      className={cn(
+                                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                                        getPriorityColor(task.priority)
+                                      )}
+                                    />
+                                    <span className="truncate font-medium text-foreground">
+                                      {task.title}
+                                    </span>
+                                  </div>
                                 ))}
                                 {dayTasks.length > 3 && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    +{dayTasks.length - 3}
+                                  <span className="text-[8px] text-muted-foreground text-center">
+                                    +{dayTasks.length - 3} mais
                                   </span>
                                 )}
                               </div>
