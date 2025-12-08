@@ -139,8 +139,8 @@ export function Sidebar({
   const secondaryMenuItems = [{
     icon: Timer,
     label: "Pomodoro",
-    active: false,
-    onClick: () => setPomodoroOpen(true)
+    active: location.pathname === "/pomodoro",
+    onClick: () => navigate("/pomodoro")
   }, {
     icon: Calendar,
     label: "Calendário",
