@@ -311,12 +311,12 @@ export default function Pomodoro() {
                     <Label className="text-sm text-muted-foreground mb-2 block">
                       Tarefa vinculada (opcional)
                     </Label>
-                    <Select value={selectedTaskId || ""} onValueChange={setSelectedTaskId}>
+                    <Select value={selectedTaskId || "none"} onValueChange={(val) => setSelectedTaskId(val === "none" ? null : val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma tarefa..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma tarefa</SelectItem>
+                        <SelectItem value="none">Nenhuma tarefa</SelectItem>
                         {activeTasks.map((task) => (
                           <SelectItem key={task.id} value={task.id}>
                             {task.title}

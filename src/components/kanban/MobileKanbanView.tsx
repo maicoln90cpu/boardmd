@@ -9,6 +9,12 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { getColumnColorClass } from "./ColumnColorPicker";
 import { cn } from "@/lib/utils";
 
+interface PriorityColors {
+  high: { background: string; text: string };
+  medium: { background: string; text: string };
+  low: { background: string; text: string };
+}
+
 interface MobileKanbanViewProps {
   columns: Column[];
   tasks: Task[];
@@ -25,6 +31,7 @@ interface MobileKanbanViewProps {
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
   gridColumns?: 1 | 2;
+  priorityColors?: PriorityColors;
 }
 
 export function MobileKanbanView({
@@ -42,7 +49,8 @@ export function MobileKanbanView({
   showCategoryBadge = false,
   densityMode = "compact",
   hideBadges = false,
-  gridColumns = 2
+  gridColumns = 2,
+  priorityColors
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
 
@@ -113,6 +121,7 @@ export function MobileKanbanView({
                           showCategoryBadge={showCategoryBadge}
                           densityMode="ultra-compact"
                           hideBadges={hideBadges}
+                          priorityColors={priorityColors}
                         />
                       ))
                     )}

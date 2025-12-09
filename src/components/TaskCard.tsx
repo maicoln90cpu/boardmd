@@ -276,6 +276,7 @@ export function TaskCard({
         >
           <Card
             className={cn(
+              "w-full",
               isUltraCompact ? "p-1" : compact ? "p-2" : "p-2",
               "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
               isOverdue && "border-2 border-destructive",
