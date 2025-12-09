@@ -603,22 +603,7 @@ function Index() {
                 </div>
               </div>
 
-              {isMobile && <div className="px-3 py-2 border-b flex items-center gap-2">
-                  <Select value={dailyGridColumnsMobile.toString()} onValueChange={v => setDailyGridColumnsMobile(Number(v) as 1 | 2)}>
-                    <SelectTrigger className="flex-1 h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 Coluna</SelectItem>
-                      <SelectItem value="2">2 Colunas</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Button variant={hideBadgesMobile ? "secondary" : "outline"} size="sm" onClick={() => setHideBadgesMobile(!hideBadgesMobile)} className="flex-1 h-10 text-sm gap-1">
-                    {hideBadgesMobile ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                    <span className="text-xs truncate">{hideBadgesMobile ? "Mostrar" : "Ocultar"}</span>
-                  </Button>
-                </div>}
+              {/* Controles de grid e badges removidos - configurar em Setup */}
               
               {/* Filtros do Kanban Diário (ordenação/densidade definidos em Setup) */}
               <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
@@ -742,27 +727,11 @@ function Index() {
                     </Button>
                   </div>
 
-                  {/* LINHA 3: Filtro colunas + Toggle badges */}
-                  <div className="px-3 py-2 border-b flex items-center gap-2">
-                    <Select value={projectsGridColumnsMobile.toString()} onValueChange={v => setProjectsGridColumnsMobile(Number(v) as 1 | 2)}>
-                      <SelectTrigger className="flex-1 h-10 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Coluna</SelectItem>
-                        <SelectItem value="2">2 Colunas</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Button variant={hideBadgesMobile ? "secondary" : "outline"} size="sm" onClick={() => setHideBadgesMobile(!hideBadgesMobile)} className="flex-1 h-10 text-sm gap-1">
-                      {hideBadgesMobile ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                      <span className="text-xs truncate">{hideBadgesMobile ? "Mostrar" : "Ocultar"}</span>
-                    </Button>
-                  </div>
+                  {/* Controles de grid e badges removidos - configurar em Setup */}
                 </>}
             </div>
             
-            <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={sortOption} onSortChange={setSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} densityMode={densityMode} onDensityChange={setDensityMode} simplifiedMode={simplifiedMode} onSimplifiedModeChange={setSimplifiedMode} />
+            <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={sortOption} onSortChange={setSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} />
 
             {/* Renderizar baseado no displayMode */}
             {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
