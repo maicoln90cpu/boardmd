@@ -446,6 +446,7 @@ export function KanbanBoard({
           densityMode={densityMode}
           hideBadges={hideBadges}
           gridColumns={gridColumns}
+          priorityColors={settings.customization?.priorityColors}
         />
 
         <TaskModal
@@ -561,6 +562,7 @@ export function KanbanBoard({
                               onToggleFavorite={toggleFavorite}
                               onDuplicate={duplicateTask}
                               densityMode={densityMode}
+                              priorityColors={settings.customization?.priorityColors}
                             />
                           ))}
                         </div>
@@ -583,6 +585,7 @@ export function KanbanBoard({
                 task={tasks.find((t) => t.id === activeId)!}
                 onEdit={() => {}}
                 onDelete={() => {}}
+                priorityColors={settings.customization?.priorityColors}
               />
             </div>
           ) : null}
