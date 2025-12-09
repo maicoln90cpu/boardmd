@@ -310,7 +310,7 @@ export function TaskCard({
                 )}
                 <span
                   className={cn(
-                    "font-medium truncate flex-1 min-w-0 cursor-pointer",
+                    "font-medium truncate flex-1 min-w-0 cursor-pointer text-xs",
                     isLocalCompleted && "line-through opacity-50",
                   )}
                   onClick={() => onEdit(task)}
@@ -408,7 +408,7 @@ export function TaskCard({
                   <h3
                     className={cn(
                       "font-medium truncate flex-1",
-                      compact ? "text-xs" : "text-sm",
+                      compact ? "text-sm" : "text-base",
                       isLocalCompleted && "line-through opacity-50",
                     )}
                   >

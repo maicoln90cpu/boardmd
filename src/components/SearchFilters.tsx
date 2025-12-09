@@ -178,31 +178,7 @@ export function SearchFilters({
         </Select>
       )}
       
-      {onDensityChange && (
-        <Select value={densityMode} onValueChange={onDensityChange}>
-          <SelectTrigger className={compact ? "w-[120px] min-h-[40px]" : "w-full sm:w-[140px] min-h-[48px]"}>
-            <span className="mr-2">{densityIcon[densityMode]}</span>
-            <SelectValue placeholder="Densidade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="comfortable">Confortável</SelectItem>
-            <SelectItem value="compact">Compacto</SelectItem>
-            <SelectItem value="ultra-compact">Ultra</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-
-      {viewMode === "all" && onSimplifiedModeChange && (
-        <Button
-          variant={simplifiedMode ? "default" : "outline"}
-          size="default"
-          onClick={() => onSimplifiedModeChange(!simplifiedMode)}
-          className="gap-2 min-h-[48px] w-full sm:w-auto"
-        >
-          <Columns3 className="h-4 w-4" />
-          {simplifiedMode ? "Modo Simplificado" : "Todas Colunas"}
-        </Button>
-      )}
+      {/* Controles de densidade e modo simplificado removidos - configurar em Setup */}
 
       {hasActiveFilters && (
         <Button variant="ghost" size="default" onClick={onClearFilters} className={`${buttonClass} ${compact ? "w-auto" : "w-full"}`}>
@@ -312,30 +288,7 @@ export function SearchFilters({
                     />
                   )}
 
-                  {onDensityChange && (
-                    <Select value={densityMode} onValueChange={onDensityChange as any}>
-                      <SelectTrigger className={selectClass}>
-                        <SelectValue placeholder="Densidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="comfortable">Confortável</SelectItem>
-                        <SelectItem value="compact">Compacto</SelectItem>
-                        <SelectItem value="ultra-compact">Ultra</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {viewMode === "all" && onSimplifiedModeChange && (
-                    <Button
-                      variant={simplifiedMode ? "default" : "outline"}
-                      size="default"
-                      onClick={() => onSimplifiedModeChange(!simplifiedMode)}
-                      className="gap-2 min-h-[48px] w-full"
-                    >
-                      <Columns3 className="h-4 w-4" />
-                      {simplifiedMode ? "Modo Simplificado" : "Todas Colunas"}
-                    </Button>
-                  )}
+                  {/* Controles de densidade e modo simplificado removidos - configurar em Setup */}
                 </CollapsibleContent>
               </Collapsible>
 
