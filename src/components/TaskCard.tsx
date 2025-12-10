@@ -121,7 +121,7 @@ export function TaskCard({
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
 
-  // BUG 2 FIX: Estado para categoria original de tarefas espelhadas
+  // Usar categoria original da prop (batch fetch) ou fallback para estado local
   const [originalCategoryName, setOriginalCategoryName] = React.useState<string | null>(null);
 
   // Sincronizar estado local quando task.is_completed mudar (por realtime ou fetch)
@@ -129,9 +129,17 @@ export function TaskCard({
     setIsLocalCompleted(task.is_completed);
   }, [task.is_completed]);
 
-  // BUG 2 FIX: Buscar categoria da tarefa original para tarefas espelhadas
+  // Usar originalCategory da prop se disponível (batch fetch do KanbanBoard)
+  // Fallback para busca individual somente se necessário
   React.useEffect(() => {
-    if (task.mirror_task_id && isDailyKanban) {
+    // Se já tem originalCategory da prop, usar diretamente
+    if (task.originalCategory) {
+      setOriginalCategoryName(task.originalCategory);
+      return;
+    }
+    
+    // Fallback: buscar se não veio da prop (edge case)
+    if (task.mirror_task_id && isDailyKanban && !task.originalCategory) {
       supabase
         .from("tasks")
         .select("category_id, categories:categories(name)")
@@ -143,7 +151,7 @@ export function TaskCard({
           }
         });
     }
-  }, [task.mirror_task_id, isDailyKanban]);
+  }, [task.mirror_task_id, task.originalCategory, isDailyKanban]);
   const handleToggleCompleted = async (checked: boolean) => {
     // Update otimista imediato
     setIsLocalCompleted(checked);
@@ -545,8 +553,9 @@ export function TaskCard({
                       </Badge>
                     )}
 
-                    {/* Mostrar categoria para TODAS as tarefas recorrentes (não espelhadas) */}
-                    {isDailyKanban && task.recurrence_rule && !task.mirror_task_id && task.categories?.name && (
+                    {/* Mostrar categoria para tarefas recorrentes não espelhadas - só se NÃO for "Diário" */}
+                    {isDailyKanban && task.recurrence_rule && !task.mirror_task_id && 
+                      task.categories?.name && task.categories.name.toLowerCase() !== "diário" && (
                       <Badge
                         variant="secondary"
                         className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"

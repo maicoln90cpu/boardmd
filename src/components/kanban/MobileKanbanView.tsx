@@ -32,6 +32,7 @@ interface MobileKanbanViewProps {
   hideBadges?: boolean;
   gridColumns?: 1 | 2;
   priorityColors?: PriorityColors;
+  originalCategoriesMap?: Record<string, string>;
 }
 
 export function MobileKanbanView({
@@ -50,7 +51,8 @@ export function MobileKanbanView({
   densityMode = "compact",
   hideBadges = false,
   gridColumns = 2,
-  priorityColors
+  priorityColors,
+  originalCategoriesMap = {}
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
 
@@ -112,7 +114,10 @@ export function MobileKanbanView({
                       columnTasks.map((task) => (
                         <TaskCard
                           key={task.id}
-                          task={task}
+                          task={{
+                            ...task,
+                            originalCategory: task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined
+                          }}
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteClick(task.id)}
                           onToggleFavorite={toggleFavorite}

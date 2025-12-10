@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Column, useColumns } from "@/hooks/useColumns";
 import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
@@ -13,7 +13,6 @@ import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { MobileKanbanView } from "./kanban/MobileKanbanView";
-import { useEffect } from "react";
 import { useSettings } from "@/hooks/useSettings";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +69,39 @@ export function KanbanBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  
+  // BATCH FETCH: Mapa de categorias originais para tarefas espelhadas (performance)
+  const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});
+  
+  // Buscar categorias originais de todas as tarefas espelhadas de uma vez
+  useEffect(() => {
+    if (!isDailyKanban) return;
+    
+    // Coletar todos os mirror_task_ids das tarefas no diário
+    const mirrorIds = tasks
+      .filter(t => t.mirror_task_id)
+      .map(t => t.mirror_task_id!)
+      .filter((id, index, self) => self.indexOf(id) === index); // unique
+    
+    if (mirrorIds.length === 0) return;
+    
+    // Batch fetch das categorias originais
+    supabase
+      .from("tasks")
+      .select("id, categories:categories(name)")
+      .in("id", mirrorIds)
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, string> = {};
+          data.forEach((task: any) => {
+            if (task.categories?.name) {
+              map[task.id] = task.categories.name;
+            }
+          });
+          setOriginalCategoriesMap(map);
+        }
+      });
+  }, [isDailyKanban, tasks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -447,6 +479,7 @@ export function KanbanBoard({
           hideBadges={hideBadges}
           gridColumns={gridColumns}
           priorityColors={settings.customization?.priorityColors}
+          originalCategoriesMap={originalCategoriesMap}
         />
 
         <TaskModal
@@ -549,7 +582,10 @@ export function KanbanBoard({
                           {columnTasks.map((task) => (
                             <TaskCard
                               key={task.id}
-                              task={task}
+                              task={{
+                                ...task,
+                                originalCategory: task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined
+                              }}
                               onEdit={handleEditTask}
                               onDelete={handleDeleteClick}
                               onMoveLeft={() => handleMoveTask(task.id, "left")}
