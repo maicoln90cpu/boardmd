@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
@@ -16,7 +16,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     
     if (error) {
-      toast({ title: "Erro ao registrar", description: error.message, variant: "destructive" });
+      toast.error("Erro ao registrar", { description: error.message });
       throw error;
     }
 
@@ -57,16 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }]);
 
       if (profileError) {
-        toast({ 
-          title: "Erro ao criar perfil", 
-          description: profileError.message, 
-          variant: "destructive" 
-        });
+        toast.error("Erro ao criar perfil", { description: profileError.message });
         throw profileError;
       }
     }
 
-    toast({ title: "Sucesso!", description: "Conta criada com sucesso" });
+    toast.success("Sucesso!", { description: "Conta criada com sucesso" });
   };
 
   const signIn = async (email: string, password: string) => {
@@ -75,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     if (error) {
       setLoading(false);
-      toast({ title: "Erro ao entrar", description: error.message, variant: "destructive" });
+      toast.error("Erro ao entrar", { description: error.message });
       throw error;
     }
 
@@ -104,13 +99,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     setLoading(false);
-    toast({ title: "Sucesso!", description: "Login realizado com sucesso" });
+    toast.success("Sucesso!", { description: "Login realizado com sucesso" });
   };
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast({ title: "Erro ao sair", description: error.message, variant: "destructive" });
+      toast.error("Erro ao sair", { description: error.message });
       throw error;
     }
   };

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
+import { getDefaultPrompt } from "@/lib/defaultAIPrompts";
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -280,7 +281,6 @@ export function useSettings() {
   };
 
   const resetAIPrompt = (key: string) => {
-    const { getDefaultPrompt } = require('@/lib/defaultAIPrompts');
     updateAIPrompt(key, getDefaultPrompt(key));
   };
 
