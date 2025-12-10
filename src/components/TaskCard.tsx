@@ -274,10 +274,11 @@ export function TaskCard({
             duration: 0.15,
           }}
         >
-          <Card
+            <Card
             className={cn(
               "w-full",
-              isUltraCompact ? "p-1" : compact ? "p-2" : "p-2",
+              isUltraCompact ? "p-1" : densityMode === "compact" ? "p-2" : "p-3",
+              isUltraCompact ? "gap-0.5" : densityMode === "compact" ? "gap-1" : "gap-2",
               "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
               isOverdue && "border-2 border-destructive",
               isUrgent && "border-2 border-orange-500",
@@ -396,19 +397,19 @@ export function TaskCard({
               </div>
             ) : (
               // Layout 3 linhas (4 para recorrentes)
-              <div className="space-y-1">
+              <div className={cn("space-y-1", densityMode === "comfortable" && "space-y-1.5")}>
                 {/* Linha 1: Checkbox + Título */}
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Checkbox
                     checked={isLocalCompleted}
                     onCheckedChange={(checked) => handleToggleCompleted(!!checked)}
-                    className={cn("flex-shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                    className={cn("flex-shrink-0", densityMode === "compact" ? "h-3.5 w-3.5" : "h-4 w-4")}
                     onClick={(e) => e.stopPropagation()}
                   />
                   <h3
                     className={cn(
                       "font-medium truncate flex-1",
-                      compact ? "text-sm" : "text-base",
+                      densityMode === "compact" ? "text-sm" : "text-base leading-relaxed",
                       isLocalCompleted && "line-through opacity-50",
                     )}
                   >
@@ -527,33 +528,42 @@ export function TaskCard({
                   </Button>
                 </div>
 
-                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
-                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
-                {!hideBadges &&
-                  (task.recurrence_rule ||
-                    task.mirror_task_id ||
-                    showCategoryBadge ||
-                    (task.tags && task.tags.length > 0)) && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {/* BUG 2 FIX: Mostrar categoria ORIGINAL para tarefas espelhadas no diário */}
-                      {isDailyKanban && task.mirror_task_id && originalCategoryName && (
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                        >
-                          {originalCategoryName}
-                        </Badge>
-                      )}
+              {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
+              {!hideBadges &&
+                (task.recurrence_rule ||
+                  task.mirror_task_id ||
+                  showCategoryBadge ||
+                  (task.tags && task.tags.length > 0)) && (
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {/* Mostrar categoria ORIGINAL para tarefas espelhadas no diário */}
+                    {isDailyKanban && task.mirror_task_id && originalCategoryName && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        📁 {originalCategoryName}
+                      </Badge>
+                    )}
 
-                      {/* Mostrar categoria normal para tarefas recorrentes (não espelhadas) */}
-                      {(task.recurrence_rule || showCategoryBadge) && !task.mirror_task_id && task.categories?.name && (
-                        <Badge
-                          variant="secondary"
-                          className="text-[12px] px-2 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                        >
-                          {task.categories.name}
-                        </Badge>
-                      )}
+                    {/* Mostrar categoria para TODAS as tarefas recorrentes (não espelhadas) */}
+                    {isDailyKanban && task.recurrence_rule && !task.mirror_task_id && task.categories?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        📁 {task.categories.name}
+                      </Badge>
+                    )}
+
+                    {/* Mostrar categoria normal fora do diário quando showCategoryBadge */}
+                    {!isDailyKanban && showCategoryBadge && task.categories?.name && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        {task.categories.name}
+                      </Badge>
+                    )}
 
                       {task.mirror_task_id && (
                         <Badge
