@@ -3,12 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
+export interface NotebookTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Notebook {
   id: string;
   name: string;
   user_id: string;
   created_at: string;
   updated_at: string;
+  tags?: NotebookTag[];
 }
 
 export function useNotebooks() {
@@ -30,7 +37,12 @@ export function useNotebooks() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setNotebooks(data || []);
+      // Cast tags de Json para NotebookTag[]
+      const notebooksWithTags: Notebook[] = (data || []).map((n) => ({
+        ...n,
+        tags: (n.tags as unknown as NotebookTag[]) || [],
+      }));
+      setNotebooks(notebooksWithTags);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error("Error fetching notebooks:", error);
@@ -112,9 +124,13 @@ export function useNotebooks() {
 
       if (error) throw error;
 
-      // Substituir notebook temporário pelo real
+      // Substituir notebook temporário pelo real com cast de tags
+      const notebookWithTags: Notebook = {
+        ...data,
+        tags: (data.tags as unknown as NotebookTag[]) || [],
+      };
       setNotebooks((prev) =>
-        prev.map((n) => (n.id === tempId ? data : n))
+        prev.map((n) => (n.id === tempId ? notebookWithTags : n))
       );
 
       // Disparar evento customizado para forçar refresh
@@ -219,6 +235,126 @@ export function useNotebooks() {
     }
   };
 
+  const addTagToNotebook = async (notebookId: string, tag: NotebookTag) => {
+    const notebook = notebooks.find((n) => n.id === notebookId);
+    if (!notebook) return;
+
+    const currentTags = notebook.tags || [];
+    // Verificar se a tag já existe
+    if (currentTags.some((t) => t.id === tag.id)) return;
+
+    const updatedTags = [...currentTags, tag];
+
+    // Optimistic update
+    setNotebooks((prev) =>
+      prev.map((n) => (n.id === notebookId ? { ...n, tags: updatedTags } : n))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("notebooks")
+        .update({ tags: JSON.parse(JSON.stringify(updatedTags)) })
+        .eq("id", notebookId);
+
+      if (error) throw error;
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Error adding tag:", error);
+      }
+      toast({
+        title: "Erro ao adicionar tag",
+        variant: "destructive",
+      });
+      // Revert
+      setNotebooks((prev) =>
+        prev.map((n) => (n.id === notebookId ? { ...n, tags: currentTags } : n))
+      );
+    }
+  };
+
+  const removeTagFromNotebook = async (notebookId: string, tagId: string) => {
+    const notebook = notebooks.find((n) => n.id === notebookId);
+    if (!notebook) return;
+
+    const currentTags = notebook.tags || [];
+    const updatedTags = currentTags.filter((t) => t.id !== tagId);
+
+    // Optimistic update
+    setNotebooks((prev) =>
+      prev.map((n) => (n.id === notebookId ? { ...n, tags: updatedTags } : n))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("notebooks")
+        .update({ tags: JSON.parse(JSON.stringify(updatedTags)) })
+        .eq("id", notebookId);
+
+      if (error) throw error;
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Error removing tag:", error);
+      }
+      toast({
+        title: "Erro ao remover tag",
+        variant: "destructive",
+      });
+      // Revert
+      setNotebooks((prev) =>
+        prev.map((n) => (n.id === notebookId ? { ...n, tags: currentTags } : n))
+      );
+    }
+  };
+
+  const updateNotebookTags = async (notebookId: string, tags: NotebookTag[]) => {
+    const notebook = notebooks.find((n) => n.id === notebookId);
+    if (!notebook) return;
+
+    const currentTags = notebook.tags || [];
+
+    // Optimistic update
+    setNotebooks((prev) =>
+      prev.map((n) => (n.id === notebookId ? { ...n, tags } : n))
+    );
+
+    try {
+      const { error } = await supabase
+        .from("notebooks")
+        .update({ tags: JSON.parse(JSON.stringify(tags)) })
+        .eq("id", notebookId);
+
+      if (error) throw error;
+      window.dispatchEvent(new CustomEvent('notebook-updated'));
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Error updating tags:", error);
+      }
+      toast({
+        title: "Erro ao atualizar tags",
+        variant: "destructive",
+      });
+      // Revert
+      setNotebooks((prev) =>
+        prev.map((n) => (n.id === notebookId ? { ...n, tags: currentTags } : n))
+      );
+    }
+  };
+
+  // Obter todas as tags únicas de todos os notebooks
+  const getAllTags = (): NotebookTag[] => {
+    const tagMap = new Map<string, NotebookTag>();
+    notebooks.forEach((notebook) => {
+      (notebook.tags || []).forEach((tag) => {
+        if (!tagMap.has(tag.id)) {
+          tagMap.set(tag.id, tag);
+        }
+      });
+    });
+    return Array.from(tagMap.values());
+  };
+
   return {
     notebooks,
     loading,
@@ -226,5 +362,9 @@ export function useNotebooks() {
     updateNotebook,
     deleteNotebook,
     fetchNotebooks,
+    addTagToNotebook,
+    removeTagFromNotebook,
+    updateNotebookTags,
+    getAllTags,
   };
 }
