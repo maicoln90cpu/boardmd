@@ -116,7 +116,10 @@ export function MobileKanbanView({
                           key={task.id}
                           task={{
                             ...task,
-                            originalCategory: task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined
+                            // Usar task.id para buscar no mapa (tarefas no diário)
+                            // ou task.mirror_task_id para tarefas que apontam para projetos
+                            originalCategory: originalCategoriesMap[task.id] || 
+                              (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
                           }}
                           onEdit={() => handleEditTask(task)}
                           onDelete={() => handleDeleteClick(task.id)}
