@@ -67,130 +67,108 @@ export function NotebookTagPicker({
   };
 
   return (
-    <div className="flex flex-wrap gap-1 items-center">
-      {tags.map((tag) => (
-        <Badge
-          key={tag.id}
-          variant="secondary"
-          className="flex items-center gap-1 pr-1"
-          style={{ backgroundColor: `${tag.color}20`, color: tag.color, borderColor: tag.color }}
-        >
-          <span className="text-xs">{tag.name}</span>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRemoveTag(tag.id);
-            }}
-            className="hover:bg-black/10 rounded p-0.5"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+          <Tag className="h-3 w-3" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2" align="start">
+        {!isCreating ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Adicionar tag
+            </p>
+            
+            {unusedTags.length > 0 && (
+              <div className="space-y-1">
+                {unusedTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => {
+                      onAddTag(tag);
+                      setOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-accent text-left"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    <span className="text-sm">{tag.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-            <Tag className="h-3 w-3" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 p-2" align="start">
-          {!isCreating ? (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Adicionar tag
-              </p>
-              
-              {unusedTags.length > 0 && (
-                <div className="space-y-1">
-                  {unusedTags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      onClick={() => {
-                        onAddTag(tag);
-                        setOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-accent text-left"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: tag.color }}
-                      />
-                      <span className="text-sm">{tag.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setIsCreating(true)}
+            >
+              <Plus className="h-3 w-3 mr-2" />
+              Criar nova tag
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground">
+              Criar nova tag
+            </p>
+            
+            <Input
+              placeholder="Nome da tag"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              className="h-8"
+              autoFocus
+            />
 
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Cor</p>
+              <div className="flex flex-wrap gap-1">
+                {TAG_COLORS.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => setNewTagColor(color.value)}
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  >
+                    {newTagColor === color.value && (
+                      <Check className="h-3 w-3 text-white" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="w-full justify-start"
-                onClick={() => setIsCreating(true)}
+                className="flex-1"
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewTagName("");
+                }}
               >
-                <Plus className="h-3 w-3 mr-2" />
-                Criar nova tag
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={handleCreateTag}
+                disabled={!newTagName.trim()}
+              >
+                Criar
               </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-muted-foreground">
-                Criar nova tag
-              </p>
-              
-              <Input
-                placeholder="Nome da tag"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                className="h-8"
-                autoFocus
-              />
-
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Cor</p>
-                <div className="flex flex-wrap gap-1">
-                  {TAG_COLORS.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setNewTagColor(color.value)}
-                      className="w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                      style={{ backgroundColor: color.value }}
-                      title={color.name}
-                    >
-                      {newTagColor === color.value && (
-                        <Check className="h-3 w-3 text-white" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => {
-                    setIsCreating(false);
-                    setNewTagName("");
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  className="flex-1"
-                  onClick={handleCreateTag}
-                  disabled={!newTagName.trim()}
-                >
-                  Criar
-                </Button>
-              </div>
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
-    </div>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
