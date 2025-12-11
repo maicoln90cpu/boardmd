@@ -9,7 +9,6 @@ import { useDroppable } from "@dnd-kit/core";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NotebookTagPicker, NotebookTagFilter } from "./NotebookTagPicker";
-
 interface NotebooksListProps {
   notebooks: Notebook[];
   notes: Note[];
@@ -46,7 +45,6 @@ export function NotebooksList({
     removeTagFromNotebook,
     getAllTags
   } = useNotebooks();
-  
   const allTags = getAllTags();
   const [expandedNotebooks, setExpandedNotebooks] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,8 +95,7 @@ export function NotebooksList({
         <div className="flex items-center justify-between p-2">
           <h3 className="text-sm font-semibold text-muted-foreground">CADERNOS</h3>
           <div className="flex items-center gap-1">
-            {onSortChange && (
-              <Select value={sortBy} onValueChange={onSortChange}>
+            {onSortChange && <Select value={sortBy} onValueChange={onSortChange}>
                 <SelectTrigger className="h-8 w-8 p-0 border-0 hover:bg-accent">
                   <ArrowUpDown className="h-4 w-4" />
                 </SelectTrigger>
@@ -108,8 +105,7 @@ export function NotebooksList({
                   <SelectItem value="created">Data de criação</SelectItem>
                   <SelectItem value="tag">Por tag</SelectItem>
                 </SelectContent>
-              </Select>
-            )}
+              </Select>}
             <Button variant="ghost" size="sm" onClick={handleAddNotebook}>
               <Plus className="h-4 w-4" />
             </Button>
@@ -117,15 +113,9 @@ export function NotebooksList({
         </div>
         
         {/* Filtro por tag */}
-        {onSelectTag && allTags.length > 0 && (
-          <div className="px-2 pb-2">
-            <NotebookTagFilter
-              allTags={allTags}
-              selectedTagId={selectedTagId || null}
-              onSelectTag={onSelectTag}
-            />
-          </div>
-        )}
+        {onSelectTag && allTags.length > 0 && <div className="px-2 pb-2">
+            <NotebookTagFilter allTags={allTags} selectedTagId={selectedTagId || null} onSelectTag={onSelectTag} />
+          </div>}
 
         {notebooks.map(notebook => {
         const notebookNotes = getNotebookNotes(notebook.id);
@@ -133,25 +123,7 @@ export function NotebooksList({
         const count = notesCount(notebook.id);
         const isSelected = selectedNotebookId === notebook.id;
         return <div key={notebook.id} className="space-y-1">
-               <NotebookHeader 
-                 notebook={notebook} 
-                 isExpanded={isExpanded} 
-                 count={count} 
-                 editingId={editingId} 
-                 editingName={editingName} 
-                 isSelected={isSelected} 
-                 onToggle={() => toggleNotebook(notebook.id)} 
-                 onSelect={() => onSelectNotebook?.(notebook.id)} 
-                 onEditStart={() => handleEditStart(notebook)} 
-                 onEditSave={() => handleEditSave(notebook.id)} 
-                 onEditChange={setEditingName} 
-                 onEditCancel={() => setEditingId(null)} 
-                 onDelete={() => handleDeleteClick(notebook)} 
-                 onAddNote={() => onAddNote(notebook.id)}
-                 allTags={allTags}
-                 onAddTag={(tag) => addTagToNotebook(notebook.id, tag)}
-                 onRemoveTag={(tagId) => removeTagFromNotebook(notebook.id, tagId)}
-               />
+               <NotebookHeader notebook={notebook} isExpanded={isExpanded} count={count} editingId={editingId} editingName={editingName} isSelected={isSelected} onToggle={() => toggleNotebook(notebook.id)} onSelect={() => onSelectNotebook?.(notebook.id)} onEditStart={() => handleEditStart(notebook)} onEditSave={() => handleEditSave(notebook.id)} onEditChange={setEditingName} onEditCancel={() => setEditingId(null)} onDelete={() => handleDeleteClick(notebook)} onAddNote={() => onAddNote(notebook.id)} allTags={allTags} onAddTag={tag => addTagToNotebook(notebook.id, tag)} onRemoveTag={tagId => removeTagFromNotebook(notebook.id, tagId)} />
 
               {isExpanded && notebookNotes.length > 0 && !onSelectNotebook && <div className="ml-6 space-y-1">
                   {notebookNotes.map(note => <div key={note.id} className={`flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer group ${selectedNoteId === note.id ? "bg-accent" : "hover:bg-accent/50"}`} onClick={() => onSelectNote(note.id)}>
@@ -238,7 +210,6 @@ function NotebookHeader({
       notebookId: notebook.id
     }
   });
-  
   const handleClick = () => {
     if (onSelect) {
       onSelect();
@@ -246,7 +217,6 @@ function NotebookHeader({
       onToggle();
     }
   };
-  
   return <div ref={setNodeRef} className={`
         flex flex-col gap-1 group hover:bg-accent rounded-md px-2 py-2
         transition-colors cursor-pointer
@@ -255,84 +225,65 @@ function NotebookHeader({
       `} onClick={handleClick}>
       {/* Linha 1: Nome completo do caderno */}
       <div className="flex items-center gap-1">
-        {!onSelect && (
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+        {!onSelect && <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={e => {
+        e.stopPropagation();
+        onToggle();
+      }}>
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        )}
+          </Button>}
 
         <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
 
-        {editingId === notebook.id ? (
-          <Input 
-            value={editingName} 
-            onChange={e => onEditChange(e.target.value)} 
-            className="h-6 px-1 py-0 text-sm flex-1" 
-            autoFocus 
-            onKeyDown={e => {
-              if (e.key === "Enter") onEditSave();
-              if (e.key === "Escape") onEditCancel();
-            }} 
-            onBlur={onEditSave} 
-            onClick={e => e.stopPropagation()} 
-          />
-        ) : (
-          <span className="flex-1 text-sm break-words">{notebook.name}</span>
-        )}
+        {editingId === notebook.id ? <Input value={editingName} onChange={e => onEditChange(e.target.value)} className="h-6 px-1 py-0 text-sm flex-1" autoFocus onKeyDown={e => {
+        if (e.key === "Enter") onEditSave();
+        if (e.key === "Escape") onEditCancel();
+      }} onBlur={onEditSave} onClick={e => e.stopPropagation()} /> : <span className="flex-1 text-sm break-words">{notebook.name}</span>}
 
         <span className="text-muted-foreground text-xs shrink-0">({count})</span>
       </div>
       
       {/* Linha 2: Ícones de ação e tags */}
-      <div className="ml-6 flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div onClick={e => e.stopPropagation()} className="ml-0 flex flex-wrap items-center gap-1">
         {/* Ícones de ação */}
         <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onEditStart(); }}>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={e => {
+          e.stopPropagation();
+          onEditStart();
+        }}>
             <Pencil className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={e => {
+          e.stopPropagation();
+          onDelete();
+        }}>
             <Trash2 className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onAddNote(); }}>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={e => {
+          e.stopPropagation();
+          onAddNote();
+        }}>
             <Plus className="h-3 w-3" />
           </Button>
         </div>
         
         {/* Separador */}
-        {(notebook.tags && notebook.tags.length > 0 || onAddTag) && (
-          <span className="text-muted-foreground/30">|</span>
-        )}
+        {(notebook.tags && notebook.tags.length > 0 || onAddTag) && <span className="text-muted-foreground/30">|</span>}
         
         {/* Tags */}
-        {notebook.tags?.map((tag) => (
-          <Badge
-            key={tag.id}
-            variant="secondary"
-            className="h-5 text-[10px] px-1.5 flex items-center gap-0.5"
-            style={{ backgroundColor: `${tag.color}20`, color: tag.color, borderColor: tag.color }}
-          >
+        {notebook.tags?.map(tag => <Badge key={tag.id} variant="secondary" className="h-5 text-[10px] px-1.5 flex items-center gap-0.5" style={{
+        backgroundColor: `${tag.color}20`,
+        color: tag.color,
+        borderColor: tag.color
+      }}>
             {tag.name}
-            {onRemoveTag && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemoveTag(tag.id);
-                }}
-                className="hover:bg-black/10 rounded p-0.5 ml-0.5"
-              >
+            {onRemoveTag && <button onClick={e => {
+          e.stopPropagation();
+          onRemoveTag(tag.id);
+        }} className="hover:bg-black/10 rounded p-0.5 ml-0.5">
                 ×
-              </button>
-            )}
-          </Badge>
-        ))}
-        {onAddTag && (
-          <NotebookTagPicker
-            tags={notebook.tags || []}
-            availableTags={allTags || []}
-            onAddTag={onAddTag}
-            onRemoveTag={onRemoveTag || (() => {})}
-          />
-        )}
+              </button>}
+          </Badge>)}
+        {onAddTag && <NotebookTagPicker tags={notebook.tags || []} availableTags={allTags || []} onAddTag={onAddTag} onRemoveTag={onRemoveTag || (() => {})} />}
       </div>
     </div>;
 }
