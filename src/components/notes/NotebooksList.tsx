@@ -248,28 +248,45 @@ function NotebookHeader({
   };
   
   return <div ref={setNodeRef} className={`
-        flex flex-col gap-1 group hover:bg-accent rounded-md px-2 py-1
+        flex flex-col gap-1 group hover:bg-accent rounded-md px-2 py-2
         transition-colors cursor-pointer
         ${isOver ? "bg-accent/70 ring-2 ring-primary" : ""}
         ${isSelected ? "bg-primary/10 text-primary font-medium" : ""}
       `} onClick={handleClick}>
+      {/* Linha 1: Nome completo do caderno */}
       <div className="flex items-center gap-1">
         {!onSelect && (
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         )}
 
-        <BookOpen className="h-4 w-4 text-muted-foreground" />
+        <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
 
-        {editingId === notebook.id ? <Input value={editingName} onChange={e => onEditChange(e.target.value)} className="h-6 px-1 py-0 text-sm flex-1" autoFocus onKeyDown={e => {
-        if (e.key === "Enter") onEditSave();
-        if (e.key === "Escape") onEditCancel();
-      }} onBlur={onEditSave} onClick={e => e.stopPropagation()} /> : <span className="flex-1 truncate text-sm">{notebook.name}</span>}
+        {editingId === notebook.id ? (
+          <Input 
+            value={editingName} 
+            onChange={e => onEditChange(e.target.value)} 
+            className="h-6 px-1 py-0 text-sm flex-1" 
+            autoFocus 
+            onKeyDown={e => {
+              if (e.key === "Enter") onEditSave();
+              if (e.key === "Escape") onEditCancel();
+            }} 
+            onBlur={onEditSave} 
+            onClick={e => e.stopPropagation()} 
+          />
+        ) : (
+          <span className="flex-1 text-sm break-words">{notebook.name}</span>
+        )}
 
-        <span className="text-muted-foreground text-xs">({count})</span>
-
-        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1">
+        <span className="text-muted-foreground text-xs shrink-0">({count})</span>
+      </div>
+      
+      {/* Linha 2: Ícones de ação e tags */}
+      <div className="ml-6 flex flex-wrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {/* Ícones de ação */}
+        <div className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); onEditStart(); }}>
             <Pencil className="h-3 w-3" />
           </Button>
@@ -280,41 +297,42 @@ function NotebookHeader({
             <Plus className="h-3 w-3" />
           </Button>
         </div>
+        
+        {/* Separador */}
+        {(notebook.tags && notebook.tags.length > 0 || onAddTag) && (
+          <span className="text-muted-foreground/30">|</span>
+        )}
+        
+        {/* Tags */}
+        {notebook.tags?.map((tag) => (
+          <Badge
+            key={tag.id}
+            variant="secondary"
+            className="h-5 text-[10px] px-1.5 flex items-center gap-0.5"
+            style={{ backgroundColor: `${tag.color}20`, color: tag.color, borderColor: tag.color }}
+          >
+            {tag.name}
+            {onRemoveTag && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveTag(tag.id);
+                }}
+                className="hover:bg-black/10 rounded p-0.5 ml-0.5"
+              >
+                ×
+              </button>
+            )}
+          </Badge>
+        ))}
+        {onAddTag && (
+          <NotebookTagPicker
+            tags={notebook.tags || []}
+            availableTags={allTags || []}
+            onAddTag={onAddTag}
+            onRemoveTag={onRemoveTag || (() => {})}
+          />
+        )}
       </div>
-      
-      {/* Tags do notebook */}
-      {(notebook.tags && notebook.tags.length > 0 || onAddTag) && (
-        <div className="ml-6 flex flex-wrap gap-1 items-center" onClick={(e) => e.stopPropagation()}>
-          {notebook.tags?.map((tag) => (
-            <Badge
-              key={tag.id}
-              variant="secondary"
-              className="h-5 text-[10px] px-1.5 flex items-center gap-0.5"
-              style={{ backgroundColor: `${tag.color}20`, color: tag.color, borderColor: tag.color }}
-            >
-              {tag.name}
-              {onRemoveTag && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveTag(tag.id);
-                  }}
-                  className="hover:bg-black/10 rounded p-0.5 ml-0.5"
-                >
-                  ×
-                </button>
-              )}
-            </Badge>
-          ))}
-          {onAddTag && (
-            <NotebookTagPicker
-              tags={notebook.tags || []}
-              availableTags={allTags || []}
-              onAddTag={onAddTag}
-              onRemoveTag={onRemoveTag || (() => {})}
-            />
-          )}
-        </div>
-      )}
     </div>;
 }
