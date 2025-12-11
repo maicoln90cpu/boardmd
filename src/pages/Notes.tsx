@@ -22,8 +22,9 @@ export default function Notes() {
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
-  const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
+  const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created' | 'tag'>('updated');
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
@@ -40,6 +41,12 @@ export default function Notes() {
   // Ordenar cadernos
   const sortedNotebooks = useMemo(() => {
     let sorted = [...notebooks];
+    
+    // Filtrar por tag se selecionada
+    if (selectedTagId) {
+      sorted = sorted.filter((n) => n.tags?.some((t) => t.id === selectedTagId));
+    }
+    
     switch (notebookSortBy) {
       case 'alphabetical':
         sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -47,12 +54,20 @@ export default function Notes() {
       case 'created':
         sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
+      case 'tag':
+        // Ordenar por primeira tag (alfabeticamente), notebooks sem tag vão para o final
+        sorted.sort((a, b) => {
+          const aTag = a.tags?.[0]?.name || '\uffff';
+          const bTag = b.tags?.[0]?.name || '\uffff';
+          return aTag.localeCompare(bTag);
+        });
+        break;
       case 'updated':
       default:
         sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     }
     return sorted;
-  }, [notebooks, notebookSortBy]);
+  }, [notebooks, notebookSortBy, selectedTagId]);
 
   // Filtrar e ordenar notas
   const filteredAndSortedNotes = useMemo(() => {
@@ -278,6 +293,8 @@ export default function Notes() {
                 onSortChange={setNotebookSortBy}
                 selectedNotebookId={selectedNotebookId}
                 onSelectNotebook={setSelectedNotebookId}
+                selectedTagId={selectedTagId}
+                onSelectTag={setSelectedTagId}
               />
             </div>
           </div>
