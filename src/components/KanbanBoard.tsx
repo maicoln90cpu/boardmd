@@ -74,33 +74,59 @@ export function KanbanBoard({
   const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});
   
   // Buscar categorias originais de todas as tarefas espelhadas de uma vez
+  // A referência está INVERTIDA - tarefas em Projetos apontam para as do Diário
+  // Então precisamos buscar tarefas que apontam PARA as tarefas do diário (not FROM)
   useEffect(() => {
     if (!isDailyKanban) return;
     
-    // Coletar todos os mirror_task_ids das tarefas no diário
+    // Coletar IDs das tarefas recorrentes no diário (que podem ter espelhos em projetos)
+    const dailyRecurrentIds = tasks
+      .filter(t => t.recurrence_rule)
+      .map(t => t.id);
+    
+    // Também coletar mirror_task_ids das tarefas que JÁ têm referência (caso contrário)
     const mirrorIds = tasks
       .filter(t => t.mirror_task_id)
-      .map(t => t.mirror_task_id!)
-      .filter((id, index, self) => self.indexOf(id) === index); // unique
+      .map(t => t.mirror_task_id!);
     
-    if (mirrorIds.length === 0) return;
-    
-    // Batch fetch das categorias originais
-    supabase
+    // Estratégia 1: Buscar tarefas que TÊM mirror_task_id (para tarefas que vieram da prop)
+    const fetchFromMirrorIds = mirrorIds.length > 0 ? supabase
       .from("tasks")
       .select("id, categories:categories(name)")
-      .in("id", mirrorIds)
-      .then(({ data }) => {
-        if (data) {
-          const map: Record<string, string> = {};
-          data.forEach((task: any) => {
-            if (task.categories?.name) {
-              map[task.id] = task.categories.name;
-            }
-          });
-          setOriginalCategoriesMap(map);
-        }
-      });
+      .in("id", mirrorIds) : Promise.resolve({ data: [] });
+    
+    // Estratégia 2: Buscar tarefas em PROJETOS que apontam para tarefas do diário
+    // (quando a tarefa no diário não tem mirror_task_id mas a de projetos aponta para ela)
+    const fetchFromProjectMirrors = dailyRecurrentIds.length > 0 ? supabase
+      .from("tasks")
+      .select("id, mirror_task_id, categories:categories(name)")
+      .in("mirror_task_id", dailyRecurrentIds) : Promise.resolve({ data: [] });
+    
+    Promise.all([fetchFromMirrorIds, fetchFromProjectMirrors]).then(([result1, result2]) => {
+      const map: Record<string, string> = {};
+      
+      // Mapear resultados da estratégia 1 (mirror_task_id -> categoria)
+      if (result1.data) {
+        result1.data.forEach((task: any) => {
+          if (task.categories?.name) {
+            map[task.id] = task.categories.name;
+          }
+        });
+      }
+      
+      // Mapear resultados da estratégia 2 (tarefa diário -> categoria do projeto)
+      // Aqui o mirror_task_id é o ID da tarefa no DIÁRIO, e queremos a categoria desta tarefa de PROJETOS
+      if (result2.data) {
+        result2.data.forEach((task: any) => {
+          if (task.categories?.name && task.mirror_task_id) {
+            // Chave: ID da tarefa no diário, Valor: categoria da tarefa em projetos
+            map[task.mirror_task_id] = task.categories.name;
+          }
+        });
+      }
+      
+      setOriginalCategoriesMap(map);
+    });
   }, [isDailyKanban, tasks]);
 
   const sensors = useSensors(
@@ -196,7 +222,21 @@ export function KanbanBoard({
     if (selectedTask) {
       await updateTask(selectedTask.id, taskData);
     } else {
-      await addTask({ ...taskData, column_id: selectedColumn, category_id: categoryId });
+      // CORREÇÃO: Quando categoryId === "all", usar category_id do taskData (selecionado no modal)
+      const finalCategoryId = categoryId === "all" ? taskData.category_id : categoryId;
+      
+      if (!finalCategoryId || finalCategoryId === "all") {
+        // Se ainda não tem categoria válida, mostrar erro
+        const { toast } = await import("@/hooks/use-toast");
+        toast({
+          title: "Categoria obrigatória",
+          description: "Por favor, selecione uma categoria para a tarefa.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await addTask({ ...taskData, column_id: selectedColumn, category_id: finalCategoryId });
     }
   };
 
@@ -584,7 +624,10 @@ export function KanbanBoard({
                               key={task.id}
                               task={{
                                 ...task,
-                                originalCategory: task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined
+                                // Usar task.id para buscar no mapa (tarefas no diário)
+                                // ou task.mirror_task_id para tarefas que apontam para projetos
+                                originalCategory: originalCategoriesMap[task.id] || 
+                                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
                               }}
                               onEdit={handleEditTask}
                               onDelete={handleDeleteClick}

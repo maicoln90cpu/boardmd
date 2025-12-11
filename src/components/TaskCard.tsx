@@ -130,28 +130,12 @@ export function TaskCard({
   }, [task.is_completed]);
 
   // Usar originalCategory da prop se disponível (batch fetch do KanbanBoard)
-  // Fallback para busca individual somente se necessário
   React.useEffect(() => {
     // Se já tem originalCategory da prop, usar diretamente
     if (task.originalCategory) {
       setOriginalCategoryName(task.originalCategory);
-      return;
     }
-    
-    // Fallback: buscar se não veio da prop (edge case)
-    if (task.mirror_task_id && isDailyKanban && !task.originalCategory) {
-      supabase
-        .from("tasks")
-        .select("category_id, categories:categories(name)")
-        .eq("id", task.mirror_task_id)
-        .single()
-        .then(({ data }) => {
-          if (data?.categories) {
-            setOriginalCategoryName((data.categories as any).name);
-          }
-        });
-    }
-  }, [task.mirror_task_id, task.originalCategory, isDailyKanban]);
+  }, [task.originalCategory]);
   const handleToggleCompleted = async (checked: boolean) => {
     // Update otimista imediato
     setIsLocalCompleted(checked);
@@ -543,24 +527,13 @@ export function TaskCard({
                   showCategoryBadge ||
                   (task.tags && task.tags.length > 0)) && (
                   <div className="flex items-center gap-1 flex-wrap">
-                    {/* Mostrar categoria ORIGINAL para tarefas espelhadas no diário */}
-                    {isDailyKanban && task.mirror_task_id && originalCategoryName && (
+                    {/* Mostrar categoria ORIGINAL para tarefas recorrentes no diário (com espelho em projetos) */}
+                    {isDailyKanban && task.recurrence_rule && originalCategoryName && (
                       <Badge
                         variant="secondary"
                         className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                       >
                         📁 {originalCategoryName}
-                      </Badge>
-                    )}
-
-                    {/* Mostrar categoria para tarefas recorrentes não espelhadas - só se NÃO for "Diário" */}
-                    {isDailyKanban && task.recurrence_rule && !task.mirror_task_id && 
-                      task.categories?.name && task.categories.name.toLowerCase() !== "diário" && (
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                      >
-                        📁 {task.categories.name}
                       </Badge>
                     )}
 
