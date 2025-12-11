@@ -66,7 +66,58 @@ const defaultPriorityColors: PriorityColors = {
   low: { background: '#dcfce7', text: '#16a34a' },
 };
 
-export function TaskCard({
+// Função de comparação customizada para React.memo
+// Compara apenas props que afetam a renderização visual
+const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): boolean => {
+  // Comparar task (principal fonte de mudanças)
+  const prevTask = prevProps.task;
+  const nextTask = nextProps.task;
+  
+  if (prevTask.id !== nextTask.id) return false;
+  if (prevTask.title !== nextTask.title) return false;
+  if (prevTask.description !== nextTask.description) return false;
+  if (prevTask.is_completed !== nextTask.is_completed) return false;
+  if (prevTask.is_favorite !== nextTask.is_favorite) return false;
+  if (prevTask.priority !== nextTask.priority) return false;
+  if (prevTask.due_date !== nextTask.due_date) return false;
+  if (prevTask.column_id !== nextTask.column_id) return false;
+  if (prevTask.mirror_task_id !== nextTask.mirror_task_id) return false;
+  if (prevTask.originalCategory !== nextTask.originalCategory) return false;
+  if (prevTask.categories?.name !== nextTask.categories?.name) return false;
+  
+  // Comparar subtasks (array)
+  const prevSubtasks = prevTask.subtasks || [];
+  const nextSubtasks = nextTask.subtasks || [];
+  if (prevSubtasks.length !== nextSubtasks.length) return false;
+  for (let i = 0; i < prevSubtasks.length; i++) {
+    if (prevSubtasks[i].completed !== nextSubtasks[i].completed) return false;
+  }
+  
+  // Comparar tags (array)
+  const prevTags = prevTask.tags || [];
+  const nextTags = nextTask.tags || [];
+  if (prevTags.length !== nextTags.length) return false;
+  if (prevTags.join(',') !== nextTags.join(',')) return false;
+  
+  // Comparar recurrence_rule (objeto)
+  if (JSON.stringify(prevTask.recurrence_rule) !== JSON.stringify(nextTask.recurrence_rule)) return false;
+  
+  // Comparar outras props
+  if (prevProps.compact !== nextProps.compact) return false;
+  if (prevProps.isDailyKanban !== nextProps.isDailyKanban) return false;
+  if (prevProps.showCategoryBadge !== nextProps.showCategoryBadge) return false;
+  if (prevProps.densityMode !== nextProps.densityMode) return false;
+  if (prevProps.hideBadges !== nextProps.hideBadges) return false;
+  if (prevProps.canMoveLeft !== nextProps.canMoveLeft) return false;
+  if (prevProps.canMoveRight !== nextProps.canMoveRight) return false;
+  
+  // Comparar priorityColors (objeto opcional)
+  if (JSON.stringify(prevProps.priorityColors) !== JSON.stringify(nextProps.priorityColors)) return false;
+  
+  return true;
+};
+
+const TaskCardComponent: React.FC<TaskCardProps> = ({
   task,
   onEdit,
   onDelete,
@@ -82,7 +133,7 @@ export function TaskCard({
   densityMode = "comfortable",
   hideBadges = false,
   priorityColors = defaultPriorityColors,
-}: TaskCardProps) {
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -603,4 +654,7 @@ export function TaskCard({
       </HoverCardContent>
     </HoverCard>
   );
-}
+};
+
+// Exportar componente memoizado para evitar re-renders desnecessários
+export const TaskCard = React.memo(TaskCardComponent, arePropsEqual);
