@@ -33,6 +33,7 @@ interface MobileKanbanViewProps {
   gridColumns?: 1 | 2;
   priorityColors?: PriorityColors;
   originalCategoriesMap?: Record<string, string>;
+  getTagColor?: (tagName: string) => string;
 }
 
 export function MobileKanbanView({
@@ -52,7 +53,8 @@ export function MobileKanbanView({
   hideBadges = false,
   gridColumns = 2,
   priorityColors,
-  originalCategoriesMap = {}
+  originalCategoriesMap = {},
+  getTagColor
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
 
@@ -133,6 +135,7 @@ export function MobileKanbanView({
                           densityMode="ultra-compact"
                           hideBadges={hideBadges}
                           priorityColors={priorityColors}
+                          getTagColor={getTagColor}
                         />
                       ))
                     )}
