@@ -189,7 +189,7 @@ export default function Pomodoro() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
@@ -198,7 +198,7 @@ export default function Pomodoro() {
         viewMode="all"
       />
 
-      <main className="md:ml-64 p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

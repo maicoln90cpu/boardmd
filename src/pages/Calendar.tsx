@@ -182,7 +182,7 @@ export default function Calendar() {
   const emptyDays = Array.from({ length: firstDayOfWeek }, (_, i) => i);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
@@ -191,7 +191,7 @@ export default function Calendar() {
         viewMode={viewMode}
       />
 
-      <main className="md:ml-64 p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto">
           <Card>
             <CardHeader>
