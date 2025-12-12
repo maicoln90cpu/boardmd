@@ -70,6 +70,22 @@ export function getColumnTopBarClass(color: string | null): string {
   return color ? colorMap[color] || "bg-muted" : "bg-muted";
 }
 
+// Retorna a classe CSS para o FUNDO SUAVE da coluna (matching top bar color)
+export function getColumnBackgroundClass(color: string | null): string {
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-50 dark:bg-blue-950/20",
+    green: "bg-emerald-50 dark:bg-emerald-950/20",
+    yellow: "bg-amber-50 dark:bg-amber-950/20",
+    orange: "bg-orange-50 dark:bg-orange-950/20",
+    red: "bg-red-50 dark:bg-red-950/20",
+    purple: "bg-violet-50 dark:bg-violet-950/20",
+    pink: "bg-pink-50 dark:bg-pink-950/20",
+    cyan: "bg-cyan-50 dark:bg-cyan-950/20",
+  };
+  
+  return color ? colorMap[color] || "bg-card" : "bg-card";
+}
+
 // DEPRECATED: Mantido para compatibilidade - agora usamos getColumnTopBarClass
 export function getColumnColorClass(color: string | null): string {
   // Retorna classe neutra pois o fundo da coluna agora é sempre neutro
