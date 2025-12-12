@@ -645,10 +645,10 @@ export function KanbanBoard({
                             />
                             <Button
                               size="sm"
-                              variant="ghost"
                               onClick={() => handleAddTask(column.id)}
+                              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-full group"
                             >
-                              <Plus className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                              <Plus className={`${densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} transition-transform group-hover:rotate-90 duration-200`} />
                             </Button>
                           </div>
                         </div>

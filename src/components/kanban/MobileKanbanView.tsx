@@ -142,13 +142,13 @@ export function MobileKanbanView({
                   </div>
                 </SortableContext>
                 
-                {/* Botão adicionar tarefa */}
+                {/* Botão adicionar tarefa - Premium */}
                 <Button 
                   size="sm" 
-                  className="m-1 h-7 text-[10px]"
+                  className="m-1 h-7 text-[10px] bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 rounded-full group"
                   onClick={() => handleAddTask(column.id)}
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-3 w-3 transition-transform group-hover:rotate-90 duration-200" />
                 </Button>
               </div>
             );
