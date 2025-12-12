@@ -74,6 +74,40 @@ const priorityGradients = {
   low: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
 };
 
+// Premium category color palette - generates consistent colors based on category name
+const categoryColorPalette = [
+  { bg: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", text: "#ffffff" }, // Indigo
+  { bg: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)", text: "#ffffff" }, // Violet
+  { bg: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)", text: "#ffffff" }, // Cyan
+  { bg: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)", text: "#ffffff" }, // Pink
+  { bg: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)", text: "#ffffff" }, // Teal
+  { bg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)", text: "#ffffff" }, // Orange
+  { bg: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)", text: "#ffffff" }, // Lime
+  { bg: "linear-gradient(135deg, #a855f7 0%, #9333ea 100%)", text: "#ffffff" }, // Purple
+  { bg: "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)", text: "#ffffff" }, // Sky
+  { bg: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)", text: "#ffffff" }, // Rose
+];
+
+// Hash function to get consistent color index from category name
+const getCategoryColorIndex = (categoryName: string): number => {
+  let hash = 0;
+  for (let i = 0; i < categoryName.length; i++) {
+    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % categoryColorPalette.length;
+};
+
+const getCategoryBadgeStyle = (categoryName: string) => {
+  const colorIndex = getCategoryColorIndex(categoryName);
+  const color = categoryColorPalette[colorIndex];
+  return {
+    background: color.bg,
+    color: color.text,
+    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.12)",
+    border: "none",
+  };
+};
+
 // Função de comparação customizada para React.memo
 // Compara apenas props que afetam a renderização visual
 const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): boolean => {
@@ -397,7 +431,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   {task.title}
                 </span>
                 {!hideBadges && showCategoryBadge && task.categories?.name && (
-                  <Badge variant="outline" className="text-[9px] px-0.5 py-0 shrink-0">
+                  <Badge 
+                    className="text-[9px] px-1 py-0 shrink-0 rounded-full font-medium shadow-sm"
+                    style={getCategoryBadgeStyle(task.categories.name)}
+                  >
                     {task.categories.name}
                   </Badge>
                 )}
@@ -725,12 +762,12 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                       {/* Mostrar categoria ORIGINAL para tarefas recorrentes no diário (com espelho em projetos) */}
                       {isDailyKanban && task.recurrence_rule && originalCategoryName && (
                         <Badge
-                          variant="secondary"
                           className={cn(
-                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                            densityMode === "compact" && "text-[10px] px-1.5 py-0",
-                            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+                            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+                            densityMode === "compact" && "text-[10px] px-2 py-0.5",
+                            densityMode === "comfortable" && "text-xs px-2.5 py-1",
                           )}
+                          style={getCategoryBadgeStyle(originalCategoryName)}
                         >
                           📁 {originalCategoryName}
                         </Badge>
@@ -739,12 +776,12 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                       {/* Mostrar categoria normal fora do diário quando showCategoryBadge */}
                       {!isDailyKanban && showCategoryBadge && task.categories?.name && (
                         <Badge
-                          variant="secondary"
                           className={cn(
-                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                            densityMode === "compact" && "text-[10px] px-1.5 py-0",
-                            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+                            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+                            densityMode === "compact" && "text-[10px] px-2 py-0.5",
+                            densityMode === "comfortable" && "text-xs px-2.5 py-1",
                           )}
+                          style={getCategoryBadgeStyle(task.categories.name)}
                         >
                           {task.categories.name}
                         </Badge>
