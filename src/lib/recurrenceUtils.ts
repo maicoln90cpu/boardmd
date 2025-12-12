@@ -69,16 +69,17 @@ export function calculateNextRecurrenceDate(
   }
   
   // MODO 2: Por frequência (daily/weekly/monthly)
-  // CORREÇÃO BUG 6: Calcular a partir da data BASE (não now) para evitar pular dias
+  // CORREÇÃO: Calcular a partir de HOJE (data que a tarefa foi riscada), não da data da tarefa
   const frequency = recurrenceRule.frequency || 'daily';
   const interval = recurrenceRule.interval || 1;
   
-  // Usar a data base (data atual da tarefa) em vez de "now"
-  const nextDate = new Date(baseDate);
+  // Usar a data ATUAL (hoje) como base para o cálculo
+  // Isso garante que se a tarefa estava atrasada, ela volta para o futuro a partir de hoje
+  const nextDate = new Date(now);
   
   switch (frequency) {
     case 'daily':
-      // Adicionar intervalo à data da tarefa (não à data atual)
+      // Adicionar intervalo à data de HOJE
       nextDate.setDate(nextDate.getDate() + interval);
       break;
     case 'weekly':
