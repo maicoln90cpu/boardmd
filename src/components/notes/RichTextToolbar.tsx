@@ -29,6 +29,7 @@ import {
   ListTodo,
   Target,
   LayoutList,
+  Type,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,14 @@ const HIGHLIGHT_COLORS = [
   { name: "Verde", value: "#BBF7D0" },
   { name: "Rosa", value: "#FBCFE8" },
   { name: "Laranja", value: "#FED7AA" },
+];
+
+const FONT_SIZES = [
+  { name: "Pequena", value: "12px" },
+  { name: "Normal", value: "14px" },
+  { name: "Média", value: "16px" },
+  { name: "Grande", value: "18px" },
+  { name: "Extra Grande", value: "20px" },
 ];
 
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
@@ -182,6 +191,35 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       >
         <Underline className="h-4 w-4" />
       </Button>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Tamanho da fonte */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" title="Tamanho da fonte">
+            <Type className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-40 bg-popover z-50">
+          {FONT_SIZES.map((size) => (
+            <DropdownMenuItem
+              key={size.value}
+              onClick={() => editor.chain().focus().setFontSize(size.value).run()}
+              className="flex items-center justify-between"
+            >
+              <span style={{ fontSize: size.value }}>{size.name}</span>
+              <span className="text-xs text-muted-foreground">{size.value}</span>
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().unsetFontSize().run()}
+          >
+            Resetar tamanho
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="w-px h-6 bg-border mx-1" />
 
