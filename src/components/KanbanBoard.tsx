@@ -5,7 +5,7 @@ import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnTopBarClass } from "./kanban/ColumnColorPicker";
@@ -69,6 +69,7 @@ export function KanbanBoard({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null); // Track which column we're hovering over
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   
@@ -560,8 +561,31 @@ export function KanbanBoard({
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
-        onDragStart={(e) => setActiveId(e.active.id as string)}
-        onDragEnd={handleDragEnd}
+        onDragStart={(e) => {
+          setActiveId(e.active.id as string);
+          setOverId(null);
+        }}
+        onDragOver={(e: DragOverEvent) => {
+          const overId = e.over?.id as string | null;
+          if (overId) {
+            // Check if it's a column or a task in a column
+            const isColumn = columns.some(c => c.id === overId);
+            if (isColumn) {
+              setOverId(overId);
+            } else {
+              // Find which column contains this task
+              const task = tasks.find(t => t.id === overId);
+              if (task) {
+                setOverId(task.column_id);
+              }
+            }
+          }
+        }}
+        onDragEnd={(e) => {
+          handleDragEnd(e);
+          setActiveId(null);
+          setOverId(null);
+        }}
       >
         <div className={styles.padding}>
           <ResizablePanelGroup
@@ -571,6 +595,8 @@ export function KanbanBoard({
           >
             {columns.map((column, columnIndex) => {
               const columnTasks = getTasksForColumn(column.id);
+              const isDropTarget = activeId && overId === column.id;
+              const isDragging = !!activeId;
               return (
                 <>
                   <ResizablePanel
@@ -578,7 +604,15 @@ export function KanbanBoard({
                     defaultSize={columnSizes[columnIndex] || 100 / columns.length}
                     minSize={15}
                   >
-                    <div className={`flex flex-col ${styles.gap} h-full`}>
+                    <div 
+                      className={`flex flex-col ${styles.gap} h-full transition-all duration-200 ${
+                        isDropTarget 
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg scale-[1.01]" 
+                          : isDragging 
+                            ? "opacity-75" 
+                            : ""
+                      }`}
+                    >
                       {/* Barra colorida no topo da coluna (estilo KanbanFlow) */}
                       <div className="rounded-t-lg overflow-hidden bg-card border border-b-0">
                         <div className={`h-1.5 w-full ${getColumnTopBarClass(column.color)}`} />
@@ -625,7 +659,11 @@ export function KanbanBoard({
                         strategy={verticalListSortingStrategy}
                         id={column.id}
                       >
-                        <div className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg bg-card border border-t-0`}>
+                        <div 
+                          className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg bg-card border border-t-0 transition-all duration-200 ${
+                            isDropTarget ? "bg-primary/5 border-primary/30" : ""
+                          }`}
+                        >
                           {columnTasks.map((task) => (
                             <TaskCard
                               key={task.id}
@@ -665,9 +703,12 @@ export function KanbanBoard({
           </ResizablePanelGroup>
         </div>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={{
+          duration: 300,
+          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+        }}>
           {activeId ? (
-            <div className="opacity-50">
+            <div className="rotate-3 scale-105 shadow-2xl shadow-primary/20 cursor-grabbing">
               <TaskCard
                 task={tasks.find((t) => t.id === activeId)!}
                 onEdit={() => {}}
