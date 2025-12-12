@@ -573,7 +573,7 @@ function Index() {
   return <div className="min-h-screen bg-background pb-[140px] md:pb-0 flex">
       <Sidebar onExport={handleExport} onImport={handleImport} onThemeToggle={toggleTheme} onViewChange={setViewMode} viewMode={viewMode} />
 
-      <main className="flex-1 h-screen overflow-hidden">
+      <main className="flex-1 overflow-auto">
         {/* Kanban Diário - modo daily sem divisor */}
         {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && <div className="h-full flex flex-col overflow-hidden">
             {/* Cabeçalho Kanban Diário */}
