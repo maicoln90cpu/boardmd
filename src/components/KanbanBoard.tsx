@@ -8,7 +8,7 @@ import { Plus, RotateCcw } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ColumnColorPicker, getColumnTopBarClass } from "./kanban/ColumnColorPicker";
+import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./kanban/ColumnColorPicker";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -615,7 +615,7 @@ export function KanbanBoard({
                       }`}
                     >
                       {/* Barra colorida no topo da coluna (estilo KanbanFlow) */}
-                      <div className="rounded-t-lg overflow-hidden bg-card border border-b-0">
+                      <div className={`rounded-t-lg overflow-hidden border border-b-0 ${getColumnBackgroundClass(column.color)}`}>
                         <div className={`h-1.5 w-full ${getColumnTopBarClass(column.color)}`} />
                         <div className={`flex items-center justify-between ${styles.headerPadding}`}>
                           <div className="flex items-center gap-2 flex-wrap">
@@ -661,8 +661,8 @@ export function KanbanBoard({
                         id={column.id}
                       >
                         <div 
-                          className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg bg-card border border-t-0 transition-all duration-200 ${
-                            isDropTarget ? "bg-primary/5 border-primary/30" : ""
+                          className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg border border-t-0 transition-all duration-200 ${getColumnBackgroundClass(column.color)} ${
+                            isDropTarget ? "!bg-primary/10 border-primary/30" : ""
                           }`}
                         >
                           <AnimatePresence mode="popLayout">

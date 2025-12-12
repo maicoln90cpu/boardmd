@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { getColumnTopBarClass } from "./ColumnColorPicker";
+import { getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -75,13 +75,13 @@ export function MobileKanbanView({
             return (
               <div 
                 key={column.id} 
-                className="flex flex-col bg-card rounded-lg border overflow-hidden min-h-[300px]"
+                className={`flex flex-col rounded-lg border overflow-hidden min-h-[300px] ${getColumnBackgroundClass(column.color)}`}
               >
                 {/* Barra colorida no topo (estilo KanbanFlow) */}
                 <div className={`h-1 w-full ${getColumnTopBarClass(column.color)}`} />
                 
                 {/* Header da coluna */}
-                <div className="p-2 border-b sticky top-0 bg-card z-10">
+                <div className={`p-2 border-b sticky top-0 z-10 ${getColumnBackgroundClass(column.color)}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
                       <h4 className="text-xs font-semibold truncate">{column.name}</h4>
