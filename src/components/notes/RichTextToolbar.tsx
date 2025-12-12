@@ -70,6 +70,7 @@ const FONT_SIZES = [
   { name: "Média", value: "16px" },
   { name: "Grande", value: "18px" },
   { name: "Extra Grande", value: "20px" },
+  { name: "Muito Grande", value: "26px" },
 ];
 
 export function RichTextToolbar({ editor }: RichTextToolbarProps) {
@@ -102,9 +103,9 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
   };
 
   const addImageFromFile = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
     input.onchange = (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -121,7 +122,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
 
   const formatWithAI = async (action: string) => {
     if (!editor) return;
-    
+
     const content = editor.getHTML();
     if (!content || content === "<p></p>") {
       toast.error("Adicione algum conteúdo antes de formatar");
@@ -129,7 +130,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
     }
 
     setIsFormattingWithAI(true);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("format-note", {
         body: { content, action },
@@ -213,9 +214,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => editor.chain().focus().unsetFontSize().run()}
-          >
+          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontSize().run()}>
             Resetar tamanho
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -296,9 +295,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             {HIGHLIGHT_COLORS.map((color) => (
               <button
                 key={color.value}
-                onClick={() =>
-                  editor.chain().focus().toggleHighlight({ color: color.value }).run()
-                }
+                onClick={() => editor.chain().focus().toggleHighlight({ color: color.value }).run()}
                 className="w-8 h-8 rounded border-2 border-border hover:scale-110 transition-transform"
                 style={{ backgroundColor: color.value }}
                 title={color.name}
@@ -357,36 +354,32 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
         size="sm"
         onClick={() => {
           if (!editor) return;
-          
+
           const { from, to } = editor.state.selection;
           if (from === to) {
             toast.error("Selecione o texto que deseja ordenar");
             return;
           }
-          
-          const text = editor.state.doc.textBetween(from, to, '\n');
-          const lines = text.split('\n').filter(line => line.trim());
-          
+
+          const text = editor.state.doc.textBetween(from, to, "\n");
+          const lines = text.split("\n").filter((line) => line.trim());
+
           if (lines.length < 2) {
             toast.error("Selecione pelo menos 2 linhas");
             return;
           }
-          
-          const sorted = lines.sort((a, b) => 
-            a.trim().localeCompare(b.trim(), 'pt-BR', { 
-              sensitivity: 'base',
-              ignorePunctuation: true 
-            })
+
+          const sorted = lines.sort((a, b) =>
+            a.trim().localeCompare(b.trim(), "pt-BR", {
+              sensitivity: "base",
+              ignorePunctuation: true,
+            }),
           );
-          
-          const sortedText = sorted.join('\n');
-          
-          editor.chain()
-            .focus()
-            .deleteRange({ from, to })
-            .insertContentAt(from, sortedText)
-            .run();
-            
+
+          const sortedText = sorted.join("\n");
+
+          editor.chain().focus().deleteRange({ from, to }).insertContentAt(from, sortedText).run();
+
           toast.success(`${lines.length} linhas ordenadas alfabeticamente`);
         }}
         title="Ordenar seleção alfabeticamente (A-Z)"
@@ -444,38 +437,58 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       {/* Tabela */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            title="Inserir tabela"
-          >
+          <Button variant="ghost" size="sm" title="Inserir tabela">
             <Table className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
-          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          >
             <TableProperties className="mr-2 h-4 w-4" />
             Inserir tabela 3x3
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().addColumnBefore().run()}
+            disabled={!editor.can().addColumnBefore()}
+          >
             Adicionar coluna antes
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            disabled={!editor.can().addColumnAfter()}
+          >
             Adicionar coluna depois
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+            disabled={!editor.can().deleteColumn()}
+          >
             Excluir coluna
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().addRowBefore().run()}
+            disabled={!editor.can().addRowBefore()}
+          >
             Adicionar linha antes
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+            disabled={!editor.can().addRowAfter()}
+          >
             Adicionar linha depois
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().deleteRow().run()}
+            disabled={!editor.can().deleteRow()}
+          >
             Excluir linha
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-destructive">
+          <DropdownMenuItem
+            onClick={() => editor.chain().focus().deleteTable().run()}
+            disabled={!editor.can().deleteTable()}
+            className="text-destructive"
+          >
             Excluir tabela
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -484,11 +497,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       {/* Imagem */}
       <Popover open={showImageInput} onOpenChange={setShowImageInput}>
         <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            title="Inserir imagem"
-          >
+          <Button variant="ghost" size="sm" title="Inserir imagem">
             <ImageIcon className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
@@ -547,33 +556,49 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<div class="callout callout-info"><p>💡 Informação importante aqui</p></div><p></p>').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent('<div class="callout callout-info"><p>💡 Informação importante aqui</p></div><p></p>')
+                .run();
             }}
           >
             <Info className="mr-2 h-4 w-4 text-blue-500" />
             Callout Info
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<div class="callout callout-warning"><p>⚠️ Atenção para este ponto</p></div><p></p>').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent('<div class="callout callout-warning"><p>⚠️ Atenção para este ponto</p></div><p></p>')
+                .run();
             }}
           >
             <AlertTriangle className="mr-2 h-4 w-4 text-yellow-500" />
             Callout Aviso
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<div class="callout callout-success"><p>✅ Sucesso ou ponto positivo</p></div><p></p>').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent('<div class="callout callout-success"><p>✅ Sucesso ou ponto positivo</p></div><p></p>')
+                .run();
             }}
           >
             <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
             Callout Sucesso
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<div class="callout callout-error"><p>❌ Erro ou ponto crítico</p></div><p></p>').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent('<div class="callout callout-error"><p>❌ Erro ou ponto crítico</p></div><p></p>')
+                .run();
             }}
           >
             <XCircle className="mr-2 h-4 w-4 text-red-500" />
@@ -590,7 +615,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
               editor.chain().focus().insertContent('<span class="priority-badge priority-high">🔴 Alta</span> ').run();
             }}
@@ -598,15 +623,19 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             <span className="mr-2 w-3 h-3 rounded-full bg-red-500"></span>
             Prioridade Alta
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<span class="priority-badge priority-medium">🟡 Média</span> ').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent('<span class="priority-badge priority-medium">🟡 Média</span> ')
+                .run();
             }}
           >
             <span className="mr-2 w-3 h-3 rounded-full bg-yellow-500"></span>
             Prioridade Média
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
               editor.chain().focus().insertContent('<span class="priority-badge priority-low">🟢 Baixa</span> ').run();
             }}
@@ -615,9 +644,15 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             Prioridade Baixa
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<div class="metric-card"><span class="metric-value">0</span><span class="metric-label">Descrição da métrica</span></div><p></p>').run();
+              editor
+                .chain()
+                .focus()
+                .insertContent(
+                  '<div class="metric-card"><span class="metric-value">0</span><span class="metric-label">Descrição da métrica</span></div><p></p>',
+                )
+                .run();
             }}
           >
             <TableProperties className="mr-2 h-4 w-4" />
@@ -631,12 +666,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
       {/* AI Formatting */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            title="Formatar com IA"
-            disabled={isFormattingWithAI}
-          >
+          <Button variant="ghost" size="sm" title="Formatar com IA" disabled={isFormattingWithAI}>
             <Sparkles className={`h-4 w-4 ${isFormattingWithAI ? "animate-pulse" : ""}`} />
           </Button>
         </DropdownMenuTrigger>
