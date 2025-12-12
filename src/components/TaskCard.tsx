@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWebShare } from "@/hooks/useWebShare";
+import { useTags } from "@/hooks/useTags";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,25 +65,6 @@ const defaultPriorityColors: PriorityColors = {
   high: { background: "#fee2e2", text: "#dc2626" },
   medium: { background: "#fef3c7", text: "#d97706" },
   low: { background: "#dcfce7", text: "#16a34a" },
-};
-
-// Tag colors for visual bars - vibrant colors matching reference design
-const TAG_COLORS: Record<string, string> = {
-  default: "bg-slate-400",
-  trabalho: "bg-blue-500",
-  pessoal: "bg-green-500",
-  urgente: "bg-red-500",
-  projeto: "bg-purple-500",
-  estudo: "bg-amber-500",
-  saúde: "bg-emerald-500",
-  financeiro: "bg-cyan-500",
-  casa: "bg-orange-500",
-  lazer: "bg-pink-500",
-};
-
-const getTagColor = (tag: string): string => {
-  const normalizedTag = tag.toLowerCase().trim();
-  return TAG_COLORS[normalizedTag] || TAG_COLORS.default;
 };
 
 // Função de comparação customizada para React.memo
@@ -186,6 +168,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
   const { share } = useWebShare();
+  const { getTagColor } = useTags();
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
@@ -355,11 +338,12 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           >
             {/* Colored tag bars at top of card */}
             {visibleTags.length > 0 && (
-              <div className="flex w-full h-1">
+              <div className="flex w-full h-1.5">
                 {visibleTags.map((tag, index) => (
                   <div
                     key={`${tag}-${index}`}
-                    className={cn("flex-1 h-full", getTagColor(tag))}
+                    className="flex-1 h-full"
+                    style={{ backgroundColor: getTagColor(tag) }}
                     title={tag}
                   />
                 ))}
