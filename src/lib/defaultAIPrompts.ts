@@ -126,6 +126,22 @@ O texto deve ser claro e fácil de ler.`
 - Mantenha a ordem de importância
 - Retorne APENAS a lista de pontos em HTML válido, sem comentários adicionais`
   },
+  formatStructure: {
+    key: 'formatStructure',
+    label: 'Melhorar Formatação',
+    description: 'Usado para aplicar formatação visual sem alterar o conteúdo',
+    category: 'notes',
+    defaultValue: `Você é um formatador de texto. Aplique formatação visual SEM alterar o conteúdo:
+
+- Títulos em <h2> ou <h3> com negrito
+- Subtítulos em <strong>
+- Listas com <ul>/<ol> e <li>
+- Parágrafos bem espaçados
+- Destaque palavras-chave em <strong>
+
+NÃO altere o texto, apenas a estrutura visual.
+Retorne APENAS HTML válido para TipTap editor, sem comentários adicionais.`
+  },
   dailyAssistant: {
     key: 'dailyAssistant',
     label: 'Organizar Tarefas Diárias',

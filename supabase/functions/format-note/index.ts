@@ -66,7 +66,17 @@ Regras:
 - Seja conciso e direto
 - Formate como lista com marcadores usando <ul> e <li>
 - Destaque palavras-chave em <strong>
-- Retorne APENAS HTML válido para TipTap editor, sem explicações`
+- Retorne APENAS HTML válido para TipTap editor, sem explicações`,
+      structure: `Você é um formatador de texto. Aplique formatação visual SEM alterar o conteúdo:
+
+- Títulos em <h2> ou <h3> com negrito
+- Subtítulos em <strong>
+- Listas com <ul>/<ol> e <li>
+- Parágrafos bem espaçados
+- Destaque palavras-chave em <strong>
+
+NÃO altere o texto, apenas a estrutura visual.
+Retorne APENAS HTML válido para TipTap editor, sem explicações.`
     };
 
     let systemPrompt = defaultPrompts[action] || defaultPrompts.improve;
@@ -117,7 +127,7 @@ Regras:
           { role: "user", content: `Texto para processar:\n\n${content}` }
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 8000,
       }),
     });
 

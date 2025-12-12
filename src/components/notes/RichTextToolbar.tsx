@@ -708,6 +708,11 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             <Target className="mr-2 h-4 w-4" />
             Extrair pontos-chave
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => formatWithAI("structure")}>
+            <Type className="mr-2 h-4 w-4" />
+            Melhorar formatação
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
