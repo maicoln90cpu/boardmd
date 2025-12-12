@@ -61,9 +61,9 @@ interface TaskCardProps {
 }
 // Default priority colors
 const defaultPriorityColors: PriorityColors = {
-  high: { background: '#fee2e2', text: '#dc2626' },
-  medium: { background: '#fef3c7', text: '#d97706' },
-  low: { background: '#dcfce7', text: '#16a34a' },
+  high: { background: "#fee2e2", text: "#dc2626" },
+  medium: { background: "#fef3c7", text: "#d97706" },
+  low: { background: "#dcfce7", text: "#16a34a" },
 };
 
 // Função de comparação customizada para React.memo
@@ -72,7 +72,7 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   // Comparar task (principal fonte de mudanças)
   const prevTask = prevProps.task;
   const nextTask = nextProps.task;
-  
+
   if (prevTask.id !== nextTask.id) return false;
   if (prevTask.title !== nextTask.title) return false;
   if (prevTask.description !== nextTask.description) return false;
@@ -84,7 +84,7 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevTask.mirror_task_id !== nextTask.mirror_task_id) return false;
   if (prevTask.originalCategory !== nextTask.originalCategory) return false;
   if (prevTask.categories?.name !== nextTask.categories?.name) return false;
-  
+
   // Comparar subtasks (array)
   const prevSubtasks = prevTask.subtasks || [];
   const nextSubtasks = nextTask.subtasks || [];
@@ -92,16 +92,16 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   for (let i = 0; i < prevSubtasks.length; i++) {
     if (prevSubtasks[i].completed !== nextSubtasks[i].completed) return false;
   }
-  
+
   // Comparar tags (array)
   const prevTags = prevTask.tags || [];
   const nextTags = nextTask.tags || [];
   if (prevTags.length !== nextTags.length) return false;
-  if (prevTags.join(',') !== nextTags.join(',')) return false;
-  
+  if (prevTags.join(",") !== nextTags.join(",")) return false;
+
   // Comparar recurrence_rule (objeto)
   if (JSON.stringify(prevTask.recurrence_rule) !== JSON.stringify(nextTask.recurrence_rule)) return false;
-  
+
   // Comparar outras props
   if (prevProps.compact !== nextProps.compact) return false;
   if (prevProps.isDailyKanban !== nextProps.isDailyKanban) return false;
@@ -110,10 +110,10 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevProps.hideBadges !== nextProps.hideBadges) return false;
   if (prevProps.canMoveLeft !== nextProps.canMoveLeft) return false;
   if (prevProps.canMoveRight !== nextProps.canMoveRight) return false;
-  
+
   // Comparar priorityColors (objeto opcional)
   if (JSON.stringify(prevProps.priorityColors) !== JSON.stringify(nextProps.priorityColors)) return false;
-  
+
   return true;
 };
 
@@ -149,7 +149,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     const colors = priorityColors[priority as keyof PriorityColors] || defaultPriorityColors.low;
     return {
       backgroundColor: colors.text,
-      color: '#ffffff',
+      color: "#ffffff",
     };
   };
 
@@ -317,13 +317,13 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             duration: 0.15,
           }}
         >
-            <Card
+          <Card
             className={cn(
               "w-full cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
-              // Padding diferenciado por modo
+              // Padding diferenciado por modo - Alterar tamanho dos cards
               isUltraCompact && "p-1",
               densityMode === "compact" && "p-2",
-              densityMode === "comfortable" && "p-4",
+              densityMode === "comfortable" && "p-3",
               // Bordas de urgência
               isOverdue && "border-2 border-destructive",
               isUrgent && "border-2 border-orange-500",
@@ -369,10 +369,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   </Badge>
                 )}
                 {!hideBadges && task.priority && (
-                  <Badge
-                    className="text-[9px] px-0.5 py-0 shrink-0"
-                    style={getPriorityBadgeStyle(task.priority)}
-                  >
+                  <Badge className="text-[9px] px-0.5 py-0 shrink-0" style={getPriorityBadgeStyle(task.priority)}>
                     {task.priority[0].toUpperCase()}
                   </Badge>
                 )}
@@ -442,10 +439,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
               </div>
             ) : (
               // Layout 3 linhas (4 para recorrentes)
-              <div className={cn(
-                densityMode === "compact" && "space-y-1",
-                densityMode === "comfortable" && "space-y-2.5"
-              )}>
+              <div
+                className={cn(densityMode === "compact" && "space-y-1", densityMode === "comfortable" && "space-y-2.5")}
+              >
                 {/* Linha 1: Checkbox + Título */}
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Checkbox
@@ -454,7 +450,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                     className={cn(
                       "flex-shrink-0",
                       densityMode === "compact" && "h-3.5 w-3.5",
-                      densityMode === "comfortable" && "h-5 w-5"
+                      densityMode === "comfortable" && "h-5 w-5",
                     )}
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -471,28 +467,36 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                 </div>
 
                 {/* Linha 2: Data, Horário, Prioridade */}
-                <div className={cn(
-                  "flex items-center flex-wrap",
-                  densityMode === "compact" && "gap-1.5",
-                  densityMode === "comfortable" && "gap-2"
-                )}>
+                <div
+                  className={cn(
+                    "flex items-center flex-wrap",
+                    densityMode === "compact" && "gap-1.5",
+                    densityMode === "comfortable" && "gap-2",
+                  )}
+                >
                   {/* BUG 4 FIX: Mostrar data + horário no diário */}
                   {task.due_date && isDailyKanban && (
-                    <div className={cn(
-                      "flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded",
-                      densityMode === "compact" && "text-[10px]",
-                      densityMode === "comfortable" && "text-xs py-1 px-2"
-                    )}>
-                      <Calendar className={cn(
-                        densityMode === "compact" && "h-2.5 w-2.5",
-                        densityMode === "comfortable" && "h-3.5 w-3.5"
-                      )} />
+                    <div
+                      className={cn(
+                        "flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded",
+                        densityMode === "compact" && "text-[10px]",
+                        densityMode === "comfortable" && "text-xs py-1 px-2",
+                      )}
+                    >
+                      <Calendar
+                        className={cn(
+                          densityMode === "compact" && "h-2.5 w-2.5",
+                          densityMode === "comfortable" && "h-3.5 w-3.5",
+                        )}
+                      />
                       {formatDateShortBR(task.due_date)}
-                      <Clock className={cn(
-                        "ml-1",
-                        densityMode === "compact" && "h-2.5 w-2.5",
-                        densityMode === "comfortable" && "h-3.5 w-3.5"
-                      )} />
+                      <Clock
+                        className={cn(
+                          "ml-1",
+                          densityMode === "compact" && "h-2.5 w-2.5",
+                          densityMode === "comfortable" && "h-3.5 w-3.5",
+                        )}
+                      />
                       {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
@@ -503,28 +507,38 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         "flex items-center gap-0.5 rounded",
                         densityMode === "compact" && "px-1.5 py-0.5 text-[10px]",
                         densityMode === "comfortable" && "px-2 py-1 text-xs",
-                        isOverdue ? "bg-destructive/10 text-destructive" : 
-                        isUrgent ? "bg-orange-500/10 text-orange-600" : 
-                        isWarning ? "bg-yellow-500/10 text-yellow-600" : "bg-muted"
+                        isOverdue
+                          ? "bg-destructive/10 text-destructive"
+                          : isUrgent
+                            ? "bg-orange-500/10 text-orange-600"
+                            : isWarning
+                              ? "bg-yellow-500/10 text-yellow-600"
+                              : "bg-muted",
                       )}
                     >
                       {isOverdue || isUrgent ? (
-                        <AlertCircle className={cn(
-                          densityMode === "compact" && "h-2.5 w-2.5",
-                          densityMode === "comfortable" && "h-3.5 w-3.5"
-                        )} />
+                        <AlertCircle
+                          className={cn(
+                            densityMode === "compact" && "h-2.5 w-2.5",
+                            densityMode === "comfortable" && "h-3.5 w-3.5",
+                          )}
+                        />
                       ) : (
-                        <Calendar className={cn(
-                          densityMode === "compact" && "h-2.5 w-2.5",
-                          densityMode === "comfortable" && "h-3.5 w-3.5"
-                        )} />
+                        <Calendar
+                          className={cn(
+                            densityMode === "compact" && "h-2.5 w-2.5",
+                            densityMode === "comfortable" && "h-3.5 w-3.5",
+                          )}
+                        />
                       )}
                       {formatDateShortBR(task.due_date)}
-                      <Clock className={cn(
-                        "ml-1",
-                        densityMode === "compact" && "h-2.5 w-2.5",
-                        densityMode === "comfortable" && "h-3.5 w-3.5"
-                      )} />
+                      <Clock
+                        className={cn(
+                          "ml-1",
+                          densityMode === "compact" && "h-2.5 w-2.5",
+                          densityMode === "comfortable" && "h-3.5 w-3.5",
+                        )}
+                      />
                       {formatTimeOnlyBR(task.due_date)}
                     </div>
                   )}
@@ -534,7 +548,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                     <Badge
                       className={cn(
                         densityMode === "compact" && "text-[10px] px-2 py-0",
-                        densityMode === "comfortable" && "text-xs px-2.5 py-0.5"
+                        densityMode === "comfortable" && "text-xs px-2.5 py-0.5",
                       )}
                       style={getPriorityBadgeStyle(task.priority)}
                     >
@@ -543,29 +557,36 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   )}
 
                   {task.subtasks && task.subtasks.length > 0 && (
-                    <Badge variant="outline" className={cn(
-                      densityMode === "compact" && "text-[10px] px-1 py-0",
-                      densityMode === "comfortable" && "text-xs px-1.5 py-0.5"
-                    )}>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        densityMode === "compact" && "text-[10px] px-1 py-0",
+                        densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
+                      )}
+                    >
                       ✓ {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
                     </Badge>
                   )}
                 </div>
 
                 {/* Linha 3: Ícones de ação */}
-                <div className={cn(
-                  "flex items-center",
-                  densityMode === "compact" && "gap-0.5",
-                  densityMode === "comfortable" && "gap-1"
-                )}>
+                <div
+                  className={cn(
+                    "flex items-center",
+                    densityMode === "compact" && "gap-0.5",
+                    densityMode === "comfortable" && "gap-1",
+                  )}
+                >
                   {onToggleFavorite && (
                     <Button
                       size="icon"
                       variant="ghost"
                       className={cn(
-                        task.is_favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500",
+                        task.is_favorite
+                          ? "text-yellow-500 hover:text-yellow-600"
+                          : "text-muted-foreground hover:text-yellow-500",
                         densityMode === "compact" && "h-5 w-5",
-                        densityMode === "comfortable" && "h-7 w-7"
+                        densityMode === "comfortable" && "h-7 w-7",
                       )}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -573,68 +594,64 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                       }}
                       title={task.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
                     >
-                      <Star className={cn(
-                        task.is_favorite && "fill-yellow-500",
-                        densityMode === "compact" && "h-3 w-3",
-                        densityMode === "comfortable" && "h-4 w-4"
-                      )} />
+                      <Star
+                        className={cn(
+                          task.is_favorite && "fill-yellow-500",
+                          densityMode === "compact" && "h-3 w-3",
+                          densityMode === "comfortable" && "h-4 w-4",
+                        )}
+                      />
                     </Button>
                   )}
                   {canMoveLeft && (
                     <Button
                       size="icon"
                       variant="ghost"
-                      className={cn(
-                        densityMode === "compact" && "h-5 w-5",
-                        densityMode === "comfortable" && "h-7 w-7"
-                      )}
+                      className={cn(densityMode === "compact" && "h-5 w-5", densityMode === "comfortable" && "h-7 w-7")}
                       onClick={(e) => {
                         e.stopPropagation();
                         onMoveLeft?.();
                       }}
                     >
-                      <ChevronLeft className={cn(
-                        densityMode === "compact" && "h-3 w-3",
-                        densityMode === "comfortable" && "h-4 w-4"
-                      )} />
+                      <ChevronLeft
+                        className={cn(
+                          densityMode === "compact" && "h-3 w-3",
+                          densityMode === "comfortable" && "h-4 w-4",
+                        )}
+                      />
                     </Button>
                   )}
                   {canMoveRight && (
                     <Button
                       size="icon"
                       variant="ghost"
-                      className={cn(
-                        densityMode === "compact" && "h-5 w-5",
-                        densityMode === "comfortable" && "h-7 w-7"
-                      )}
+                      className={cn(densityMode === "compact" && "h-5 w-5", densityMode === "comfortable" && "h-7 w-7")}
                       onClick={(e) => {
                         e.stopPropagation();
                         onMoveRight?.();
                       }}
                     >
-                      <ChevronRight className={cn(
-                        densityMode === "compact" && "h-3 w-3",
-                        densityMode === "comfortable" && "h-4 w-4"
-                      )} />
+                      <ChevronRight
+                        className={cn(
+                          densityMode === "compact" && "h-3 w-3",
+                          densityMode === "comfortable" && "h-4 w-4",
+                        )}
+                      />
                     </Button>
                   )}
                   <Button
                     size="icon"
                     variant="ghost"
-                    className={cn(
-                      densityMode === "compact" && "h-5 w-5",
-                      densityMode === "comfortable" && "h-7 w-7"
-                    )}
+                    className={cn(densityMode === "compact" && "h-5 w-5", densityMode === "comfortable" && "h-7 w-7")}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDuplicate?.(task.id);
                     }}
                     title="Duplicar tarefa"
                   >
-                    <Copy className={cn(
-                      densityMode === "compact" && "h-3 w-3",
-                      densityMode === "comfortable" && "h-4 w-4"
-                    )} />
+                    <Copy
+                      className={cn(densityMode === "compact" && "h-3 w-3", densityMode === "comfortable" && "h-4 w-4")}
+                    />
                   </Button>
                   <Button
                     size="icon"
@@ -642,58 +659,59 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                     className={cn(
                       "text-destructive hover:text-destructive hover:bg-destructive/10",
                       densityMode === "compact" && "h-5 w-5",
-                      densityMode === "comfortable" && "h-7 w-7"
+                      densityMode === "comfortable" && "h-7 w-7",
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
                       onDelete(task.id);
                     }}
                   >
-                    <Trash2 className={cn(
-                      densityMode === "compact" && "h-3 w-3",
-                      densityMode === "comfortable" && "h-4 w-4"
-                    )} />
+                    <Trash2
+                      className={cn(densityMode === "compact" && "h-3 w-3", densityMode === "comfortable" && "h-4 w-4")}
+                    />
                   </Button>
                 </div>
 
-              {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
-              {!hideBadges &&
-                (task.recurrence_rule ||
-                  task.mirror_task_id ||
-                  showCategoryBadge ||
-                  (task.tags && task.tags.length > 0)) && (
-                  <div className={cn(
-                    "flex items-center flex-wrap",
-                    densityMode === "compact" && "gap-1",
-                    densityMode === "comfortable" && "gap-1.5"
-                  )}>
-                    {/* Mostrar categoria ORIGINAL para tarefas recorrentes no diário (com espelho em projetos) */}
-                    {isDailyKanban && task.recurrence_rule && originalCategoryName && (
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                          densityMode === "compact" && "text-[10px] px-1.5 py-0",
-                          densityMode === "comfortable" && "text-xs px-2 py-0.5"
-                        )}
-                      >
-                        📁 {originalCategoryName}
-                      </Badge>
-                    )}
+                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
+                {!hideBadges &&
+                  (task.recurrence_rule ||
+                    task.mirror_task_id ||
+                    showCategoryBadge ||
+                    (task.tags && task.tags.length > 0)) && (
+                    <div
+                      className={cn(
+                        "flex items-center flex-wrap",
+                        densityMode === "compact" && "gap-1",
+                        densityMode === "comfortable" && "gap-1.5",
+                      )}
+                    >
+                      {/* Mostrar categoria ORIGINAL para tarefas recorrentes no diário (com espelho em projetos) */}
+                      {isDailyKanban && task.recurrence_rule && originalCategoryName && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                            densityMode === "compact" && "text-[10px] px-1.5 py-0",
+                            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+                          )}
+                        >
+                          📁 {originalCategoryName}
+                        </Badge>
+                      )}
 
-                    {/* Mostrar categoria normal fora do diário quando showCategoryBadge */}
-                    {!isDailyKanban && showCategoryBadge && task.categories?.name && (
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-                          densityMode === "compact" && "text-[10px] px-1.5 py-0",
-                          densityMode === "comfortable" && "text-xs px-2 py-0.5"
-                        )}
-                      >
-                        {task.categories.name}
-                      </Badge>
-                    )}
+                      {/* Mostrar categoria normal fora do diário quando showCategoryBadge */}
+                      {!isDailyKanban && showCategoryBadge && task.categories?.name && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+                            densityMode === "compact" && "text-[10px] px-1.5 py-0",
+                            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+                          )}
+                        >
+                          {task.categories.name}
+                        </Badge>
+                      )}
 
                       {task.mirror_task_id && (
                         <Badge
@@ -701,7 +719,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                           className={cn(
                             "gap-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
                             densityMode === "compact" && "text-[10px] px-1.5 py-0",
-                            densityMode === "comfortable" && "text-xs px-2 py-0.5"
+                            densityMode === "comfortable" && "text-xs px-2 py-0.5",
                           )}
                         >
                           🪞 Espelhada
@@ -712,19 +730,26 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         ?.filter((tag) => tag !== "espelho-diário")
                         .slice(0, 2)
                         .map((tag) => (
-                          <Badge key={tag} variant="outline" className={cn(
-                            densityMode === "compact" && "text-[10px] px-1 py-0",
-                            densityMode === "comfortable" && "text-xs px-1.5 py-0.5"
-                          )}>
+                          <Badge
+                            key={tag}
+                            variant="outline"
+                            className={cn(
+                              densityMode === "compact" && "text-[10px] px-1 py-0",
+                              densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
+                            )}
+                          >
                             {tag}
                           </Badge>
                         ))}
 
                       {task.tags && task.tags.filter((tag) => tag !== "espelho-diário").length > 2 && (
-                        <Badge variant="outline" className={cn(
-                          densityMode === "compact" && "text-[10px] px-1 py-0",
-                          densityMode === "comfortable" && "text-xs px-1.5 py-0.5"
-                        )}>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            densityMode === "compact" && "text-[10px] px-1 py-0",
+                            densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
+                          )}
+                        >
                           +{task.tags.filter((tag) => tag !== "espelho-diário").length - 2}
                         </Badge>
                       )}
