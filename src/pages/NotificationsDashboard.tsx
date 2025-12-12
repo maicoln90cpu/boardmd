@@ -1,56 +1,28 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Bell, Calendar, Layers, FileText, BarChart3, Settings } from "lucide-react";
+import { Bell } from "lucide-react";
 import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
 import { PushNotificationDiagnostics } from "@/components/PushNotificationDiagnostics";
 import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
 import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
 import { useNavigate } from "react-router-dom";
+import { Sidebar } from "@/components/Sidebar";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function NotificationsDashboard() {
   const navigate = useNavigate();
+  const { toggleTheme } = useTheme();
   
   return (
     <div className="min-h-screen bg-background flex">
-      <div className="hidden md:block">
-        <div className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card">
-          <div className="px-6 py-4 border-b">
-            <h1 className="text-xl font-bold">Kanban Board</h1>
-          </div>
-          <nav className="flex flex-col gap-1 p-4">
-            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
-              <Calendar className="h-4 w-4" />
-              Diário
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
-              <Layers className="h-4 w-4" />
-              Projetos
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/calendar")} className="justify-start gap-3">
-              <Calendar className="h-4 w-4" />
-              Calendário
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/notes")} className="justify-start gap-3">
-              <FileText className="h-4 w-4" />
-              Anotações
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="justify-start gap-3">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </Button>
-            <Button variant="secondary" className="justify-start gap-3">
-              <Bell className="h-4 w-4" />
-              Notificações
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/config")} className="justify-start gap-3">
-              <Settings className="h-4 w-4" />
-              Setup
-            </Button>
-          </nav>
-        </div>
-      </div>
+      <Sidebar
+        onExport={() => {}}
+        onImport={() => {}}
+        onThemeToggle={toggleTheme}
+        onViewChange={(mode) => navigate(`/?view=${mode}`)}
+        viewMode="daily"
+      />
 
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1">
         <div className="container mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-2">

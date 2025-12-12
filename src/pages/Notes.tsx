@@ -241,7 +241,7 @@ export default function Notes() {
         viewMode="daily"
       />
 
-      <main className="ml-52 flex-1 flex h-screen">
+      <main className="flex-1 flex h-screen overflow-hidden">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           {/* Coluna 1 - Cadernos */}
           <div className="w-56 border-r flex flex-col bg-card shadow-sm">
@@ -330,35 +330,6 @@ export default function Notes() {
             </div>
           </div>
 
-          {/* Coluna 2 - Lista de Notas */}
-          <div className="w-64 border-r flex flex-col bg-card/50">
-            <div className="p-3 border-b">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                {selectedNotebookId === null
-                  ? "Todas as Notas"
-                  : selectedNotebookId === "loose"
-                    ? "Notas Soltas"
-                    : sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
-                }
-              </h3>
-              <NotesSearch
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-              />
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2">
-              <NotesList
-                notes={notesForSelectedNotebook}
-                selectedNoteId={selectedNoteId}
-                onSelectNote={handleSelectNote}
-                onAddNote={() => handleAddNote(selectedNotebookId)}
-                onDeleteNote={handleDeleteNote}
-              />
-            </div>
-          </div>
         </DndContext>
 
         {/* Coluna 3 - Editor */}

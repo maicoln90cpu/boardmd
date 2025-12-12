@@ -79,10 +79,7 @@ interface SidebarBodyProps {
 
 export const SidebarBody = ({ className, children }: SidebarBodyProps) => {
   return (
-    <>
-      <DesktopSidebar className={className}>{children}</DesktopSidebar>
-      <MobileSidebar className={className}>{children}</MobileSidebar>
-    </>
+    <DesktopSidebar className={className}>{children}</DesktopSidebar>
   );
 };
 

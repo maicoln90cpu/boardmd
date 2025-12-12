@@ -51,7 +51,7 @@ export default function Dashboard() {
         viewMode="all"
       />
       
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header com botão de voltar */}
         <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 border-b bg-background">
           <button
