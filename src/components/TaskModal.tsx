@@ -4,6 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/useTasks";
 import { Label } from "@/components/ui/label";
 import { useCategories } from "@/hooks/useCategories";
@@ -17,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RecurrenceRule } from "@/lib/recurrenceUtils";
+import { cn } from "@/lib/utils";
 
 interface TaskModalProps {
   open: boolean;
@@ -493,25 +499,72 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               </Select>
             </div>
 
-            <div>
-              <Label>Data de Vencimento</Label>
-              <Input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className={isMobile ? 'min-h-[48px] text-base' : ''}
-              />
-            </div>
+            {/* Date & Time Picker - Modern Visual */}
+            <div className="space-y-3">
+              <Label>Data e Horário</Label>
+              <div className="flex gap-2">
+                {/* Date Picker with Popover Calendar */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "flex-1 justify-start text-left font-normal",
+                        !dueDate && "text-muted-foreground",
+                        isMobile && "min-h-[48px]"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dueDate ? (
+                        format(new Date(dueDate + "T00:00:00"), "dd 'de' MMMM, yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecionar data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-popover border shadow-lg z-50" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dueDate ? new Date(dueDate + "T00:00:00") : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setDueDate(format(date, "yyyy-MM-dd"));
+                        } else {
+                          setDueDate("");
+                        }
+                      }}
+                      initialFocus
+                      locale={ptBR}
+                    />
+                    {dueDate && (
+                      <div className="p-3 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-muted-foreground"
+                          onClick={() => setDueDate("")}
+                        >
+                          Limpar data
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
 
-            <div>
-              <Label>Horário (opcional)</Label>
-              <Input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                placeholder="Selecione um horário"
-                className={isMobile ? 'min-h-[48px] text-base' : ''}
-              />
+                {/* Time Picker */}
+                <div className="relative">
+                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className={cn(
+                      "pl-10 w-[130px]",
+                      isMobile && "min-h-[48px]"
+                    )}
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
