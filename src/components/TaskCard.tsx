@@ -66,6 +66,25 @@ const defaultPriorityColors: PriorityColors = {
   low: { background: "#dcfce7", text: "#16a34a" },
 };
 
+// Tag colors for visual bars - vibrant colors matching reference design
+const TAG_COLORS: Record<string, string> = {
+  default: "bg-slate-400",
+  trabalho: "bg-blue-500",
+  pessoal: "bg-green-500",
+  urgente: "bg-red-500",
+  projeto: "bg-purple-500",
+  estudo: "bg-amber-500",
+  saúde: "bg-emerald-500",
+  financeiro: "bg-cyan-500",
+  casa: "bg-orange-500",
+  lazer: "bg-pink-500",
+};
+
+const getTagColor = (tag: string): string => {
+  const normalizedTag = tag.toLowerCase().trim();
+  return TAG_COLORS[normalizedTag] || TAG_COLORS.default;
+};
+
 // Função de comparação customizada para React.memo
 // Compara apenas props que afetam a renderização visual
 const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): boolean => {
@@ -138,10 +157,16 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     id: task.id,
   });
   const urgency = getTaskUrgency(task);
+  // Premium drag & drop styles
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    ...(isDragging && {
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      transform: `${CSS.Transform.toString(transform)} rotate(3deg) scale(1.02)`,
+      zIndex: 100,
+    }),
   };
 
   // Compute priority classes from custom colors
@@ -153,15 +178,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     };
   };
 
-  // Get background style for card based on priority
-  const getCardBackgroundStyle = (priority: string | null | undefined) => {
-    if (!priority) return {};
-    const colors = priorityColors[priority as keyof PriorityColors];
-    if (!colors) return {};
-    return {
-      backgroundColor: colors.background,
-    };
-  };
+  // Get tags for colored bars at top of card
+  const visibleTags = (task.tags || []).filter(tag => tag !== "espelho-diário").slice(0, 4);
   const isOverdue = urgency === "overdue";
   const isUrgent = urgency === "urgent";
   const isWarning = urgency === "warning";
@@ -319,19 +337,41 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         >
           <Card
             className={cn(
-              "w-full cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
+              "w-full cursor-grab active:cursor-grabbing transition-all duration-200 overflow-hidden",
+              // Remove background priority, use neutral card background
+              "bg-card hover:shadow-lg hover:shadow-primary/5",
               // Padding diferenciado por modo - Alterar tamanho dos cards
-              isUltraCompact && "p-1",
-              densityMode === "compact" && "p-2",
-              densityMode === "comfortable" && "p-3",
+              isUltraCompact && "p-0",
+              densityMode === "compact" && "p-0",
+              densityMode === "comfortable" && "p-0",
               // Bordas de urgência
               isOverdue && "border-2 border-destructive",
               isUrgent && "border-2 border-orange-500",
               isWarning && "border-l-4 border-l-yellow-500",
+              // Premium shadow on drag
+              isDragging && "shadow-2xl ring-2 ring-primary/20",
             )}
-            style={getCardBackgroundStyle(task.priority)}
             onDoubleClick={() => onEdit(task)}
           >
+            {/* Colored tag bars at top of card */}
+            {visibleTags.length > 0 && (
+              <div className="flex w-full h-1">
+                {visibleTags.map((tag, index) => (
+                  <div
+                    key={`${tag}-${index}`}
+                    className={cn("flex-1 h-full", getTagColor(tag))}
+                    title={tag}
+                  />
+                ))}
+              </div>
+            )}
+            
+            {/* Card content wrapper with padding */}
+            <div className={cn(
+              isUltraCompact && "p-1",
+              densityMode === "compact" && "p-2",
+              densityMode === "comfortable" && "p-3",
+            )}>
             {isUltraCompact ? (
               // Layout ultra-compacto: tudo em 1 linha
               <div className="flex items-center gap-1 text-[10px]">
@@ -757,6 +797,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   )}
               </div>
             )}
+            </div>
           </Card>
         </motion.div>
       </HoverCardTrigger>
