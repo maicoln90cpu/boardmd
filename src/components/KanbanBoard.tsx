@@ -16,6 +16,7 @@ import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { useSettings } from "@/hooks/useSettings";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { useTags } from "@/hooks/useTags";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -53,6 +54,7 @@ export function KanbanBoard({
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
   const { settings } = useSettings(); // OTIMIZAÇÃO: usar settings em vez de localStorage direto
+  const { getTagColor } = useTags();
   const isMobile = useBreakpoint() === 'mobile';
   
   // Modo compacto automático em mobile ou quando forçado via prop
@@ -520,6 +522,7 @@ export function KanbanBoard({
           gridColumns={gridColumns}
           priorityColors={settings.customization?.priorityColors}
           originalCategoriesMap={originalCategoriesMap}
+          getTagColor={getTagColor}
         />
 
         <TaskModal
@@ -646,6 +649,7 @@ export function KanbanBoard({
                               onDuplicate={duplicateTask}
                               densityMode={densityMode}
                               priorityColors={settings.customization?.priorityColors}
+                              getTagColor={getTagColor}
                             />
                           ))}
                         </div>
@@ -669,6 +673,7 @@ export function KanbanBoard({
                 onEdit={() => {}}
                 onDelete={() => {}}
                 priorityColors={settings.customization?.priorityColors}
+                getTagColor={getTagColor}
               />
             </div>
           ) : null}

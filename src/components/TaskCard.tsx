@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWebShare } from "@/hooks/useWebShare";
-import { useTags } from "@/hooks/useTags";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +58,7 @@ interface TaskCardProps {
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
   priorityColors?: PriorityColors;
+  getTagColor?: (tagName: string) => string;
 }
 // Default priority colors
 const defaultPriorityColors: PriorityColors = {
@@ -134,6 +134,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   densityMode = "comfortable",
   hideBadges = false,
   priorityColors = defaultPriorityColors,
+  getTagColor = () => "#6B7280", // Default gray fallback
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -168,7 +169,6 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
   const { share } = useWebShare();
-  const { getTagColor } = useTags();
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
