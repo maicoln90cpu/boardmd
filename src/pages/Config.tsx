@@ -17,12 +17,13 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, Calendar, FileText, Settings, Layers, BarChart3, Bell } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
+import { Sidebar } from "@/components/Sidebar";
 import {
   DndContext,
   closestCenter,
@@ -143,7 +144,7 @@ function SortableCategoryItem({
 
 export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading, getAIPrompt, updateAIPrompt, resetAIPrompt, resetAllAIPrompts } = useSettings();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, toggleTheme } = useTheme();
   const { categories, addCategory, deleteCategory, reorderCategories } = useCategories();
   const { toast } = useToast();
   const { signOut } = useAuth();
@@ -331,45 +332,15 @@ export default function Config() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <div className="hidden md:block">
-        <div className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-card">
-          <div className="px-6 py-4 border-b">
-            <h1 className="text-xl font-bold">Kanban Board</h1>
-          </div>
-          <nav className="flex flex-col gap-1 p-4">
-            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
-              <Calendar className="h-4 w-4" />
-              Diário
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/")} className="justify-start gap-3">
-              <Layers className="h-4 w-4" />
-              Projetos
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/calendar")} className="justify-start gap-3">
-              <Calendar className="h-4 w-4" />
-              Calendário
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/notes")} className="justify-start gap-3">
-              <FileText className="h-4 w-4" />
-              Anotações
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="justify-start gap-3">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/notifications")} className="justify-start gap-3">
-              <Bell className="h-4 w-4" />
-              Notificações
-            </Button>
-            <Button variant="secondary" className="justify-start gap-3">
-              <Settings className="h-4 w-4" />
-              Setup
-            </Button>
-          </nav>
-        </div>
-      </div>
+      <Sidebar
+        onExport={handleExport}
+        onImport={handleImport}
+        onThemeToggle={toggleTheme}
+        onViewChange={(mode) => navigate(`/?view=${mode}`)}
+        viewMode="daily"
+      />
 
-      <div className="flex-1 md:ml-64">
+      <div className="flex-1">
         {/* Header com botão voltar e salvar */}
         <div className="sticky top-0 z-10 bg-background border-b">
           <div className="px-6 py-4 flex items-center justify-between gap-4">
@@ -484,444 +455,107 @@ export default function Config() {
                       <SelectItem value="America/Rio_Branco">Rio Branco (UTC-5)</SelectItem>
                       <SelectItem value="America/Noronha">Fernando de Noronha (UTC-2)</SelectItem>
                       <SelectItem value="America/New_York">Nova York (UTC-5)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Los Angeles (UTC-8)</SelectItem>
                       <SelectItem value="Europe/London">Londres (UTC+0)</SelectItem>
                       <SelectItem value="Europe/Paris">Paris (UTC+1)</SelectItem>
-                      <SelectItem value="Europe/Lisbon">Lisboa (UTC+0)</SelectItem>
                       <SelectItem value="Asia/Tokyo">Tóquio (UTC+9)</SelectItem>
-                      <SelectItem value="Australia/Sydney">Sydney (UTC+11)</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Define o fuso horário usado para exibir datas e horários em todo o sistema
-                  </p>
                 </div>
 
                 <Separator />
 
-                {/* Cores de prioridade customizáveis */}
+                {/* Cores de prioridade */}
                 <div className="space-y-4">
-                  <Label>Cores de Prioridade</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Personalize as cores dos cards baseado na prioridade
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <Label>Cores de Prioridade</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Cores usadas nos cards de tarefas para indicar prioridade</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-xs">Alta</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          type="color" 
-                          className="w-10 h-10 p-1 cursor-pointer"
+                      <Label htmlFor="highPriorityColor" className="text-sm text-muted-foreground">Alta Prioridade</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          id="highPriorityColor"
                           value={settings.customization?.priorityColors?.high?.background || '#fee2e2'}
-                          onChange={(e) => updateSettings({
-                            customization: {
+                          onChange={(e) => updateSettings({ 
+                            customization: { 
                               ...settings.customization,
                               priorityColors: {
                                 ...settings.customization?.priorityColors,
                                 high: { 
-                                  background: e.target.value, 
-                                  text: settings.customization?.priorityColors?.high?.text || '#dc2626' 
-                                },
-                                medium: settings.customization?.priorityColors?.medium || { background: '#fef3c7', text: '#d97706' },
-                                low: settings.customization?.priorityColors?.low || { background: '#dcfce7', text: '#16a34a' },
+                                  ...settings.customization?.priorityColors?.high,
+                                  background: e.target.value 
+                                }
                               }
-                            }
+                            } 
                           })}
+                          className="h-10 w-14 rounded border cursor-pointer"
                         />
-                        <div 
-                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
-                          style={{ 
-                            backgroundColor: settings.customization?.priorityColors?.high?.background || '#fee2e2',
-                            color: settings.customization?.priorityColors?.high?.text || '#dc2626'
-                          }}
-                        >
-                          Alta
-                        </div>
+                        <span className="text-sm text-muted-foreground">{settings.customization?.priorityColors?.high?.background || '#fee2e2'}</span>
                       </div>
                     </div>
-
+                    
                     <div className="space-y-2">
-                      <Label className="text-xs">Média</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          type="color" 
-                          className="w-10 h-10 p-1 cursor-pointer"
+                      <Label htmlFor="mediumPriorityColor" className="text-sm text-muted-foreground">Média Prioridade</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          id="mediumPriorityColor"
                           value={settings.customization?.priorityColors?.medium?.background || '#fef3c7'}
-                          onChange={(e) => updateSettings({
-                            customization: {
+                          onChange={(e) => updateSettings({ 
+                            customization: { 
                               ...settings.customization,
                               priorityColors: {
-                                high: settings.customization?.priorityColors?.high || { background: '#fee2e2', text: '#dc2626' },
+                                ...settings.customization?.priorityColors,
                                 medium: { 
-                                  background: e.target.value, 
-                                  text: settings.customization?.priorityColors?.medium?.text || '#d97706' 
-                                },
-                                low: settings.customization?.priorityColors?.low || { background: '#dcfce7', text: '#16a34a' },
+                                  ...settings.customization?.priorityColors?.medium,
+                                  background: e.target.value 
+                                }
                               }
-                            }
+                            } 
                           })}
+                          className="h-10 w-14 rounded border cursor-pointer"
                         />
-                        <div 
-                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
-                          style={{ 
-                            backgroundColor: settings.customization?.priorityColors?.medium?.background || '#fef3c7',
-                            color: settings.customization?.priorityColors?.medium?.text || '#d97706'
-                          }}
-                        >
-                          Média
-                        </div>
+                        <span className="text-sm text-muted-foreground">{settings.customization?.priorityColors?.medium?.background || '#fef3c7'}</span>
                       </div>
                     </div>
-
+                    
                     <div className="space-y-2">
-                      <Label className="text-xs">Baixa</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          type="color" 
-                          className="w-10 h-10 p-1 cursor-pointer"
+                      <Label htmlFor="lowPriorityColor" className="text-sm text-muted-foreground">Baixa Prioridade</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          id="lowPriorityColor"
                           value={settings.customization?.priorityColors?.low?.background || '#dcfce7'}
-                          onChange={(e) => updateSettings({
-                            customization: {
+                          onChange={(e) => updateSettings({ 
+                            customization: { 
                               ...settings.customization,
                               priorityColors: {
-                                high: settings.customization?.priorityColors?.high || { background: '#fee2e2', text: '#dc2626' },
-                                medium: settings.customization?.priorityColors?.medium || { background: '#fef3c7', text: '#d97706' },
+                                ...settings.customization?.priorityColors,
                                 low: { 
-                                  background: e.target.value, 
-                                  text: settings.customization?.priorityColors?.low?.text || '#16a34a' 
-                                },
+                                  ...settings.customization?.priorityColors?.low,
+                                  background: e.target.value 
+                                }
                               }
-                            }
+                            } 
                           })}
+                          className="h-10 w-14 rounded border cursor-pointer"
                         />
-                        <div 
-                          className="flex-1 rounded-md flex items-center justify-center text-xs font-medium"
-                          style={{ 
-                            backgroundColor: settings.customization?.priorityColors?.low?.background || '#dcfce7',
-                            color: settings.customization?.priorityColors?.low?.text || '#16a34a'
-                          }}
-                        >
-                          Baixa
-                        </div>
+                        <span className="text-sm text-muted-foreground">{settings.customization?.priorityColors?.low?.background || '#dcfce7'}</span>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <Label>Mobile</Label>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="grid-columns-daily">Colunas do Grid Mobile (Diário)</Label>
-                    <Select 
-                      value={settings.mobile.dailyGridColumns.toString()} 
-                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: Number(value) as 1 | 2 } })}
-                    >
-                      <SelectTrigger id="grid-columns-daily">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Coluna</SelectItem>
-                        <SelectItem value="2">2 Colunas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="grid-columns-projects">Colunas do Grid Mobile (Projetos)</Label>
-                    <Select 
-                      value={settings.mobile.projectsGridColumns.toString()} 
-                      onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: Number(value) as 1 | 2 } })}
-                    >
-                      <SelectTrigger id="grid-columns-projects">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 Coluna</SelectItem>
-                        <SelectItem value="2">2 Colunas</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="hide-badges">Ocultar Badges no Mobile</Label>
-                    <Switch
-                      id="hide-badges"
-                      checked={settings.mobile.hideBadges}
-                      onCheckedChange={(checked) => updateSettings({ mobile: { ...settings.mobile, hideBadges: checked } })}
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label>Progressive Web App (PWA)</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Instale o aplicativo para acesso rápido, uso offline e notificações push
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-                      if (isStandalone) {
-                        toast({
-                          title: "App já instalado",
-                          description: "O aplicativo já está instalado neste dispositivo",
-                        });
-                        return;
-                      }
-
-                      // Forçar mostrar o prompt removendo o timestamp de dismiss
-                      localStorage.removeItem('pwa_install_dismissed');
-                      
-                      // Disparar evento customizado para mostrar o InstallPrompt
-                      window.dispatchEvent(new Event('show-install-prompt'));
-                      
-                      // Se estiver no Safari/iOS, mostrar instruções
-                      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                      
-                      if (isSafari || isIOS) {
-                        toast({
-                          title: "Como instalar no iOS/Safari",
-                          description: "Toque no botão Compartilhar (⎙) e selecione 'Adicionar à Tela de Início'",
-                          duration: 8000,
-                        });
-                      } else {
-                        toast({
-                          title: "Prompt de instalação",
-                          description: "Se disponível, o prompt de instalação aparecerá em breve",
-                        });
-                      }
-                    }}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    📱 Instalar Aplicativo
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Aba Notificações */}
-          <TabsContent value="notifications" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>🔔 Notificações</CardTitle>
-                <CardDescription>Configure os alertas do sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="due-date">Alertas de Prazo</Label>
-                    <p className="text-sm text-muted-foreground">Receba notificações quando tarefas estiverem próximas do prazo</p>
-                  </div>
-                  <Switch
-                    id="due-date"
-                    checked={settings.notifications.dueDate}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="due-hours">Horas antes do prazo</Label>
-                  <Input
-                    id="due-hours"
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={settings.notifications.dueDateHours}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: parseInt(e.target.value) || 24 } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="check-interval">Periodicidade de Verificação</Label>
-                  <Select 
-                    value={settings.notifications.checkInterval.toString()} 
-                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
-                  >
-                    <SelectTrigger id="check-interval">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">A cada 5 minutos</SelectItem>
-                      <SelectItem value="15">A cada 15 minutos</SelectItem>
-                      <SelectItem value="30">A cada 30 minutos</SelectItem>
-                      <SelectItem value="60">A cada hora</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="snooze-minutes">Intervalo de Repetição (Snooze)</Label>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Repetir notificação a cada quantos minutos se a tarefa não for concluída
-                  </div>
-                  <Input
-                    id="snooze-minutes"
-                    type="number"
-                    min="5"
-                    max="120"
-                    step="5"
-                    value={settings.notifications.snoozeMinutes}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: parseInt(e.target.value) || 30 } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="achievements">Notificações de Conquistas</Label>
-                    <p className="text-sm text-muted-foreground">Receba avisos ao completar metas e conquistas</p>
-                  </div>
-                  <Switch
-                    id="achievements"
-                    checked={settings.notifications.achievements}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, achievements: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sound">Sons de Notificação</Label>
-                    <p className="text-sm text-muted-foreground">Reproduzir sons ao receber notificações</p>
-                  </div>
-                  <Switch
-                    id="sound"
-                    checked={settings.notifications.sound}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, sound: checked } })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>🔔 Notificações</CardTitle>
-                <CardDescription>Configure os alertas do sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="due-date">Alertas de Prazo</Label>
-                    <p className="text-sm text-muted-foreground">Receba notificações quando tarefas estiverem próximas do prazo</p>
-                  </div>
-                  <Switch
-                    id="due-date"
-                    checked={settings.notifications.dueDate}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="due-hours">Horas antes do prazo</Label>
-                  <Input
-                    id="due-hours"
-                    type="number"
-                    min="1"
-                    max="168"
-                    value={settings.notifications.dueDateHours}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: parseInt(e.target.value) || 24 } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="check-interval">Periodicidade de Verificação</Label>
-                  <Select 
-                    value={settings.notifications.checkInterval.toString()} 
-                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
-                  >
-                    <SelectTrigger id="check-interval">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">A cada 5 minutos</SelectItem>
-                      <SelectItem value="15">A cada 15 minutos</SelectItem>
-                      <SelectItem value="30">A cada 30 minutos</SelectItem>
-                      <SelectItem value="60">A cada hora</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="snooze-minutes">Intervalo de Repetição (Snooze)</Label>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Repetir notificação a cada quantos minutos se a tarefa não for concluída
-                  </div>
-                  <Input
-                    id="snooze-minutes"
-                    type="number"
-                    min="5"
-                    max="120"
-                    step="5"
-                    value={settings.notifications.snoozeMinutes}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: parseInt(e.target.value) || 30 } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="achievements">Notificações de Conquistas</Label>
-                    <p className="text-sm text-muted-foreground">Receba avisos ao completar metas e conquistas</p>
-                  </div>
-                  <Switch
-                    id="achievements"
-                    checked={settings.notifications.achievements}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, achievements: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="sound">Sons de Notificação</Label>
-                    <p className="text-sm text-muted-foreground">Reproduzir sons ao receber notificações</p>
-                  </div>
-                  <Switch
-                    id="sound"
-                    checked={settings.notifications.sound}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, sound: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label>Central de Notificações Push</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Configure notificações push, templates e monitore entregas na central dedicada
-                  </p>
-                  <Button 
-                    onClick={() => navigate("/notifications")}
-                    variant="outline"
-                    className="w-full justify-start gap-3"
-                  >
-                    <Bell className="h-4 w-4" />
-                    Ir para Central de Notificações
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -937,79 +571,12 @@ export default function Config() {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="auto-reset">Reset Automático Diário</Label>
-                    <p className="text-sm text-muted-foreground">Resetar automaticamente o Kanban Diário</p>
+                    <Label>Ocultar Tarefas Concluídas</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Remove tarefas riscadas do quadro
+                    </p>
                   </div>
                   <Switch
-                    id="auto-reset"
-                    checked={settings.kanban.autoReset}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, autoReset: checked } })}
-                  />
-                </div>
-
-                {settings.kanban.autoReset && (
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-time">Horário do Reset</Label>
-                    <Input
-                      id="reset-time"
-                      type="time"
-                      value={settings.kanban.resetTime}
-                      onChange={(e) => updateSettings({ kanban: { ...settings.kanban, resetTime: e.target.value } })}
-                    />
-                  </div>
-                )}
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="max-tasks">Máximo de Tarefas por Coluna</Label>
-                  <Input
-                    id="max-tasks"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={settings.kanban.maxTasksPerColumn}
-                    onChange={(e) => updateSettings({ kanban: { ...settings.kanban, maxTasksPerColumn: parseInt(e.target.value) || 20 } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="cross-drag">Arrastar entre Categorias</Label>
-                    <p className="text-sm text-muted-foreground">Permitir mover tarefas entre diferentes categorias</p>
-                  </div>
-                  <Switch
-                    id="cross-drag"
-                    checked={settings.kanban.allowCrossCategoryDrag}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, allowCrossCategoryDrag: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="favorites-panel">Mostrar Painel de Favoritos</Label>
-                    <p className="text-sm text-muted-foreground">Exibir painel lateral com tarefas favoritas</p>
-                  </div>
-                  <Switch
-                    id="favorites-panel"
-                    checked={settings.kanban.showFavoritesPanel}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="hide-completed">Ocultar Tarefas Concluídas</Label>
-                    <p className="text-sm text-muted-foreground">Esconder tarefas marcadas como concluídas</p>
-                  </div>
-                  <Switch
-                    id="hide-completed"
                     checked={settings.kanban.hideCompletedTasks}
                     onCheckedChange={handleToggleHideCompleted}
                   />
@@ -1017,30 +584,45 @@ export default function Config() {
 
                 <Separator />
 
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mostrar Painel de Favoritos</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Exibe seção com tarefas favoritas no topo
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.kanban.showFavoritesPanel}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="space-y-2">
-                  <Label htmlFor="daily-sort">Ordenação Padrão (Todos os Kanbans)</Label>
+                  <Label>Ordenação Padrão (Diário)</Label>
                   <Select 
                     value={settings.kanban.dailySortOption} 
                     onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOption: value as 'time' | 'name' | 'priority' } })}
                   >
-                    <SelectTrigger id="daily-sort">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="time">Horário</SelectItem>
-                      <SelectItem value="name">Nome</SelectItem>
-                      <SelectItem value="priority">Prioridade</SelectItem>
+                      <SelectItem value="time">Por Horário</SelectItem>
+                      <SelectItem value="name">Por Nome</SelectItem>
+                      <SelectItem value="priority">Por Prioridade</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="daily-order">Ordem de Classificação</Label>
+                  <Label>Direção da Ordenação</Label>
                   <Select 
                     value={settings.kanban.dailySortOrder} 
                     onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value as 'asc' | 'desc' } })}
                   >
-                    <SelectTrigger id="daily-order">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1052,24 +634,70 @@ export default function Config() {
 
                 <Separator />
 
+                <div className="space-y-2">
+                  <Label>Gerenciar Colunas</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Adicione, remova ou reordene colunas do Kanban
+                  </p>
+                  <Button variant="outline" onClick={() => setShowColumnManager(true)}>
+                    Abrir Gerenciador de Colunas
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Mobile Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>📱 Configurações Mobile</CardTitle>
+                <CardDescription>Ajustes específicos para dispositivos móveis</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="simplified">Modo Simplificado</Label>
-                    <p className="text-sm text-muted-foreground">Mostrar apenas 3 colunas principais</p>
+                    <Label>Ocultar Badges no Mobile</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Remove badges de prioridade e tags em telas pequenas
+                    </p>
                   </div>
                   <Switch
-                    id="simplified"
-                    checked={settings.kanban.simplifiedMode}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
+                    checked={settings.mobile.hideBadges}
+                    onCheckedChange={(checked) => updateSettings({ mobile: { ...settings.mobile, hideBadges: checked } })}
                   />
                 </div>
 
                 <Separator />
 
-                <div>
-                  <Button onClick={() => setShowColumnManager(true)} className="w-full">
-                    Gerenciar Colunas
-                  </Button>
+                <div className="space-y-2">
+                  <Label>Colunas no Grid (Diário)</Label>
+                  <Select 
+                    value={String(settings.mobile.dailyGridColumns)} 
+                    onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: Number(value) as 1 | 2 } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Coluna</SelectItem>
+                      <SelectItem value="2">2 Colunas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Colunas no Grid (Projetos)</Label>
+                  <Select 
+                    value={String(settings.mobile.projectsGridColumns)} 
+                    onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: Number(value) as 1 | 2 } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Coluna</SelectItem>
+                      <SelectItem value="2">2 Colunas</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -1079,49 +707,75 @@ export default function Config() {
           <TabsContent value="productivity" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>📈 Produtividade</CardTitle>
-                <CardDescription>Configure suas metas e ferramentas de produtividade</CardDescription>
+                <CardTitle>⏰ Notificações de Prazo</CardTitle>
+                <CardDescription>Configure alertas para tarefas próximas do vencimento</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="daily-goal">Meta Diária de Tarefas</Label>
-                  <Input
-                    id="daily-goal"
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={settings.productivity.dailyGoal}
-                    onChange={(e) => updateSettings({ productivity: { ...settings.productivity, dailyGoal: parseInt(e.target.value) || 5 } })}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Ativar Notificações de Prazo</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receba alertas quando tarefas estiverem próximas do vencimento
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.notifications.dueDate}
+                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
                   />
                 </div>
 
                 <Separator />
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="pomodoro">Habilitar Pomodoro</Label>
-                    <p className="text-sm text-muted-foreground">Ativar timer Pomodoro para foco</p>
-                  </div>
-                  <Switch
-                    id="pomodoro"
-                    checked={settings.productivity.pomodoroEnabled}
-                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, pomodoroEnabled: checked } })}
+                <div className="space-y-2">
+                  <Label htmlFor="alertHours">Alertar com antecedência de (horas)</Label>
+                  <Input
+                    id="alertHours"
+                    type="number"
+                    min="1"
+                    max="72"
+                    value={settings.notifications.dueDateHours}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: Number(e.target.value) } })}
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Você receberá notificações quando faltar esse tempo para o prazo
+                  </p>
                 </div>
 
-                {settings.productivity.pomodoroEnabled && (
-                  <div className="space-y-2">
-                    <Label htmlFor="pomodoro-duration">Duração do Pomodoro (minutos)</Label>
-                    <Input
-                      id="pomodoro-duration"
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={settings.productivity.pomodoroDuration}
-                      onChange={(e) => updateSettings({ productivity: { ...settings.productivity, pomodoroDuration: parseInt(e.target.value) || 25 } })}
-                    />
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="checkInterval">Verificar a cada (minutos)</Label>
+                  <Select 
+                    value={String(settings.notifications.checkInterval)} 
+                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
+                  >
+                    <SelectTrigger id="checkInterval">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 minutos</SelectItem>
+                      <SelectItem value="15">15 minutos</SelectItem>
+                      <SelectItem value="30">30 minutos</SelectItem>
+                      <SelectItem value="60">60 minutos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Frequência de verificação de tarefas próximas do vencimento
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="snoozeMinutes">Soneca (minutos)</Label>
+                  <Input
+                    id="snoozeMinutes"
+                    type="number"
+                    min="5"
+                    max="120"
+                    value={settings.notifications.snoozeMinutes}
+                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: Number(e.target.value) } })}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Tempo para adiar uma notificação antes de ser lembrado novamente
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1130,122 +784,68 @@ export default function Config() {
           <TabsContent value="categories" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>🗂️ Categorias</CardTitle>
-                <CardDescription>Gerencie suas categorias de projetos</CardDescription>
+                <CardTitle>📁 Categorias</CardTitle>
+                <CardDescription>Gerencie as categorias do seu Kanban</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsAddingCategory(true)}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={categories.filter(cat => cat.name !== "Diário").map(cat => cat.id)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Categoria
-                  </Button>
-                </div>
+                    <div className="space-y-2">
+                      {categories.filter(cat => cat.name !== "Diário").map((category) => (
+                        <SortableCategoryItem
+                          key={category.id}
+                          category={category}
+                          editingId={editingId}
+                          editingName={editingName}
+                          setEditingId={setEditingId}
+                          setEditingName={setEditingName}
+                          handleEditCategory={handleEditCategory}
+                          handleDeleteCategory={handleDeleteCategory}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
 
-                {isAddingCategory && (
-                  <div className="flex items-center gap-2 p-2 rounded-md border bg-card">
+                {isAddingCategory ? (
+                  <div className="flex items-center gap-2 p-2 rounded-md border bg-muted">
                     <Input
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Nome da nova categoria..."
+                      placeholder="Nome da categoria"
                       className="flex-1"
                       autoFocus
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleAddCategory();
-                        }
+                        if (e.key === "Enter") handleAddCategory();
                         if (e.key === "Escape") {
                           setIsAddingCategory(false);
                           setNewCategoryName("");
                         }
                       }}
                     />
-                    <Button size="sm" onClick={handleAddCategory}>
-                      Criar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setIsAddingCategory(false);
-                        setNewCategoryName("");
-                      }}
-                    >
-                      Cancelar
-                    </Button>
+                    <Button size="sm" onClick={handleAddCategory}>Adicionar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setIsAddingCategory(false);
+                      setNewCategoryName("");
+                    }}>Cancelar</Button>
                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsAddingCategory(true)}
                   >
-                    <SortableContext
-                      items={categories.filter(cat => cat.name !== "Diário").map(cat => cat.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {categories
-                        .filter(cat => cat.name !== "Diário")
-                        .map((category) => (
-                          <SortableCategoryItem
-                            key={category.id}
-                            category={category}
-                            editingId={editingId}
-                            editingName={editingName}
-                            setEditingId={setEditingId}
-                            setEditingName={setEditingName}
-                            handleEditCategory={handleEditCategory}
-                            handleDeleteCategory={handleDeleteCategory}
-                          />
-                        ))}
-                    </SortableContext>
-                  </DndContext>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Aba Avançado */}
-          <TabsContent value="advanced" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>🔧 Avançado</CardTitle>
-                <CardDescription>Configurações avançadas do sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                      Resetar Todas as Configurações
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso irá resetar todas as configurações para os valores padrão. Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleReset}>
-                        Confirmar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                <Separator />
-
-                <Button variant="outline" onClick={handleLogout} className="w-full">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair da Conta
-                </Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Categoria
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1254,263 +854,167 @@ export default function Config() {
           <TabsContent value="ai-prompts" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>🤖 Prompts de IA</CardTitle>
-                <CardDescription>
-                  Personalize os prompts usados pelos assistentes de IA do aplicativo
-                </CardDescription>
+                <CardTitle>🤖 IA & Prompts</CardTitle>
+                <CardDescription>Personalize os prompts usados pela IA para melhorar suas notas</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-8">
-                {/* Seção: Formatação de Notas */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    📝 Formatação de Notas
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Usados ao formatar notas com IA</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </h3>
-                  <div className="space-y-6">
-                    {getAllPrompts()
-                      .filter(p => p.category === 'notes')
-                      .map(prompt => {
-                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
-                        const isCustom = !!getAIPrompt(prompt.key);
-                        
-                        return (
-                          <div key={prompt.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={prompt.key} className="font-medium">
-                                {prompt.label}
-                              </Label>
-                              {isCustom && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetAIPrompt(prompt.key)}
-                                  className="text-xs"
-                                >
-                                  <RotateCcw className="h-3 w-3 mr-1" />
-                                  Restaurar padrão
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
-                            <Textarea
-                              id={prompt.key}
-                              value={currentValue}
-                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
-                              rows={6}
-                              className="font-mono text-xs"
-                              placeholder={prompt.defaultValue}
-                            />
-                            <p className="text-xs text-muted-foreground text-right">
-                              {currentValue.length} caracteres
-                            </p>
-                          </div>
-                        );
-                      })}
+              <CardContent className="space-y-6">
+                <div className="flex justify-end">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Resetar Todos
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Resetar todos os prompts?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso restaurará todos os prompts para os valores padrão. Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={resetAllAIPrompts}>
+                          Resetar Todos
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                {getAllPrompts().map((prompt) => (
+                  <div key={prompt.key} className="space-y-2 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base">{prompt.label}</Label>
+                        <p className="text-sm text-muted-foreground">{prompt.description}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resetAIPrompt(prompt.key)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={getAIPrompt(prompt.key)}
+                      onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
+                      className="min-h-[100px] font-mono text-sm"
+                      placeholder={prompt.defaultValue}
+                    />
                   </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Aba Avançado */}
+          <TabsContent value="advanced" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>⚡ Configurações Avançadas</CardTitle>
+                <CardDescription>Opções avançadas e gerenciamento de conta</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Modo Simplificado</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Remove elementos decorativos para melhor performance
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.kanban.simplifiedMode}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
+                  />
                 </div>
 
                 <Separator />
 
-                {/* Seção: Kanban Diário */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    📅 Kanban Diário
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Usado ao organizar tarefas com IA</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </h3>
-                  <div className="space-y-6">
-                    {getAllPrompts()
-                      .filter(p => p.category === 'kanban')
-                      .map(prompt => {
-                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
-                        const isCustom = !!getAIPrompt(prompt.key);
-                        
-                        return (
-                          <div key={prompt.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={prompt.key} className="font-medium">
-                                {prompt.label}
-                              </Label>
-                              {isCustom && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetAIPrompt(prompt.key)}
-                                  className="text-xs"
-                                >
-                                  <RotateCcw className="h-3 w-3 mr-1" />
-                                  Restaurar padrão
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
-                            <Textarea
-                              id={prompt.key}
-                              value={currentValue}
-                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
-                              rows={8}
-                              className="font-mono text-xs"
-                              placeholder={prompt.defaultValue}
-                            />
-                            <p className="text-xs text-muted-foreground text-right">
-                              {currentValue.length} caracteres
-                            </p>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Seção: Análise de Produtividade */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    📊 Análise de Produtividade
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-4 w-4 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Usado ao gerar insights de produtividade</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </h3>
-                  <div className="space-y-6">
-                    {getAllPrompts()
-                      .filter(p => p.category === 'productivity')
-                      .map(prompt => {
-                        const currentValue = getAIPrompt(prompt.key) || prompt.defaultValue;
-                        const isCustom = !!getAIPrompt(prompt.key);
-                        
-                        return (
-                          <div key={prompt.key} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={prompt.key} className="font-medium">
-                                {prompt.label}
-                              </Label>
-                              {isCustom && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetAIPrompt(prompt.key)}
-                                  className="text-xs"
-                                >
-                                  <RotateCcw className="h-3 w-3 mr-1" />
-                                  Restaurar padrão
-                                </Button>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground">{prompt.description}</p>
-                            <Textarea
-                              id={prompt.key}
-                              value={currentValue}
-                              onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
-                              rows={10}
-                              className="font-mono text-xs"
-                              placeholder={prompt.defaultValue}
-                            />
-                            <p className="text-xs text-muted-foreground text-right">
-                              {currentValue.length} caracteres
-                            </p>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Botão para restaurar todos */}
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" className="w-full">
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Restaurar Todos os Prompts para Padrão
+                <div className="space-y-2">
+                  <Label>Importar/Exportar Dados</Label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleExport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Restaurar todos os prompts?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Isso irá resetar todos os prompts customizados para os valores padrão. Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => {
-                        resetAllAIPrompts();
-                        toast({ title: "Prompts restaurados", description: "Todos os prompts foram restaurados aos valores padrão" });
-                      }}>
-                        Restaurar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    <Button variant="outline" onClick={handleImport}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Importar
+                    </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Resetar Configurações</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Restaura todas as configurações para os valores padrão
+                  </p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline">
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Resetar Tudo
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Resetar configurações?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso restaurará todas as configurações para os valores padrão. Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleReset}>
+                          Resetar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Conta</Label>
+                  <Button variant="destructive" onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair da Conta
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Aba Dados */}
           <TabsContent value="data" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>💾 Dados</CardTitle>
-                <CardDescription>Gerencie seus dados e backups</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button onClick={handleExport} variant="outline" className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Dados
-                </Button>
-
-                <Button onClick={handleImport} variant="outline" className="w-full">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importar Dados
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Monitoramento de Integridade */}
             <DataIntegrityMonitor />
           </TabsContent>
         </Tabs>
+        </div>
       </div>
 
-      {/* Dialog de Gerenciamento de Colunas */}
-      <ColumnManager
-        open={showColumnManager}
-        onOpenChange={setShowColumnManager}
-        columns={columns}
-        hiddenColumns={hiddenColumns}
-        onToggleVisibility={toggleColumnVisibility}
-        onDeleteColumn={deleteColumn}
-        onResetToDefault={resetToDefaultView}
-        onRenameColumn={renameColumn}
-        onAddColumn={addColumn}
-        onReorderColumns={reorderColumns}
-        onToggleKanbanVisibility={toggleColumnKanbanVisibility}
-      />
-      </div>
+      {/* Column Manager Modal */}
+      {showColumnManager && (
+        <ColumnManager
+          open={showColumnManager}
+          onOpenChange={setShowColumnManager}
+          columns={columns}
+          hiddenColumns={hiddenColumns}
+          onToggleVisibility={toggleColumnVisibility}
+          onResetToDefault={resetToDefaultView}
+          onDeleteColumn={deleteColumn}
+          onRenameColumn={renameColumn}
+          onReorderColumns={reorderColumns}
+          onAddColumn={addColumn}
+          onToggleKanbanVisibility={toggleColumnKanbanVisibility}
+        />
+      )}
     </div>
   );
 }
