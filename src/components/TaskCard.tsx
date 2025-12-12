@@ -795,12 +795,20 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         <Badge
                           variant="secondary"
                           className={cn(
-                            "gap-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300",
+                            "gap-1 border-0 font-medium shadow-sm transition-transform hover:scale-105",
                             densityMode === "compact" && "text-[10px] px-1.5 py-0",
                             densityMode === "comfortable" && "text-xs px-2 py-0.5",
                           )}
+                          style={{
+                            background: "linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #6366f1 100%)",
+                            color: "#ffffff",
+                            boxShadow: "0 2px 8px rgba(168, 85, 247, 0.35)",
+                          }}
                         >
-                          🪞 Espelhada
+                          <Share2 className={cn(
+                            densityMode === "compact" ? "h-2.5 w-2.5" : "h-3 w-3"
+                          )} />
+                          Espelhada
                         </Badge>
                       )}
 
