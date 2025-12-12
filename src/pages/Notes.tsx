@@ -244,14 +244,15 @@ export default function Notes() {
       <main className="ml-52 flex-1 flex h-screen">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           {/* Coluna 1 - Cadernos */}
-          <div className="w-56 border-r flex flex-col bg-card">
-            <div className="p-3 border-b flex items-center justify-between">
+          <div className="w-56 border-r flex flex-col bg-card shadow-sm">
+            <div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-card to-muted/30">
               <h2 className="text-lg font-bold">📚 Cadernos</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setTrashOpen(true)}
                 title="Lixeira"
+                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -261,10 +262,10 @@ export default function Notes() {
               {/* Opção "Todas as Notas" */}
               <button
                 onClick={() => setSelectedNotebookId(null)}
-                className={`w-full text-left p-2 rounded-md mb-1 transition-colors ${
+                className={`w-full text-left p-2 rounded-md mb-1 transition-all duration-200 ${
                   selectedNotebookId === null 
-                    ? "bg-primary/10 text-primary font-medium" 
-                    : "hover:bg-muted"
+                    ? "bg-primary/10 text-primary font-medium shadow-sm" 
+                    : "hover:bg-muted hover:shadow-sm"
                 }`}
               >
                 📋 Todas as Notas ({notes.length})
@@ -273,10 +274,10 @@ export default function Notes() {
               {/* Opção "Notas Soltas" */}
               <button
                 onClick={() => setSelectedNotebookId("loose")}
-                className={`w-full text-left p-2 rounded-md mb-2 transition-colors ${
+                className={`w-full text-left p-2 rounded-md mb-2 transition-all duration-200 ${
                   selectedNotebookId === "loose" 
-                    ? "bg-primary/10 text-primary font-medium" 
-                    : "hover:bg-muted"
+                    ? "bg-primary/10 text-primary font-medium shadow-sm" 
+                    : "hover:bg-muted hover:shadow-sm"
                 }`}
               >
                 📄 Notas Soltas ({notes.filter(n => !n.notebook_id).length})
@@ -295,6 +296,36 @@ export default function Notes() {
                 onSelectNotebook={setSelectedNotebookId}
                 selectedTagId={selectedTagId}
                 onSelectTag={setSelectedTagId}
+              />
+            </div>
+          </div>
+
+          {/* Coluna 2 - Lista de Notas */}
+          <div className="w-64 border-r flex flex-col bg-gradient-to-b from-card/80 to-muted/20 shadow-inner">
+            <div className="p-3 border-b bg-card/50 backdrop-blur-sm">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+                {selectedNotebookId === null
+                  ? "Todas as Notas"
+                  : selectedNotebookId === "loose"
+                    ? "Notas Soltas"
+                    : sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
+                }
+              </h3>
+              <NotesSearch
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              <NotesList
+                notes={notesForSelectedNotebook}
+                selectedNoteId={selectedNoteId}
+                onSelectNote={handleSelectNote}
+                onAddNote={() => handleAddNote(selectedNotebookId)}
+                onDeleteNote={handleDeleteNote}
               />
             </div>
           </div>
