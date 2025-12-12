@@ -17,6 +17,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/useTags";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -664,32 +665,46 @@ export function KanbanBoard({
                             isDropTarget ? "bg-primary/5 border-primary/30" : ""
                           }`}
                         >
-                          {columnTasks.map((task) => (
-                            <TaskCard
-                              key={task.id}
-                              task={{
-                                ...task,
-                                // Usar task.id para buscar no mapa (tarefas no diário)
-                                // ou task.mirror_task_id para tarefas que apontam para projetos
-                                originalCategory: originalCategoriesMap[task.id] || 
-                                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
-                              }}
-                              onEdit={handleEditTask}
-                              onDelete={handleDeleteClick}
-                              onMoveLeft={() => handleMoveTask(task.id, "left")}
-                              onMoveRight={() => handleMoveTask(task.id, "right")}
-                              canMoveLeft={columnIndex > 0}
-                              canMoveRight={columnIndex < columns.length - 1}
-                              compact={compact || densityMode !== "comfortable"}
-                              isDailyKanban={isDailyKanban}
-                              showCategoryBadge={showCategoryBadge}
-                              onToggleFavorite={toggleFavorite}
-                              onDuplicate={duplicateTask}
-                              densityMode={densityMode}
-                              priorityColors={settings.customization?.priorityColors}
-                              getTagColor={getTagColor}
-                            />
-                          ))}
+                          <AnimatePresence mode="popLayout">
+                            {columnTasks.map((task, taskIndex) => (
+                              <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                                transition={{
+                                  duration: 0.3,
+                                  delay: taskIndex * 0.05,
+                                  ease: [0.25, 0.46, 0.45, 0.94],
+                                }}
+                                layout
+                              >
+                                <TaskCard
+                                  task={{
+                                    ...task,
+                                    // Usar task.id para buscar no mapa (tarefas no diário)
+                                    // ou task.mirror_task_id para tarefas que apontam para projetos
+                                    originalCategory: originalCategoriesMap[task.id] || 
+                                      (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                                  }}
+                                  onEdit={handleEditTask}
+                                  onDelete={handleDeleteClick}
+                                  onMoveLeft={() => handleMoveTask(task.id, "left")}
+                                  onMoveRight={() => handleMoveTask(task.id, "right")}
+                                  canMoveLeft={columnIndex > 0}
+                                  canMoveRight={columnIndex < columns.length - 1}
+                                  compact={compact || densityMode !== "comfortable"}
+                                  isDailyKanban={isDailyKanban}
+                                  showCategoryBadge={showCategoryBadge}
+                                  onToggleFavorite={toggleFavorite}
+                                  onDuplicate={duplicateTask}
+                                  densityMode={densityMode}
+                                  priorityColors={settings.customization?.priorityColors}
+                                  getTagColor={getTagColor}
+                                />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
                         </div>
                       </SortableContext>
                     </div>

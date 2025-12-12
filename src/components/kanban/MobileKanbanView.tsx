@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { getColumnTopBarClass } from "./ColumnColorPicker";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -116,28 +117,42 @@ export function MobileKanbanView({
                         Vazio
                       </div>
                     ) : (
-                      columnTasks.map((task) => (
-                        <TaskCard
-                          key={task.id}
-                          task={{
-                            ...task,
-                            // Usar task.id para buscar no mapa (tarefas no diário)
-                            // ou task.mirror_task_id para tarefas que apontam para projetos
-                            originalCategory: originalCategoriesMap[task.id] || 
-                              (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
-                          }}
-                          onEdit={() => handleEditTask(task)}
-                          onDelete={() => handleDeleteClick(task.id)}
-                          onToggleFavorite={toggleFavorite}
-                          onDuplicate={duplicateTask}
-                          isDailyKanban={isDailyKanban}
-                          showCategoryBadge={showCategoryBadge}
-                          densityMode="ultra-compact"
-                          hideBadges={hideBadges}
-                          priorityColors={priorityColors}
-                          getTagColor={getTagColor}
-                        />
-                      ))
+                      <AnimatePresence mode="popLayout">
+                        {columnTasks.map((task, taskIndex) => (
+                          <motion.div
+                            key={task.id}
+                            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+                            transition={{
+                              duration: 0.25,
+                              delay: taskIndex * 0.03,
+                              ease: [0.25, 0.46, 0.45, 0.94],
+                            }}
+                            layout
+                          >
+                            <TaskCard
+                              task={{
+                                ...task,
+                                // Usar task.id para buscar no mapa (tarefas no diário)
+                                // ou task.mirror_task_id para tarefas que apontam para projetos
+                                originalCategory: originalCategoriesMap[task.id] || 
+                                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                              }}
+                              onEdit={() => handleEditTask(task)}
+                              onDelete={() => handleDeleteClick(task.id)}
+                              onToggleFavorite={toggleFavorite}
+                              onDuplicate={duplicateTask}
+                              isDailyKanban={isDailyKanban}
+                              showCategoryBadge={showCategoryBadge}
+                              densityMode="ultra-compact"
+                              hideBadges={hideBadges}
+                              priorityColors={priorityColors}
+                              getTagColor={getTagColor}
+                            />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     )}
                   </div>
                 </SortableContext>
