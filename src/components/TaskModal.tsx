@@ -10,6 +10,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
+import { TagSelector } from "@/components/TagSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,7 +41,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [priority, setPriority] = useState<string>("medium");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
-  const [tags, setTags] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedColumn, setSelectedColumn] = useState<string>("");
   const [selectedKanbanType, setSelectedKanbanType] = useState<"daily" | "projects">("projects");
@@ -77,7 +78,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         setDueTime("");
       }
       
-      setTags(task.tags?.join(", ") || "");
+      setTags(task.tags || []);
     } else {
       setTitle("");
       setDescription("");
@@ -103,7 +104,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         setDueDate("");
       }
       setDueTime("");
-      setTags("");
+      setTags([]);
     }
   }, [task, open, categoryId, isDailyKanban, dailyCategory]);
 
@@ -155,7 +156,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             description: description || null,
             priority,
             due_date: dueDateTimestamp,
-            tags: tags ? tags.split(",").map((t) => t.trim()) : null,
+              tags: tags.length > 0 ? tags : null,
             column_id: finalColumnId,
             position: task?.position ?? 0,
             category_id: finalCategoryId,
@@ -192,7 +193,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 ...taskData,
                 category_id: dailyCategory.id,
                 column_id: recurrentColumn.id,
-                tags: [...(taskData.tags || []), "espelho-diário"],
+                tags: [...(tags || []), "espelho-diário"],
                 user_id: task.user_id
               };
 
@@ -239,7 +240,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 description: description || null,
                 priority,
                 due_date: dueDateTimestamp,
-                tags: tags ? tags.split(",").map((t) => t.trim()) : null,
+                tags: tags.length > 0 ? tags : null,
                 subtasks,
                 recurrence_rule: recurrence,
                 updated_at: new Date().toISOString()
@@ -283,7 +284,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               description: description || null,
               priority,
               due_date: dueDateTimestamp,
-              tags: tags ? tags.split(",").map((t) => t.trim()) : [],
+              tags: tags.length > 0 ? tags : [],
               column_id: finalColumnId,
               category_id: finalCategoryId,
               subtasks,
@@ -313,7 +314,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               description: description || null,
               priority,
               due_date: dueDateTimestamp,
-              tags: [...(tags ? tags.split(",").map((t) => t.trim()) : []), "espelho-diário"],
+              tags: [...(tags || []), "espelho-diário"],
               column_id: recurrentColumn.id,
               category_id: dailyCategory.id,
               subtasks,
@@ -379,7 +380,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       description: description || null,
       priority,
       due_date: dueDateTimestamp,
-      tags: tags ? tags.split(",").map((t) => t.trim()) : null,
+      tags: tags.length > 0 ? tags : null,
       column_id: finalColumnId,
       position: task?.position ?? 0,
       category_id: finalCategoryId,
@@ -397,7 +398,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         description: description || null,
         priority,
         due_date: dueDateTimestamp,
-        tags: tags ? tags.split(",").map((t) => t.trim()).filter(t => t !== "espelho-diário") : null,
+        tags: tags.filter(t => t !== "espelho-diário"),
         subtasks,
         recurrence_rule: recurrence,
         updated_at: new Date().toISOString()
@@ -515,11 +516,13 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
             <div>
               <Label>Tags</Label>
-              <Input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="Tag1, Tag2, Tag3"
-                className={isMobile ? 'min-h-[48px] text-base' : ''}
+              <TagSelector
+                selectedTags={tags.filter(t => t !== "espelho-diário")}
+                onTagsChange={(newTags) => {
+                  // Preserve the espelho-diário tag if it existed
+                  const hasEspelho = tags.includes("espelho-diário");
+                  setTags(hasEspelho ? [...newTags, "espelho-diário"] : newTags);
+                }}
               />
             </div>
 
