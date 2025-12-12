@@ -22,6 +22,7 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Image } from "@tiptap/extension-image";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import FontSize from "@tiptap/extension-font-size";
 import { common, createLowlight } from "lowlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
@@ -95,6 +96,7 @@ export function NoteEditor({
       }),
       TextStyle,
       Color,
+      FontSize,
       Highlight.configure({
         multicolor: true
       }),
