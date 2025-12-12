@@ -60,11 +60,18 @@ interface TaskCardProps {
   priorityColors?: PriorityColors;
   getTagColor?: (tagName: string) => string;
 }
-// Default priority colors
+// Premium priority colors with gradients
 const defaultPriorityColors: PriorityColors = {
   high: { background: "#fee2e2", text: "#dc2626" },
   medium: { background: "#fef3c7", text: "#d97706" },
   low: { background: "#dcfce7", text: "#16a34a" },
+};
+
+// Vibrant gradient colors for premium priority badges
+const priorityGradients = {
+  high: "linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)",
+  medium: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
+  low: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
 };
 
 // Função de comparação customizada para React.memo
@@ -152,12 +159,14 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     }),
   };
 
-  // Compute priority classes from custom colors
+  // Compute premium priority badge style with gradient
   const getPriorityBadgeStyle = (priority: string) => {
-    const colors = priorityColors[priority as keyof PriorityColors] || defaultPriorityColors.low;
+    const gradient = priorityGradients[priority as keyof typeof priorityGradients] || priorityGradients.low;
     return {
-      backgroundColor: colors.text,
+      background: gradient,
       color: "#ffffff",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+      border: "none",
     };
   };
 
@@ -393,7 +402,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   </Badge>
                 )}
                 {!hideBadges && task.priority && (
-                  <Badge className="text-[9px] px-0.5 py-0 shrink-0" style={getPriorityBadgeStyle(task.priority)}>
+                  <Badge 
+                    className="text-[9px] px-1.5 py-0 shrink-0 rounded-full font-semibold tracking-wide shadow-sm" 
+                    style={getPriorityBadgeStyle(task.priority)}
+                  >
                     {task.priority[0].toUpperCase()}
                   </Badge>
                 )}
@@ -571,8 +583,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   {!hideBadges && task.priority && (
                     <Badge
                       className={cn(
-                        densityMode === "compact" && "text-[10px] px-2 py-0",
-                        densityMode === "comfortable" && "text-xs px-2.5 py-0.5",
+                        "rounded-full font-semibold tracking-wide shadow-sm transition-transform hover:scale-105",
+                        densityMode === "compact" && "text-[10px] px-2.5 py-0.5",
+                        densityMode === "comfortable" && "text-xs px-3 py-1",
                       )}
                       style={getPriorityBadgeStyle(task.priority)}
                     >
