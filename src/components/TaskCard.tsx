@@ -357,6 +357,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             opacity: 0,
             scale: 0.9,
           }}
+          whileHover={{
+            y: -4,
+            transition: { duration: 0.2, ease: "easeOut" },
+          }}
           transition={{
             duration: 0.15,
           }}
@@ -364,8 +368,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           <Card
             className={cn(
               "w-full cursor-grab active:cursor-grabbing transition-all duration-200 overflow-hidden",
-              // Remove background priority, use neutral card background
-              "bg-card hover:shadow-lg hover:shadow-primary/5",
+              // Remove background priority, use neutral card background with enhanced hover shadow
+              "bg-card hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20",
               // Padding diferenciado por modo - Alterar tamanho dos cards
               isUltraCompact && "p-0",
               densityMode === "compact" && "p-0",
