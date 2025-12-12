@@ -8,7 +8,7 @@ import { Plus, RotateCcw } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ColumnColorPicker, getColumnColorClass } from "./kanban/ColumnColorPicker";
+import { ColumnColorPicker, getColumnTopBarClass } from "./kanban/ColumnColorPicker";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -576,40 +576,44 @@ export function KanbanBoard({
                     minSize={15}
                   >
                     <div className={`flex flex-col ${styles.gap} h-full`}>
-                      <div className={`flex items-center justify-between ${styles.headerPadding} rounded-t-lg ${getColumnColorClass(column.color)}`}>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
-                          <span className={`${styles.countText} text-muted-foreground`}>
-                            ({columnTasks.length})
-                          </span>
-                          {column.name.toLowerCase() === "recorrente" && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
-                              🔄 Não reseta
+                      {/* Barra colorida no topo da coluna (estilo KanbanFlow) */}
+                      <div className="rounded-t-lg overflow-hidden bg-card border border-b-0">
+                        <div className={`h-1.5 w-full ${getColumnTopBarClass(column.color)}`} />
+                        <div className={`flex items-center justify-between ${styles.headerPadding}`}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
+                            <span className={`${styles.countText} text-muted-foreground`}>
+                              ({columnTasks.length})
                             </span>
-                          )}
-                        </div>
-                        <div className="flex gap-1">
-                          {column.name.toLowerCase() === "recorrente" && (
+                            {column.name.toLowerCase() === "recorrente" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
+                                🔄 Não reseta
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            {column.name.toLowerCase() === "recorrente" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleUncheckRecurrentTasks(column.id)}
+                                title="Desmarcar todas as tarefas recorrentes"
+                              >
+                                <RotateCcw className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                              </Button>
+                            )}
+                            <ColumnColorPicker
+                              currentColor={column.color}
+                              onColorChange={(color) => updateColumnColor(column.id, color)}
+                            />
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleUncheckRecurrentTasks(column.id)}
-                              title="Desmarcar todas as tarefas recorrentes"
+                              onClick={() => handleAddTask(column.id)}
                             >
-                              <RotateCcw className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                              <Plus className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
                             </Button>
-                          )}
-                          <ColumnColorPicker
-                            currentColor={column.color}
-                            onColorChange={(color) => updateColumnColor(column.id, color)}
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleAddTask(column.id)}
-                          >
-                            <Plus className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
-                          </Button>
+                          </div>
                         </div>
                       </div>
 
@@ -618,7 +622,7 @@ export function KanbanBoard({
                         strategy={verticalListSortingStrategy}
                         id={column.id}
                       >
-                        <div className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-lg bg-muted/30`}>
+                        <div className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg bg-card border border-t-0`}>
                           {columnTasks.map((task) => (
                             <TaskCard
                               key={task.id}
