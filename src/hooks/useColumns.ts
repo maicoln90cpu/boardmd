@@ -270,12 +270,23 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     try {
       const field = kanbanType === 'daily' ? 'show_in_daily' : 'show_in_projects';
       
+      // Optimistic update - atualizar estado local imediatamente
+      setColumns(prev => prev.map(col => 
+        col.id === columnId ? { ...col, [field]: visible } : col
+      ));
+      
       const { error } = await supabase
         .from("columns")
         .update({ [field]: visible })
         .eq("id", columnId);
 
-      if (error) throw error;
+      if (error) {
+        // Reverter estado se falhar
+        setColumns(prev => prev.map(col => 
+          col.id === columnId ? { ...col, [field]: !visible } : col
+        ));
+        throw error;
+      }
 
       toast({ title: `Visibilidade atualizada` });
     } catch (error) {

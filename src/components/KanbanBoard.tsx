@@ -18,6 +18,7 @@ import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/useTags";
 import { motion, AnimatePresence } from "framer-motion";
+import { useUserStats } from "@/hooks/useUserStats";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -56,6 +57,7 @@ export function KanbanBoard({
   const { updateColumnColor } = useColumns();
   const { settings } = useSettings(); // OTIMIZAÇÃO: usar settings em vez de localStorage direto
   const { getTagColor } = useTags();
+  const { addTaskCompletion } = useUserStats();
   const isMobile = useBreakpoint() === 'mobile';
   
   // Modo compacto automático em mobile ou quando forçado via prop
@@ -198,6 +200,8 @@ export function KanbanBoard({
       const destinationColumn = columns.find(col => col.id === newColumnId);
       if (destinationColumn?.name.toLowerCase() === "concluído") {
         updates.is_completed = true;
+        // GAMIFICAÇÃO: Adicionar pontos ao mover para Concluído
+        addTaskCompletion();
       }
       // Auto-desmarcar ao sair de "Concluído"
       else if (sourceColumn?.name.toLowerCase() === "concluído") {
@@ -525,6 +529,7 @@ export function KanbanBoard({
           priorityColors={settings.customization?.priorityColors}
           originalCategoriesMap={originalCategoriesMap}
           getTagColor={getTagColor}
+          onAddPoints={addTaskCompletion}
         />
 
         <TaskModal
@@ -701,6 +706,7 @@ export function KanbanBoard({
                                   densityMode={densityMode}
                                   priorityColors={settings.customization?.priorityColors}
                                   getTagColor={getTagColor}
+                                  onAddPoints={addTaskCompletion}
                                 />
                               </motion.div>
                             ))}
