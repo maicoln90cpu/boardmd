@@ -247,10 +247,13 @@ export function SearchFilters({
                     <SelectValue placeholder="Ordenar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="due_date">Data de vencimento</SelectItem>
-                    <SelectItem value="priority">Prioridade</SelectItem>
-                    <SelectItem value="title">Alfabética</SelectItem>
+                    <SelectItem value="manual">Ordem Manual</SelectItem>
+                    <SelectItem value="date_asc">Data (Crescente)</SelectItem>
+                    <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
+                    <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
+                    <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
+                    <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
+                    <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

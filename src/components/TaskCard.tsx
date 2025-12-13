@@ -59,6 +59,7 @@ interface TaskCardProps {
   hideBadges?: boolean;
   priorityColors?: PriorityColors;
   getTagColor?: (tagName: string) => string;
+  onAddPoints?: () => void;
 }
 // Premium priority colors with gradients
 const defaultPriorityColors: PriorityColors = {
@@ -176,6 +177,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   hideBadges = false,
   priorityColors = defaultPriorityColors,
   getTagColor = () => "#6B7280", // Default gray fallback
+  onAddPoints,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -242,6 +244,11 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         })
         .eq("id", task.id);
       if (error) throw error;
+
+      // GAMIFICAÇÃO: Adicionar pontos quando marcar como completa
+      if (checked && onAddPoints) {
+        onAddPoints();
+      }
 
       // SINCRONIZAÇÃO BIDIRECIONAL COMPLETA:
       // 1. Se esta tarefa tem um mirror_task_id, atualizar o espelho

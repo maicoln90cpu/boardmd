@@ -35,6 +35,7 @@ interface MobileKanbanViewProps {
   priorityColors?: PriorityColors;
   originalCategoriesMap?: Record<string, string>;
   getTagColor?: (tagName: string) => string;
+  onAddPoints?: () => void;
 }
 
 export function MobileKanbanView({
@@ -55,7 +56,8 @@ export function MobileKanbanView({
   gridColumns = 2,
   priorityColors,
   originalCategoriesMap = {},
-  getTagColor
+  getTagColor,
+  onAddPoints
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
 
@@ -145,10 +147,11 @@ export function MobileKanbanView({
                               onDuplicate={duplicateTask}
                               isDailyKanban={isDailyKanban}
                               showCategoryBadge={showCategoryBadge}
-                              densityMode="ultra-compact"
+                          densityMode={densityMode}
                               hideBadges={hideBadges}
                               priorityColors={priorityColors}
                               getTagColor={getTagColor}
+                              onAddPoints={onAddPoints}
                             />
                           </motion.div>
                         ))}
