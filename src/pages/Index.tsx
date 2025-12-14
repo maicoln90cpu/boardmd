@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { SearchFilters } from "@/components/SearchFilters";
+import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { DashboardStats } from "@/components/DashboardStats";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
@@ -607,47 +608,22 @@ function Index() {
 
               {/* Controles de grid e badges removidos - configurar em Setup */}
               
-              {/* Filtros do Kanban Diário (ordenação/densidade definidos em Setup) */}
-              <div className="px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
-                {/* Campo de Busca por Texto */}
-                <div className="relative flex-1 min-w-[150px] max-w-[250px]">
-                  <input type="text" placeholder="Buscar tarefas..." value={dailySearchTerm} onChange={e => setDailySearchTerm(e.target.value)} className="w-full h-9 px-3 pr-8 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2" />
-                  {dailySearchTerm && <button onClick={() => setDailySearchTerm("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      ×
-                    </button>}
-                </div>
-
-                {/* Filtros contextuais: Prioridade e Tag */}
-                <Select value={dailyPriorityFilter} onValueChange={setDailyPriorityFilter}>
-                  <SelectTrigger className="w-[110px] h-9">
-                    <SelectValue placeholder="Prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="high">🔴 Alta</SelectItem>
-                    <SelectItem value="medium">🟡 Média</SelectItem>
-                    <SelectItem value="low">🟢 Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {dailyAvailableTags.length > 0 && <Select value={dailyTagFilter} onValueChange={setDailyTagFilter}>
-                    <SelectTrigger className="w-[110px] h-9">
-                      <SelectValue placeholder="Tag" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {dailyAvailableTags.map(tag => <SelectItem key={tag} value={tag}>{tag}</SelectItem>)}
-                    </SelectContent>
-                  </Select>}
-
-                {(dailyPriorityFilter !== "all" || dailyTagFilter !== "all" || dailySearchTerm) && <Button variant="ghost" size="sm" onClick={() => {
-              setDailyPriorityFilter("all");
-              setDailyTagFilter("all");
-              setDailySearchTerm("");
-            }} className="h-9">
-                    Limpar
-                  </Button>}
-              </div>
+              {/* Filtros do Kanban Diário (unificado com KanbanFiltersBar) */}
+              <KanbanFiltersBar
+                searchTerm={dailySearchTerm}
+                onSearchChange={setDailySearchTerm}
+                priorityFilter={dailyPriorityFilter}
+                onPriorityChange={setDailyPriorityFilter}
+                tagFilter={dailyTagFilter}
+                onTagChange={setDailyTagFilter}
+                availableTags={dailyAvailableTags}
+                onClearFilters={() => {
+                  setDailyPriorityFilter("all");
+                  setDailyTagFilter("all");
+                  setDailySearchTerm("");
+                }}
+                searchPlaceholder="Buscar no Diário..."
+              />
             </div>
 
             {/* Layout Kanban + Favoritos */}
@@ -733,7 +709,25 @@ function Index() {
                 </>}
             </div>
             
-            <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={projectsSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} />
+            {/* Filtros do Kanban Projetos (unificado com KanbanFiltersBar) */}
+            <KanbanFiltersBar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              priorityFilter={priorityFilter}
+              onPriorityChange={setPriorityFilter}
+              tagFilter={tagFilter}
+              onTagChange={setTagFilter}
+              availableTags={availableTags}
+              onClearFilters={handleClearFilters}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              categories={categories.filter(c => c.name !== "Diário")}
+              tasks={tasks}
+              displayMode={displayMode}
+              onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")}
+              searchInputRef={searchInputRef}
+              searchPlaceholder="Buscar em Projetos..."
+            />
 
             {/* Renderizar baseado no displayMode */}
             {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
