@@ -617,7 +617,7 @@ export default function Config() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Direção da Ordenação</Label>
+                  <Label>Direção da Ordenação (Diário)</Label>
                   <Select 
                     value={settings.kanban.dailySortOrder} 
                     onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value as 'asc' | 'desc' } })}
@@ -628,6 +628,29 @@ export default function Config() {
                     <SelectContent>
                       <SelectItem value="asc">Crescente</SelectItem>
                       <SelectItem value="desc">Decrescente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Ordenação Padrão (Projetos)</Label>
+                  <Select 
+                    value={settings.kanban.projectsSortOption} 
+                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, projectsSortOption: value as 'manual' | 'date_asc' | 'date_desc' | 'name_asc' | 'name_desc' | 'priority_asc' | 'priority_desc' } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="date_asc">Data (Mais Próxima)</SelectItem>
+                      <SelectItem value="date_desc">Data (Mais Distante)</SelectItem>
+                      <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
+                      <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
+                      <SelectItem value="priority_asc">Prioridade (Baixa → Alta)</SelectItem>
+                      <SelectItem value="priority_desc">Prioridade (Alta → Baixa)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
