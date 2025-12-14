@@ -599,10 +599,6 @@ function Index() {
                     <RotateCcw className="h-4 w-4" />
                     Resetar Recorrentes
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleResetDaily} className="flex items-center gap-2">
-                    <RotateCcw className="h-4 w-4" />
-                    Resetar Tudo
-                  </Button>
                 </div>
               </div>
 
