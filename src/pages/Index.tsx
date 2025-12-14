@@ -95,7 +95,10 @@ function Index() {
   const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
   const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [sortOption, setSortOption] = useLocalStorage<string>("filter-sort", "manual");
+  
+  // CORREÇÃO: Usar settings.kanban.projectsSortOption em vez de localStorage
+  const projectsSortOption = settings.kanban.projectsSortOption;
+  const projectsSortOrder = settings.kanban.projectsSortOrder;
 
   // Filtros do Kanban Diário (separados dos filtros de Projetos)
   const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
@@ -349,7 +352,6 @@ function Index() {
     setPriorityFilter("all");
     setTagFilter("all");
     setCategoryFilter([]);
-    setSortOption("manual");
     setDisplayMode("by_category");
   };
   // handleResetRecurrentTasks usa função utilitária importada - só processa tarefas riscadas
@@ -731,20 +733,20 @@ function Index() {
                 </>}
             </div>
             
-            <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={sortOption} onSortChange={setSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} />
+            <SearchFilters searchTerm={searchTerm} onSearchChange={setSearchTerm} priorityFilter={priorityFilter} onPriorityChange={setPriorityFilter} tagFilter={tagFilter} onTagChange={setTagFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} availableTags={availableTags} categories={categories.filter(c => c.name !== "Diário")} tasks={tasks} onClearFilters={handleClearFilters} sortOption={projectsSortOption} viewMode={viewMode} displayMode={displayMode} onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")} searchInputRef={searchInputRef} />
 
             {/* Renderizar baseado no displayMode */}
             {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
                 <div className="px-6 py-3 bg-muted/50">
                   <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
                 </div>
-                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
               </div> : (/* Renderizar Kanbans por categoria */
         categories.filter(cat => cat.name !== "Diário").filter(cat => categoryFilter.length === 0 || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
                     <div className="px-6 py-3 bg-muted/50">
                       <h3 className="text-lg font-semibold">{category.name}</h3>
                     </div>
-                    <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={sortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+                    <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
                   </div>))}
           </>}
       </main>

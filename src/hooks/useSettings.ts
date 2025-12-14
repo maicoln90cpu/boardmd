@@ -25,6 +25,8 @@ export interface AppSettings {
     showFavoritesPanel: boolean;
     dailySortOption: 'time' | 'name' | 'priority';
     dailySortOrder: 'asc' | 'desc';
+    projectsSortOption: 'manual' | 'date_asc' | 'date_desc' | 'name_asc' | 'name_desc' | 'priority_asc' | 'priority_desc';
+    projectsSortOrder: 'asc' | 'desc';
     simplifiedMode: boolean;
     hideCompletedTasks: boolean;
   };
@@ -75,6 +77,8 @@ const defaultSettings: AppSettings = {
     showFavoritesPanel: true,
     dailySortOption: 'time',
     dailySortOrder: 'asc',
+    projectsSortOption: 'manual',
+    projectsSortOrder: 'asc',
     simplifiedMode: false,
     hideCompletedTasks: false,
   },

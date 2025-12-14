@@ -22,8 +22,8 @@ interface SearchFiltersProps {
   categories?: Array<{ id: string; name: string }>;
   tasks?: Array<{ category_id: string }>;
   onClearFilters: () => void;
-  sortOption: string;
-  onSortChange: (value: string) => void;
+  sortOption?: string;
+  onSortChange?: (value: string) => void;
   viewMode?: string;
   displayMode?: string;
   onDisplayModeChange?: (value: string) => void;
@@ -70,7 +70,7 @@ export function SearchFilters({
 }: SearchFiltersProps) {
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
     (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) || 
-    sortOption !== "manual";
+    (sortOption && sortOption !== "manual");
   const isMobile = useIsMobile();
   
   const densityIcon = {
@@ -161,7 +161,7 @@ export function SearchFilters({
         </>
       )}
 
-      {viewMode === "all" && (
+      {viewMode === "all" && sortOption && onSortChange && (
         <Select value={sortOption} onValueChange={onSortChange}>
           <SelectTrigger className={selectClass}>
             <SelectValue placeholder="Ordenar por" />
@@ -242,20 +242,22 @@ export function SearchFilters({
                   </SelectContent>
                 </Select>
 
-                <Select value={sortOption} onValueChange={onSortChange}>
-                  <SelectTrigger className={selectClass}>
-                    <SelectValue placeholder="Ordenar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manual">Ordem Manual</SelectItem>
-                    <SelectItem value="date_asc">Data (Crescente)</SelectItem>
-                    <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
-                    <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
-                    <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
-                    <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
-                    <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
-                  </SelectContent>
-                </Select>
+                {onSortChange && (
+                  <Select value={sortOption || "manual"} onValueChange={onSortChange}>
+                    <SelectTrigger className={selectClass}>
+                      <SelectValue placeholder="Ordenar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Ordem Manual</SelectItem>
+                      <SelectItem value="date_asc">Data (Crescente)</SelectItem>
+                      <SelectItem value="date_desc">Data (Decrescente)</SelectItem>
+                      <SelectItem value="name_asc">Nome (A-Z)</SelectItem>
+                      <SelectItem value="name_desc">Nome (Z-A)</SelectItem>
+                      <SelectItem value="priority_asc">Prioridade (Baixa-Alta)</SelectItem>
+                      <SelectItem value="priority_desc">Prioridade (Alta-Baixa)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Filtros Avançados em Collapsible */}
