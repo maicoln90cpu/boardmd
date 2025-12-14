@@ -778,6 +778,28 @@ export default function Config() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Gamificação */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🎮 Gamificação</CardTitle>
+                <CardDescription>Configure o sistema de pontos e estatísticas</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Reset Automático Diário</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Zerar automaticamente "Tarefas Concluídas Hoje" à meia-noite
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.productivity.autoResetDailyStats}
+                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, autoResetDailyStats: checked } })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Aba Categorias */}

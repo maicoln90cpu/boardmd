@@ -32,6 +32,7 @@ export interface AppSettings {
     dailyGoal: number;
     pomodoroEnabled: boolean;
     pomodoroDuration: number;
+    autoResetDailyStats: boolean;
   };
   interface: {
     sidebarPosition: 'left' | 'right';
@@ -81,6 +82,7 @@ const defaultSettings: AppSettings = {
     dailyGoal: 5,
     pomodoroEnabled: false,
     pomodoroDuration: 25,
+    autoResetDailyStats: true,
   },
   interface: {
     sidebarPosition: 'left',
