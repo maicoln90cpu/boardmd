@@ -137,12 +137,148 @@ export function NoteEditor({
       }),
     ],
     content: note.content || "",
-    onUpdate: ({
-      editor
-    }) => {
+    onUpdate: ({ editor }) => {
       setContent(editor.getHTML());
-    }
+    },
+    editorProps: {
+      // Preserve HTML formatting when pasting
+      transformPastedHTML(html) {
+        // Create a temporary container to process the HTML
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        
+        // Preserve inline styles by converting them to data attributes or keeping them
+        const elementsWithStyle = container.querySelectorAll('[style]');
+        elementsWithStyle.forEach((el) => {
+          const style = el.getAttribute('style');
+          if (style) {
+            // Keep the style attribute as is
+            el.setAttribute('style', style);
+          }
+        });
+        
+        // Preserve background colors on elements
+        const allElements = container.querySelectorAll('*');
+        allElements.forEach((el) => {
+          const computedStyle = (el as HTMLElement).style;
+          
+          // Preserve text color
+          if (computedStyle.color) {
+            (el as HTMLElement).style.color = computedStyle.color;
+          }
+          
+          // Preserve background color
+          if (computedStyle.backgroundColor) {
+            (el as HTMLElement).style.backgroundColor = computedStyle.backgroundColor;
+          }
+        });
+        
+        return container.innerHTML;
+      },
+      handlePaste(view, event) {
+        // Get clipboard data
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) return false;
+        
+        // Check if there's HTML content
+        const htmlContent = clipboardData.getData('text/html');
+        
+        if (htmlContent) {
+          // Process the HTML to preserve formatting
+          const processedHtml = processClipboardHtml(htmlContent);
+          
+          // Insert the processed HTML
+          const { state, dispatch } = view;
+          const { tr, schema } = state;
+          
+          // Create a temporary element to parse the HTML
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = processedHtml;
+          
+          // Let TipTap handle the insertion with our processed HTML
+          // Return false to allow default TipTap paste handling with our transformed HTML
+          return false;
+        }
+        
+        return false;
+      },
+      // Allow all HTML attributes
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none',
+      },
+    },
   });
+  
+  // Helper function to process clipboard HTML and preserve formatting
+  const processClipboardHtml = (html: string): string => {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    
+    // Process all elements to preserve their visual styles
+    const processElement = (el: Element) => {
+      const htmlEl = el as HTMLElement;
+      
+      // Preserve styles that are important for visual formatting
+      const importantStyles: string[] = [];
+      
+      if (htmlEl.style) {
+        // Text colors
+        if (htmlEl.style.color) {
+          importantStyles.push(`color: ${htmlEl.style.color}`);
+        }
+        
+        // Background colors
+        if (htmlEl.style.backgroundColor) {
+          importantStyles.push(`background-color: ${htmlEl.style.backgroundColor}`);
+        }
+        
+        // Font styles
+        if (htmlEl.style.fontWeight) {
+          importantStyles.push(`font-weight: ${htmlEl.style.fontWeight}`);
+        }
+        
+        if (htmlEl.style.fontStyle) {
+          importantStyles.push(`font-style: ${htmlEl.style.fontStyle}`);
+        }
+        
+        if (htmlEl.style.fontSize) {
+          importantStyles.push(`font-size: ${htmlEl.style.fontSize}`);
+        }
+        
+        // Borders
+        if (htmlEl.style.border) {
+          importantStyles.push(`border: ${htmlEl.style.border}`);
+        }
+        
+        // Padding and margin
+        if (htmlEl.style.padding) {
+          importantStyles.push(`padding: ${htmlEl.style.padding}`);
+        }
+        
+        if (htmlEl.style.margin) {
+          importantStyles.push(`margin: ${htmlEl.style.margin}`);
+        }
+        
+        // Text alignment
+        if (htmlEl.style.textAlign) {
+          importantStyles.push(`text-align: ${htmlEl.style.textAlign}`);
+        }
+      }
+      
+      // Apply preserved styles
+      if (importantStyles.length > 0) {
+        htmlEl.setAttribute('style', importantStyles.join('; '));
+      }
+      
+      // Process children recursively
+      Array.from(el.children).forEach(child => processElement(child));
+    };
+    
+    // Process all top-level elements
+    Array.from(container.children).forEach(child => processElement(child));
+    
+    return container.innerHTML;
+  };
 
   // Sincronizar com mudanças externas da nota
   useEffect(() => {
