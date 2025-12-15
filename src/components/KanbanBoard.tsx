@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useDeferredValue, memo, useCallback } from "react";
 import { Column, useColumns } from "@/hooks/useColumns";
 import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./kanban/ColumnColorPicker";
@@ -135,13 +135,25 @@ export function KanbanBoard({
     });
   }, [isDailyKanban, tasks]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
+  // OTIMIZAÇÃO: Sensores configurados para fluidez máxima
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 10, // Aumentado para evitar ativação acidental
+      tolerance: 5,
+    },
+  });
+  
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 150, // Delay para distinguir scroll de drag
+      tolerance: 8,
+    },
+  });
+  
+  const sensors = useSensors(pointerSensor, touchSensor);
+  
+  // OTIMIZAÇÃO: useDeferredValue para overId evitar re-renders excessivos
+  const deferredOverId = useDeferredValue(overId);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -670,19 +682,17 @@ export function KanbanBoard({
                             isDropTarget ? "!bg-primary/10 border-primary/30" : ""
                           }`}
                         >
-                          <AnimatePresence mode="popLayout">
-                            {columnTasks.map((task, taskIndex) => (
+                          <AnimatePresence mode="popLayout" initial={false}>
+                            {columnTasks.map((task) => (
                               <motion.div
                                 key={task.id}
-                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, transition: { duration: 0.1 } }}
                                 transition={{
-                                  duration: 0.3,
-                                  delay: taskIndex * 0.05,
-                                  ease: [0.25, 0.46, 0.45, 0.94],
+                                  duration: 0.15,
+                                  ease: "easeOut",
                                 }}
-                                layout
                               >
                                 <TaskCard
                                   task={{
@@ -725,11 +735,11 @@ export function KanbanBoard({
         </div>
 
         <DragOverlay dropAnimation={{
-          duration: 300,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          duration: 150,
+          easing: 'ease-out',
         }}>
           {activeId ? (
-            <div className="rotate-3 scale-105 shadow-2xl shadow-primary/20 cursor-grabbing">
+            <div className="rotate-2 scale-[1.02] shadow-xl shadow-primary/15 cursor-grabbing opacity-95">
               <TaskCard
                 task={tasks.find((t) => t.id === activeId)!}
                 onEdit={() => {}}
