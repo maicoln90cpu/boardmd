@@ -138,8 +138,7 @@ export function KanbanBoard({
   // OTIMIZAÇÃO: Sensores configurados para fluidez máxima
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      distance: 10, // Aumentado para evitar ativação acidental
-      tolerance: 5,
+      distance: 8,
     },
   });
   
