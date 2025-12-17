@@ -5,8 +5,9 @@ import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
-import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors, closestCorners, pointerWithin, rectIntersection } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { DroppableColumn } from "./kanban/DroppableColumn";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./kanban/ColumnColorPicker";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
@@ -170,10 +171,33 @@ export function KanbanBoard({
       return;
     }
 
+    // Determinar coluna de destino - verificar se é droppable column ou sortable item
+    let newColumnId: string;
+    const overId = over.id as string;
+    
+    // Se o over.id começar com "column-", é uma zona droppable explícita
+    if (overId.startsWith("column-")) {
+      newColumnId = overId.replace("column-", "");
+    } else {
+      // Verificar se é um id de coluna diretamente
+      const isColumn = columns.some(c => c.id === overId);
+      if (isColumn) {
+        newColumnId = overId;
+      } else {
+        // É uma tarefa, pegar coluna do sortable context
+        const containerId = over.data?.current?.sortable?.containerId;
+        if (containerId) {
+          newColumnId = containerId as string;
+        } else {
+          // Fallback: encontrar a tarefa e usar sua coluna
+          const overTask = tasks.find(t => t.id === overId);
+          newColumnId = overTask?.column_id || task.column_id;
+        }
+      }
+    }
+
     // Bloquear movimento de tarefas recorrentes para fora da coluna Recorrente
     const sourceColumn = columns.find(col => col.id === task.column_id);
-    const containerId = over.data?.current?.sortable?.containerId ?? over.id;
-    const newColumnId = containerId as string;
     
     if (task.recurrence_rule && 
         sourceColumn?.name.toLowerCase() === "recorrente" &&
@@ -585,15 +609,20 @@ export function KanbanBoard({
         onDragOver={(e: DragOverEvent) => {
           const overId = e.over?.id as string | null;
           if (overId) {
-            // Check if it's a column or a task in a column
-            const isColumn = columns.some(c => c.id === overId);
-            if (isColumn) {
-              setOverId(overId);
+            // Verificar se é uma zona droppable column-*
+            if (overId.startsWith("column-")) {
+              setOverId(overId.replace("column-", ""));
             } else {
-              // Find which column contains this task
-              const task = tasks.find(t => t.id === overId);
-              if (task) {
-                setOverId(task.column_id);
+              // Check if it's a column or a task in a column
+              const isColumn = columns.some(c => c.id === overId);
+              if (isColumn) {
+                setOverId(overId);
+              } else {
+                // Find which column contains this task
+                const task = tasks.find(t => t.id === overId);
+                if (task) {
+                  setOverId(task.column_id);
+                }
               }
             }
           }
@@ -676,8 +705,10 @@ export function KanbanBoard({
                         strategy={verticalListSortingStrategy}
                         id={column.id}
                       >
-                        <div 
-                          className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg border border-t-0 transition-all duration-200 ${getColumnBackgroundClass(column.color)} ${
+                        <DroppableColumn 
+                          id={column.id}
+                          isActive={isDragging}
+                          className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg border border-t-0 ${getColumnBackgroundClass(column.color)} ${
                             isDropTarget ? "!bg-primary/10 border-primary/30" : ""
                           }`}
                         >
@@ -720,7 +751,7 @@ export function KanbanBoard({
                               </motion.div>
                             ))}
                           </AnimatePresence>
-                        </div>
+                        </DroppableColumn>
                       </SortableContext>
                     </div>
                   </ResizablePanel>
