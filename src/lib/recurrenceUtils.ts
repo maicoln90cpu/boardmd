@@ -1,5 +1,29 @@
 /**
- * Utilitário centralizado para cálculos de recorrência de tarefas
+ * ============================================================================
+ * UTILITÁRIO CENTRALIZADO PARA CÁLCULOS DE RECORRÊNCIA DE TAREFAS
+ * ============================================================================
+ * 
+ * Este módulo contém a lógica ÚNICA para calcular a próxima data de recorrência.
+ * É utilizado por TODOS os triggers de reset do sistema:
+ * 
+ * TRIGGERS QUE USAM ESTA FUNÇÃO:
+ * 1. handleResetRecurrentTasks (Index.tsx) - Botão "Resetar Recorrentes"
+ * 2. handleUncheckRecurrentTasks (KanbanBoard.tsx) - Botão ⟳ na coluna
+ * 3. Edge Function reset-recurring-tasks - Cron Job às 23:59h (cópia local)
+ * 
+ * NOTA: A Edge Function tem uma cópia local desta função porque não pode
+ * importar de src/. Ao modificar esta função, ATUALIZE TAMBÉM a cópia em:
+ * supabase/functions/reset-recurring-tasks/index.ts
+ * 
+ * REGRAS DE NEGÓCIO:
+ * - APENAS tarefas com is_completed === true são resetadas
+ * - O cálculo usa DATA ATUAL (hoje) como base, NÃO a data original da tarefa
+ * - O horário original da tarefa é PRESERVADO
+ * - Sincronização bidirecional: atualiza mirror_task_id + reverse mirrors
+ * 
+ * MODOS DE RECORRÊNCIA (mutuamente exclusivos):
+ * 1. Frequency-based: daily/weekly/monthly com interval (ex: a cada 2 semanas)
+ * 2. Weekday-based: dia específico da semana (ex: toda segunda-feira)
  */
 
 export interface RecurrenceRule {
@@ -23,11 +47,17 @@ function createDateWithTime(date: Date, hours: number, minutes: number, seconds:
 }
 
 /**
- * Calcula a próxima data de recorrência baseada na regra configurada
+ * Calcula a próxima data de recorrência baseada na regra configurada.
  * 
- * @param currentDueDate - Data atual da tarefa (ISO string)
+ * IMPORTANTE: O cálculo é feito a partir de HOJE (data que a tarefa foi marcada
+ * como concluída), NÃO da data original da tarefa. Isso garante que:
+ * - Tarefas atrasadas não acumulem dias perdidos
+ * - Daily com interval=1 marcada hoje aparece AMANHÃ
+ * - Weekly marcada hoje aparece daqui 7 dias
+ * 
+ * @param currentDueDate - Data atual da tarefa (ISO string) - usado apenas para extrair horário
  * @param recurrenceRule - Regra de recorrência (frequência ou dia da semana)
- * @returns Nova data ISO string
+ * @returns Nova data ISO string calculada a partir de HOJE + interval
  */
 export function calculateNextRecurrenceDate(
   currentDueDate: string | null,
