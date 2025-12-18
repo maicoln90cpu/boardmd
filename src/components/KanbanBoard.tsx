@@ -136,17 +136,17 @@ export function KanbanBoard({
     });
   }, [isDailyKanban, tasks]);
 
-  // OTIMIZAÇÃO: Sensores configurados para fluidez máxima
+  // OTIMIZAÇÃO: Sensores configurados para fluidez máxima (delay reduzido)
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: {
-      distance: 8,
+      distance: 3, // Resposta mais rápida
     },
   });
   
   const touchSensor = useSensor(TouchSensor, {
     activationConstraint: {
-      delay: 150, // Delay para distinguir scroll de drag
-      tolerance: 8,
+      delay: 50, // Praticamente instantâneo
+      tolerance: 3,
     },
   });
   
@@ -160,6 +160,13 @@ export function KanbanBoard({
 
     if (!over) {
       setActiveId(null);
+      import("@/hooks/use-toast").then(({ toast }) => {
+        toast({
+          title: "Movimento cancelado",
+          description: "Solte a tarefa sobre uma coluna válida",
+          duration: 2000,
+        });
+      });
       return;
     }
 
@@ -544,6 +551,16 @@ export function KanbanBoard({
         collisionDetection={closestCorners}
         onDragStart={(e) => setActiveId(e.active.id as string)}
         onDragEnd={handleDragEnd}
+        onDragCancel={() => {
+          setActiveId(null);
+          import("@/hooks/use-toast").then(({ toast }) => {
+            toast({
+              title: "Arraste cancelado",
+              description: "A tarefa voltou para a posição original",
+              duration: 2000,
+            });
+          });
+        }}
       >
         <MobileKanbanView
           columns={columns}
@@ -631,6 +648,17 @@ export function KanbanBoard({
           handleDragEnd(e);
           setActiveId(null);
           setOverId(null);
+        }}
+        onDragCancel={() => {
+          setActiveId(null);
+          setOverId(null);
+          import("@/hooks/use-toast").then(({ toast }) => {
+            toast({
+              title: "Arraste cancelado",
+              description: "A tarefa voltou para a posição original",
+              duration: 2000,
+            });
+          });
         }}
       >
         <div className={styles.padding}>
