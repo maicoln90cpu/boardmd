@@ -335,7 +335,7 @@ export function FullScreenCalendar({
                       );
                     })}
                     {dayTasks.length > 6 && (
-                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
+                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 3} mais</div>
                     )}
                   </div>
                 </div>
