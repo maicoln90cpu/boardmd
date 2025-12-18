@@ -13,6 +13,7 @@ import {
   isSameMonth,
   isToday,
   parse,
+  parseISO,
   startOfToday,
   startOfWeek,
 } from "date-fns";
@@ -27,8 +28,20 @@ import {
   Calendar,
   ChevronUp,
   Plus,
+  GripVertical,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -84,11 +97,141 @@ interface FullScreenCalendarProps {
   onNewTask: () => void;
   onDayClick: (date: Date) => void;
   onCreateTaskOnDay?: (date: Date) => void;
+  onEditTask?: (task: Task) => void;
+  onTaskDateChange?: (taskId: string, newDate: Date) => void;
 }
 
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+// Draggable Task Component
+function DraggableTask({
+  task,
+  columns,
+  getPriorityColor,
+  getPriorityBg,
+  onEditTask,
+}: {
+  task: Task;
+  columns: Column[];
+  getPriorityColor: (priority?: string | null) => string;
+  getPriorityBg: (priority?: string | null) => string;
+  onEditTask?: (task: Task) => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: { task },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs transition-colors group",
+        getPriorityBg(task.priority),
+        isDragging && "opacity-50"
+      )}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onEditTask?.(task);
+      }}
+    >
+      <div
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing touch-none"
+      >
+        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+      <div
+        className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(task.priority))}
+      />
+      <span className="truncate font-medium">{task.title}</span>
+      {task.due_date && (
+        <span className="ml-auto text-[10px] text-muted-foreground flex-shrink-0">
+          {format(parseISO(task.due_date), "HH:mm")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// Droppable Day Cell Component
+function DroppableDay({
+  day,
+  dayIdx,
+  dayTasks,
+  columns,
+  selectedDay,
+  firstDayCurrentMonth,
+  getPriorityColor,
+  getPriorityBg,
+  onDayClick,
+  onEditTask,
+}: {
+  day: Date;
+  dayIdx: number;
+  dayTasks: Task[];
+  columns: Column[];
+  selectedDay: Date;
+  firstDayCurrentMonth: Date;
+  getPriorityColor: (priority?: string | null) => string;
+  getPriorityBg: (priority?: string | null) => string;
+  onDayClick: (day: Date) => void;
+  onEditTask?: (task: Task) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: format(day, "yyyy-MM-dd"),
+    data: { day },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={() => onDayClick(day)}
+      className={cn(
+        dayIdx === 0 && colStartClasses[getDay(day)],
+        !isEqual(day, selectedDay) &&
+          !isToday(day) &&
+          !isSameMonth(day, firstDayCurrentMonth) &&
+          "bg-muted/30 text-muted-foreground",
+        "relative flex flex-col border-b border-r hover:bg-muted/50 cursor-pointer transition-colors",
+        isEqual(day, selectedDay) && "bg-primary/5 ring-1 ring-inset ring-primary/20",
+        isToday(day) && "bg-primary/10",
+        isOver && "ring-2 ring-primary ring-inset bg-primary/20"
+      )}
+    >
+      <div className="flex items-center justify-center py-1.5">
+        <span
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+            isToday(day) && "bg-primary text-primary-foreground",
+            isEqual(day, selectedDay) && !isToday(day) && "bg-muted",
+          )}
+        >
+          {format(day, "d")}
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden px-1 pb-1">
+        {dayTasks.slice(0, 6).map((task) => (
+          <DraggableTask
+            key={task.id}
+            task={task}
+            columns={columns}
+            getPriorityColor={getPriorityColor}
+            getPriorityBg={getPriorityBg}
+            onEditTask={onEditTask}
+          />
+        ))}
+        {dayTasks.length > 6 && (
+          <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function FullScreenCalendar({
   data,
@@ -102,13 +245,24 @@ export function FullScreenCalendar({
   onNewTask,
   onDayClick,
   onCreateTaskOnDay,
+  onEditTask,
+  onTaskDateChange,
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
   const [mobileTasksExpanded, setMobileTasksExpanded] = React.useState(true);
+  const [activeTask, setActiveTask] = React.useState<Task | null>(null);
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const days = eachDayOfInterval({
     start: startOfWeek(firstDayCurrentMonth),
@@ -144,6 +298,29 @@ export function FullScreenCalendar({
       onCreateTaskOnDay(day);
     } else {
       onNewTask();
+    }
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const task = active.data.current?.task as Task;
+    setActiveTask(task);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const newDateStr = over.id as string;
+    
+    // Parse the new date
+    const newDate = parseISO(newDateStr);
+    
+    if (onTaskDateChange) {
+      onTaskDateChange(taskId, newDate);
     }
   };
 
@@ -305,70 +482,48 @@ export function FullScreenCalendar({
 
         {/* Calendar Days */}
         <div className="flex-1 overflow-auto">
-          {/* Desktop View */}
-          <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
-            {days.map((day, dayIdx) => {
-              const dayData = data.find((d) => isSameDay(d.day, day));
-              const dayTasks = dayData?.tasks || [];
+          {/* Desktop View with Drag and Drop */}
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
+              {days.map((day, dayIdx) => {
+                const dayData = data.find((d) => isSameDay(d.day, day));
+                const dayTasks = dayData?.tasks || [];
 
-              return (
-                <div
-                  key={dayIdx}
-                  onClick={() => handleDayClick(day)}
-                  className={cn(
-                    dayIdx === 0 && colStartClasses[getDay(day)],
-                    !isEqual(day, selectedDay) &&
-                      !isToday(day) &&
-                      !isSameMonth(day, firstDayCurrentMonth) &&
-                      "bg-muted/30 text-muted-foreground",
-                    "relative flex flex-col border-b border-r hover:bg-muted/50 cursor-pointer transition-colors",
-                    isEqual(day, selectedDay) && "bg-primary/5 ring-1 ring-inset ring-primary/20",
-                    isToday(day) && "bg-primary/10",
-                  )}
-                >
-                  <div className="flex items-center justify-center py-1.5">
-                    <span
-                      className={cn(
-                        "flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
-                        isToday(day) && "bg-primary text-primary-foreground",
-                        isEqual(day, selectedDay) && !isToday(day) && "bg-muted",
-                      )}
-                    >
-                      {format(day, "d")}
-                    </span>
-                  </div>
+                return (
+                  <DroppableDay
+                    key={dayIdx}
+                    day={day}
+                    dayIdx={dayIdx}
+                    dayTasks={dayTasks}
+                    columns={columns}
+                    selectedDay={selectedDay}
+                    firstDayCurrentMonth={firstDayCurrentMonth}
+                    getPriorityColor={getPriorityColor}
+                    getPriorityBg={getPriorityBg}
+                    onDayClick={handleDayClick}
+                    onEditTask={onEditTask}
+                  />
+                );
+              })}
+            </div>
 
-                  <div className="flex flex-1 flex-col gap-0.5 overflow-hidden px-1 pb-1">
-                    {dayTasks.slice(0, 6).map((task) => {
-                      const column = columns.find((c) => c.id === task.column_id);
-                      return (
-                        <div
-                          key={task.id}
-                          className={cn(
-                            "flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs transition-colors",
-                            getPriorityBg(task.priority),
-                          )}
-                        >
-                          <div
-                            className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(task.priority))}
-                          />
-                          <span className="truncate font-medium">{task.title}</span>
-                          {task.due_date && (
-                            <span className="ml-auto text-[10px] text-muted-foreground flex-shrink-0">
-                              {format(new Date(task.due_date), "HH:mm")}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {dayTasks.length > 6 && (
-                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
-                    )}
-                  </div>
+            {/* Drag Overlay */}
+            <DragOverlay>
+              {activeTask && (
+                <div className={cn(
+                  "flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs shadow-lg",
+                  getPriorityBg(activeTask.priority),
+                )}>
+                  <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
+                  <span className="truncate font-medium">{activeTask.title}</span>
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </DragOverlay>
+          </DndContext>
 
           {/* Mobile View - Calendar Grid */}
           <div className="grid grid-cols-7 md:hidden">
@@ -483,8 +638,9 @@ export function FullScreenCalendar({
                             return (
                               <div
                                 key={task.id}
+                                onClick={() => onEditTask?.(task)}
                                 className={cn(
-                                  "flex items-start gap-3 rounded-lg p-3 transition-colors",
+                                  "flex items-start gap-3 rounded-lg p-3 transition-colors cursor-pointer",
                                   getPriorityBg(task.priority),
                                 )}
                               >
@@ -500,7 +656,7 @@ export function FullScreenCalendar({
                                     {task.due_date && (
                                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <Clock className="h-3 w-3" />
-                                        {format(new Date(task.due_date), "HH:mm")}
+                                        {format(parseISO(task.due_date), "HH:mm")}
                                       </span>
                                     )}
                                     {column && (

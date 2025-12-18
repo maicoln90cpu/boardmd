@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { isSameDay } from "date-fns";
+import { isSameDay, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { TaskModal } from "@/components/TaskModal";
+import { toast } from "sonner";
 
 interface Task {
   id: string;
@@ -30,6 +31,7 @@ interface Task {
   subtasks: any;
   recurrence_rule: any;
   mirror_task_id: string | null;
+  is_completed: boolean | null;
 }
 
 export default function Calendar() {
@@ -40,6 +42,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   const { columns } = useColumns();
   const { categories } = useCategories();
@@ -80,9 +83,12 @@ export default function Calendar() {
     };
   }, []);
 
-  // Filter tasks based on selected categories and columns
+  // Filter tasks based on selected categories and columns, excluding mirrored tasks
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
+    
+    // Filter out mirrored tasks to avoid duplicates
+    filtered = filtered.filter(task => !task.mirror_task_id);
     
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(task => selectedCategories.includes(task.category_id));
@@ -110,7 +116,8 @@ export default function Calendar() {
     });
 
     return Array.from(dateMap.entries()).map(([dateStr, tasks]) => ({
-      day: new Date(dateStr),
+      // Use parseISO to correctly handle timezone
+      day: parseISO(dateStr + 'T12:00:00'),
       tasks,
     }));
   }, [filteredTasks]);
@@ -120,7 +127,8 @@ export default function Calendar() {
     if (!selectedDate) return [];
     return filteredTasks.filter(task => {
       if (!task.due_date) return false;
-      return isSameDay(new Date(task.due_date), selectedDate);
+      const taskDate = parseISO(task.due_date);
+      return isSameDay(taskDate, selectedDate);
     });
   }, [selectedDate, filteredTasks]);
 
@@ -158,6 +166,7 @@ export default function Calendar() {
   };
 
   const handleNewTask = () => {
+    setEditingTask(null);
     setNewTaskDate(new Date());
     setIsTaskModalOpen(true);
   };
@@ -168,11 +177,74 @@ export default function Calendar() {
   };
 
   const handleCreateTaskOnDay = (date: Date) => {
+    setEditingTask(null);
     setNewTaskDate(date);
     setIsTaskModalOpen(true);
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setNewTaskDate(null);
+    setIsTaskModalOpen(true);
+  };
+
+  const handleTaskDateChange = async (taskId: string, newDate: Date) => {
+    // Preserve the time from the original task
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    let newDueDate: string;
+    
+    if (task.due_date) {
+      // Extract time from original due_date
+      const originalDate = parseISO(task.due_date);
+      const hours = originalDate.getHours();
+      const minutes = originalDate.getMinutes();
+      
+      // Set the new date with the same time
+      const updatedDate = new Date(newDate);
+      updatedDate.setHours(hours, minutes, 0, 0);
+      newDueDate = updatedDate.toISOString();
+    } else {
+      // If no time was set, use noon
+      const updatedDate = new Date(newDate);
+      updatedDate.setHours(12, 0, 0, 0);
+      newDueDate = updatedDate.toISOString();
+    }
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ due_date: newDueDate })
+      .eq("id", taskId);
+
+    if (error) {
+      toast.error("Erro ao mover tarefa");
+    } else {
+      toast.success("Tarefa movida com sucesso");
+    }
+  };
+
   const handleCreateTask = async (taskData: any) => {
+    // If editing, update the task
+    if (editingTask) {
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          title: taskData.title,
+          description: taskData.description || null,
+          due_date: taskData.due_date || null,
+          priority: taskData.priority || null,
+        })
+        .eq("id", editingTask.id);
+
+      if (!error) {
+        setIsTaskModalOpen(false);
+        setEditingTask(null);
+        toast.success("Tarefa atualizada");
+      }
+      return;
+    }
+
     // Get first category and column as defaults
     const defaultCategoryId = categories[0]?.id;
     const defaultColumnId = columns[0]?.id;
@@ -195,6 +267,7 @@ export default function Calendar() {
 
     if (!error) {
       setIsTaskModalOpen(false);
+      toast.success("Tarefa criada");
     }
   };
 
@@ -221,6 +294,8 @@ export default function Calendar() {
           onNewTask={handleNewTask}
           onDayClick={handleDayClick}
           onCreateTaskOnDay={handleCreateTaskOnDay}
+          onEditTask={handleEditTask}
+          onTaskDateChange={handleTaskDateChange}
         />
 
         {/* Day Tasks Dialog */}
@@ -245,7 +320,8 @@ export default function Calendar() {
                     return (
                       <div
                         key={task.id}
-                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        onClick={() => handleEditTask(task)}
+                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
                           <div
@@ -283,7 +359,7 @@ export default function Calendar() {
                               )}
                               {task.due_date && (
                                 <span className="text-xs text-muted-foreground">
-                                  {format(new Date(task.due_date), "HH:mm")}
+                                  {format(parseISO(task.due_date), "HH:mm")}
                                 </span>
                               )}
                               {task.priority && (
@@ -320,14 +396,17 @@ export default function Calendar() {
           </DialogContent>
         </Dialog>
 
-        {/* New Task Modal */}
+        {/* Task Modal for Create/Edit */}
         <TaskModal
           open={isTaskModalOpen}
-          onOpenChange={setIsTaskModalOpen}
+          onOpenChange={(open) => {
+            setIsTaskModalOpen(open);
+            if (!open) setEditingTask(null);
+          }}
           onSave={handleCreateTask}
-          task={null}
-          columnId={columns[0]?.id || ""}
-          categoryId={categories[0]?.id}
+          task={editingTask}
+          columnId={editingTask?.column_id || columns[0]?.id || ""}
+          categoryId={editingTask?.category_id || categories[0]?.id}
           defaultDueDate={newTaskDate}
         />
       </main>
