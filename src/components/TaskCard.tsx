@@ -60,6 +60,9 @@ interface TaskCardProps {
   priorityColors?: PriorityColors;
   getTagColor?: (tagName: string) => string;
   onAddPoints?: () => void;
+  isSelected?: boolean;
+  isSelectionMode?: boolean;
+  onToggleSelection?: (taskId: string) => void;
 }
 // Premium priority colors with gradients
 const defaultPriorityColors: PriorityColors = {
@@ -153,6 +156,8 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevProps.hideBadges !== nextProps.hideBadges) return false;
   if (prevProps.canMoveLeft !== nextProps.canMoveLeft) return false;
   if (prevProps.canMoveRight !== nextProps.canMoveRight) return false;
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.isSelectionMode !== nextProps.isSelectionMode) return false;
 
   // Comparar priorityColors (objeto opcional)
   if (JSON.stringify(prevProps.priorityColors) !== JSON.stringify(nextProps.priorityColors)) return false;
@@ -178,6 +183,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   priorityColors = defaultPriorityColors,
   getTagColor = () => "#6B7280", // Default gray fallback
   onAddPoints,
+  isSelected = false,
+  isSelectionMode = false,
+  onToggleSelection,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -387,8 +395,16 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
               isWarning && "border-l-4 border-l-yellow-500",
               // Premium shadow on drag
               isDragging && "shadow-2xl ring-2 ring-primary/20",
+              // Selection mode styling
+              isSelected && "ring-2 ring-primary bg-primary/5",
+              isSelectionMode && !isSelected && "opacity-80",
             )}
-            onDoubleClick={() => onEdit(task)}
+            onDoubleClick={() => !isSelectionMode && onEdit(task)}
+            onClick={() => {
+              if (isSelectionMode && onToggleSelection) {
+                onToggleSelection(task.id);
+              }
+            }}
           >
             {/* Colored tag bars at top of card */}
             {visibleTags.length > 0 && (
