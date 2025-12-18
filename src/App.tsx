@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { UndoProvider } from "@/hooks/useUndoStack";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
@@ -105,10 +106,12 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <ThemeProvider>
-          <Toaster />
-          <Sonner />
-          <OnlineStatusIndicator />
-          <AppContent />
+          <UndoProvider>
+            <Toaster />
+            <Sonner />
+            <OnlineStatusIndicator />
+            <AppContent />
+          </UndoProvider>
         </ThemeProvider>
       </TooltipProvider>
     </AuthProvider>

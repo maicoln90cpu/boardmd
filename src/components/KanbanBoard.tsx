@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTags } from "@/hooks/useTags";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStats } from "@/hooks/useUserStats";
+import { useUndo } from "@/hooks/useUndoStack";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -56,9 +57,10 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { updateColumnColor } = useColumns();
-  const { settings } = useSettings(); // OTIMIZAÇÃO: usar settings em vez de localStorage direto
+  const { settings } = useSettings();
   const { getTagColor } = useTags();
   const { addTaskCompletion } = useUserStats();
+  const { pushAction } = useUndo();
   const isMobile = useBreakpoint() === 'mobile';
   
   // Modo compacto automático em mobile ou quando forçado via prop
@@ -297,6 +299,35 @@ export function KanbanBoard({
 
   const confirmDelete = () => {
     if (taskToDelete) {
+      // Buscar dados completos da tarefa para restauração
+      const taskData = tasks.find(t => t.id === taskToDelete);
+      if (taskData) {
+        // Registrar ação de undo ANTES de deletar
+        pushAction({
+          type: "DELETE_TASK",
+          description: `Tarefa "${taskData.title}" excluída`,
+          payload: {
+            taskId: taskToDelete,
+            fullData: {
+              id: taskData.id,
+              title: taskData.title,
+              description: taskData.description,
+              category_id: taskData.category_id,
+              column_id: taskData.column_id,
+              position: taskData.position,
+              priority: taskData.priority,
+              due_date: taskData.due_date,
+              is_completed: taskData.is_completed,
+              is_favorite: taskData.is_favorite,
+              tags: taskData.tags,
+              subtasks: taskData.subtasks,
+              recurrence_rule: taskData.recurrence_rule,
+              mirror_task_id: taskData.mirror_task_id,
+              user_id: taskData.user_id,
+            },
+          },
+        });
+      }
       deleteTask(taskToDelete);
       setTaskToDelete(null);
     }
@@ -314,6 +345,17 @@ export function KanbanBoard({
       const targetColumn = columns[targetIndex];
       const sourceColumn = columns[currentColumnIndex];
       const destinationTasks = tasks.filter(t => t.column_id === targetColumn.id);
+      
+      // Registrar ação de undo ANTES de mover
+      pushAction({
+        type: "MOVE_TASK",
+        description: `Tarefa movida para "${targetColumn.name}"`,
+        payload: {
+          taskId,
+          previousColumnId: task.column_id,
+          previousPosition: task.position,
+        },
+      });
       
       const updates: Partial<Task> = {
         column_id: targetColumn.id,
