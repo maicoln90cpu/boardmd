@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UndoProvider } from "@/hooks/useUndoStack";
+import { BulkSelectionProvider } from "@/hooks/useBulkSelection";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
@@ -107,10 +108,12 @@ const App = () => (
       <TooltipProvider>
         <ThemeProvider>
           <UndoProvider>
-            <Toaster />
-            <Sonner />
-            <OnlineStatusIndicator />
-            <AppContent />
+            <BulkSelectionProvider>
+              <Toaster />
+              <Sonner />
+              <OnlineStatusIndicator />
+              <AppContent />
+            </BulkSelectionProvider>
           </UndoProvider>
         </ThemeProvider>
       </TooltipProvider>

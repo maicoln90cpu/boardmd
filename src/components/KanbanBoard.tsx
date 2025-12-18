@@ -4,7 +4,7 @@ import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { Button } from "@/components/ui/button";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, CheckSquare } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverEvent, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors, closestCorners, pointerWithin, rectIntersection } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DroppableColumn } from "./kanban/DroppableColumn";
@@ -21,6 +21,9 @@ import { useTags } from "@/hooks/useTags";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useUndo } from "@/hooks/useUndoStack";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { BulkActionsBar } from "./kanban/BulkActionsBar";
+import { useToast } from "@/hooks/use-toast";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -61,6 +64,15 @@ export function KanbanBoard({
   const { getTagColor } = useTags();
   const { addTaskCompletion } = useUserStats();
   const { pushAction } = useUndo();
+  const { toast } = useToast();
+  const { 
+    isSelectionMode, 
+    isSelected, 
+    toggleSelection, 
+    enterSelectionMode, 
+    exitSelectionMode,
+    selectedCount 
+  } = useBulkSelection();
   const isMobile = useBreakpoint() === 'mobile';
   
   // Modo compacto automático em mobile ou quando forçado via prop
@@ -437,6 +449,75 @@ export function KanbanBoard({
     });
   };
 
+  // BULK ACTIONS: Funções para ações em massa
+  const handleBulkDelete = async (taskIds: string[]) => {
+    for (const taskId of taskIds) {
+      const taskData = tasks.find(t => t.id === taskId);
+      if (taskData) {
+        pushAction({
+          type: "DELETE_TASK",
+          description: `${taskIds.length} tarefa(s) excluída(s)`,
+          payload: {
+            taskId,
+            fullData: {
+              id: taskData.id,
+              title: taskData.title,
+              description: taskData.description,
+              category_id: taskData.category_id,
+              column_id: taskData.column_id,
+              position: taskData.position,
+              priority: taskData.priority,
+              due_date: taskData.due_date,
+              is_completed: taskData.is_completed,
+              is_favorite: taskData.is_favorite,
+              tags: taskData.tags,
+              subtasks: taskData.subtasks,
+              recurrence_rule: taskData.recurrence_rule,
+              mirror_task_id: taskData.mirror_task_id,
+              user_id: taskData.user_id,
+            },
+          },
+        });
+      }
+      await deleteTask(taskId);
+    }
+    toast({
+      title: "Tarefas excluídas",
+      description: `${taskIds.length} tarefa(s) excluída(s) com sucesso`,
+    });
+  };
+
+  const handleBulkComplete = async (taskIds: string[], completed: boolean) => {
+    for (const taskId of taskIds) {
+      await updateTask(taskId, { is_completed: completed });
+      if (completed) {
+        addTaskCompletion();
+      }
+    }
+    toast({
+      title: completed ? "Tarefas completadas" : "Tarefas reabertas",
+      description: `${taskIds.length} tarefa(s) atualizada(s)`,
+    });
+  };
+
+  const handleBulkMove = async (taskIds: string[], columnId: string) => {
+    const destinationColumn = columns.find(c => c.id === columnId);
+    const isCompletedColumn = destinationColumn?.name.toLowerCase() === "concluído";
+    
+    for (const taskId of taskIds) {
+      const updates: Partial<Task> = { column_id: columnId };
+      if (isCompletedColumn) {
+        updates.is_completed = true;
+        addTaskCompletion();
+      }
+      await updateTask(taskId, updates);
+    }
+    toast({
+      title: "Tarefas movidas",
+      description: `${taskIds.length} tarefa(s) movida(s) para "${destinationColumn?.name}"`,
+    });
+  };
+
   const getTasksForColumn = (columnId: string) => {
     const filtered = tasks.filter((t) => {
       if (t.column_id !== columnId) return false;
@@ -745,6 +826,16 @@ export function KanbanBoard({
                             )}
                           </div>
                           <div className="flex gap-1">
+                            {/* Botão de seleção em massa */}
+                            <Button
+                              size="sm"
+                              variant={isSelectionMode ? "default" : "ghost"}
+                              onClick={() => isSelectionMode ? exitSelectionMode() : enterSelectionMode()}
+                              title={isSelectionMode ? "Sair do modo seleção" : "Selecionar múltiplas tarefas"}
+                              className={isSelectionMode ? "bg-primary text-primary-foreground" : ""}
+                            >
+                              <CheckSquare className={densityMode === "ultra-compact" ? "h-3 w-3" : "h-4 w-4"} />
+                            </Button>
                             {column.name.toLowerCase() === "recorrente" && (
                               <Button
                                 size="sm"
@@ -817,6 +908,9 @@ export function KanbanBoard({
                                   priorityColors={settings.customization?.priorityColors}
                                   getTagColor={getTagColor}
                                   onAddPoints={addTaskCompletion}
+                                  isSelected={isSelected(task.id)}
+                                  isSelectionMode={isSelectionMode}
+                                  onToggleSelection={toggleSelection}
                                 />
                               </motion.div>
                             ))}
@@ -878,6 +972,14 @@ export function KanbanBoard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Barra de ações em massa */}
+      <BulkActionsBar
+        columns={columns}
+        onBulkDelete={handleBulkDelete}
+        onBulkComplete={handleBulkComplete}
+        onBulkMove={handleBulkMove}
+      />
     </>
   );
 }
