@@ -570,7 +570,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   </h3>
                 </div>
 
-                {/* Linha 2: Data, Horário, Prioridade */}
+                {/* Linha 2: Data, Horário, Prioridade, Categoria */}
                 <div
                   className={cn(
                     "flex items-center flex-wrap",
@@ -658,6 +658,33 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                       style={getPriorityBadgeStyle(task.priority)}
                     >
                       {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
+                    </Badge>
+                  )}
+
+                  {/* Badge de Categoria movida para Linha 2 */}
+                  {!hideBadges && isDailyKanban && task.recurrence_rule && originalCategoryName && (
+                    <Badge
+                      className={cn(
+                        "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+                        densityMode === "compact" && "text-[10px] px-2 py-0.5",
+                        densityMode === "comfortable" && "text-xs px-2.5 py-1",
+                      )}
+                      style={getCategoryBadgeStyle(originalCategoryName)}
+                    >
+                      📁 {originalCategoryName}
+                    </Badge>
+                  )}
+
+                  {!hideBadges && !isDailyKanban && showCategoryBadge && task.categories?.name && (
+                    <Badge
+                      className={cn(
+                        "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+                        densityMode === "compact" && "text-[10px] px-2 py-0.5",
+                        densityMode === "comfortable" && "text-xs px-2.5 py-1",
+                      )}
+                      style={getCategoryBadgeStyle(task.categories.name)}
+                    >
+                      {task.categories.name}
                     </Badge>
                   )}
 
@@ -777,12 +804,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   </Button>
                 </div>
 
-                {/* Linha 4: Badges categoria e espelhada (para recorrentes e tarefas espelhadas) */}
+                {/* Linha 3 extra: Espelhada e Tags (somente quando aplicável) */}
                 {!hideBadges &&
-                  (task.recurrence_rule ||
-                    task.mirror_task_id ||
-                    showCategoryBadge ||
-                    (task.tags && task.tags.length > 0)) && (
+                  (task.mirror_task_id || (task.tags && task.tags.length > 0)) && (
                     <div
                       className={cn(
                         "flex items-center flex-wrap",
@@ -790,34 +814,6 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         densityMode === "comfortable" && "gap-1.5",
                       )}
                     >
-                      {/* Mostrar categoria ORIGINAL para tarefas recorrentes no diário (com espelho em projetos) */}
-                      {isDailyKanban && task.recurrence_rule && originalCategoryName && (
-                        <Badge
-                          className={cn(
-                            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
-                            densityMode === "compact" && "text-[10px] px-2 py-0.5",
-                            densityMode === "comfortable" && "text-xs px-2.5 py-1",
-                          )}
-                          style={getCategoryBadgeStyle(originalCategoryName)}
-                        >
-                          📁 {originalCategoryName}
-                        </Badge>
-                      )}
-
-                      {/* Mostrar categoria normal fora do diário quando showCategoryBadge */}
-                      {!isDailyKanban && showCategoryBadge && task.categories?.name && (
-                        <Badge
-                          className={cn(
-                            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
-                            densityMode === "compact" && "text-[10px] px-2 py-0.5",
-                            densityMode === "comfortable" && "text-xs px-2.5 py-1",
-                          )}
-                          style={getCategoryBadgeStyle(task.categories.name)}
-                        >
-                          {task.categories.name}
-                        </Badge>
-                      )}
-
                       {task.mirror_task_id && (
                         <Badge
                           variant="secondary"
