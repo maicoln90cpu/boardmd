@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * EDGE FUNCTION: RESET AUTOMÁTICO DE TAREFAS RECORRENTES (CRON JOB 23:59h)
+ * ============================================================================
+ * 
+ * Esta função é executada automaticamente às 23:59h (02:59 UTC) via pg_cron.
+ * 
+ * IMPORTANTE: Esta função contém uma CÓPIA LOCAL de calculateNextRecurrenceDate
+ * porque Edge Functions não podem importar de src/. Ao modificar a lógica de
+ * recorrência, ATUALIZE TAMBÉM: src/lib/recurrenceUtils.ts
+ * 
+ * REGRAS DE NEGÓCIO:
+ * - APENAS tarefas com is_completed === true são resetadas
+ * - Cálculo usa DATA ATUAL como base, NÃO a data original
+ * - Horário original é PRESERVADO
+ * - Sincronização bidirecional: atualiza mirror_task_id + reverse mirrors
+ */
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -21,21 +39,30 @@ interface Task {
   mirror_task_id: string | null;
 }
 
+/**
+ * CÓPIA LOCAL de calculateNextRecurrenceDate
+ * @see src/lib/recurrenceUtils.ts para documentação completa
+ * 
+ * IMPORTANTE: Manter sincronizado com a versão em recurrenceUtils.ts!
+ */
 function calculateNextRecurrenceDate(
   currentDueDate: string | null,
   recurrenceRule: RecurrenceRule | null
 ): string {
   const now = new Date();
 
+  // Sem due_date = retorna hoje
   if (!currentDueDate) {
     return now.toISOString();
   }
 
+  // Extrair horário original para preservar
   const baseDate = new Date(currentDueDate);
   const hours = baseDate.getUTCHours();
   const minutes = baseDate.getUTCMinutes();
   const seconds = baseDate.getUTCSeconds();
 
+  // Helper para criar data com horário original
   const createDateWithTime = (date: Date): string => {
     return new Date(
       Date.UTC(
