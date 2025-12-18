@@ -3,12 +3,14 @@ import { Column } from "@/hooks/useColumns";
 import { Task } from "@/hooks/useTasks";
 import { TaskCard } from "../TaskCard";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, RotateCcw } from "lucide-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { SwipeableTaskCard } from "./SwipeableTaskCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -60,10 +62,63 @@ export function MobileKanbanView({
   onAddPoints
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
+  const { toast } = useToast();
 
   const currentColumnIndex = columns.findIndex(col => col.id === activeTab);
   const canMoveLeft = currentColumnIndex > 0;
   const canMoveRight = currentColumnIndex < columns.length - 1;
+
+  // Handler para toggle de completion via swipe
+  const handleSwipeComplete = async (task: Task) => {
+    try {
+      const newCompleted = !task.is_completed;
+      const { error } = await supabase
+        .from("tasks")
+        .update({ is_completed: newCompleted })
+        .eq("id", task.id);
+
+      if (error) throw error;
+
+      // Sincronização bidirecional
+      if (task.mirror_task_id) {
+        await supabase
+          .from("tasks")
+          .update({ is_completed: newCompleted })
+          .eq("id", task.mirror_task_id);
+      }
+
+      // Buscar tarefas que apontam para esta
+      const { data: reverseMirrors } = await supabase
+        .from("tasks")
+        .select("id")
+        .eq("mirror_task_id", task.id);
+
+      if (reverseMirrors && reverseMirrors.length > 0) {
+        await supabase
+          .from("tasks")
+          .update({ is_completed: newCompleted })
+          .in("id", reverseMirrors.map((t) => t.id));
+      }
+
+      // Gamificação
+      if (newCompleted && onAddPoints) {
+        onAddPoints();
+      }
+
+      window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
+      
+      toast({
+        title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
+        duration: 1500,
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+      toast({
+        title: "Erro ao atualizar tarefa",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -131,26 +186,31 @@ export function MobileKanbanView({
                               ease: "easeOut",
                             }}
                           >
-                            <TaskCard
-                              task={{
-                                ...task,
-                                // Usar task.id para buscar no mapa (tarefas no diário)
-                                // ou task.mirror_task_id para tarefas que apontam para projetos
-                                originalCategory: originalCategoriesMap[task.id] || 
-                                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
-                              }}
+                            <SwipeableTaskCard
+                              onComplete={() => handleSwipeComplete(task)}
                               onEdit={() => handleEditTask(task)}
                               onDelete={() => handleDeleteClick(task.id)}
-                              onToggleFavorite={toggleFavorite}
-                              onDuplicate={duplicateTask}
-                              isDailyKanban={isDailyKanban}
-                              showCategoryBadge={showCategoryBadge}
-                          densityMode={densityMode}
-                              hideBadges={hideBadges}
-                              priorityColors={priorityColors}
-                              getTagColor={getTagColor}
-                              onAddPoints={onAddPoints}
-                            />
+                              isCompleted={task.is_completed || false}
+                            >
+                              <TaskCard
+                                task={{
+                                  ...task,
+                                  originalCategory: originalCategoriesMap[task.id] || 
+                                    (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                                }}
+                                onEdit={() => handleEditTask(task)}
+                                onDelete={() => handleDeleteClick(task.id)}
+                                onToggleFavorite={toggleFavorite}
+                                onDuplicate={duplicateTask}
+                                isDailyKanban={isDailyKanban}
+                                showCategoryBadge={showCategoryBadge}
+                                densityMode={densityMode}
+                                hideBadges={hideBadges}
+                                priorityColors={priorityColors}
+                                getTagColor={getTagColor}
+                                onAddPoints={onAddPoints}
+                              />
+                            </SwipeableTaskCard>
                           </motion.div>
                         ))}
                       </AnimatePresence>
