@@ -63,7 +63,9 @@ interface TaskCardProps {
   isSelected?: boolean;
   isSelectionMode?: boolean;
   onToggleSelection?: (taskId: string) => void;
+  isDraggable?: boolean;
 }
+
 // Premium priority colors with gradients
 const defaultPriorityColors: PriorityColors = {
   high: { background: "#fee2e2", text: "#dc2626" },
@@ -186,9 +188,11 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   isSelected = false,
   isSelectionMode = false,
   onToggleSelection,
+  isDraggable = true,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
+    disabled: !isDraggable,
   });
   const urgency = getTaskUrgency(task);
   // Premium drag & drop styles

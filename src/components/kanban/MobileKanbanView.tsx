@@ -186,12 +186,8 @@ export function MobileKanbanView({
                               ease: "easeOut",
                             }}
                           >
-                            <SwipeableTaskCard
-                              onComplete={() => handleSwipeComplete(task)}
-                              onEdit={() => handleEditTask(task)}
-                              onDelete={() => handleDeleteClick(task.id)}
-                              isCompleted={task.is_completed || false}
-                            >
+                            {column.name.toLowerCase() === "recorrente" ? (
+                              // Tarefas recorrentes: sem swipe, sem drag
                               <TaskCard
                                 task={{
                                   ...task,
@@ -209,9 +205,40 @@ export function MobileKanbanView({
                                 priorityColors={priorityColors}
                                 getTagColor={getTagColor}
                                 onAddPoints={onAddPoints}
+                                isDraggable={false}
                               />
-                            </SwipeableTaskCard>
+                            ) : (
+                              // Outras colunas: com swipe
+                              <SwipeableTaskCard
+                                taskId={task.id}
+                                onComplete={() => handleSwipeComplete(task)}
+                                onEdit={() => handleEditTask(task)}
+                                onDelete={() => handleDeleteClick(task.id)}
+                                isCompleted={task.is_completed || false}
+                              >
+                                <TaskCard
+                                  task={{
+                                    ...task,
+                                    originalCategory: originalCategoriesMap[task.id] || 
+                                      (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                                  }}
+                                  onEdit={() => handleEditTask(task)}
+                                  onDelete={() => handleDeleteClick(task.id)}
+                                  onToggleFavorite={toggleFavorite}
+                                  onDuplicate={duplicateTask}
+                                  isDailyKanban={isDailyKanban}
+                                  showCategoryBadge={showCategoryBadge}
+                                  densityMode={densityMode}
+                                  hideBadges={hideBadges}
+                                  priorityColors={priorityColors}
+                                  getTagColor={getTagColor}
+                                  onAddPoints={onAddPoints}
+                                  isDraggable={false}
+                                />
+                              </SwipeableTaskCard>
+                            )}
                           </motion.div>
+
                         ))}
                       </AnimatePresence>
                     )}

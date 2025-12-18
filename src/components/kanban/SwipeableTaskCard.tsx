@@ -1,9 +1,11 @@
-import React, { useState, useRef } from "react";
-import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
+import { motion, useMotionValue, useTransform, AnimatePresence, PanInfo } from "framer-motion";
 import { Check, Pencil, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSwipe } from "@/contexts/SwipeContext";
 
 interface SwipeableTaskCardProps {
+  taskId: string;
   children: React.ReactNode;
   onComplete: () => void;
   onEdit: () => void;
@@ -11,18 +13,23 @@ interface SwipeableTaskCardProps {
   isCompleted?: boolean;
 }
 
-const SWIPE_THRESHOLD = 80;
+const SWIPE_THRESHOLD = 100;
 const ACTION_WIDTH = 70;
+const SWIPE_DELAY = 150; // ms antes de considerar um swipe
 
 export function SwipeableTaskCard({
+  taskId,
   children,
   onComplete,
   onEdit,
   onDelete,
   isCompleted = false,
 }: SwipeableTaskCardProps) {
+  const { openCardId, setOpenCardId } = useSwipe();
   const [isOpen, setIsOpen] = useState<"left" | "right" | null>(null);
   const constraintsRef = useRef<HTMLDivElement>(null);
+  const panStartTimeRef = useRef<number>(0);
+  const panStartXRef = useRef<number>(0);
   const x = useMotionValue(0);
   
   // Transform para opacidade das ações
@@ -33,41 +40,88 @@ export function SwipeableTaskCard({
   const leftActionsScale = useTransform(x, [0, SWIPE_THRESHOLD], [0.8, 1]);
   const rightActionsScale = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0.8]);
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  // Fechar quando outro card abrir (via contexto global)
+  useEffect(() => {
+    if (openCardId !== null && openCardId !== taskId && isOpen !== null) {
+      setIsOpen(null);
+      x.set(0);
+    }
+  }, [openCardId, taskId, isOpen, x]);
+
+  // Sincronizar estado local com contexto
+  useEffect(() => {
+    if (isOpen !== null) {
+      setOpenCardId(taskId);
+    }
+  }, [isOpen, taskId, setOpenCardId]);
+
+  const handlePanStart = (_: any, info: PanInfo) => {
+    panStartTimeRef.current = Date.now();
+    panStartXRef.current = info.point.x;
+  };
+
+  const handlePan = (_: any, info: PanInfo) => {
+    const elapsed = Date.now() - panStartTimeRef.current;
+    
+    // Só permitir swipe após delay mínimo
+    if (elapsed < SWIPE_DELAY) return;
+    
+    // Limitar movimento
+    const maxRight = ACTION_WIDTH * 2;
+    const maxLeft = -ACTION_WIDTH;
+    const newX = Math.max(maxLeft, Math.min(maxRight, info.offset.x));
+    
+    x.set(newX);
+  };
+
+  const handlePanEnd = (_: any, info: PanInfo) => {
+    const elapsed = Date.now() - panStartTimeRef.current;
     const offset = info.offset.x;
     const velocity = info.velocity.x;
+    
+    // Se foi muito rápido (menos que delay), ignorar
+    if (elapsed < SWIPE_DELAY) {
+      x.set(0);
+      return;
+    }
 
     // Swipe para direita (completar/editar)
     if (offset > SWIPE_THRESHOLD || velocity > 500) {
       setIsOpen("right");
+      x.set(ACTION_WIDTH * 2);
     }
     // Swipe para esquerda (deletar)
     else if (offset < -SWIPE_THRESHOLD || velocity < -500) {
       setIsOpen("left");
+      x.set(-ACTION_WIDTH);
     }
-    // Fechar
+    // Fechar - voltar ao centro
     else {
       setIsOpen(null);
+      setOpenCardId(null);
+      x.set(0);
     }
   };
 
   const handleClose = () => {
     setIsOpen(null);
+    setOpenCardId(null);
+    x.set(0);
   };
 
   const handleComplete = () => {
     onComplete();
-    setIsOpen(null);
+    handleClose();
   };
 
   const handleEdit = () => {
     onEdit();
-    setIsOpen(null);
+    handleClose();
   };
 
   const handleDelete = () => {
     onDelete();
-    setIsOpen(null);
+    handleClose();
   };
 
   return (
@@ -119,12 +173,11 @@ export function SwipeableTaskCard({
         </button>
       </motion.div>
 
-      {/* Card arrastável */}
+      {/* Card com gestures manuais (sem drag="x") */}
       <motion.div
-        drag="x"
-        dragConstraints={{ left: -ACTION_WIDTH, right: ACTION_WIDTH * 2 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
+        onPanStart={handlePanStart}
+        onPan={handlePan}
+        onPanEnd={handlePanEnd}
         animate={{
           x: isOpen === "right" ? ACTION_WIDTH * 2 : isOpen === "left" ? -ACTION_WIDTH : 0,
         }}
