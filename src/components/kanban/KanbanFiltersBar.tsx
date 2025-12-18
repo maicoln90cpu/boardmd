@@ -1,12 +1,13 @@
-import { Search, X, SlidersHorizontal, ChevronRight } from "lucide-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryFilter } from "@/components/CategoryFilter";
+import { FilterPresetsManager } from "./FilterPresetsManager";
+import { FilterPreset } from "@/hooks/useFilterPresets";
 
 interface KanbanFiltersBarProps {
   // Filtros básicos
@@ -30,6 +31,10 @@ interface KanbanFiltersBarProps {
   // Controles de busca
   searchInputRef?: React.RefObject<HTMLInputElement>;
   searchPlaceholder?: string;
+  
+  // Controle de presets
+  showPresets?: boolean;
+  sortOption?: string;
 }
 
 export function KanbanFiltersBar({
@@ -49,6 +54,8 @@ export function KanbanFiltersBar({
   onDisplayModeChange,
   searchInputRef,
   searchPlaceholder = "Buscar tarefas...",
+  showPresets = true,
+  sortOption,
 }: KanbanFiltersBarProps) {
   const isMobile = useIsMobile();
   
@@ -56,6 +63,29 @@ export function KanbanFiltersBar({
     priorityFilter !== "all" || 
     tagFilter !== "all" || 
     (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0));
+
+  // Aplicar preset de filtros
+  const handleApplyPreset = (filters: FilterPreset["filters"]) => {
+    if (filters.searchTerm !== undefined) onSearchChange(filters.searchTerm);
+    if (filters.priorityFilter !== undefined) onPriorityChange(filters.priorityFilter);
+    if (filters.tagFilter !== undefined) onTagChange(filters.tagFilter);
+    if (filters.categoryFilter !== undefined && onCategoryChange) {
+      onCategoryChange(filters.categoryFilter);
+    }
+    if (filters.displayMode !== undefined && onDisplayModeChange) {
+      onDisplayModeChange(filters.displayMode);
+    }
+  };
+
+  // Filtros atuais para salvar em preset
+  const currentFilters: FilterPreset["filters"] = {
+    searchTerm: searchTerm || undefined,
+    priorityFilter: priorityFilter !== "all" ? priorityFilter : undefined,
+    tagFilter: tagFilter !== "all" ? tagFilter : undefined,
+    categoryFilter: categoryFilter?.length ? categoryFilter : undefined,
+    displayMode: displayMode || undefined,
+    sortOption: sortOption || undefined,
+  };
 
   // Conteúdo dos filtros - compartilhado entre desktop e mobile
   const renderFiltersContent = () => (
@@ -143,6 +173,16 @@ export function KanbanFiltersBar({
           </button>
         )}
       </div>
+
+      {/* Presets de Filtros */}
+      {showPresets && (
+        <FilterPresetsManager
+          currentFilters={currentFilters}
+          onApplyPreset={handleApplyPreset}
+          onClearFilters={onClearFilters}
+          hasActiveFilters={!!hasActiveFilters}
+        />
+      )}
 
       {/* Mobile: Botão de filtros em Sheet */}
       {isMobile ? (
