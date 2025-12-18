@@ -17,7 +17,17 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Filter, X, Clock, Calendar, ChevronUp, Plus } from "lucide-react";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlusCircleIcon,
+  Filter,
+  X,
+  Clock,
+  Calendar,
+  ChevronUp,
+  Plus,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -329,7 +339,7 @@ export function FullScreenCalendar({
                   </div>
 
                   <div className="flex flex-1 flex-col gap-0.5 overflow-hidden px-1 pb-1">
-                    {dayTasks.slice(0, 3).map((task) => {
+                    {dayTasks.slice(0, 6).map((task) => {
                       const column = columns.find((c) => c.id === task.column_id);
                       return (
                         <div
@@ -352,7 +362,7 @@ export function FullScreenCalendar({
                       );
                     })}
                     {dayTasks.length > 6 && (
-                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 3} mais</div>
+                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
                     )}
                   </div>
                 </div>
@@ -397,10 +407,7 @@ export function FullScreenCalendar({
                   {dayTasks.length > 0 && (
                     <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
                       {dayTasks.slice(0, 3).map((task) => (
-                        <div
-                          key={task.id}
-                          className={cn("h-1 w-1 rounded-full", getPriorityColor(task.priority))}
-                        />
+                        <div key={task.id} className={cn("h-1 w-1 rounded-full", getPriorityColor(task.priority))} />
                       ))}
                       {dayTasks.length > 3 && (
                         <span className="text-[8px] text-muted-foreground">+{dayTasks.length - 3}</span>
@@ -437,10 +444,7 @@ export function FullScreenCalendar({
                   </p>
                 </div>
               </div>
-              <motion.div
-                animate={{ rotate: mobileTasksExpanded ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
+              <motion.div animate={{ rotate: mobileTasksExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
                 <ChevronUp className="h-5 w-5 text-muted-foreground" />
               </motion.div>
             </button>
@@ -460,9 +464,7 @@ export function FullScreenCalendar({
                       {selectedDayTasks.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8 text-center">
                           <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Nenhuma tarefa para este dia
-                          </p>
+                          <p className="text-sm text-muted-foreground mb-3">Nenhuma tarefa para este dia</p>
                           <Button
                             size="sm"
                             variant="outline"
@@ -493,9 +495,7 @@ export function FullScreenCalendar({
                                   )}
                                 />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-foreground truncate">
-                                    {task.title}
-                                  </p>
+                                  <p className="text-sm font-medium text-foreground truncate">{task.title}</p>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {task.due_date && (
                                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
