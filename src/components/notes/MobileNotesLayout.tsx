@@ -121,6 +121,7 @@ export function MobileNotesLayout({
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(null)}
                 onDeleteNote={onDeleteNote}
+                notebooks={notebooks}
               />
             </div>
 
@@ -133,6 +134,7 @@ export function MobileNotesLayout({
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(null)}
                 onDeleteNote={onDeleteNote}
+                notebooks={notebooks}
               />
             </div>
           </div>
@@ -171,6 +173,7 @@ export function MobileNotesLayout({
               onSelectNote={handleSelectNote}
               onAddNote={() => handleAddNote(selectedNotebookId)}
               onDeleteNote={onDeleteNote}
+              notebooks={notebooks}
             />
           </div>
         </div>

@@ -326,6 +326,7 @@ export default function Notes() {
                 onSelectNote={handleSelectNote}
                 onAddNote={() => handleAddNote(selectedNotebookId)}
                 onDeleteNote={handleDeleteNote}
+                notebooks={notebooks}
               />
             </div>
           </div>

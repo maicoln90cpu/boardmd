@@ -1,10 +1,11 @@
 import { Note } from "@/hooks/useNotes";
+import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Trash2 } from "lucide-react";
-import { useNotes } from "@/hooks/useNotes";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
+import { useMemo } from "react";
 
 interface NotesListProps {
   notes: Note[];
@@ -12,6 +13,7 @@ interface NotesListProps {
   onSelectNote: (noteId: string) => void;
   onAddNote: () => void;
   onDeleteNote: (noteId: string) => void;
+  notebooks?: Notebook[]; // Para buscar cor do caderno
 }
 
 export function NotesList({
@@ -19,8 +21,28 @@ export function NotesList({
   selectedNoteId,
   onSelectNote,
   onAddNote,
-  onDeleteNote
+  onDeleteNote,
+  notebooks = []
 }: NotesListProps) {
+  // Criar mapa de notebook_id -> cor para acesso O(1)
+  const notebookColorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    notebooks.forEach(nb => {
+      // Usar primeira tag do notebook como cor principal
+      const color = nb.tags?.[0]?.color;
+      if (color) {
+        map.set(nb.id, color);
+      }
+    });
+    return map;
+  }, [notebooks]);
+
+  // Função para obter cor do caderno
+  const getNotebookColor = (notebookId: string | null): string | null => {
+    if (!notebookId) return null;
+    return notebookColorMap.get(notebookId) || null;
+  };
+
   // Separar notas soltas (sem caderno) e notas em cadernos
   const looseNotes = notes.filter(note => !note.notebook_id);
   const notesInNotebooks = notes.filter(note => note.notebook_id);
@@ -67,6 +89,7 @@ export function NotesList({
                   isSelected={selectedNoteId === note.id}
                   onSelect={onSelectNote}
                   onDelete={onDeleteNote}
+                  notebookColor={null} // Notas soltas não têm cor
                 />
               </motion.div>
             ))}
@@ -99,6 +122,7 @@ export function NotesList({
                   isSelected={selectedNoteId === note.id}
                   onSelect={onSelectNote}
                   onDelete={onDeleteNote}
+                  notebookColor={getNotebookColor(note.notebook_id)}
                 />
               </motion.div>
             ))}
@@ -142,12 +166,14 @@ function DraggableNote({
   note,
   isSelected,
   onSelect,
-  onDelete
+  onDelete,
+  notebookColor
 }: {
   note: Note;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  notebookColor: string | null;
 }) {
   const {
     attributes,
@@ -160,31 +186,42 @@ function DraggableNote({
     data: { type: "note", noteId: note.id }
   });
 
-  const style = {
+  // Combinar estilos de forma limpa
+  const combinedStyle = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    cursor: isDragging ? "grabbing" : "grab"
+    cursor: isDragging ? "grabbing" : "grab",
+    // Cor sutil do caderno (15% opacidade) - não aplicar quando selecionado
+    backgroundColor: notebookColor && !isSelected ? `${notebookColor}15` : undefined,
+    // Borda esquerda com cor do caderno
+    borderLeftColor: notebookColor && !isSelected ? notebookColor : undefined,
   };
 
   return (
     <motion.div 
       ref={setNodeRef} 
-      style={style} 
+      style={combinedStyle} 
       {...attributes} 
       {...listeners}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={`
         flex items-center gap-2 px-2 py-1.5 rounded-md group
         transition-all duration-200
-        hover:shadow-md hover:shadow-primary/10 hover:bg-accent/60
-        ${isSelected ? "bg-accent shadow-md" : ""}
+        hover:shadow-md hover:shadow-primary/10
+        ${isSelected 
+          ? "bg-accent shadow-md" 
+          : notebookColor 
+            ? "hover:brightness-95" 
+            : "hover:bg-accent/60"
+        }
+        ${notebookColor && !isSelected ? "border-l-2" : ""}
       `}
     >
       <div 
         onClick={() => onSelect(note.id)} 
         className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
       >
-        <FileText className="h-4 w-4 text-muted-foreground" />
+        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         <span className="truncate text-sm">{note.title}</span>
       </div>
       <Button 
@@ -194,7 +231,7 @@ function DraggableNote({
           e.stopPropagation();
           onDelete(note.id);
         }} 
-        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity"
+        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity flex-shrink-0"
       >
         <Trash2 className="h-3 w-3" />
       </Button>
