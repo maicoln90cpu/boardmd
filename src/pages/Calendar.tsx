@@ -1,30 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from "date-fns";
+import { isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Filter, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
 import { useColumns } from "@/hooks/useColumns";
 import { useCategories } from "@/hooks/useCategories";
 import { supabase } from "@/integrations/supabase/client";
+import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { TaskModal } from "@/components/TaskModal";
 
 interface Task {
   id: string;
@@ -46,12 +33,13 @@ interface Task {
 }
 
 export default function Calendar() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<"daily" | "all">("all");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   
   const { columns } = useColumns();
   const { categories } = useCategories();
@@ -92,10 +80,6 @@ export default function Calendar() {
     };
   }, []);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-
   // Filter tasks based on selected categories and columns
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
@@ -111,18 +95,33 @@ export default function Calendar() {
     return filtered;
   }, [tasks, selectedCategories, selectedColumns]);
 
-  // Get tasks for a specific date
-  const getTasksForDate = (date: Date) => {
-    return filteredTasks.filter(task => {
-      if (!task.due_date) return false;
-      return isSameDay(new Date(task.due_date), date);
-    });
-  };
+  // Transform tasks into calendar data format
+  const calendarData = useMemo(() => {
+    const dateMap = new Map<string, Task[]>();
 
-  // Get selected date tasks
+    filteredTasks.forEach(task => {
+      if (task.due_date) {
+        const dateKey = task.due_date.split('T')[0];
+        if (!dateMap.has(dateKey)) {
+          dateMap.set(dateKey, []);
+        }
+        dateMap.get(dateKey)!.push(task);
+      }
+    });
+
+    return Array.from(dateMap.entries()).map(([dateStr, tasks]) => ({
+      day: new Date(dateStr),
+      tasks,
+    }));
+  }, [filteredTasks]);
+
+  // Get tasks for selected date
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return [];
-    return getTasksForDate(selectedDate);
+    return filteredTasks.filter(task => {
+      if (!task.due_date) return false;
+      return isSameDay(new Date(task.due_date), selectedDate);
+    });
   }, [selectedDate, filteredTasks]);
 
   // Toggle category filter
@@ -149,37 +148,49 @@ export default function Calendar() {
     setSelectedColumns([]);
   };
 
-  const hasActiveFilters = selectedCategories.length > 0 || selectedColumns.length > 0;
-
   const getPriorityColor = (priority?: string | null) => {
     switch (priority) {
       case "high": return "bg-red-500";
-      case "medium": return "bg-yellow-500";
-      case "low": return "bg-green-500";
-      default: return "bg-gray-500";
+      case "medium": return "bg-amber-500";
+      case "low": return "bg-emerald-500";
+      default: return "bg-muted-foreground";
     }
   };
 
-  const getColumnColor = (columnId: string) => {
-    const column = columns.find(c => c.id === columnId);
-    return column?.color || "#888888";
+  const handleNewTask = () => {
+    setNewTaskDate(new Date());
+    setIsTaskModalOpen(true);
   };
 
-  const previousMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
   };
 
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-  };
+  const handleCreateTask = async (taskData: any) => {
+    // Get first category and column as defaults
+    const defaultCategoryId = categories[0]?.id;
+    const defaultColumnId = columns[0]?.id;
 
-  const goToToday = () => {
-    setCurrentMonth(new Date());
-  };
+    if (!defaultCategoryId || !defaultColumnId) return;
 
-  // Get first day of week for alignment
-  const firstDayOfWeek = monthStart.getDay();
-  const emptyDays = Array.from({ length: firstDayOfWeek }, (_, i) => i);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("tasks").insert({
+      title: taskData.title,
+      description: taskData.description || null,
+      due_date: taskData.due_date || null,
+      priority: taskData.priority || null,
+      category_id: defaultCategoryId,
+      column_id: defaultColumnId,
+      user_id: user.id,
+      position: 0,
+    });
+
+    if (!error) {
+      setIsTaskModalOpen(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -191,354 +202,127 @@ export default function Calendar() {
         viewMode={viewMode}
       />
 
-      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
-        <div className="max-w-7xl mx-auto">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" />
-                  Calendário de Tarefas
-                </CardTitle>
-                
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Filters */}
-                  <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Filter className="h-4 w-4" />
-                          Categorias
-                          {selectedCategories.length > 0 && (
-                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
-                              {selectedCategories.length}
-                            </Badge>
-                          )}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Filtrar por Categoria</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {categories.map((category) => (
-                          <DropdownMenuCheckboxItem
-                            key={category.id}
-                            checked={selectedCategories.includes(category.id)}
-                            onCheckedChange={() => toggleCategory(category.id)}
-                          >
-                            {category.name}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+      <main className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">
+        <FullScreenCalendar
+          data={calendarData}
+          columns={columns.map(c => ({ id: c.id, name: c.name, color: c.color }))}
+          categories={categories.map(c => ({ id: c.id, name: c.name }))}
+          selectedCategories={selectedCategories}
+          selectedColumns={selectedColumns}
+          onToggleCategory={toggleCategory}
+          onToggleColumn={toggleColumn}
+          onClearFilters={clearFilters}
+          onNewTask={handleNewTask}
+          onDayClick={handleDayClick}
+        />
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-2">
-                          <Filter className="h-4 w-4" />
-                          Status
-                          {selectedColumns.length > 0 && (
-                            <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
-                              {selectedColumns.length}
-                            </Badge>
-                          )}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Filtrar por Status</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {columns.map((column) => (
-                          <DropdownMenuCheckboxItem
-                            key={column.id}
-                            checked={selectedColumns.includes(column.id)}
-                            onCheckedChange={() => toggleColumn(column.id)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: column.color }}
-                              />
-                              {column.name}
-                            </div>
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {hasActiveFilters && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearFilters}
-                        className="gap-2"
-                      >
-                        <X className="h-4 w-4" />
-                        Limpar
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="h-6 w-px bg-border" />
-
-                  {/* Navigation */}
-                  <Button variant="outline" size="sm" onClick={goToToday}>
-                    Hoje
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={previousMonth}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="min-w-[180px] text-center font-semibold">
-                    {format(currentMonth, "MMMM 'de' yyyy", { locale: ptBR })}
-                  </div>
-                  <Button variant="outline" size="icon" onClick={nextMonth}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
+        {/* Day Tasks Dialog */}
+        <Dialog open={selectedDate !== null} onOpenChange={(open) => !open && setSelectedDate(null)}>
+          <DialogContent className="max-w-lg max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>
+                {selectedDate && format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[60vh] pr-4">
+              {selectedDateTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma tarefa para este dia
                 </div>
-              </div>
-            </CardHeader>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDateTasks.map((task) => {
+                    const column = columns.find(c => c.id === task.column_id);
+                    const category = categories.find(c => c.id === task.category_id);
 
-            <CardContent>
-              {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {/* Week day headers */}
-                {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-                  <div key={day} className="text-center font-semibold text-sm text-muted-foreground p-2">
-                    {day}
-                  </div>
-                ))}
-
-                {/* Empty days before month starts */}
-                {emptyDays.map((i) => (
-                  <div key={`empty-${i}`} className="aspect-square" />
-                ))}
-
-                {/* Days of month */}
-                {daysInMonth.map((day) => {
-                  const dayTasks = getTasksForDate(day);
-                  const isCurrentDay = isToday(day);
-
-                  return (
-                    <div
-                      key={day.toISOString()}
-                      className={cn(
-                        "aspect-square border rounded-lg relative",
-                        isCurrentDay && "border-primary border-2 bg-primary/5"
-                      )}
-                    >
-                      <button
-                        onClick={() => setSelectedDate(day)}
-                        className="w-full h-full p-2 hover:bg-accent transition-colors"
+                    return (
+                      <div
+                        key={task.id}
+                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                       >
-                        <div className="text-sm font-medium mb-1">
-                          {format(day, "d")}
-                        </div>
-                        
-                        {/* BUG 3 FIX: Task list with full names instead of dots */}
-                        {dayTasks.length > 0 && (
-                          <HoverCard openDelay={200}>
-                            <HoverCardTrigger asChild>
-                              <div className="flex flex-col gap-0.5 w-full overflow-hidden cursor-help">
-                                {dayTasks.slice(0, 3).map((task) => (
-                                  <div
-                                    key={task.id}
-                                    className="flex items-center gap-1 px-1 py-0.5 rounded text-[8px] truncate"
-                                    style={{
-                                      backgroundColor: task.priority === "high" ? "#fee2e2" : 
-                                                       task.priority === "medium" ? "#fef3c7" : "#dcfce7"
-                                    }}
-                                  >
-                                    <div
-                                      className={cn(
-                                        "w-1.5 h-1.5 rounded-full flex-shrink-0",
-                                        getPriorityColor(task.priority)
-                                      )}
-                                    />
-                                    <span className="truncate font-medium text-foreground">
-                                      {task.title}
-                                    </span>
-                                  </div>
-                                ))}
-                                {dayTasks.length > 3 && (
-                                  <span className="text-[8px] text-muted-foreground text-center">
-                                    +{dayTasks.length - 3} mais
-                                  </span>
-                                )}
-                              </div>
-                            </HoverCardTrigger>
-                            <HoverCardContent className="w-80 p-3" align="center">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-semibold text-sm">
-                                    {format(day, "d 'de' MMMM", { locale: ptBR })}
-                                  </span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {dayTasks.length} {dayTasks.length === 1 ? 'tarefa' : 'tarefas'}
-                                  </Badge>
-                                </div>
-                                <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
-                                  {dayTasks.slice(0, 5).map((task) => {
-                                    const column = columns.find(c => c.id === task.column_id);
-                                    return (
-                                      <div
-                                        key={task.id}
-                                        className="flex items-start gap-2 p-1.5 rounded hover:bg-accent/50 transition-colors"
-                                      >
-                                        <div
-                                          className={cn(
-                                            "w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
-                                            getPriorityColor(task.priority)
-                                          )}
-                                        />
-                                        <div className="flex-1 min-w-0 space-y-0.5">
-                                          <p className="text-sm font-medium truncate">
-                                            {task.title}
-                                          </p>
-                                          <div className="flex items-center gap-1.5 flex-wrap">
-                                            {column && (
-                                              <Badge
-                                                variant="outline"
-                                                className="text-[10px] px-1 py-0 h-4"
-                                                style={{
-                                                  borderColor: column.color,
-                                                  color: column.color
-                                                }}
-                                              >
-                                                {column.name}
-                                              </Badge>
-                                            )}
-                                            {task.due_date && (
-                                              <span className="text-[10px] text-muted-foreground">
-                                                {format(new Date(task.due_date), "HH:mm")}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                  {dayTasks.length > 5 && (
-                                    <div className="text-xs text-muted-foreground text-center pt-1">
-                                      +{dayTasks.length - 5} mais {dayTasks.length - 5 === 1 ? 'tarefa' : 'tarefas'}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="pt-1 border-t text-xs text-muted-foreground text-center">
-                                  Clique no dia para ver detalhes
-                                </div>
-                              </div>
-                            </HoverCardContent>
-                          </HoverCard>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div className="mt-6 pt-6 border-t">
-                <div className="flex flex-wrap gap-6 justify-center text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">Prioridade:</span>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <span className="text-muted-foreground">Alta</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <span className="text-muted-foreground">Média</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span className="text-muted-foreground">Baixa</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">Status:</span>
-                    <span className="text-muted-foreground">Cor do brilho indica a coluna</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-
-      {/* Task Details Dialog */}
-      <Dialog open={!!selectedDate} onOpenChange={() => setSelectedDate(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDate && format(selectedDate, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </DialogTitle>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[60vh]">
-            {selectedDateTasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma tarefa agendada para este dia
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {selectedDateTasks.map((task) => {
-                  const column = columns.find(c => c.id === task.column_id);
-                  
-                  return (
-                    <Card key={task.id}>
-                      <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <div
                             className={cn(
-                              "w-1 h-full rounded-full",
+                              "w-2 h-2 rounded-full mt-2 flex-shrink-0",
                               getPriorityColor(task.priority)
                             )}
                           />
-                          
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold">{task.title}</h4>
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <h4 className="font-medium text-foreground">
+                              {task.title}
+                            </h4>
+                            {task.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {task.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
                               {column && (
                                 <Badge
+                                  variant="outline"
+                                  className="text-xs"
                                   style={{
-                                    backgroundColor: column.color,
-                                    color: '#fff'
+                                    borderColor: column.color || "#888",
+                                    color: column.color || "#888",
                                   }}
                                 >
                                   {column.name}
                                 </Badge>
                               )}
-                            </div>
-                            
-                            {task.description && (
-                              <p className="text-sm text-muted-foreground">
-                                {task.description}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {task.tags?.map((tag) => (
-                                <Badge key={tag} variant="outline">
-                                  {tag}
+                              {category && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {category.name}
                                 </Badge>
-                              ))}
-                              
+                              )}
                               {task.due_date && (
                                 <span className="text-xs text-muted-foreground">
                                   {format(new Date(task.due_date), "HH:mm")}
                                 </span>
                               )}
+                              {task.priority && (
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "text-xs",
+                                    task.priority === "high" && "border-red-500 text-red-500",
+                                    task.priority === "medium" && "border-amber-500 text-amber-500",
+                                    task.priority === "low" && "border-emerald-500 text-emerald-500"
+                                  )}
+                                >
+                                  {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
+                                </Badge>
+                              )}
                             </div>
+                            {task.tags && task.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {task.tags.map((tag, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-[10px]">
+                                    #{tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* New Task Modal */}
+        <TaskModal
+          open={isTaskModalOpen}
+          onOpenChange={setIsTaskModalOpen}
+          onSave={handleCreateTask}
+          task={null}
+          columnId={columns[0]?.id || ""}
+          categoryId={categories[0]?.id}
+        />
+      </main>
     </div>
   );
 }
