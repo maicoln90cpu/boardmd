@@ -163,7 +163,13 @@ export default function Calendar() {
   };
 
   const handleDayClick = (date: Date) => {
+    // On desktop, show dialog. On mobile, the calendar handles it internally
     setSelectedDate(date);
+  };
+
+  const handleCreateTaskOnDay = (date: Date) => {
+    setNewTaskDate(date);
+    setIsTaskModalOpen(true);
   };
 
   const handleCreateTask = async (taskData: any) => {
@@ -214,6 +220,7 @@ export default function Calendar() {
           onClearFilters={clearFilters}
           onNewTask={handleNewTask}
           onDayClick={handleDayClick}
+          onCreateTaskOnDay={handleCreateTaskOnDay}
         />
 
         {/* Day Tasks Dialog */}
@@ -321,6 +328,7 @@ export default function Calendar() {
           task={null}
           columnId={columns[0]?.id || ""}
           categoryId={categories[0]?.id}
+          defaultDueDate={newTaskDate}
         />
       </main>
     </div>

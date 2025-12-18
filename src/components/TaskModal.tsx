@@ -34,9 +34,10 @@ interface TaskModalProps {
   viewMode?: string;
   categoryId?: string;
   columns?: Array<{ id: string; name: string }>;
+  defaultDueDate?: Date | null;
 }
 
-export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns }: TaskModalProps) {
+export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyKanban = false, viewMode, categoryId, columns, defaultDueDate }: TaskModalProps) {
   const { categories } = useCategories();
   const { columns: allColumns } = useColumns();
   const { user } = useAuth();
@@ -102,8 +103,12 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         setSelectedCategory(categoryId || "");
       }
       
-      // Se for Kanban Diário, data padrão é hoje
-      if (isDailyKanban) {
+      // Se foi passada uma data padrão (ex: clicou em um dia do calendário)
+      if (defaultDueDate) {
+        const dateStr = defaultDueDate.toISOString().split("T")[0];
+        setDueDate(dateStr);
+      } else if (isDailyKanban) {
+        // Se for Kanban Diário, data padrão é hoje
         const today = new Date().toISOString().split("T")[0];
         setDueDate(today);
       } else {
@@ -112,7 +117,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setDueTime("");
       setTags([]);
     }
-  }, [task, open, categoryId, isDailyKanban, dailyCategory]);
+  }, [task, open, categoryId, isDailyKanban, dailyCategory, defaultDueDate]);
 
   const handleSave = async () => {
     if (!title.trim()) return;

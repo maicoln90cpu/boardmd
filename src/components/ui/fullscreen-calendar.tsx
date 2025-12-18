@@ -17,13 +17,15 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, SearchIcon, Filter, X } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Filter, X, Clock, Calendar, ChevronUp, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,6 +73,7 @@ interface FullScreenCalendarProps {
   onClearFilters: () => void;
   onNewTask: () => void;
   onDayClick: (date: Date) => void;
+  onCreateTaskOnDay?: (date: Date) => void;
 }
 
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
@@ -88,10 +91,12 @@ export function FullScreenCalendar({
   onClearFilters,
   onNewTask,
   onDayClick,
+  onCreateTaskOnDay,
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
+  const [mobileTasksExpanded, setMobileTasksExpanded] = React.useState(true);
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -99,6 +104,10 @@ export function FullScreenCalendar({
     start: startOfWeek(firstDayCurrentMonth),
     end: endOfWeek(endOfMonth(firstDayCurrentMonth)),
   });
+
+  // Get tasks for selected day
+  const selectedDayData = data.find((d) => isSameDay(d.day, selectedDay));
+  const selectedDayTasks = selectedDayData?.tasks || [];
 
   function previousMonth() {
     const firstDayNextMonth = add(firstDayCurrentMonth, { months: -1 });
@@ -118,6 +127,14 @@ export function FullScreenCalendar({
   const handleDayClick = (day: Date) => {
     setSelectedDay(day);
     onDayClick(day);
+  };
+
+  const handleCreateTaskOnDay = (day: Date) => {
+    if (onCreateTaskOnDay) {
+      onCreateTaskOnDay(day);
+    } else {
+      onNewTask();
+    }
   };
 
   const getPriorityColor = (priority?: string | null) => {
@@ -343,7 +360,7 @@ export function FullScreenCalendar({
             })}
           </div>
 
-          {/* Mobile View */}
+          {/* Mobile View - Calendar Grid */}
           <div className="grid grid-cols-7 md:hidden">
             {days.map((day, dayIdx) => {
               const dayData = data.find((d) => isSameDay(d.day, day));
@@ -355,7 +372,6 @@ export function FullScreenCalendar({
                   key={dayIdx}
                   type="button"
                   className={cn(
-                    isEqual(day, selectedDay) && "text-primary-foreground",
                     !isEqual(day, selectedDay) &&
                       !isToday(day) &&
                       isSameMonth(day, firstDayCurrentMonth) &&
@@ -365,31 +381,167 @@ export function FullScreenCalendar({
                       !isSameMonth(day, firstDayCurrentMonth) &&
                       "text-muted-foreground",
                     (isEqual(day, selectedDay) || isToday(day)) && "font-semibold",
-                    "flex h-14 flex-col items-center border-b border-r px-1 py-2 hover:bg-muted focus:z-10 transition-colors",
+                    isEqual(day, selectedDay) && "bg-primary/10",
+                    "flex h-12 flex-col items-center border-b border-r px-1 py-1.5 hover:bg-muted focus:z-10 transition-colors",
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-6 w-6 items-center justify-center rounded-full text-xs",
                       isToday(day) && "bg-primary text-primary-foreground",
-                      isEqual(day, selectedDay) && !isToday(day) && "bg-muted",
+                      isEqual(day, selectedDay) && !isToday(day) && "ring-2 ring-primary ring-offset-1",
                     )}
                   >
                     {format(day, "d")}
                   </span>
                   {dayTasks.length > 0 && (
-                    <div className="mt-1 flex flex-wrap justify-center gap-0.5">
+                    <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
                       {dayTasks.slice(0, 3).map((task) => (
                         <div
                           key={task.id}
-                          className={cn("h-1.5 w-1.5 rounded-full", getPriorityColor(task.priority))}
+                          className={cn("h-1 w-1 rounded-full", getPriorityColor(task.priority))}
                         />
                       ))}
+                      {dayTasks.length > 3 && (
+                        <span className="text-[8px] text-muted-foreground">+{dayTasks.length - 3}</span>
+                      )}
                     </div>
                   )}
                 </button>
               );
             })}
+          </div>
+
+          {/* Mobile View - Tasks List for Selected Day */}
+          <div className="md:hidden border-t bg-card">
+            {/* Header with toggle */}
+            <button
+              onClick={() => setMobileTasksExpanded(!mobileTasksExpanded)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 flex-col items-center justify-center rounded-lg bg-primary/10">
+                  <span className="text-[10px] font-semibold uppercase text-primary">
+                    {format(selectedDay, "EEE", { locale: ptBR })}
+                  </span>
+                  <span className="text-sm font-bold leading-none text-primary">{format(selectedDay, "d")}</span>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">
+                    {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedDayTasks.length === 0
+                      ? "Nenhuma tarefa"
+                      : `${selectedDayTasks.length} tarefa${selectedDayTasks.length > 1 ? "s" : ""}`}
+                  </p>
+                </div>
+              </div>
+              <motion.div
+                animate={{ rotate: mobileTasksExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+              </motion.div>
+            </button>
+
+            {/* Tasks List */}
+            <AnimatePresence>
+              {mobileTasksExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <ScrollArea className="max-h-64">
+                    <div className="px-4 pb-4 space-y-2">
+                      {selectedDayTasks.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Nenhuma tarefa para este dia
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCreateTaskOnDay(selectedDay)}
+                            className="gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Criar tarefa
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {selectedDayTasks.map((task) => {
+                            const column = columns.find((c) => c.id === task.column_id);
+                            const category = categories.find((c) => c.id === task.category_id);
+                            return (
+                              <div
+                                key={task.id}
+                                className={cn(
+                                  "flex items-start gap-3 rounded-lg p-3 transition-colors",
+                                  getPriorityBg(task.priority),
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0",
+                                    getPriorityColor(task.priority),
+                                  )}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">
+                                    {task.title}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                    {task.due_date && (
+                                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Clock className="h-3 w-3" />
+                                        {format(new Date(task.due_date), "HH:mm")}
+                                      </span>
+                                    )}
+                                    {column && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] px-1.5 py-0 h-4"
+                                        style={{
+                                          borderColor: column.color || undefined,
+                                          color: column.color || undefined,
+                                        }}
+                                      >
+                                        {column.name}
+                                      </Badge>
+                                    )}
+                                    {category && (
+                                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                                        {category.name}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {/* Add task button at the bottom */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCreateTaskOnDay(selectedDay)}
+                            className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Adicionar tarefa
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
