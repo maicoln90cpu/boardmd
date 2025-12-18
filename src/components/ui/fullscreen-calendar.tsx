@@ -17,14 +17,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlusCircleIcon,
-  SearchIcon,
-  Filter,
-  X,
-} from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, SearchIcon, Filter, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -80,15 +73,7 @@ interface FullScreenCalendarProps {
   onDayClick: (date: Date) => void;
 }
 
-const colStartClasses = [
-  "",
-  "col-start-2",
-  "col-start-3",
-  "col-start-4",
-  "col-start-5",
-  "col-start-6",
-  "col-start-7",
-];
+const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -106,9 +91,7 @@ export function FullScreenCalendar({
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
-  const [currentMonth, setCurrentMonth] = React.useState(
-    format(today, "MMM-yyyy")
-  );
+  const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -176,9 +159,7 @@ export function FullScreenCalendar({
               <span className="text-[10px] font-semibold uppercase text-muted-foreground">
                 {format(today, "MMM", { locale: ptBR })}
               </span>
-              <span className="text-lg font-bold leading-none text-foreground">
-                {format(today, "d")}
-              </span>
+              <span className="text-lg font-bold leading-none text-foreground">{format(today, "d")}</span>
             </div>
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold text-foreground">
@@ -243,10 +224,7 @@ export function FullScreenCalendar({
                     onCheckedChange={() => onToggleColumn(column.id)}
                   >
                     <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: column.color || "#888" }}
-                      />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color || "#888" }} />
                       {column.name}
                     </div>
                   </DropdownMenuCheckboxItem>
@@ -255,12 +233,7 @@ export function FullScreenCalendar({
             </DropdownMenu>
 
             {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearFilters}
-                className="gap-1 px-2"
-              >
+              <Button variant="ghost" size="sm" onClick={onClearFilters} className="gap-1 px-2">
                 <X className="h-4 w-4" />
                 <span className="hidden sm:inline">Limpar</span>
               </Button>
@@ -297,10 +270,7 @@ export function FullScreenCalendar({
         {/* Week Days Header */}
         <div className="grid grid-cols-7 border-b bg-muted/30">
           {weekDays.map((day) => (
-            <div
-              key={day}
-              className="flex items-center justify-center py-2 text-xs font-medium text-muted-foreground"
-            >
+            <div key={day} className="flex items-center justify-center py-2 text-xs font-medium text-muted-foreground">
               {day}
             </div>
           ))}
@@ -326,7 +296,7 @@ export function FullScreenCalendar({
                       "bg-muted/30 text-muted-foreground",
                     "relative flex flex-col border-b border-r hover:bg-muted/50 cursor-pointer transition-colors",
                     isEqual(day, selectedDay) && "bg-primary/5 ring-1 ring-inset ring-primary/20",
-                    isToday(day) && "bg-primary/10"
+                    isToday(day) && "bg-primary/10",
                   )}
                 >
                   <div className="flex items-center justify-center py-1.5">
@@ -334,7 +304,7 @@ export function FullScreenCalendar({
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
                         isToday(day) && "bg-primary text-primary-foreground",
-                        isEqual(day, selectedDay) && !isToday(day) && "bg-muted"
+                        isEqual(day, selectedDay) && !isToday(day) && "bg-muted",
                       )}
                     >
                       {format(day, "d")}
@@ -349,14 +319,11 @@ export function FullScreenCalendar({
                           key={task.id}
                           className={cn(
                             "flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs transition-colors",
-                            getPriorityBg(task.priority)
+                            getPriorityBg(task.priority),
                           )}
                         >
                           <div
-                            className={cn(
-                              "h-1.5 w-1.5 rounded-full flex-shrink-0",
-                              getPriorityColor(task.priority)
-                            )}
+                            className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(task.priority))}
                           />
                           <span className="truncate font-medium">{task.title}</span>
                           {task.due_date && (
@@ -367,10 +334,8 @@ export function FullScreenCalendar({
                         </div>
                       );
                     })}
-                    {dayTasks.length > 3 && (
-                      <div className="text-center text-[10px] text-muted-foreground">
-                        + {dayTasks.length - 3} mais
-                      </div>
+                    {dayTasks.length > 6 && (
+                      <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
                     )}
                   </div>
                 </div>
@@ -400,14 +365,14 @@ export function FullScreenCalendar({
                       !isSameMonth(day, firstDayCurrentMonth) &&
                       "text-muted-foreground",
                     (isEqual(day, selectedDay) || isToday(day)) && "font-semibold",
-                    "flex h-14 flex-col items-center border-b border-r px-1 py-2 hover:bg-muted focus:z-10 transition-colors"
+                    "flex h-14 flex-col items-center border-b border-r px-1 py-2 hover:bg-muted focus:z-10 transition-colors",
                   )}
                 >
                   <span
                     className={cn(
                       "flex h-6 w-6 items-center justify-center rounded-full text-xs",
                       isToday(day) && "bg-primary text-primary-foreground",
-                      isEqual(day, selectedDay) && !isToday(day) && "bg-muted"
+                      isEqual(day, selectedDay) && !isToday(day) && "bg-muted",
                     )}
                   >
                     {format(day, "d")}
@@ -417,10 +382,7 @@ export function FullScreenCalendar({
                       {dayTasks.slice(0, 3).map((task) => (
                         <div
                           key={task.id}
-                          className={cn(
-                            "h-1.5 w-1.5 rounded-full",
-                            getPriorityColor(task.priority)
-                          )}
+                          className={cn("h-1.5 w-1.5 rounded-full", getPriorityColor(task.priority))}
                         />
                       ))}
                     </div>
