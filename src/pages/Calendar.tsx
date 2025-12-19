@@ -44,6 +44,11 @@ export default function Calendar() {
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
+  // Novos estados de filtro avançado
+  const [searchTerm, setSearchTerm] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
+  
   const { columns } = useColumns();
   const { categories } = useCategories();
 
@@ -83,13 +88,39 @@ export default function Calendar() {
     };
   }, []);
 
-  // Filter tasks based on selected categories and columns, excluding mirrored tasks
+  // Extrair lista de tags disponíveis das tarefas
+  const availableTags = useMemo(() => {
+    const tags = new Set<string>();
+    tasks.forEach(task => task.tags?.forEach(tag => tags.add(tag)));
+    return Array.from(tags).sort();
+  }, [tasks]);
+
+  // Filter tasks based on selected categories, columns, search, priority, and tags
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
     
     // Filter out mirrored tasks to avoid duplicates
     filtered = filtered.filter(task => !task.mirror_task_id);
     
+    // Filtro de busca
+    if (searchTerm) {
+      filtered = filtered.filter(task => 
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Filtro de prioridade
+    if (priorityFilter !== "all") {
+      filtered = filtered.filter(task => task.priority === priorityFilter);
+    }
+    
+    // Filtro de tag
+    if (tagFilter !== "all") {
+      filtered = filtered.filter(task => task.tags?.includes(tagFilter));
+    }
+    
+    // Filtros existentes de categoria e coluna
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(task => selectedCategories.includes(task.category_id));
     }
@@ -99,7 +130,7 @@ export default function Calendar() {
     }
     
     return filtered;
-  }, [tasks, selectedCategories, selectedColumns]);
+  }, [tasks, searchTerm, priorityFilter, tagFilter, selectedCategories, selectedColumns]);
 
   // Transform tasks into calendar data format
   const calendarData = useMemo(() => {
@@ -154,6 +185,9 @@ export default function Calendar() {
   const clearFilters = () => {
     setSelectedCategories([]);
     setSelectedColumns([]);
+    setSearchTerm("");
+    setPriorityFilter("all");
+    setTagFilter("all");
   };
 
   const getPriorityColor = (priority?: string | null) => {
@@ -296,6 +330,13 @@ export default function Calendar() {
           onCreateTaskOnDay={handleCreateTaskOnDay}
           onEditTask={handleEditTask}
           onTaskDateChange={handleTaskDateChange}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          priorityFilter={priorityFilter}
+          onPriorityChange={setPriorityFilter}
+          tagFilter={tagFilter}
+          onTagChange={setTagFilter}
+          availableTags={availableTags}
         />
 
         {/* Day Tasks Dialog */}

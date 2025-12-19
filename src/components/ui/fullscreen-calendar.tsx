@@ -3,7 +3,7 @@
 import * as React from "react";
 import { add, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isEqual, isSameDay, isSameMonth, isToday, isBefore, parse, parseISO, startOfToday, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Filter, X, Clock, Calendar, CalendarDays, ChevronUp, Plus, GripVertical } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 interface Task {
   id: string;
   title: string;
@@ -50,6 +50,14 @@ interface FullScreenCalendarProps {
   onCreateTaskOnDay?: (date: Date) => void;
   onEditTask?: (task: Task) => void;
   onTaskDateChange?: (taskId: string, newDate: Date) => void;
+  // Novos filtros avançados
+  searchTerm?: string;
+  onSearchChange?: (value: string) => void;
+  priorityFilter?: string;
+  onPriorityChange?: (value: string) => void;
+  tagFilter?: string;
+  onTagChange?: (value: string) => void;
+  availableTags?: string[];
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -208,7 +216,14 @@ export function FullScreenCalendar({
   onDayClick,
   onCreateTaskOnDay,
   onEditTask,
-  onTaskDateChange
+  onTaskDateChange,
+  searchTerm = "",
+  onSearchChange,
+  priorityFilter = "all",
+  onPriorityChange,
+  tagFilter = "all",
+  onTagChange,
+  availableTags = []
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
@@ -341,8 +356,37 @@ export function FullScreenCalendar({
         return "bg-muted hover:bg-muted/80";
     }
   };
-  const hasActiveFilters = selectedCategories.length > 0 || selectedColumns.length > 0;
+  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || selectedCategories.length > 0 || selectedColumns.length > 0;
   return <div className="flex h-full flex-col">
+      {/* Filters Bar */}
+      <KanbanFiltersBar
+        searchTerm={searchTerm}
+        onSearchChange={onSearchChange || (() => {})}
+        priorityFilter={priorityFilter}
+        onPriorityChange={onPriorityChange || (() => {})}
+        tagFilter={tagFilter}
+        onTagChange={onTagChange || (() => {})}
+        availableTags={availableTags}
+        onClearFilters={onClearFilters}
+        categoryFilter={selectedCategories}
+        onCategoryChange={(cats) => {
+          // Toggle each category
+          cats.forEach(cat => {
+            if (!selectedCategories.includes(cat)) {
+              onToggleCategory(cat);
+            }
+          });
+          selectedCategories.forEach(cat => {
+            if (!cats.includes(cat)) {
+              onToggleCategory(cat);
+            }
+          });
+        }}
+        categories={categories}
+        showPresets={false}
+        searchPlaceholder="Buscar no calendário..."
+      />
+
       {/* Calendar Header */}
       <div className="flex flex-col gap-4 border-b bg-card px-4 py-4 lg:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -375,56 +419,6 @@ export function FullScreenCalendar({
 
           {/* Right: Controls */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Filters */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">Categorias</span>
-                  {selectedCategories.length > 0 && <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
-                      {selectedCategories.length}
-                    </Badge>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filtrar por Categoria</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {categories.map(category => <DropdownMenuCheckboxItem key={category.id} checked={selectedCategories.includes(category.id)} onCheckedChange={() => onToggleCategory(category.id)}>
-                    {category.name}
-                  </DropdownMenuCheckboxItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Filter className="h-4 w-4" />
-                  <span className="hidden sm:inline">Status</span>
-                  {selectedColumns.length > 0 && <Badge variant="secondary" className="ml-1 px-1.5 py-0 h-5">
-                      {selectedColumns.length}
-                    </Badge>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Filtrar por Status</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {columns.map(column => <DropdownMenuCheckboxItem key={column.id} checked={selectedColumns.includes(column.id)} onCheckedChange={() => onToggleColumn(column.id)}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{
-                    backgroundColor: column.color || "#888"
-                  }} />
-                      {column.name}
-                    </div>
-                  </DropdownMenuCheckboxItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {hasActiveFilters && <Button variant="ghost" size="sm" onClick={onClearFilters} className="gap-1 px-2">
-                <X className="h-4 w-4" />
-                <span className="hidden sm:inline">Limpar</span>
-              </Button>}
-
-            <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
             {/* View Toggle */}
             <div className="flex rounded-lg border bg-muted/50 p-0.5">
