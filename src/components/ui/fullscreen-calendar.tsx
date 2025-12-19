@@ -128,7 +128,7 @@ function DraggableTask({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs transition-colors group",
+        "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group flex-shrink-0 min-w-[70px] max-w-[100px]",
         getPriorityBg(task.priority),
         isDragging && "opacity-50"
       )}
@@ -142,17 +142,12 @@ function DraggableTask({
         {...attributes}
         className="cursor-grab active:cursor-grabbing touch-none"
       >
-        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
       <div
         className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(task.priority))}
       />
-      <span className="truncate font-medium">{task.title}</span>
-      {task.due_date && (
-        <span className="ml-auto text-[10px] text-muted-foreground flex-shrink-0">
-          {format(parseISO(task.due_date), "HH:mm")}
-        </span>
-      )}
+      <span className="truncate font-medium text-[10px]">{task.title}</span>
     </div>
   );
 }
@@ -214,8 +209,8 @@ function DroppableDay({
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden px-1 pb-1">
-        {dayTasks.slice(0, 6).map((task) => (
+      <div className="flex flex-1 flex-row gap-1 overflow-x-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted">
+        {dayTasks.map((task) => (
           <DraggableTask
             key={task.id}
             task={task}
@@ -225,9 +220,6 @@ function DroppableDay({
             onEditTask={onEditTask}
           />
         ))}
-        {dayTasks.length > 6 && (
-          <div className="text-center text-[10px] text-muted-foreground">+ {dayTasks.length - 6} mais</div>
-        )}
       </div>
     </div>
   );

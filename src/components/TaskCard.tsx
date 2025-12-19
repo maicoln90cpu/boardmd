@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useWebShare } from "@/hooks/useWebShare";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +65,9 @@ interface TaskCardProps {
   isSelectionMode?: boolean;
   onToggleSelection?: (taskId: string) => void;
   isDraggable?: boolean;
+  columnName?: string;
+  completedColumnId?: string;
+  onMoveToCompleted?: (taskId: string, columnId: string) => void;
 }
 
 // Premium priority colors with gradients
@@ -189,6 +193,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   isSelectionMode = false,
   onToggleSelection,
   isDraggable = true,
+  columnName,
+  completedColumnId,
+  onMoveToCompleted,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -229,6 +236,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
+  
+  // Estado para modal de confirmação ao completar tarefa
+  const [confirmCompleteOpen, setConfirmCompleteOpen] = React.useState(false);
+  const [pendingComplete, setPendingComplete] = React.useState(false);
 
   // Usar categoria original da prop (batch fetch) ou fallback para estado local
   const [originalCategoryName, setOriginalCategoryName] = React.useState<string | null>(null);
@@ -245,7 +256,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
       setOriginalCategoryName(task.originalCategory);
     }
   }, [task.originalCategory]);
-  const handleToggleCompleted = async (checked: boolean) => {
+  // Função interna que realmente executa a marcação como completa
+  const executeToggleCompleted = async (checked: boolean, moveToCompleted: boolean = false) => {
     // Update otimista imediato
     setIsLocalCompleted(checked);
     try {
@@ -287,6 +299,11 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           );
       }
 
+      // Mover para coluna Concluído se solicitado
+      if (moveToCompleted && completedColumnId && onMoveToCompleted) {
+        onMoveToCompleted(task.id, completedColumnId);
+      }
+
       // Disparar evento para atualizar lista de tasks
       window.dispatchEvent(
         new CustomEvent("task-updated", {
@@ -305,6 +322,31 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  const handleToggleCompleted = async (checked: boolean) => {
+    // Se está marcando como completa e NÃO é coluna Recorrente, mostrar modal
+    const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
+    
+    if (checked && !isRecurrentColumn && completedColumnId && onMoveToCompleted) {
+      // Guardar o estado e abrir modal
+      setPendingComplete(true);
+      setConfirmCompleteOpen(true);
+    } else {
+      // Apenas marcar sem modal (desmarcar ou coluna recorrente)
+      await executeToggleCompleted(checked);
+    }
+  };
+
+  const handleConfirmComplete = async (moveToCompleted: boolean) => {
+    setConfirmCompleteOpen(false);
+    await executeToggleCompleted(true, moveToCompleted);
+    setPendingComplete(false);
+  };
+
+  const handleCancelComplete = () => {
+    setConfirmCompleteOpen(false);
+    setPendingComplete(false);
   };
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(!!task.recurrence_rule);
   const [recurrenceFrequency, setRecurrenceFrequency] = React.useState<"daily" | "weekly" | "monthly">(
@@ -357,6 +399,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     });
   };
   return (
+    <>
     <HoverCard openDelay={300}>
       <HoverCardTrigger asChild>
         <motion.div
@@ -895,6 +938,31 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         </div>
       </HoverCardContent>
     </HoverCard>
+
+    {/* Modal de confirmação ao marcar tarefa como concluída */}
+    <AlertDialog open={confirmCompleteOpen} onOpenChange={setConfirmCompleteOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Tarefa Realizada!</AlertDialogTitle>
+          <AlertDialogDescription>
+            Deseja mover esta tarefa para a coluna "Concluído"?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelComplete}>Cancelar</AlertDialogCancel>
+          <Button 
+            variant="outline" 
+            onClick={() => handleConfirmComplete(false)}
+          >
+            Apenas Marcar
+          </Button>
+          <AlertDialogAction onClick={() => handleConfirmComplete(true)}>
+            Mover para Concluído
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 

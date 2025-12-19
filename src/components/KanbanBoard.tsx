@@ -911,6 +911,9 @@ export function KanbanBoard({
                                   isSelected={isSelected(task.id)}
                                   isSelectionMode={isSelectionMode}
                                   onToggleSelection={toggleSelection}
+                                  columnName={column.name}
+                                  completedColumnId={columns.find(c => c.name.toLowerCase() === "concluído")?.id}
+                                  onMoveToCompleted={(taskId, colId) => updateTask(taskId, { column_id: colId })}
                                 />
                               </motion.div>
                             ))}
