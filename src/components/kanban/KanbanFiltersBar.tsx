@@ -33,6 +33,10 @@ interface KanbanFiltersBarProps {
   onColumnChange?: (value: string[]) => void;
   columns?: Array<{ id: string; name: string; color?: string | null }>;
   
+  // Filtro de data de vencimento
+  dueDateFilter?: string;
+  onDueDateChange?: (value: string) => void;
+  
   // Controles de busca
   searchInputRef?: React.RefObject<HTMLInputElement>;
   searchPlaceholder?: string;
@@ -60,6 +64,8 @@ export function KanbanFiltersBar({
   columnFilter,
   onColumnChange,
   columns,
+  dueDateFilter,
+  onDueDateChange,
   searchInputRef,
   searchPlaceholder = "Buscar tarefas...",
   showPresets = true,
@@ -71,7 +77,8 @@ export function KanbanFiltersBar({
     priorityFilter !== "all" || 
     tagFilter !== "all" || 
     (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) ||
-    (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0));
+    (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) ||
+    (dueDateFilter && dueDateFilter !== "all");
 
   // Aplicar preset de filtros
   const handleApplyPreset = (filters: FilterPreset["filters"]) => {
@@ -168,6 +175,22 @@ export function KanbanFiltersBar({
                 </div>
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Data de Vencimento */}
+      {onDueDateChange && (
+        <Select value={dueDateFilter || "all"} onValueChange={onDueDateChange}>
+          <SelectTrigger className="w-full md:w-[140px] h-10">
+            <SelectValue placeholder="Vencimento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas datas</SelectItem>
+            <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
+            <SelectItem value="today">📅 Hoje</SelectItem>
+            <SelectItem value="week">📆 Esta semana</SelectItem>
+            <SelectItem value="month">🗓️ Este mês</SelectItem>
           </SelectContent>
         </Select>
       )}

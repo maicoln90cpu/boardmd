@@ -59,9 +59,17 @@ interface FullScreenCalendarProps {
   onTagChange?: (value: string) => void;
   availableTags?: string[];
   onColumnChange?: (value: string[]) => void;
+  dueDateFilter?: string;
+  onDueDateChange?: (value: string) => void;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+// Helper function to get column color
+function getColumnColor(columnId: string, columns: Column[]): string | null {
+  const column = columns.find(c => c.id === columnId);
+  return column?.color || null;
+}
 
 // Draggable Task Component
 function DraggableTask({
@@ -92,6 +100,37 @@ function DraggableTask({
   // Check if task is overdue
   const today = startOfToday();
   const isOverdue = task.due_date && isBefore(parseISO(task.due_date), today);
+  
+  // Get column color for this task
+  const columnColor = getColumnColor(task.column_id, columns);
+  
+  // Determine background style based on column color or priority
+  const getTaskStyle = () => {
+    if (isOverdue) {
+      return {
+        className: "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400",
+        indicatorColor: "bg-red-500"
+      };
+    }
+    
+    if (columnColor) {
+      return {
+        style: { 
+          backgroundColor: `${columnColor}20`,
+          borderLeft: `3px solid ${columnColor}`
+        },
+        indicatorStyle: { backgroundColor: columnColor }
+      };
+    }
+    
+    return {
+      className: getPriorityBg(task.priority),
+      indicatorClassName: getPriorityColor(task.priority)
+    };
+  };
+  
+  const taskStyle = getTaskStyle();
+  
   return (
     <div
       ref={setNodeRef}
@@ -99,16 +138,20 @@ function DraggableTask({
       {...attributes}
       className={cn(
         "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none",
-        isOverdue ? "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400" : getPriorityBg(task.priority),
+        taskStyle.className,
         isDragging && "opacity-50"
       )}
+      style={taskStyle.style}
       onDoubleClick={e => {
         e.stopPropagation();
         onEditTask?.(task);
       }}
     >
       <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-      <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", isOverdue ? "bg-red-500" : getPriorityColor(task.priority))} />
+      <div 
+        className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} 
+        style={taskStyle.indicatorStyle}
+      />
       <span className="truncate font-medium text-[10px]">{task.title}</span>
     </div>
   );
@@ -225,7 +268,9 @@ export function FullScreenCalendar({
   tagFilter = "all",
   onTagChange,
   availableTags = [],
-  onColumnChange
+  onColumnChange,
+  dueDateFilter = "all",
+  onDueDateChange
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
@@ -388,6 +433,8 @@ export function FullScreenCalendar({
         columnFilter={selectedColumns}
         onColumnChange={onColumnChange}
         columns={columns}
+        dueDateFilter={dueDateFilter}
+        onDueDateChange={onDueDateChange}
         showPresets={false}
         searchPlaceholder="Buscar no calendário..."
       />

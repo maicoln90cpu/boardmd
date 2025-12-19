@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { isSameDay, parseISO, startOfDay } from "date-fns";
+import { isSameDay, parseISO, startOfDay, isToday, isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
@@ -48,6 +48,7 @@ export default function Calendar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
+  const [dueDateFilter, setDueDateFilter] = useState("all");
   
   const { columns } = useColumns();
   const { categories } = useCategories();
@@ -95,9 +96,10 @@ export default function Calendar() {
     return Array.from(tags).sort();
   }, [tasks]);
 
-  // Filter tasks based on selected categories, columns, search, priority, and tags
+  // Filter tasks based on selected categories, columns, search, priority, tags, and due date
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
+    const today = new Date();
     
     // Filter out mirrored tasks to avoid duplicates
     filtered = filtered.filter(task => !task.mirror_task_id);
@@ -120,6 +122,33 @@ export default function Calendar() {
       filtered = filtered.filter(task => task.tags?.includes(tagFilter));
     }
     
+    // Filtro de data de vencimento
+    if (dueDateFilter !== "all") {
+      filtered = filtered.filter(task => {
+        if (!task.due_date) return false;
+        const dueDate = parseISO(task.due_date);
+        
+        switch (dueDateFilter) {
+          case "overdue":
+            return isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
+          case "today":
+            return isToday(dueDate);
+          case "week":
+            return isWithinInterval(dueDate, {
+              start: startOfWeek(today, { locale: ptBR }),
+              end: endOfWeek(today, { locale: ptBR })
+            });
+          case "month":
+            return isWithinInterval(dueDate, {
+              start: startOfMonth(today),
+              end: endOfMonth(today)
+            });
+          default:
+            return true;
+        }
+      });
+    }
+    
     // Filtros existentes de categoria e coluna
     if (selectedCategories.length > 0) {
       filtered = filtered.filter(task => selectedCategories.includes(task.category_id));
@@ -130,7 +159,7 @@ export default function Calendar() {
     }
     
     return filtered;
-  }, [tasks, searchTerm, priorityFilter, tagFilter, selectedCategories, selectedColumns]);
+  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, selectedCategories, selectedColumns]);
 
   // Transform tasks into calendar data format
   const calendarData = useMemo(() => {
@@ -188,6 +217,7 @@ export default function Calendar() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
+    setDueDateFilter("all");
   };
 
   const getPriorityColor = (priority?: string | null) => {
@@ -338,6 +368,8 @@ export default function Calendar() {
           onTagChange={setTagFilter}
           availableTags={availableTags}
           onColumnChange={setSelectedColumns}
+          dueDateFilter={dueDateFilter}
+          onDueDateChange={setDueDateFilter}
         />
 
         {/* Day Tasks Dialog */}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -11,7 +11,9 @@ import {
   SidebarLink,
   SidebarDivider,
   useSidebar,
+  SidebarPinButton,
 } from "@/components/ui/animated-sidebar";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface SidebarProps {
   onExport: () => void;
@@ -21,24 +23,35 @@ interface SidebarProps {
   viewMode: "daily" | "all";
 }
 
-// Logo component
+// Logo component with pin button
 const Logo = () => {
-  const { open } = useSidebar();
+  const { open, isPinned } = useSidebar();
   return (
-    <div className="flex items-center gap-2 py-2">
-      <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
-        <span className="text-primary-foreground font-bold text-sm">KB</span>
+    <div className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
+          <span className="text-primary-foreground font-bold text-sm">KB</span>
+        </div>
+        <motion.span
+          animate={{
+            display: open || isPinned ? "inline-block" : "none",
+            opacity: open || isPinned ? 1 : 0,
+          }}
+          transition={{ duration: 0.2 }}
+          className="font-semibold text-foreground whitespace-pre"
+        >
+          Kanban Board
+        </motion.span>
       </div>
-      <motion.span
+      <motion.div
         animate={{
-          display: open ? "inline-block" : "none",
-          opacity: open ? 1 : 0,
+          display: open || isPinned ? "flex" : "none",
+          opacity: open || isPinned ? 1 : 0,
         }}
         transition={{ duration: 0.2 }}
-        className="font-semibold text-foreground whitespace-pre"
       >
-        Kanban Board
-      </motion.span>
+        <SidebarPinButton />
+      </motion.div>
     </div>
   );
 };
@@ -170,9 +183,17 @@ export function Sidebar({
   viewMode,
 }: SidebarProps) {
   const [open, setOpen] = useState(false);
+  const [isPinned, setIsPinned] = useLocalStorage("sidebar-pinned", false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Keep sidebar open when pinned
+  useEffect(() => {
+    if (isPinned) {
+      setOpen(true);
+    }
+  }, [isPinned]);
 
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
@@ -238,7 +259,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop Sidebar with hover animation */}
-      <AnimatedSidebar open={open} setOpen={setOpen} animate={true}>
+      <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned} setIsPinned={setIsPinned}>
         <SidebarBody className="justify-between gap-6">
           <SidebarContent viewMode={viewMode} onViewChange={onViewChange} />
         </SidebarBody>
