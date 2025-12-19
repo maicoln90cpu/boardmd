@@ -152,7 +152,7 @@ function DraggableTask({
         className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} 
         style={taskStyle.indicatorStyle}
       />
-      <span className="truncate font-medium text-[10px]">{task.title}</span>
+      <span className="truncate font-medium text-xs">{task.title}</span>
     </div>
   );
 }
