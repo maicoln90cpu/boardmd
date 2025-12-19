@@ -1,73 +1,177 @@
-# Welcome to your Lovable project
+# TaskFlow - Sistema de Gestão de Tarefas e Produtividade
 
-## Project info
+## Visão Geral
 
-**URL**: https://lovable.dev/projects/8a077664-399d-43d4-a22e-eb2292c24030
+TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, construída com tecnologias modernas. O sistema oferece múltiplas visualizações (Kanban, Calendário), notas, timer Pomodoro, e recursos avançados de organização.
 
-## How can I edit this code?
+## Stack Tecnológica
 
-There are several ways of editing your application.
+### Frontend
+- **React 18** - Biblioteca UI
+- **TypeScript** - Tipagem estática
+- **Vite** - Build tool e dev server
+- **Tailwind CSS** - Framework de estilos utilitários
+- **shadcn/ui** - Componentes UI acessíveis
+- **Framer Motion** - Animações
+- **React Router DOM v7** - Roteamento
+- **TanStack Query** - Gerenciamento de estado servidor
+- **Recharts** - Gráficos e visualizações
 
-**Use Lovable**
+### Backend (Lovable Cloud)
+- **Supabase** - Backend as a Service
+  - PostgreSQL - Banco de dados
+  - Row Level Security (RLS) - Segurança
+  - Edge Functions - Lógica serverless
+  - Realtime - Atualizações em tempo real
+  - Auth - Autenticação
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8a077664-399d-43d4-a22e-eb2292c24030) and start prompting.
+### Bibliotecas Principais
+- **@dnd-kit** - Drag and drop
+- **@tiptap** - Editor de texto rico
+- **date-fns** - Manipulação de datas
+- **html2canvas** - Exportação visual
+- **jspdf** - Geração de PDFs
+- **zod** - Validação de schemas
+- **lucide-react** - Ícones
 
-Changes made via Lovable will be committed automatically to this repo.
+## Arquitetura do Projeto
 
-**Use your preferred IDE**
+```
+src/
+├── components/           # Componentes React
+│   ├── ui/              # Componentes base (shadcn)
+│   ├── kanban/          # Componentes do Kanban
+│   ├── notes/           # Componentes de Notas
+│   ├── dashboard/       # Componentes do Dashboard
+│   └── templates/       # Sistema de templates
+├── contexts/            # Contextos React
+│   ├── AuthContext      # Autenticação
+│   ├── ThemeContext     # Tema dark/light
+│   └── SwipeContext     # Gestos mobile
+├── hooks/               # Custom hooks
+│   ├── useTasks         # CRUD de tarefas
+│   ├── useColumns       # Gestão de colunas
+│   ├── useNotes         # CRUD de notas
+│   ├── usePomodoro      # Timer Pomodoro
+│   └── ...              # +25 hooks especializados
+├── pages/               # Páginas da aplicação
+│   ├── Index            # Kanban principal
+│   ├── Dashboard        # Estatísticas
+│   ├── Calendar         # Visualização calendário
+│   ├── Notes            # Sistema de notas
+│   ├── Pomodoro         # Timer Pomodoro
+│   └── Settings         # Configurações
+├── lib/                 # Utilitários
+├── utils/               # Funções auxiliares
+└── integrations/        # Integrações externas
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+supabase/
+├── functions/           # Edge Functions
+│   ├── daily-assistant  # Assistente IA diário
+│   ├── format-note      # Formatação de notas
+│   ├── productivity-insights  # Insights de produtividade
+│   ├── reset-daily-stats     # Reset estatísticas
+│   ├── reset-recurring-tasks # Reset tarefas recorrentes
+│   └── send-push        # Notificações push
+└── migrations/          # Migrações do banco
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Setup do Ambiente de Desenvolvimento
 
-Follow these steps:
+### Pré-requisitos
+- Node.js 18+ 
+- npm ou bun
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Instalação
+
+```bash
+# 1. Clonar o repositório
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# 2. Navegar para o diretório
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. Instalar dependências
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Variáveis de Ambiente
+O projeto usa Lovable Cloud, que configura automaticamente:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Scripts Disponíveis
 
-**Use GitHub Codespaces**
+```bash
+npm run dev      # Servidor de desenvolvimento
+npm run build    # Build de produção
+npm run preview  # Preview do build
+npm run lint     # Linting do código
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deploy
 
-## What technologies are used for this project?
+O deploy é feito automaticamente através do Lovable:
+1. Acesse o projeto no Lovable
+2. Vá em **Share → Publish**
 
-This project is built with:
+### Domínio Customizado
+1. Navegue até **Project → Settings → Domains**
+2. Clique em **Connect Domain**
+3. Siga as instruções de configuração DNS
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Banco de Dados
 
-## How can I deploy this project?
+### Tabelas Principais
+- `tasks` - Tarefas do Kanban
+- `columns` - Colunas do Kanban
+- `categories` - Categorias/Projetos
+- `notes` - Notas e documentos
+- `notebooks` - Cadernos de notas
+- `pomodoro_sessions` - Sessões Pomodoro
+- `user_stats` - Estatísticas do usuário
+- `profiles` - Perfis de usuário
+- `tags` - Tags para organização
+- `activity_log` - Log de atividades
+- `push_subscriptions` - Notificações push
+- `push_logs` - Logs de notificações
 
-Simply open [Lovable](https://lovable.dev/projects/8a077664-399d-43d4-a22e-eb2292c24030) and click on Share -> Publish.
+### Segurança
+Todas as tabelas possuem Row Level Security (RLS) habilitado, garantindo que usuários só acessem seus próprios dados.
 
-## Can I connect a custom domain to my Lovable project?
+## Features Principais
 
-Yes, you can!
+- ✅ Kanban Board com drag & drop
+- ✅ Calendário com visualização mensal
+- ✅ Sistema de notas com editor rico
+- ✅ Timer Pomodoro com templates
+- ✅ Dashboard de produtividade
+- ✅ Notificações push (PWA)
+- ✅ Modo offline
+- ✅ Tema dark/light
+- ✅ Tarefas recorrentes
+- ✅ Subtarefas
+- ✅ Tags e prioridades
+- ✅ Exportação PNG/PDF
+- ✅ Favoritos
+- ✅ Gamificação (pontos, níveis, streaks)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contribuição
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+1. Faça fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
+
+## Licença
+
+Este projeto é privado e pertence ao seu criador.
+
+---
+
+**URL do Projeto**: https://lovable.dev/projects/8a077664-399d-43d4-a22e-eb2292c24030
