@@ -65,10 +65,19 @@ interface FullScreenCalendarProps {
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-// Helper function to get column color
-function getColumnColor(columnId: string, columns: Column[]): string | null {
+// Helper function to get column info
+function getColumnInfo(columnId: string, columns: Column[]): { color: string | null; name: string } {
   const column = columns.find(c => c.id === columnId);
-  return column?.color || null;
+  return { 
+    color: column?.color || null,
+    name: column?.name || ''
+  };
+}
+
+// Check if column is a "completed" type column
+function isCompletedColumn(columnName: string): boolean {
+  const completedNames = ['concluído', 'concluido', 'done', 'completed', 'finalizado'];
+  return completedNames.some(name => columnName.toLowerCase().includes(name));
 }
 
 // Draggable Task Component
@@ -97,32 +106,39 @@ function DraggableTask({
     }
   });
 
-  // Check if task is overdue
+  // Get column info for this task
+  const columnInfo = getColumnInfo(task.column_id, columns);
+  const columnColor = columnInfo.color;
+  const isInCompletedColumn = isCompletedColumn(columnInfo.name);
+  
+  // Check if task is overdue - but NOT if it's in a completed column
   const today = startOfToday();
-  const isOverdue = task.due_date && isBefore(parseISO(task.due_date), today);
+  const isOverdue = !isInCompletedColumn && task.due_date && isBefore(parseISO(task.due_date), today);
   
-  // Get column color for this task
-  const columnColor = getColumnColor(task.column_id, columns);
-  
-  // Determine background style based on column color or priority
+  // Determine background style - PRIORITY: column color > overdue > priority
   const getTaskStyle = () => {
-    if (isOverdue) {
-      return {
-        className: "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400",
-        indicatorColor: "bg-red-500"
-      };
-    }
-    
+    // First priority: Always use column color if available
     if (columnColor) {
       return {
         style: { 
           backgroundColor: `${columnColor}20`,
           borderLeft: `3px solid ${columnColor}`
         },
-        indicatorStyle: { backgroundColor: columnColor }
+        indicatorStyle: { backgroundColor: columnColor },
+        // Add ring for overdue tasks that aren't in completed column
+        className: isOverdue ? "ring-1 ring-red-500" : ""
       };
     }
     
+    // Second priority: Overdue styling (only if no column color and not completed)
+    if (isOverdue) {
+      return {
+        className: "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400",
+        indicatorClassName: "bg-red-500"
+      };
+    }
+    
+    // Fallback: Use priority colors
     return {
       className: getPriorityBg(task.priority),
       indicatorClassName: getPriorityColor(task.priority)
@@ -209,6 +225,7 @@ function DroppableDay({
 function MobileDroppableDay({
   day,
   dayTasks,
+  columns,
   selectedDay,
   firstDayCurrentMonth,
   getPriorityColor,
@@ -216,6 +233,7 @@ function MobileDroppableDay({
 }: {
   day: Date;
   dayTasks: Task[];
+  columns: Column[];
   selectedDay: Date;
   firstDayCurrentMonth: Date;
   getPriorityColor: (priority?: string | null) => string;
@@ -231,17 +249,31 @@ function MobileDroppableDay({
     }
   });
 
-  // Check for overdue tasks
   const today = startOfToday();
-  const hasOverdue = dayTasks.some(task => task.due_date && isBefore(parseISO(task.due_date), today));
+
+  // Helper to get task color based on column
+  const getTaskColor = (task: Task) => {
+    const columnInfo = getColumnInfo(task.column_id, columns);
+    if (columnInfo.color) {
+      return { style: { backgroundColor: columnInfo.color } };
+    }
+    // Only show as overdue if not in completed column
+    const isInCompletedColumn = isCompletedColumn(columnInfo.name);
+    const isOverdue = !isInCompletedColumn && task.due_date && isBefore(parseISO(task.due_date), today);
+    if (isOverdue) {
+      return { className: "bg-red-500" };
+    }
+    return { className: getPriorityColor(task.priority) };
+  };
+
   return <button ref={setNodeRef} onClick={() => onDayClick(day)} type="button" className={cn(!isEqual(day, selectedDay) && !isToday(day) && isSameMonth(day, firstDayCurrentMonth) && "text-foreground", !isEqual(day, selectedDay) && !isToday(day) && !isSameMonth(day, firstDayCurrentMonth) && "text-muted-foreground", (isEqual(day, selectedDay) || isToday(day)) && "font-semibold", isEqual(day, selectedDay) && "bg-primary/10", isOver && "ring-2 ring-primary ring-inset bg-primary/20", "flex h-12 flex-col items-center border-b border-r px-1 py-1.5 hover:bg-muted focus:z-10 transition-colors")}>
       <span className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs", isToday(day) && "bg-primary text-primary-foreground", isEqual(day, selectedDay) && !isToday(day) && "ring-2 ring-primary ring-offset-1")}>
         {format(day, "d")}
       </span>
       {dayTasks.length > 0 && <div className="mt-0.5 flex flex-wrap justify-center gap-0.5">
           {dayTasks.slice(0, 3).map(task => {
-        const isOverdue = task.due_date && isBefore(parseISO(task.due_date), today);
-        return <div key={task.id} className={cn("h-1 w-1 rounded-full", isOverdue ? "bg-red-500" : getPriorityColor(task.priority))} />;
+        const taskColor = getTaskColor(task);
+        return <div key={task.id} className={cn("h-1 w-1 rounded-full", taskColor.className)} style={taskColor.style} />;
       })}
           {dayTasks.length > 3 && <span className="text-[8px] text-muted-foreground">+{dayTasks.length - 3}</span>}
         </div>}
@@ -544,7 +576,7 @@ export function FullScreenCalendar({
               {days.map((day, dayIdx) => {
               const dayData = data.find(d => isSameDay(d.day, day));
               const dayTasks = dayData?.tasks || [];
-              return <MobileDroppableDay key={dayIdx} day={day} dayTasks={dayTasks} selectedDay={selectedDay} firstDayCurrentMonth={firstDayCurrentMonth} getPriorityColor={getPriorityColor} onDayClick={handleDayClick} />;
+              return <MobileDroppableDay key={dayIdx} day={day} dayTasks={dayTasks} columns={columns} selectedDay={selectedDay} firstDayCurrentMonth={firstDayCurrentMonth} getPriorityColor={getPriorityColor} onDayClick={handleDayClick} />;
             })}
             </div>
 
