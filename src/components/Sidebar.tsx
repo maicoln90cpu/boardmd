@@ -11,7 +11,6 @@ import {
   SidebarLink,
   SidebarDivider,
   useSidebar,
-  SidebarPinButton,
 } from "@/components/ui/animated-sidebar";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -146,10 +145,6 @@ const SidebarContent = ({
           {secondaryLinks.map((link) => (
             <SidebarLink key={link.label} link={link} active={link.active} />
           ))}
-          {/* Pin button after Setup */}
-          <div className="mt-1">
-            <SidebarPinButton />
-          </div>
         </div>
       </div>
       <div className="mt-auto">
@@ -176,17 +171,18 @@ export function Sidebar({
   viewMode,
 }: SidebarProps) {
   const [open, setOpen] = useState(false);
-  const [isPinned, setIsPinned] = useLocalStorage("sidebar-pinned", false);
+  const [isPinned] = useLocalStorage("sidebar-pinned", false);
+  const [isExpandedWhenPinned] = useLocalStorage("sidebar-expanded-when-pinned", true);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Keep sidebar open when pinned
+  // Keep sidebar state based on pin settings
   useEffect(() => {
     if (isPinned) {
-      setOpen(true);
+      setOpen(isExpandedWhenPinned);
     }
-  }, [isPinned]);
+  }, [isPinned, isExpandedWhenPinned]);
 
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
@@ -252,7 +248,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop Sidebar with hover animation */}
-      <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned} setIsPinned={setIsPinned}>
+      <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned}>
         <SidebarBody className="justify-between gap-6">
           <SidebarContent viewMode={viewMode} onViewChange={onViewChange} />
         </SidebarBody>

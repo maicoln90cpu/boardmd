@@ -80,8 +80,10 @@ export const Sidebar = ({
   isPinned?: boolean;
   setIsPinned?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
+  // Create a dummy setIsPinned if not provided (controlled from Config now)
+  const dummySetIsPinned = React.useCallback(() => {}, []);
   return (
-    <SidebarProvider open={open} setOpen={setOpen} animate={animate} isPinned={isPinned} setIsPinned={setIsPinned}>
+    <SidebarProvider open={open} setOpen={setOpen} animate={animate} isPinned={isPinned} setIsPinned={setIsPinned || dummySetIsPinned}>
       {children}
     </SidebarProvider>
   );

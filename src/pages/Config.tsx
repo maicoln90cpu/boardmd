@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/useCategories";
@@ -137,6 +138,43 @@ function SortableCategoryItem({
             <Trash2 className="h-4 w-4" />
           </Button>
         </>
+      )}
+    </div>
+  );
+}
+// Componente para opção de fixar menu lateral
+function SidebarPinOption() {
+  const [sidebarPinned, setSidebarPinned] = useLocalStorage("sidebar-pinned", false);
+  const [sidebarExpandedWhenPinned, setSidebarExpandedWhenPinned] = useLocalStorage("sidebar-expanded-when-pinned", true);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label>Fixar Menu Lateral</Label>
+          <p className="text-sm text-muted-foreground">
+            Mantém o menu fixo sem responder ao hover
+          </p>
+        </div>
+        <Switch
+          checked={sidebarPinned}
+          onCheckedChange={setSidebarPinned}
+        />
+      </div>
+      
+      {sidebarPinned && (
+        <div className="flex items-center justify-between pl-4 border-l-2 border-muted">
+          <div className="space-y-0.5">
+            <Label>Menu Expandido</Label>
+            <p className="text-sm text-muted-foreground">
+              Quando ativado, menu fica expandido. Desativado, fica colapsado.
+            </p>
+          </div>
+          <Switch
+            checked={sidebarExpandedWhenPinned}
+            onCheckedChange={setSidebarExpandedWhenPinned}
+          />
+        </div>
       )}
     </div>
   );
@@ -398,6 +436,11 @@ export default function Config() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <Separator />
+
+                {/* Opção de fixar menu lateral */}
+                <SidebarPinOption />
 
                 <Separator />
 
