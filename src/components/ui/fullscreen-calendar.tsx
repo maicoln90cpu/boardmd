@@ -462,7 +462,7 @@ export function FullScreenCalendar({
         </div>
 
         {/* Calendar Days */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-y-auto">
           {/* Desktop View with Drag and Drop */}
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
