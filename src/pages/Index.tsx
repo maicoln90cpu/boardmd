@@ -732,7 +732,7 @@ function Index() {
                 <div className="px-6 py-3 bg-muted/50">
                   <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
                 </div>
-                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} categoryFilter={categoryFilter} categoryFilterInitialized={categoryFilterInitialized} />
               </div> : (/* Renderizar Kanbans por categoria */
         categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
                     <div className="px-6 py-3 bg-muted/50">

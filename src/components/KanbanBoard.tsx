@@ -40,6 +40,9 @@ interface KanbanBoardProps {
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
   gridColumns?: 1 | 2;
+  // Filtro de categorias para modo "all"
+  categoryFilter?: string[];
+  categoryFilterInitialized?: boolean;
 }
 
 export function KanbanBoard({ 
@@ -56,10 +59,26 @@ export function KanbanBoard({
   viewMode = "daily",
   densityMode = "comfortable",
   hideBadges = false,
-  gridColumns = 2
+  gridColumns = 2,
+  categoryFilter = [],
+  categoryFilterInitialized = false
 }: KanbanBoardProps) {
-  const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
+  const { tasks: rawTasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { columns: allColumns, updateColumnColor } = useColumns();
+  
+  // FILTRO DE CATEGORIAS: Quando categoryId === "all", aplicar filtro local
+  const tasks = useMemo(() => {
+    if (categoryId !== "all") return rawTasks;
+    
+    // Se filtro não inicializado, mostrar todas
+    if (!categoryFilterInitialized) return rawTasks;
+    
+    // Se nenhuma categoria selecionada, não mostrar nada
+    if (categoryFilter.length === 0) return [];
+    
+    // Filtrar por categorias selecionadas
+    return rawTasks.filter(task => categoryFilter.includes(task.category_id));
+  }, [rawTasks, categoryId, categoryFilter, categoryFilterInitialized]);
   
   // Buscar completedColumnId do array COMPLETO de colunas (mesmo que oculta)
   const completedColumnId = allColumns.find(c => c.name.toLowerCase() === "concluído")?.id;
