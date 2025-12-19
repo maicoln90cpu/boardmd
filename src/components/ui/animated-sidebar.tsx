@@ -2,9 +2,11 @@
 
 import { cn } from "@/lib/utils";
 import { Link, LinkProps } from "react-router-dom";
-import React, { useState, createContext, useContext } from "react";
+import React, { useState, createContext, useContext, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Pin, PinOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Links {
   label: string;
@@ -17,6 +19,8 @@ interface SidebarContextProps {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   animate: boolean;
+  isPinned: boolean;
+  setIsPinned: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const SidebarContext = createContext<SidebarContextProps | undefined>(
@@ -36,19 +40,26 @@ export const SidebarProvider = ({
   open: openProp,
   setOpen: setOpenProp,
   animate = true,
+  isPinned: isPinnedProp,
+  setIsPinned: setIsPinnedProp,
 }: {
   children: React.ReactNode;
   open?: boolean;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   animate?: boolean;
+  isPinned?: boolean;
+  setIsPinned?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [openState, setOpenState] = useState(false);
+  const [pinnedState, setPinnedState] = useState(false);
 
   const open = openProp !== undefined ? openProp : openState;
   const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
+  const isPinned = isPinnedProp !== undefined ? isPinnedProp : pinnedState;
+  const setIsPinned = setIsPinnedProp !== undefined ? setIsPinnedProp : setPinnedState;
 
   return (
-    <SidebarContext.Provider value={{ open, setOpen, animate }}>
+    <SidebarContext.Provider value={{ open, setOpen, animate, isPinned, setIsPinned }}>
       {children}
     </SidebarContext.Provider>
   );
@@ -59,14 +70,18 @@ export const Sidebar = ({
   open,
   setOpen,
   animate,
+  isPinned,
+  setIsPinned,
 }: {
   children: React.ReactNode;
   open?: boolean;
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   animate?: boolean;
+  isPinned?: boolean;
+  setIsPinned?: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   return (
-    <SidebarProvider open={open} setOpen={setOpen} animate={animate}>
+    <SidebarProvider open={open} setOpen={setOpen} animate={animate} isPinned={isPinned} setIsPinned={setIsPinned}>
       {children}
     </SidebarProvider>
   );
@@ -88,7 +103,8 @@ export const DesktopSidebar = ({
   children,
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
-  const { open, setOpen, animate } = useSidebar();
+  const { open, setOpen, animate, isPinned } = useSidebar();
+  
   return (
     <motion.div
       className={cn(
@@ -96,18 +112,50 @@ export const DesktopSidebar = ({
         className
       )}
       animate={{
-        width: animate ? (open ? "220px" : "68px") : "220px",
+        width: animate ? (isPinned || open ? "220px" : "68px") : "220px",
       }}
       transition={{
         duration: 0.3,
         ease: "easeInOut",
       }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={() => !isPinned && setOpen(true)}
+      onMouseLeave={() => !isPinned && setOpen(false)}
       {...props}
     >
       {children}
     </motion.div>
+  );
+};
+
+// Pin button component for sidebar
+export const SidebarPinButton = () => {
+  const { isPinned, setIsPinned, open, animate } = useSidebar();
+  
+  return (
+    <TooltipProvider delayDuration={0}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant={isPinned ? "secondary" : "ghost"}
+            size="icon"
+            onClick={() => setIsPinned(!isPinned)}
+            className={cn(
+              "h-8 w-8 transition-all",
+              isPinned && "bg-primary/10 text-primary border border-primary/30"
+            )}
+          >
+            {isPinned ? (
+              <Pin className="h-4 w-4" />
+            ) : (
+              <PinOff className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p>{isPinned ? "Desafixar menu" : "Fixar menu expandido"}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
