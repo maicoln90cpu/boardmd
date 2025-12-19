@@ -135,7 +135,7 @@ function DroppableDay({
         </span>
       </div>
 
-      <div className="flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted max-h-[80px] flex items-center justify-center">
+      <div className="flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted max-h-[140px] flex items-center justify-center">
         {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} />)}
       </div>
     </div>;
