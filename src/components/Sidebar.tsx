@@ -23,35 +23,24 @@ interface SidebarProps {
   viewMode: "daily" | "all";
 }
 
-// Logo component with pin button
+// Logo component without pin button
 const Logo = () => {
   const { open, isPinned } = useSidebar();
   return (
-    <div className="flex items-center justify-between py-2">
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-sm">KB</span>
-        </div>
-        <motion.span
-          animate={{
-            display: open || isPinned ? "inline-block" : "none",
-            opacity: open || isPinned ? 1 : 0,
-          }}
-          transition={{ duration: 0.2 }}
-          className="font-semibold text-foreground whitespace-pre"
-        >
-          Kanban Board
-        </motion.span>
+    <div className="flex items-center gap-2 py-2">
+      <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
+        <span className="text-primary-foreground font-bold text-sm">KB</span>
       </div>
-      <motion.div
+      <motion.span
         animate={{
-          display: open || isPinned ? "flex" : "none",
+          display: open || isPinned ? "inline-block" : "none",
           opacity: open || isPinned ? 1 : 0,
         }}
         transition={{ duration: 0.2 }}
+        className="font-semibold text-foreground whitespace-pre"
       >
-        <SidebarPinButton />
-      </motion.div>
+        Kanban Board
+      </motion.span>
     </div>
   );
 };
@@ -157,6 +146,10 @@ const SidebarContent = ({
           {secondaryLinks.map((link) => (
             <SidebarLink key={link.label} link={link} active={link.active} />
           ))}
+          {/* Pin button after Setup */}
+          <div className="mt-1">
+            <SidebarPinButton />
+          </div>
         </div>
       </div>
       <div className="mt-auto">
