@@ -137,17 +137,17 @@ export function ProductivityInsights({
   };
   return <Card className="col-span-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="items-center justify-between flex flex-col py-0">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 py-[10px]">
               <Sparkles className="h-5 w-5 text-primary" />
               Insights de Produtividade com IA
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="py-[10px]">
               Análise inteligente dos seus padrões de trabalho e sugestões personalizadas
             </CardDescription>
           </div>
-          <Button onClick={analyzeProductivity} disabled={isAnalyzing || !stats} size="sm" className="text-center">
+          <Button onClick={analyzeProductivity} disabled={isAnalyzing || !stats} size="sm" className="text-left">
             {isAnalyzing ? <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Analisando...
