@@ -729,17 +729,28 @@ function Index() {
 
             {/* Renderizar baseado no displayMode */}
             {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
-                <div className="px-6 py-3 bg-muted/50">
+                <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
                   <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {filteredTasks.length} {filteredTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                  </Badge>
                 </div>
                 <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} categoryFilter={categoryFilter} categoryFilterInitialized={categoryFilterInitialized} />
               </div> : (/* Renderizar Kanbans por categoria */
-        categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
-                    <div className="px-6 py-3 bg-muted/50">
-                      <h3 className="text-lg font-semibold">{category.name}</h3>
-                    </div>
-                    <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
-                  </div>))}
+        categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.includes(cat.id)).map(category => {
+          const categoryTasks = filteredTasks.filter(t => t.category_id === category.id);
+          return (
+            <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
+              <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">{category.name}</h3>
+                <Badge variant="secondary" className="text-xs">
+                  {categoryTasks.length} {categoryTasks.length === 1 ? 'tarefa' : 'tarefas'}
+                </Badge>
+              </div>
+              <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+            </div>
+          );
+        }))}
           </>}
       </main>
 
