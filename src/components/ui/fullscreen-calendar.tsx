@@ -135,7 +135,7 @@ function DraggableTask({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group flex-shrink-0 min-w-[70px] max-w-[100px]",
+        "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full",
         isOverdue 
           ? "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400" 
           : getPriorityBg(task.priority),
@@ -218,7 +218,7 @@ function DroppableDay({
         </span>
       </div>
 
-      <div className="flex flex-1 flex-row gap-1 overflow-x-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted">
+      <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted max-h-[80px]">
         {dayTasks.map((task) => (
           <DraggableTask
             key={task.id}
