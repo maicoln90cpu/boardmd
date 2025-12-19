@@ -234,8 +234,8 @@ function Index() {
         return false;
       }
 
-      // Filtro de categoria (apenas no modo "all")
-      if (viewMode === "all" && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
+      // Filtro de categoria (apenas no modo "all" e após inicialização)
+      if (viewMode === "all" && categoryFilterInitialized && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
         return false;
       }
 
@@ -734,7 +734,7 @@ function Index() {
                 </div>
                 <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
               </div> : (/* Renderizar Kanbans por categoria */
-        categories.filter(cat => cat.name !== "Diário").filter(cat => categoryFilter.length === 0 || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
+        categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.length === 0 || categoryFilter.includes(cat.id)).map(category => <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
                     <div className="px-6 py-3 bg-muted/50">
                       <h3 className="text-lg font-semibold">{category.name}</h3>
                     </div>
