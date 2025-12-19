@@ -552,7 +552,7 @@ export function FullScreenCalendar({
               duration: 0.2
             }} className="overflow-hidden">
                   <ScrollArea className="max-h-64">
-                    <div className="px-4 pb-4 space-y-2">
+                    <div className="overflow-y-auto min-h-0">
                       {selectedDayTasks.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-center">
                           <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
                           <p className="text-sm text-muted-foreground mb-3">Nenhuma tarefa para este dia</p>
