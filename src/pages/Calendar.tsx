@@ -337,6 +337,7 @@ export default function Calendar() {
           tagFilter={tagFilter}
           onTagChange={setTagFilter}
           availableTags={availableTags}
+          onColumnChange={setSelectedColumns}
         />
 
         {/* Day Tasks Dialog */}
