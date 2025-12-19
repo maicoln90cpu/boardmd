@@ -106,7 +106,8 @@ function DroppableDay({
   getPriorityColor,
   getPriorityBg,
   onDayClick,
-  onEditTask
+  onEditTask,
+  viewType
 }: {
   day: Date;
   dayIdx: number;
@@ -118,6 +119,7 @@ function DroppableDay({
   getPriorityBg: (priority?: string | null) => string;
   onDayClick: (day: Date) => void;
   onEditTask?: (task: Task) => void;
+  viewType: "month" | "week";
 }) {
   const {
     setNodeRef,
@@ -135,7 +137,7 @@ function DroppableDay({
         </span>
       </div>
 
-      <div className="flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted max-h-[140px] flex items-center justify-center">
+      <div className={cn("flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted flex items-center justify-center", viewType === "week" ? "max-h-[300px]" : "max-h-[140px]")}>
         {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} />)}
       </div>
     </div>;
@@ -467,7 +469,7 @@ export function FullScreenCalendar({
               {days.map((day, dayIdx) => {
               const dayData = data.find(d => isSameDay(d.day, day));
               const dayTasks = dayData?.tasks || [];
-              return <DroppableDay key={dayIdx} day={day} dayIdx={dayIdx} dayTasks={dayTasks} columns={columns} selectedDay={selectedDay} firstDayCurrentMonth={firstDayCurrentMonth} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onDayClick={handleDayClick} onEditTask={onEditTask} />;
+              return <DroppableDay key={dayIdx} day={day} dayIdx={dayIdx} dayTasks={dayTasks} columns={columns} selectedDay={selectedDay} firstDayCurrentMonth={firstDayCurrentMonth} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onDayClick={handleDayClick} onEditTask={onEditTask} viewType={viewType} />;
             })}
             </div>
 
