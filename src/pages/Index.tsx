@@ -96,6 +96,7 @@ function Index() {
   const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
   const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [categoryFilterInitialized, setCategoryFilterInitialized] = useState(false);
   
   // CORREÇÃO: Usar settings.kanban.projectsSortOption em vez de localStorage
   const projectsSortOption = settings.kanban.projectsSortOption;
@@ -263,13 +264,14 @@ function Index() {
         }
       }
 
-      // Inicializar filtro de categorias com todas (exceto Diário)
-      if (categoryFilter.length === 0) {
+      // Inicializar filtro de categorias com todas (exceto Diário) - apenas na primeira vez
+      if (!categoryFilterInitialized) {
         const allCategoryIds = categories.filter(c => c.name !== "Diário").map(c => c.id);
         setCategoryFilter(allCategoryIds);
+        setCategoryFilterInitialized(true);
       }
     }
-  }, [categories, selectedCategory, categoryFilter.length]);
+  }, [categories, selectedCategory, categoryFilterInitialized]);
 
   // Tags disponíveis (usar filteredTasks)
   const availableTags = useMemo(() => {
