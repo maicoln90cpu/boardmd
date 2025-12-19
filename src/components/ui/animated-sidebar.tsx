@@ -129,7 +129,17 @@ export const DesktopSidebar = ({
 
 // Pin button component for sidebar
 export const SidebarPinButton = () => {
-  const { isPinned, setIsPinned, open, animate } = useSidebar();
+  const { isPinned, setIsPinned, open, setOpen } = useSidebar();
+  
+  const handleTogglePin = () => {
+    if (isPinned) {
+      // Desafixar: mantém o estado atual (expandido ou colapsado)
+      setIsPinned(false);
+    } else {
+      // Fixar: fixa no estado atual (se está aberto, fixa aberto; se fechado, fixa fechado)
+      setIsPinned(true);
+    }
+  };
   
   return (
     <TooltipProvider delayDuration={0}>
@@ -138,9 +148,9 @@ export const SidebarPinButton = () => {
           <Button
             variant={isPinned ? "secondary" : "ghost"}
             size="icon"
-            onClick={() => setIsPinned(!isPinned)}
+            onClick={handleTogglePin}
             className={cn(
-              "h-8 w-8 transition-all",
+              "h-8 w-8 transition-all flex-shrink-0",
               isPinned && "bg-primary/10 text-primary border border-primary/30"
             )}
           >
@@ -152,7 +162,7 @@ export const SidebarPinButton = () => {
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">
-          <p>{isPinned ? "Desafixar menu" : "Fixar menu expandido"}</p>
+          <p>{isPinned ? "Desafixar menu" : "Fixar menu"}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
