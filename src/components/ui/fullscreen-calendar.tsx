@@ -83,16 +83,26 @@ function DraggableTask({
   // Check if task is overdue
   const today = startOfToday();
   const isOverdue = task.due_date && isBefore(parseISO(task.due_date), today);
-  return <div ref={setNodeRef} className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full", isOverdue ? "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400" : getPriorityBg(task.priority), isDragging && "opacity-50")} onDoubleClick={e => {
-    e.stopPropagation();
-    onEditTask?.(task);
-  }}>
-      <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing touch-none">
-        <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none",
+        isOverdue ? "bg-red-500/20 ring-1 ring-red-500 text-red-700 dark:text-red-400" : getPriorityBg(task.priority),
+        isDragging && "opacity-50"
+      )}
+      onDoubleClick={e => {
+        e.stopPropagation();
+        onEditTask?.(task);
+      }}
+    >
+      <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", isOverdue ? "bg-red-500" : getPriorityColor(task.priority))} />
       <span className="truncate font-medium text-[10px]">{task.title}</span>
-    </div>;
+    </div>
+  );
 }
 
 // Droppable Day Cell Component
