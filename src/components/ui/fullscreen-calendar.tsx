@@ -518,7 +518,7 @@ export function FullScreenCalendar({
         </div>
 
         {/* Calendar Days */}
-        <div className="overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
           {/* Desktop View with Drag and Drop */}
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
@@ -561,7 +561,7 @@ export function FullScreenCalendar({
           </DndContext>
 
           {/* Mobile View - Tasks List for Selected Day */}
-          <div className="md:hidden border-t bg-card">
+          <div className="md:hidden border-t bg-card flex-1 flex flex-col overflow-hidden">
             {/* Header with toggle */}
             <button onClick={() => setMobileTasksExpanded(!mobileTasksExpanded)} className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors">
               <div className="flex items-center gap-3">
@@ -607,7 +607,7 @@ export function FullScreenCalendar({
             }} transition={{
               duration: 0.2
             }} className="overflow-hidden">
-                  <ScrollArea className="max-h-64">
+                  <ScrollArea className="flex-1">
                     <div className="flex flex-col flex-1 px-4 pb-4 space-y-2">
                       {selectedDayTasks.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-center">
                           <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
