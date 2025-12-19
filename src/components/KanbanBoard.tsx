@@ -59,7 +59,10 @@ export function KanbanBoard({
   gridColumns = 2
 }: KanbanBoardProps) {
   const { tasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
-  const { updateColumnColor } = useColumns();
+  const { columns: allColumns, updateColumnColor } = useColumns();
+  
+  // Buscar completedColumnId do array COMPLETO de colunas (mesmo que oculta)
+  const completedColumnId = allColumns.find(c => c.name.toLowerCase() === "concluído")?.id;
   const { settings } = useSettings();
   const { getTagColor } = useTags();
   const { addTaskCompletion } = useUserStats();
@@ -912,7 +915,7 @@ export function KanbanBoard({
                                   isSelectionMode={isSelectionMode}
                                   onToggleSelection={toggleSelection}
                                   columnName={column.name}
-                                  completedColumnId={columns.find(c => c.name.toLowerCase() === "concluído")?.id}
+                                  completedColumnId={completedColumnId}
                                   onMoveToCompleted={(taskId, colId) => updateTask(taskId, { column_id: colId })}
                                 />
                               </motion.div>
