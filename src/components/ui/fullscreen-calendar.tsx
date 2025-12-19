@@ -58,6 +58,7 @@ interface FullScreenCalendarProps {
   tagFilter?: string;
   onTagChange?: (value: string) => void;
   availableTags?: string[];
+  onColumnChange?: (value: string[]) => void;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -223,7 +224,8 @@ export function FullScreenCalendar({
   onPriorityChange,
   tagFilter = "all",
   onTagChange,
-  availableTags = []
+  availableTags = [],
+  onColumnChange
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
@@ -383,6 +385,9 @@ export function FullScreenCalendar({
           });
         }}
         categories={categories}
+        columnFilter={selectedColumns}
+        onColumnChange={onColumnChange}
+        columns={columns}
         showPresets={false}
         searchPlaceholder="Buscar no calendário..."
       />

@@ -28,6 +28,11 @@ interface KanbanFiltersBarProps {
   displayMode?: string;
   onDisplayModeChange?: (value: string) => void;
   
+  // Filtro de coluna/status
+  columnFilter?: string[];
+  onColumnChange?: (value: string[]) => void;
+  columns?: Array<{ id: string; name: string; color?: string | null }>;
+  
   // Controles de busca
   searchInputRef?: React.RefObject<HTMLInputElement>;
   searchPlaceholder?: string;
@@ -52,6 +57,9 @@ export function KanbanFiltersBar({
   tasks = [],
   displayMode,
   onDisplayModeChange,
+  columnFilter,
+  onColumnChange,
+  columns,
   searchInputRef,
   searchPlaceholder = "Buscar tarefas...",
   showPresets = true,
@@ -62,7 +70,8 @@ export function KanbanFiltersBar({
   const hasActiveFilters = searchTerm || 
     priorityFilter !== "all" || 
     tagFilter !== "all" || 
-    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0));
+    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) ||
+    (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0));
 
   // Aplicar preset de filtros
   const handleApplyPreset = (filters: FilterPreset["filters"]) => {
@@ -127,6 +136,40 @@ export function KanbanFiltersBar({
           tasks={tasks}
           compact={false}
         />
+      )}
+
+      {/* Coluna/Status */}
+      {columns && columns.length > 0 && onColumnChange && (
+        <Select 
+          value={columnFilter?.length === 1 ? columnFilter[0] : "all"} 
+          onValueChange={(value) => {
+            if (value === "all") {
+              onColumnChange([]);
+            } else {
+              onColumnChange([value]);
+            }
+          }}
+        >
+          <SelectTrigger className="w-full md:w-[140px] h-10">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos status</SelectItem>
+            {columns.map((col) => (
+              <SelectItem key={col.id} value={col.id}>
+                <div className="flex items-center gap-2">
+                  {col.color && (
+                    <div 
+                      className="w-2 h-2 rounded-full" 
+                      style={{ backgroundColor: col.color }}
+                    />
+                  )}
+                  {col.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
       {/* Modo de exibição (apenas Projetos) */}
