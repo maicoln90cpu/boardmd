@@ -3,6 +3,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/useCategories";
+import { useTags, TAG_PRESET_COLORS } from "@/hooks/useTags";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/useColumns";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sidebar } from "@/components/Sidebar";
 import {
   DndContext,
@@ -184,6 +186,7 @@ export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading, getAIPrompt, updateAIPrompt, resetAIPrompt, resetAllAIPrompts } = useSettings();
   const { theme, setTheme, toggleTheme } = useTheme();
   const { categories, addCategory, deleteCategory, reorderCategories } = useCategories();
+  const { tags, addTag, updateTag, deleteTag } = useTags();
   const { toast } = useToast();
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -199,6 +202,14 @@ export default function Config() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [showColumnManager, setShowColumnManager] = useState(false);
+  
+  // Estados para gerenciamento de tags
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState("");
+  const [editingTagColor, setEditingTagColor] = useState("");
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#3B82F6");
+  const [isAddingTag, setIsAddingTag] = useState(false);
   
   const { 
     columns, 
@@ -290,6 +301,38 @@ export default function Config() {
     await addCategory(newCategoryName.trim());
     setNewCategoryName("");
     setIsAddingCategory(false);
+  };
+
+  // Handlers para Tags
+  const handleEditTag = async (id: string) => {
+    if (!editingTagName.trim()) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    await updateTag(id, { name: editingTagName.trim(), color: editingTagColor });
+    setEditingTagId(null);
+    setEditingTagName("");
+    setEditingTagColor("");
+    toast({ title: "Tag atualizada!" });
+  };
+
+  const handleDeleteTag = async (id: string, name: string) => {
+    if (confirm(`Deseja realmente excluir a tag "${name}"?`)) {
+      await deleteTag(id);
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    await addTag(newTagName.trim(), newTagColor);
+    setNewTagName("");
+    setNewTagColor("#3B82F6");
+    setIsAddingTag(false);
   };
 
   const handleExport = () => {
@@ -932,6 +975,172 @@ export default function Config() {
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Categoria
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Card de Tags */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🏷️ Tags</CardTitle>
+                <CardDescription>Gerencie as tags para organizar suas tarefas</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {tags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      {editingTagId === tag.id ? (
+                        <>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                className="h-6 w-6 rounded-full border-2 border-border shrink-0"
+                                style={{ backgroundColor: editingTagColor }}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2">
+                              <div className="grid grid-cols-5 gap-1">
+                                {TAG_PRESET_COLORS.map((color) => (
+                                  <button
+                                    key={color.value}
+                                    className={`h-6 w-6 rounded-full border-2 transition-all ${
+                                      editingTagColor === color.value ? 'border-foreground scale-110' : 'border-transparent'
+                                    }`}
+                                    style={{ backgroundColor: color.value }}
+                                    onClick={() => setEditingTagColor(color.value)}
+                                    title={color.name}
+                                  />
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                          <Input
+                            value={editingTagName}
+                            onChange={(e) => setEditingTagName(e.target.value)}
+                            className="flex-1"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleEditTag(tag.id);
+                              if (e.key === "Escape") {
+                                setEditingTagId(null);
+                                setEditingTagName("");
+                                setEditingTagColor("");
+                              }
+                            }}
+                          />
+                          <Button size="sm" onClick={() => handleEditTag(tag.id)}>
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingTagId(null);
+                              setEditingTagName("");
+                              setEditingTagColor("");
+                            }}
+                          >
+                            Cancelar
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <div
+                            className="h-4 w-4 rounded-full shrink-0"
+                            style={{ backgroundColor: tag.color }}
+                          />
+                          <span className="flex-1 text-sm">{tag.name}</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setEditingTagId(tag.id);
+                              setEditingTagName(tag.name);
+                              setEditingTagColor(tag.color);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteTag(tag.id, tag.name)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+
+                  {tags.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhuma tag criada. Crie tags para organizar suas tarefas.
+                    </p>
+                  )}
+                </div>
+
+                {isAddingTag ? (
+                  <div className="flex items-center gap-2 p-2 rounded-md border bg-muted">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="h-6 w-6 rounded-full border-2 border-border shrink-0"
+                          style={{ backgroundColor: newTagColor }}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2">
+                        <div className="grid grid-cols-5 gap-1">
+                          {TAG_PRESET_COLORS.map((color) => (
+                            <button
+                              key={color.value}
+                              className={`h-6 w-6 rounded-full border-2 transition-all ${
+                                newTagColor === color.value ? 'border-foreground scale-110' : 'border-transparent'
+                              }`}
+                              style={{ backgroundColor: color.value }}
+                              onClick={() => setNewTagColor(color.value)}
+                              title={color.name}
+                            />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      placeholder="Nome da tag"
+                      className="flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAddTag();
+                        if (e.key === "Escape") {
+                          setIsAddingTag(false);
+                          setNewTagName("");
+                          setNewTagColor("#3B82F6");
+                        }
+                      }}
+                    />
+                    <Button size="sm" onClick={handleAddTag}>Adicionar</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setIsAddingTag(false);
+                      setNewTagName("");
+                      setNewTagColor("#3B82F6");
+                    }}>Cancelar</Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsAddingTag(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Tag
                   </Button>
                 )}
               </CardContent>
