@@ -107,6 +107,10 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate, isPinned } = useSidebar();
   
+  // When pinned, use the 'open' state directly (controlled by isExpandedWhenPinned from Config)
+  // When not pinned, 'open' is controlled by hover
+  const isExpanded = open;
+  
   return (
     <motion.div
       className={cn(
@@ -114,7 +118,7 @@ export const DesktopSidebar = ({
         className
       )}
       animate={{
-        width: animate ? (isPinned || open ? "220px" : "68px") : "220px",
+        width: animate ? (isExpanded ? "220px" : "68px") : "220px",
       }}
       transition={{
         duration: 0.3,
