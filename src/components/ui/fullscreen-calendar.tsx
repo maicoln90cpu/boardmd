@@ -89,13 +89,15 @@ function DraggableTask({
   columns,
   getPriorityColor,
   getPriorityBg,
-  onEditTask
+  onEditTask,
+  className
 }: {
   task: Task;
   columns: Column[];
   getPriorityColor: (priority?: string | null) => string;
   getPriorityBg: (priority?: string | null) => string;
   onEditTask?: (task: Task) => void;
+  className?: string;
 }) {
   const {
     attributes,
@@ -150,7 +152,7 @@ function DraggableTask({
     };
   };
   const taskStyle = getTaskStyle();
-  return <div ref={setNodeRef} {...listeners} {...attributes} className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none", taskStyle.className, isDragging && "opacity-50")} style={taskStyle.style} onDoubleClick={e => {
+  return <div ref={setNodeRef} {...listeners} {...attributes} className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none", taskStyle.className, isDragging && "opacity-50", className)} style={taskStyle.style} onDoubleClick={e => {
     e.stopPropagation();
     onEditTask?.(task);
   }}>
