@@ -87,14 +87,14 @@ export function useCategories() {
     };
   };
 
-  const addCategory = async (name: string) => {
+  const addCategory = async (name: string): Promise<string | null> => {
     if (!user) {
       toast({
         title: "Erro de autenticação",
         description: "Você precisa estar logado",
         variant: "destructive",
       });
-      return;
+      return null;
     }
 
     try {
@@ -114,12 +114,14 @@ export function useCategories() {
           data: categoryData
         });
         toast({ title: "Categoria salva offline" });
-        return;
+        return null;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("categories")
-        .insert([categoryData as any]);
+        .insert([categoryData as any])
+        .select('id')
+        .single();
 
       if (error) {
         offlineSync.queueOperation({
@@ -128,7 +130,10 @@ export function useCategories() {
           data: categoryData
         });
         toast({ title: "Erro - salvo offline", variant: "destructive" });
+        return null;
       }
+
+      return data?.id || null;
     } catch (e) {
       if (e instanceof z.ZodError) {
         toast({
@@ -137,6 +142,7 @@ export function useCategories() {
           variant: "destructive",
         });
       }
+      return null;
     }
   };
 
