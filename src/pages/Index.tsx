@@ -10,6 +10,7 @@ import { FavoritesSection } from "@/components/FavoritesSection";
 import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
+import { TaskModal } from "@/components/TaskModal";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -33,6 +34,7 @@ import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { validateImportFile, prepareMergeData, ValidationResult, MergeResult, ImportCategory, ImportTask } from "@/lib/importValidation";
+
 function Index() {
   const isMobile = useIsMobile();
   const {
@@ -75,6 +77,9 @@ function Index() {
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
+
+  // Estado para modal de nova tarefa via atalho
+  const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
 
   // Estados para importação com preview
   const [showImportPreview, setShowImportPreview] = useState(false);
@@ -199,11 +204,7 @@ function Index() {
       }
     },
     onNewTask: () => {
-      // TODO: Implementar abertura de modal de nova tarefa
-      toast({
-        title: "Atalho Ctrl+N",
-        description: "Modal de nova tarefa será implementado"
-      });
+      setShowQuickTaskModal(true);
     }
   });
 
@@ -220,7 +221,8 @@ function Index() {
   const {
     tasks: allTasks,
     resetAllTasksToFirstColumn: resetDailyTasks,
-    updateTask: updateDailyTask
+    updateTask: updateDailyTask,
+    addTask
   } = useTasks("all");
 
   // Hook de notificações de prazo - monitora TODAS as tarefas
@@ -911,6 +913,31 @@ function Index() {
         fileName={importFileName}
         onConfirmImport={handleConfirmImport}
         isImporting={isImporting}
+      />
+
+      {/* Modal de Nova Tarefa via Ctrl+N */}
+      <TaskModal
+        open={showQuickTaskModal}
+        onOpenChange={setShowQuickTaskModal}
+        onSave={async (taskData) => {
+          if (!taskData.column_id || !taskData.category_id) {
+            toast({
+              title: "Erro",
+              description: "Selecione uma categoria e coluna",
+              variant: "destructive"
+            });
+            return;
+          }
+          await addTask(taskData);
+          toast({
+            title: "Tarefa criada",
+            description: "Sua tarefa foi adicionada com sucesso"
+          });
+        }}
+        columnId={columns[0]?.id || ""}
+        categoryId={viewMode === "daily" ? dailyCategory : (categories.find(c => c.name !== "Diário")?.id || "")}
+        isDailyKanban={viewMode === "daily"}
+        columns={columns}
       />
     </div>;
 }

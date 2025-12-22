@@ -79,9 +79,9 @@
 - [x] Preview dos dados antes de importar
 - [x] Opção de importar apenas categorias ou apenas tarefas
 
-#### 2. Atalho para Nova Tarefa
-- [ ] Implementar modal de nova tarefa via Ctrl+N
-- [ ] Seleção rápida de categoria e coluna
+#### 2. ~~Atalho para Nova Tarefa~~ ✅ CONCLUÍDO
+- [x] Implementar modal de nova tarefa via Ctrl+N
+- [x] Seleção rápida de categoria e coluna
 
 ### Média Prioridade
 
