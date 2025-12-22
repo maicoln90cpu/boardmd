@@ -66,9 +66,12 @@ const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-s
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 // Helper function to get column info
-function getColumnInfo(columnId: string, columns: Column[]): { color: string | null; name: string } {
+function getColumnInfo(columnId: string, columns: Column[]): {
+  color: string | null;
+  name: string;
+} {
   const column = columns.find(c => c.id === columnId);
-  return { 
+  return {
     color: column?.color || null,
     name: column?.name || ''
   };
@@ -110,26 +113,28 @@ function DraggableTask({
   const columnInfo = getColumnInfo(task.column_id, columns);
   const columnColor = columnInfo.color;
   const isInCompletedColumn = isCompletedColumn(columnInfo.name);
-  
+
   // Check if task is overdue - but NOT if it's in a completed column
   const today = startOfToday();
   const isOverdue = !isInCompletedColumn && task.due_date && isBefore(parseISO(task.due_date), today);
-  
+
   // Determine background style - PRIORITY: column color > overdue > priority
   const getTaskStyle = () => {
     // First priority: Always use column color if available
     if (columnColor) {
       return {
-        style: { 
+        style: {
           backgroundColor: `${columnColor}20`,
           borderLeft: `3px solid ${columnColor}`
         },
-        indicatorStyle: { backgroundColor: columnColor },
+        indicatorStyle: {
+          backgroundColor: columnColor
+        },
         // Add ring for overdue tasks that aren't in completed column
         className: isOverdue ? "ring-1 ring-red-500" : ""
       };
     }
-    
+
     // Second priority: Overdue styling (only if no column color and not completed)
     if (isOverdue) {
       return {
@@ -137,40 +142,22 @@ function DraggableTask({
         indicatorClassName: "bg-red-500"
       };
     }
-    
+
     // Fallback: Use priority colors
     return {
       className: getPriorityBg(task.priority),
       indicatorClassName: getPriorityColor(task.priority)
     };
   };
-  
   const taskStyle = getTaskStyle();
-  
-  return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className={cn(
-        "flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none",
-        taskStyle.className,
-        isDragging && "opacity-50"
-      )}
-      style={taskStyle.style}
-      onDoubleClick={e => {
-        e.stopPropagation();
-        onEditTask?.(task);
-      }}
-    >
+  return <div ref={setNodeRef} {...listeners} {...attributes} className={cn("flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors group w-full cursor-grab active:cursor-grabbing touch-none", taskStyle.className, isDragging && "opacity-50")} style={taskStyle.style} onDoubleClick={e => {
+    e.stopPropagation();
+    onEditTask?.(task);
+  }}>
       <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-      <div 
-        className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} 
-        style={taskStyle.indicatorStyle}
-      />
+      <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} style={taskStyle.indicatorStyle} />
       <span className="truncate font-medium text-xs">{task.title}</span>
-    </div>
-  );
+    </div>;
 }
 
 // Droppable Day Cell Component
@@ -216,7 +203,7 @@ function DroppableDay({
       </div>
 
       <div className={cn("flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted flex items-center justify-center", viewType === "week" ? "max-h-[300px]" : "max-h-[140px]")}>
-        {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} />)}
+        {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} className="py-[5px] my-0" />)}
       </div>
     </div>;
 }
@@ -248,24 +235,30 @@ function MobileDroppableDay({
       day
     }
   });
-
   const today = startOfToday();
 
   // Helper to get task color based on column
   const getTaskColor = (task: Task) => {
     const columnInfo = getColumnInfo(task.column_id, columns);
     if (columnInfo.color) {
-      return { style: { backgroundColor: columnInfo.color } };
+      return {
+        style: {
+          backgroundColor: columnInfo.color
+        }
+      };
     }
     // Only show as overdue if not in completed column
     const isInCompletedColumn = isCompletedColumn(columnInfo.name);
     const isOverdue = !isInCompletedColumn && task.due_date && isBefore(parseISO(task.due_date), today);
     if (isOverdue) {
-      return { className: "bg-red-500" };
+      return {
+        className: "bg-red-500"
+      };
     }
-    return { className: getPriorityColor(task.priority) };
+    return {
+      className: getPriorityColor(task.priority)
+    };
   };
-
   return <button ref={setNodeRef} onClick={() => onDayClick(day)} type="button" className={cn(!isEqual(day, selectedDay) && !isToday(day) && isSameMonth(day, firstDayCurrentMonth) && "text-foreground", !isEqual(day, selectedDay) && !isToday(day) && !isSameMonth(day, firstDayCurrentMonth) && "text-muted-foreground", (isEqual(day, selectedDay) || isToday(day)) && "font-semibold", isEqual(day, selectedDay) && "bg-primary/10", isOver && "ring-2 ring-primary ring-inset bg-primary/20", "flex h-12 flex-col items-center border-b border-r px-1 py-1.5 hover:bg-muted focus:z-10 transition-colors")}>
       <span className={cn("flex h-6 w-6 items-center justify-center rounded-full text-xs", isToday(day) && "bg-primary text-primary-foreground", isEqual(day, selectedDay) && !isToday(day) && "ring-2 ring-primary ring-offset-1")}>
         {format(day, "d")}
@@ -438,38 +431,19 @@ export function FullScreenCalendar({
   const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || selectedCategories.length > 0 || selectedColumns.length > 0;
   return <div className="flex h-full flex-col">
       {/* Filters Bar */}
-      <KanbanFiltersBar
-        searchTerm={searchTerm}
-        onSearchChange={onSearchChange || (() => {})}
-        priorityFilter={priorityFilter}
-        onPriorityChange={onPriorityChange || (() => {})}
-        tagFilter={tagFilter}
-        onTagChange={onTagChange || (() => {})}
-        availableTags={availableTags}
-        onClearFilters={onClearFilters}
-        categoryFilter={selectedCategories}
-        onCategoryChange={(cats) => {
-          // Toggle each category
-          cats.forEach(cat => {
-            if (!selectedCategories.includes(cat)) {
-              onToggleCategory(cat);
-            }
-          });
-          selectedCategories.forEach(cat => {
-            if (!cats.includes(cat)) {
-              onToggleCategory(cat);
-            }
-          });
-        }}
-        categories={categories}
-        columnFilter={selectedColumns}
-        onColumnChange={onColumnChange}
-        columns={columns}
-        dueDateFilter={dueDateFilter}
-        onDueDateChange={onDueDateChange}
-        showPresets={false}
-        searchPlaceholder="Buscar no calendário..."
-      />
+      <KanbanFiltersBar searchTerm={searchTerm} onSearchChange={onSearchChange || (() => {})} priorityFilter={priorityFilter} onPriorityChange={onPriorityChange || (() => {})} tagFilter={tagFilter} onTagChange={onTagChange || (() => {})} availableTags={availableTags} onClearFilters={onClearFilters} categoryFilter={selectedCategories} onCategoryChange={cats => {
+      // Toggle each category
+      cats.forEach(cat => {
+        if (!selectedCategories.includes(cat)) {
+          onToggleCategory(cat);
+        }
+      });
+      selectedCategories.forEach(cat => {
+        if (!cats.includes(cat)) {
+          onToggleCategory(cat);
+        }
+      });
+    }} categories={categories} columnFilter={selectedColumns} onColumnChange={onColumnChange} columns={columns} dueDateFilter={dueDateFilter} onDueDateChange={onDueDateChange} showPresets={false} searchPlaceholder="Buscar no calendário..." />
 
       {/* Calendar Header */}
       <div className="flex flex-col gap-4 border-b bg-card px-4 py-4 lg:px-6">
