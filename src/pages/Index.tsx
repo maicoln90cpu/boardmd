@@ -9,6 +9,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { FavoritesSection } from "@/components/FavoritesSection";
 import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
+import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -31,6 +32,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
+import { validateImportFile, prepareMergeData, ValidationResult, MergeResult, ImportCategory, ImportTask } from "@/lib/importValidation";
 function Index() {
   const isMobile = useIsMobile();
   const {
@@ -73,6 +75,14 @@ function Index() {
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
+
+  // Estados para importação com preview
+  const [showImportPreview, setShowImportPreview] = useState(false);
+  const [importValidation, setImportValidation] = useState<ValidationResult | null>(null);
+  const [importMerge, setImportMerge] = useState<MergeResult | null>(null);
+  const [importFileName, setImportFileName] = useState("");
+  const [importFileData, setImportFileData] = useState<string>("");
+  const [isImporting, setIsImporting] = useState(false);
 
   // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
   const {
@@ -321,34 +331,146 @@ function Index() {
       if (!file) return;
       try {
         const text = await file.text();
-        const data = JSON.parse(text);
-
-        // Import categories (skip "Diário" to avoid duplicates)
-        if (data.categories && Array.isArray(data.categories)) {
-          for (const cat of data.categories) {
-            if (cat.name !== "Diário") {
-              await addCategory(cat.name);
-            }
-          }
+        
+        // Validar arquivo e preparar preview
+        const validation = validateImportFile(text, categories, allTasks);
+        setImportValidation(validation);
+        setImportFileName(file.name);
+        setImportFileData(text);
+        
+        if (validation.isValid && validation.data) {
+          const merge = prepareMergeData(validation.data, categories, allTasks);
+          setImportMerge(merge);
+        } else {
+          setImportMerge(null);
         }
-        addActivity("import", `Arquivo ${file.name} importado`);
-        toast({
-          title: "Importação bem-sucedida",
-          description: "Dados importados com sucesso"
-        });
+        
+        // Abrir modal de preview
+        setShowImportPreview(true);
       } catch (error) {
-        // Only log errors in development
         if (import.meta.env.DEV) {
           console.error("Import error:", error);
         }
         toast({
           title: "Erro na importação",
-          description: "Arquivo inválido",
+          description: "Não foi possível ler o arquivo",
           variant: "destructive"
         });
       }
     };
     input.click();
+  };
+
+  // Função para confirmar importação após preview
+  const handleConfirmImport = async (options: ImportOptions) => {
+    if (!importValidation?.data || !importMerge) return;
+    
+    setIsImporting(true);
+    
+    try {
+      let categoriesAdded = 0;
+      let tasksAdded = 0;
+      
+      // Mapear categorias antigas para novas (para tarefas)
+      const categoryMapping: Record<string, string> = {};
+      
+      // Importar categorias selecionadas
+      if (options.importCategories) {
+        for (const cat of importMerge.categoriesToAdd) {
+          if (options.selectedCategories.includes(cat.name)) {
+            const newCatId = await addCategory(cat.name);
+            if (newCatId && cat.id) {
+              categoryMapping[cat.id] = newCatId;
+            }
+            categoriesAdded++;
+          }
+        }
+      }
+      
+      // Importar tarefas selecionadas
+      if (options.importTasks && importMerge.tasksToAdd.length > 0) {
+        // Buscar primeira coluna disponível
+        const defaultColumn = columns[0];
+        
+        for (const task of importMerge.tasksToAdd) {
+          if (options.selectedTasks.includes(task.title)) {
+            // Mapear category_id se necessário
+            let targetCategoryId = task.category_id;
+            if (categoryMapping[task.category_id]) {
+              targetCategoryId = categoryMapping[task.category_id];
+            } else {
+              // Verificar se a categoria existe
+              const existingCat = categories.find(c => c.id === task.category_id);
+              if (!existingCat) {
+                // Usar primeira categoria não-diária
+                const fallbackCat = categories.find(c => c.name !== "Diário");
+                if (fallbackCat) {
+                  targetCategoryId = fallbackCat.id;
+                }
+              }
+            }
+            
+            // Verificar se a coluna existe
+            let targetColumnId = task.column_id;
+            const existingCol = columns.find(c => c.id === task.column_id);
+            if (!existingCol && defaultColumn) {
+              targetColumnId = defaultColumn.id;
+            }
+            
+            // Criar tarefa via Supabase
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const taskData = {
+                title: task.title,
+                description: task.description || null,
+                priority: task.priority || 'medium',
+                due_date: task.due_date || null,
+                column_id: targetColumnId,
+                category_id: targetCategoryId,
+                user_id: userData.user.id,
+                tags: task.tags || [],
+                subtasks: task.subtasks ? JSON.parse(JSON.stringify(task.subtasks)) : [],
+                recurrence_rule: task.recurrence_rule ? JSON.parse(JSON.stringify(task.recurrence_rule)) : null,
+                is_completed: task.is_completed || false,
+                is_favorite: task.is_favorite || false,
+                position: task.position || 0
+              };
+              await supabase.from("tasks").insert([taskData as any]);
+              tasksAdded++;
+            }
+          }
+        }
+      }
+      
+      addActivity("import", `Arquivo ${importFileName} importado: ${categoriesAdded} categorias, ${tasksAdded} tarefas`);
+      toast({
+        title: "Importação concluída",
+        description: `${categoriesAdded} categoria(s) e ${tasksAdded} tarefa(s) importada(s) com sucesso`
+      });
+      
+      // Fechar modal e limpar estados
+      setShowImportPreview(false);
+      setImportValidation(null);
+      setImportMerge(null);
+      setImportFileName("");
+      setImportFileData("");
+      
+      // Forçar refresh do board
+      window.dispatchEvent(new CustomEvent('task-updated'));
+      setDailyBoardKey(k => k + 1);
+      setProjectsBoardKey(k => k + 1);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error("Import confirm error:", error);
+      }
+      toast({
+        title: "Erro na importação",
+        description: "Ocorreu um erro ao importar os dados",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
   const handleClearFilters = () => {
     setSearchTerm("");
@@ -779,6 +901,17 @@ function Index() {
           <ActivityHistory taskId={selectedTaskForHistory} />
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Preview de Importação */}
+      <ImportPreviewModal
+        open={showImportPreview}
+        onOpenChange={setShowImportPreview}
+        validationResult={importValidation}
+        mergeResult={importMerge}
+        fileName={importFileName}
+        onConfirmImport={handleConfirmImport}
+        isImporting={isImporting}
+      />
     </div>;
 }
 export default Index;

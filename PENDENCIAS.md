@@ -73,11 +73,11 @@
 
 ### Alta Prioridade
 
-#### 1. Melhorias na Importação de JSON
-- [ ] Validação mais robusta do arquivo JSON
-- [ ] Merge inteligente de dados (não sobrescrever, apenas adicionar)
-- [ ] Preview dos dados antes de importar
-- [ ] Opção de importar apenas categorias ou apenas tarefas
+#### 1. ~~Melhorias na Importação de JSON~~ ✅ CONCLUÍDO
+- [x] Validação mais robusta do arquivo JSON
+- [x] Merge inteligente de dados (não sobrescrever, apenas adicionar)
+- [x] Preview dos dados antes de importar
+- [x] Opção de importar apenas categorias ou apenas tarefas
 
 #### 2. Atalho para Nova Tarefa
 - [ ] Implementar modal de nova tarefa via Ctrl+N
