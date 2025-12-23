@@ -13,9 +13,9 @@ interface SwipeableTaskCardProps {
   isCompleted?: boolean;
 }
 
-const SWIPE_THRESHOLD = 100;
+const SWIPE_THRESHOLD = 60;
 const ACTION_WIDTH = 70;
-const SWIPE_DELAY = 150; // ms antes de considerar um swipe
+const SWIPE_DELAY = 80; // ms antes de considerar um swipe
 
 export function SwipeableTaskCard({
   taskId,
@@ -186,8 +186,8 @@ export function SwipeableTaskCard({
           stiffness: 500,
           damping: 30,
         }}
-        style={{ x }}
-        className="relative z-10 bg-background touch-pan-y"
+        style={{ x, touchAction: 'pan-y pinch-zoom' }}
+        className="relative z-10 bg-background"
       >
         {children}
       </motion.div>
@@ -199,7 +199,7 @@ export function SwipeableTaskCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-0"
+            className="fixed inset-0 z-[5]"
             onClick={handleClose}
           />
         )}
