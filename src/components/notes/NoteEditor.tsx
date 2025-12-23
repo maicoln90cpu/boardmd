@@ -35,6 +35,7 @@ interface NoteEditorProps {
   onTogglePin: (id: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
   onSave?: () => void;
+  className?: string;
 }
 export function NoteEditor({
   note,
@@ -42,7 +43,8 @@ export function NoteEditor({
   onUpdate,
   onTogglePin,
   onMoveToNotebook,
-  onSave
+  onSave,
+  className
 }: NoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
