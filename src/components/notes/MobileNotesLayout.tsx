@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,9 @@ import { NotebooksList } from "./NotebooksList";
 import { NotesList } from "./NotesList";
 import { NoteEditor } from "./NoteEditor";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 type MobileView = "notebooks" | "notes" | "editor";
+
 interface MobileNotesLayoutProps {
   notebooks: Notebook[];
   notes: Note[];
@@ -18,7 +20,10 @@ interface MobileNotesLayoutProps {
   onUpdateNote: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (noteId: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
+  onRefetch?: () => void;
+  setEditingNoteId?: (noteId: string | null) => void;
 }
+
 export function MobileNotesLayout({
   notebooks,
   notes,
@@ -28,30 +33,58 @@ export function MobileNotesLayout({
   onDeleteNote,
   onUpdateNote,
   onTogglePin,
-  onMoveToNotebook
+  onMoveToNotebook,
+  onRefetch,
+  setEditingNoteId
 }: MobileNotesLayoutProps) {
   const [view, setView] = useState<MobileView>("notebooks");
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [editorSaveTriggered, setEditorSaveTriggered] = useState(0);
+  const [pendingSave, setPendingSave] = useState(false);
   const selectedNote = selectedNoteId ? notes.find(n => n.id === selectedNoteId) || null : null;
+
+  // Refetch ao montar o componente mobile
+  useEffect(() => {
+    if (onRefetch) {
+      onRefetch();
+    }
+  }, [onRefetch]);
+
   const handleSelectNote = (noteId: string) => {
     onSelectNote(noteId);
+    setEditingNoteId?.(noteId);
     setView("editor");
   };
+
   const handleAddNote = (notebookId?: string | null) => {
     onAddNote(notebookId);
     setView("editor");
   };
-  const handleBackFromEditor = () => {
-    // Incrementar o trigger para forçar o save antes de voltar
-    setEditorSaveTriggered(prev => prev + 1);
 
-    // Pequeno delay para garantir que o save seja processado
-    setTimeout(() => {
-      setView(selectedNotebookId ? "notes" : "notebooks");
-      onSelectNote(null);
-    }, 100);
-  };
+  // Save síncrono antes de voltar
+  const handleBackFromEditor = useCallback(async () => {
+    if (pendingSave) return; // Evita cliques duplos
+    
+    setPendingSave(true);
+    
+    // Incrementar o trigger para forçar o save
+    setEditorSaveTriggered(prev => prev + 1);
+    
+    // Aguardar o save ser processado
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Limpar nota em edição
+    setEditingNoteId?.(null);
+    
+    // Forçar refetch para garantir sincronização
+    if (onRefetch) {
+      await onRefetch();
+    }
+    
+    setView(selectedNotebookId ? "notes" : "notebooks");
+    onSelectNote(null);
+    setPendingSave(false);
+  }, [pendingSave, selectedNotebookId, onSelectNote, onRefetch, setEditingNoteId]);
   const handleSaveFromHeader = () => {
     setEditorSaveTriggered(prev => prev + 1);
   };
