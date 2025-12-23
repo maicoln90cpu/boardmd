@@ -17,7 +17,7 @@ import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
-  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setIsEditing, togglePin } = useNotes();
+  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setEditingNoteId, togglePin, fetchNotes } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -137,7 +137,7 @@ export default function Notes() {
       window.dispatchEvent(new CustomEvent('save-current-note'));
     }
     setSelectedNoteId(noteId);
-    setIsEditing(true); // Pausa real-time durante edição
+    setEditingNoteId(noteId); // Marca nota sendo editada para merge inteligente
   };
 
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
@@ -154,7 +154,7 @@ export default function Notes() {
     // Se a nota excluída estiver selecionada, limpar seleção
     if (selectedNoteId === noteId) {
       setSelectedNoteId(null);
-      setIsEditing(false); // Reativar real-time
+      setEditingNoteId(null); // Limpar nota em edição
     }
     
     await deleteNote(noteId);
@@ -215,6 +215,8 @@ export default function Notes() {
           onUpdateNote={handleUpdateNote}
           onTogglePin={togglePin}
           onMoveToNotebook={moveNoteToNotebook}
+          onRefetch={fetchNotes}
+          setEditingNoteId={setEditingNoteId}
         />
 
         <Sidebar

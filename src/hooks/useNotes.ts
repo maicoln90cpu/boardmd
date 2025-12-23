@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { offlineSync } from "@/utils/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { toast as sonnerToast } from "sonner";
 
 export interface Note {
   id: string;
@@ -28,10 +29,13 @@ export function useNotes() {
   // Ref para debounce do realtime
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Ref para pausar real-time durante edição
-  const isEditingRef = useRef(false);
+  // Ref para a nota sendo editada atualmente (para merge inteligente)
+  const editingNoteIdRef = useRef<string | null>(null);
+  
+  // Ref para detectar alterações remotas durante edição
+  const pendingRemoteUpdateRef = useRef<string | null>(null);
 
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -53,7 +57,7 @@ export function useNotes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
     fetchNotes();
@@ -63,17 +67,33 @@ export function useNotes() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notes" },
-        () => {
-          // Só atualiza se NÃO estiver editando
-          if (!isEditingRef.current) {
-            // Debounce de 1s para evitar fetches consecutivos
-            if (fetchDebounceRef.current) {
-              clearTimeout(fetchDebounceRef.current);
-            }
-            fetchDebounceRef.current = setTimeout(() => {
-              fetchNotes();
-            }, 1000);
+        (payload) => {
+          const changedNoteId = (payload.new as Note)?.id || (payload.old as { id: string })?.id;
+          
+          // Se a nota alterada é a que está sendo editada, mostrar toast de merge
+          if (editingNoteIdRef.current && changedNoteId === editingNoteIdRef.current) {
+            pendingRemoteUpdateRef.current = changedNoteId;
+            sonnerToast("Alteração remota detectada", {
+              description: "Outra sessão modificou esta nota. Deseja recarregar?",
+              action: {
+                label: "Recarregar",
+                onClick: () => {
+                  fetchNotes();
+                  pendingRemoteUpdateRef.current = null;
+                },
+              },
+              duration: 10000,
+            });
+            return;
           }
+          
+          // Para outras notas, atualizar normalmente com debounce
+          if (fetchDebounceRef.current) {
+            clearTimeout(fetchDebounceRef.current);
+          }
+          fetchDebounceRef.current = setTimeout(() => {
+            fetchNotes();
+          }, 500);
         }
       )
       .subscribe();
@@ -84,7 +104,7 @@ export function useNotes() {
       }
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, fetchNotes]);
 
   const addNote = async (title: string, notebookId: string | null = null) => {
     if (!user) return null;
@@ -314,8 +334,16 @@ export function useNotes() {
     }
   };
 
-  const setIsEditing = (editing: boolean) => {
-    isEditingRef.current = editing;
+  const setEditingNoteId = (noteId: string | null) => {
+    editingNoteIdRef.current = noteId;
+  };
+
+  const hasPendingRemoteUpdate = () => {
+    return pendingRemoteUpdateRef.current !== null;
+  };
+
+  const clearPendingRemoteUpdate = () => {
+    pendingRemoteUpdateRef.current = null;
   };
 
   return {
@@ -326,7 +354,9 @@ export function useNotes() {
     deleteNote,
     moveNoteToNotebook,
     fetchNotes,
-    setIsEditing,
+    setEditingNoteId,
+    hasPendingRemoteUpdate,
+    clearPendingRemoteUpdate,
     togglePin,
   };
 }
