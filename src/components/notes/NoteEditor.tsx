@@ -49,7 +49,7 @@ export function NoteEditor({
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
-  
+
   // Refs para rastrear mudanças e auto-save
   const hasUnsavedChanges = useRef(false);
   const currentNoteRef = useRef(note);
@@ -68,76 +68,68 @@ export function NoteEditor({
 
   // Initialize lowlight for syntax highlighting
   const lowlight = createLowlight(common);
-
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        bulletList: {
-          HTMLAttributes: { class: 'list-disc pl-6 my-2' },
-          keepMarks: true,
-        },
-        orderedList: {
-          HTMLAttributes: { class: 'list-decimal pl-6 my-2' },
-          keepMarks: true,
-        },
-        listItem: {
-          HTMLAttributes: { class: 'ml-1' },
-        },
-        codeBlock: false, // Disable default code block to use lowlight version
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        autolink: false,
-        linkOnPaste: true
-      }),
-      TextAlign.configure({
-        types: ["heading", "paragraph"]
-      }),
-      TextStyle,
-      Color,
-      FontSize,
-      Highlight.configure({
-        multicolor: true
-      }),
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: { class: 'flex items-start gap-2 my-1' },
-      }),
-      Table.configure({
-        resizable: true,
+    extensions: [StarterKit.configure({
+      bulletList: {
         HTMLAttributes: {
-          class: 'border-collapse table-auto w-full my-4',
+          class: 'list-disc pl-6 my-2'
         },
-      }),
-      TableRow,
-      TableHeader.configure({
+        keepMarks: true
+      },
+      orderedList: {
         HTMLAttributes: {
-          class: 'border border-border bg-muted font-bold',
+          class: 'list-decimal pl-6 my-2'
         },
-      }),
-      TableCell.configure({
+        keepMarks: true
+      },
+      listItem: {
         HTMLAttributes: {
-          class: 'border border-border p-2',
-        },
-      }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg my-2',
-        },
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        HTMLAttributes: {
-          class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto',
-        },
-      }),
-    ],
+          class: 'ml-1'
+        }
+      },
+      codeBlock: false // Disable default code block to use lowlight version
+    }), Underline, Link.configure({
+      openOnClick: false,
+      autolink: false,
+      linkOnPaste: true
+    }), TextAlign.configure({
+      types: ["heading", "paragraph"]
+    }), TextStyle, Color, FontSize, Highlight.configure({
+      multicolor: true
+    }), TaskList, TaskItem.configure({
+      nested: true,
+      HTMLAttributes: {
+        class: 'flex items-start gap-2 my-1'
+      }
+    }), Table.configure({
+      resizable: true,
+      HTMLAttributes: {
+        class: 'border-collapse table-auto w-full my-4'
+      }
+    }), TableRow, TableHeader.configure({
+      HTMLAttributes: {
+        class: 'border border-border bg-muted font-bold'
+      }
+    }), TableCell.configure({
+      HTMLAttributes: {
+        class: 'border border-border p-2'
+      }
+    }), Image.configure({
+      inline: true,
+      allowBase64: true,
+      HTMLAttributes: {
+        class: 'max-w-full h-auto rounded-lg my-2'
+      }
+    }), CodeBlockLowlight.configure({
+      lowlight,
+      HTMLAttributes: {
+        class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto'
+      }
+    })],
     content: note.content || "",
-    onUpdate: ({ editor }) => {
+    onUpdate: ({
+      editor
+    }) => {
       setContent(editor.getHTML());
     },
     editorProps: {
@@ -146,137 +138,135 @@ export function NoteEditor({
         // Create a temporary container to process the HTML
         const container = document.createElement('div');
         container.innerHTML = html;
-        
+
         // Preserve inline styles by converting them to data attributes or keeping them
         const elementsWithStyle = container.querySelectorAll('[style]');
-        elementsWithStyle.forEach((el) => {
+        elementsWithStyle.forEach(el => {
           const style = el.getAttribute('style');
           if (style) {
             // Keep the style attribute as is
             el.setAttribute('style', style);
           }
         });
-        
+
         // Preserve background colors on elements
         const allElements = container.querySelectorAll('*');
-        allElements.forEach((el) => {
+        allElements.forEach(el => {
           const computedStyle = (el as HTMLElement).style;
-          
+
           // Preserve text color
           if (computedStyle.color) {
             (el as HTMLElement).style.color = computedStyle.color;
           }
-          
+
           // Preserve background color
           if (computedStyle.backgroundColor) {
             (el as HTMLElement).style.backgroundColor = computedStyle.backgroundColor;
           }
         });
-        
         return container.innerHTML;
       },
       handlePaste(view, event) {
         // Get clipboard data
         const clipboardData = event.clipboardData;
         if (!clipboardData) return false;
-        
+
         // Check if there's HTML content
         const htmlContent = clipboardData.getData('text/html');
-        
         if (htmlContent) {
           // Process the HTML to preserve formatting
           const processedHtml = processClipboardHtml(htmlContent);
-          
+
           // Insert the processed HTML
-          const { state, dispatch } = view;
-          const { tr, schema } = state;
-          
+          const {
+            state,
+            dispatch
+          } = view;
+          const {
+            tr,
+            schema
+          } = state;
+
           // Create a temporary element to parse the HTML
           const tempDiv = document.createElement('div');
           tempDiv.innerHTML = processedHtml;
-          
+
           // Let TipTap handle the insertion with our processed HTML
           // Return false to allow default TipTap paste handling with our transformed HTML
           return false;
         }
-        
         return false;
       },
       // Allow all HTML attributes
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none',
-      },
-    },
+        class: 'prose prose-sm max-w-none focus:outline-none'
+      }
+    }
   });
-  
+
   // Helper function to process clipboard HTML and preserve formatting
   const processClipboardHtml = (html: string): string => {
     const container = document.createElement('div');
     container.innerHTML = html;
-    
+
     // Process all elements to preserve their visual styles
     const processElement = (el: Element) => {
       const htmlEl = el as HTMLElement;
-      
+
       // Preserve styles that are important for visual formatting
       const importantStyles: string[] = [];
-      
       if (htmlEl.style) {
         // Text colors
         if (htmlEl.style.color) {
           importantStyles.push(`color: ${htmlEl.style.color}`);
         }
-        
+
         // Background colors
         if (htmlEl.style.backgroundColor) {
           importantStyles.push(`background-color: ${htmlEl.style.backgroundColor}`);
         }
-        
+
         // Font styles
         if (htmlEl.style.fontWeight) {
           importantStyles.push(`font-weight: ${htmlEl.style.fontWeight}`);
         }
-        
         if (htmlEl.style.fontStyle) {
           importantStyles.push(`font-style: ${htmlEl.style.fontStyle}`);
         }
-        
         if (htmlEl.style.fontSize) {
           importantStyles.push(`font-size: ${htmlEl.style.fontSize}`);
         }
-        
+
         // Borders
         if (htmlEl.style.border) {
           importantStyles.push(`border: ${htmlEl.style.border}`);
         }
-        
+
         // Padding and margin
         if (htmlEl.style.padding) {
           importantStyles.push(`padding: ${htmlEl.style.padding}`);
         }
-        
         if (htmlEl.style.margin) {
           importantStyles.push(`margin: ${htmlEl.style.margin}`);
         }
-        
+
         // Text alignment
         if (htmlEl.style.textAlign) {
           importantStyles.push(`text-align: ${htmlEl.style.textAlign}`);
         }
       }
-      
+
       // Apply preserved styles
       if (importantStyles.length > 0) {
         htmlEl.setAttribute('style', importantStyles.join('; '));
       }
-      
+
       // Process children recursively
       Array.from(el.children).forEach(child => processElement(child));
     };
-    
+
     // Process all top-level elements
     Array.from(container.children).forEach(child => processElement(child));
-    
     return container.innerHTML;
   };
 
@@ -309,13 +299,10 @@ export function NoteEditor({
   // Função de auto-save (silenciosa) - usa refs para garantir valores mais recentes
   const autoSave = () => {
     if (!hasUnsavedChanges.current) return;
-    
     const currentTitle = titleRef.current;
     const currentContent = contentRef.current;
     const currentColor = colorRef.current;
-    
     if (!currentTitle.trim() && !currentContent.trim()) return;
-
     onUpdateRef.current(currentNoteRef.current.id, {
       title: currentTitle.trim() || "Sem título",
       content: currentContent.trim(),
@@ -340,7 +327,6 @@ export function NoteEditor({
         autoSave();
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [title, content, color]);
@@ -354,7 +340,6 @@ export function NoteEditor({
         autoSave();
       }
     };
-
     window.addEventListener('save-current-note', handleSaveEvent);
     return () => window.removeEventListener('save-current-note', handleSaveEvent);
   }, []);
@@ -368,9 +353,7 @@ export function NoteEditor({
         const currentTitle = titleRef.current;
         const currentContent = contentRef.current;
         const currentColor = colorRef.current;
-        
         if (!currentTitle.trim() && !currentContent.trim()) return;
-        
         onUpdateRef.current(currentNoteRef.current.id, {
           title: currentTitle.trim() || "Sem título",
           content: currentContent.trim(),
@@ -453,13 +436,10 @@ export function NoteEditor({
         {/* Mover para caderno */}
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-muted-foreground" />
-          <Select 
-            value={note.notebook_id || "none"} 
-            onValueChange={(value) => {
-              const notebookId = value === "none" ? null : value;
-              onMoveToNotebook(note.id, notebookId);
-            }}
-          >
+          <Select value={note.notebook_id || "none"} onValueChange={value => {
+          const notebookId = value === "none" ? null : value;
+          onMoveToNotebook(note.id, notebookId);
+        }}>
             <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
               <SelectValue placeholder="Selecione um caderno..." />
             </SelectTrigger>
@@ -467,11 +447,9 @@ export function NoteEditor({
               <SelectItem value="none">
                 <span className="text-muted-foreground">Nenhum caderno</span>
               </SelectItem>
-              {notebooks.map(notebook => (
-                <SelectItem key={notebook.id} value={notebook.id}>
+              {notebooks.map(notebook => <SelectItem key={notebook.id} value={notebook.id}>
                   {notebook.name}
-                </SelectItem>
-              ))}
+                </SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -496,7 +474,7 @@ export function NoteEditor({
       </div>
 
       {/* Editor de conteúdo */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0 my-0 py-0">
         <RichTextToolbar editor={editor} />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
           <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
@@ -504,7 +482,7 @@ export function NoteEditor({
       </div>
 
       {/* Botões de ação */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10 items-end justify-center flex flex-row">
+      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10 px-0 my-[30px] items-center justify-start py-0 pt-0 pb-[50px] flex flex-row">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
