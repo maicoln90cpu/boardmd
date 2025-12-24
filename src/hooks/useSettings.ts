@@ -29,6 +29,9 @@ export interface AppSettings {
     projectsSortOrder: 'asc' | 'desc';
     simplifiedMode: boolean;
     hideCompletedTasks: boolean;
+    // Filtros de data persistidos
+    dailyDueDateFilter: string;
+    projectsDueDateFilter: string;
   };
   productivity: {
     dailyGoal: number;
@@ -54,6 +57,8 @@ export interface AppSettings {
   };
   aiPrompts?: Record<string, string>;
   notificationTemplates?: NotificationTemplate[];
+  // Filtros de data do calendário persistidos
+  calendarDueDateFilter?: string;
 }
 
 const defaultSettings: AppSettings = {
@@ -81,6 +86,8 @@ const defaultSettings: AppSettings = {
     projectsSortOrder: 'asc',
     simplifiedMode: false,
     hideCompletedTasks: false,
+    dailyDueDateFilter: 'all',
+    projectsDueDateFilter: 'all',
   },
   productivity: {
     dailyGoal: 5,
@@ -104,6 +111,7 @@ const defaultSettings: AppSettings = {
       low: { background: '#dcfce7', text: '#16a34a' },
     },
   },
+  calendarDueDateFilter: 'all',
 };
 
 export function useSettings() {

@@ -125,10 +125,10 @@ function Index() {
   const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
   const [dailyTagFilter, setDailyTagFilter] = useLocalStorage<string>("daily-tag-filter", "all");
   const [dailySearchTerm, setDailySearchTerm] = useLocalStorage<string>("daily-search", "");
-  const [dailyDueDateFilter, setDailyDueDateFilter] = useLocalStorage<string>("daily-due-date-filter", "all");
-
-  // Filtro de data para Projetos
-  const [projectsDueDateFilter, setProjectsDueDateFilter] = useLocalStorage<string>("projects-due-date-filter", "all");
+  
+  // Filtros de data persistidos via settings (banco de dados)
+  const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
+  const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
 
   // Estado para filtro de categoria no mobile (Kanban Projetos)
   const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
@@ -199,6 +199,26 @@ function Index() {
       mobile: {
         ...settings.mobile,
         projectsGridColumns: value
+      }
+    });
+    await saveSettings();
+  };
+  
+  // Funções para atualizar filtros de data (persistidos no banco)
+  const setDailyDueDateFilter = async (value: string) => {
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        dailyDueDateFilter: value
+      }
+    });
+    await saveSettings();
+  };
+  const setProjectsDueDateFilter = async (value: string) => {
+    updateSettings({
+      kanban: {
+        ...settings.kanban,
+        projectsDueDateFilter: value
       }
     });
     await saveSettings();
