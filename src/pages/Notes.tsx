@@ -11,7 +11,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 
@@ -27,8 +27,23 @@ export default function Notes() {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
+
+  // Selecionar nota via URL param (vindo do GlobalSearch)
+  useEffect(() => {
+    const noteIdFromUrl = searchParams.get('noteId');
+    if (noteIdFromUrl && notes.length > 0) {
+      const noteExists = notes.find(n => n.id === noteIdFromUrl);
+      if (noteExists) {
+        setSelectedNoteId(noteIdFromUrl);
+        setEditingNoteId(noteIdFromUrl);
+        // Limpar o param para não reselecionar em futuras navegações
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, notes, setSearchParams, setEditingNoteId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
