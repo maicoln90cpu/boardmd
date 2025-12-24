@@ -205,7 +205,7 @@ function DroppableDay({
         </span>
       </div>
 
-      <div className={cn("flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted flex items-center justify-center", viewType === "week" ? "max-h-[300px]" : "max-h-[140px]")}>
+      <div className={cn("flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted flex", viewType === "week" ? "max-h-[300px]" : "max-h-[140px]")}>
         {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} className="py-[5px] my-0 pb-[10px] pt-[10px] mt-[5px]" />)}
       </div>
     </div>;
