@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Check } from "lucide-react";
+import { BaseBadge } from "@/components/ui/base-badge";
+import { ArrowLeft, Plus, Check, BookOpen } from "lucide-react";
 import { NotebooksList } from "./NotebooksList";
 import { NotesList } from "./NotesList";
 import { NoteEditor } from "./NoteEditor";
@@ -116,9 +117,13 @@ export function MobileNotesLayout({
               const notebookNotes = notes.filter(n => n.notebook_id === notebook.id);
               return <button key={notebook.id} onClick={() => handleNotebookClick(notebook.id)} className="w-full flex items-center justify-between p-3 bg-card border rounded-lg hover:bg-accent transition-colors min-h-[48px]">
                       <span className="font-medium">{notebook.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <BaseBadge 
+                        variant={notebookNotes.length > 0 ? "info" : "ghost"} 
+                        size="sm"
+                        icon={<BookOpen className="h-2.5 w-2.5" />}
+                      >
                         {notebookNotes.length} {notebookNotes.length === 1 ? 'nota' : 'notas'}
-                      </span>
+                      </BaseBadge>
                     </button>;
             })}
               </div>
