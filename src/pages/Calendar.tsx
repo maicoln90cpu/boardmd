@@ -125,21 +125,22 @@ export default function Calendar() {
     // Filtro de data de vencimento
     if (dueDateFilter !== "all") {
       filtered = filtered.filter(task => {
-        if (!task.due_date) return false;
-        const dueDate = parseISO(task.due_date);
+        const dueDate = task.due_date ? parseISO(task.due_date) : null;
         
         switch (dueDateFilter) {
+          case "no_date":
+            return dueDate === null;
           case "overdue":
-            return isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
+            return dueDate && isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
           case "today":
-            return isToday(dueDate);
+            return dueDate && isToday(dueDate);
           case "week":
-            return isWithinInterval(dueDate, {
+            return dueDate && isWithinInterval(dueDate, {
               start: startOfWeek(today, { locale: ptBR }),
               end: endOfWeek(today, { locale: ptBR })
             });
           case "month":
-            return isWithinInterval(dueDate, {
+            return dueDate && isWithinInterval(dueDate, {
               start: startOfMonth(today),
               end: endOfMonth(today)
             });

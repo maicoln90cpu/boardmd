@@ -568,6 +568,12 @@ export function KanbanBoard({
         const taskDueDate = t.due_date ? parseISO(t.due_date) : null;
         
         switch (dueDateFilter) {
+          case "no_date":
+            // Tarefas sem data de vencimento
+            if (taskDueDate !== null) {
+              return false;
+            }
+            break;
           case "overdue":
             // Tarefas atrasadas (data anterior a hoje e não concluídas)
             if (!taskDueDate || !isBefore(taskDueDate, today) || t.is_completed) {
