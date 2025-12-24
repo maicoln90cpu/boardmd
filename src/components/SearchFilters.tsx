@@ -68,15 +68,18 @@ export function SearchFilters({
   onSimplifiedModeChange,
   compact = false,
 }: SearchFiltersProps) {
-  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || 
-    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) || 
+  const hasActiveFilters =
+    searchTerm ||
+    priorityFilter !== "all" ||
+    tagFilter !== "all" ||
+    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) ||
     (sortOption && sortOption !== "manual");
   const isMobile = useIsMobile();
-  
+
   const densityIcon = {
-    "comfortable": "⊟",
-    "compact": "▤",
-    "ultra-compact": "≡"
+    comfortable: "⊟",
+    compact: "▤",
+    "ultra-compact": "≡",
   };
 
   // Classes compartilhadas
@@ -92,7 +95,7 @@ export function SearchFilters({
           <SelectValue placeholder="Prioridade" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
+          <SelectItem value="all">Prioridade</SelectItem>
           <SelectItem value="high">Alta</SelectItem>
           <SelectItem value="medium">Média</SelectItem>
           <SelectItem value="low">Baixa</SelectItem>
@@ -105,7 +108,7 @@ export function SearchFilters({
             <SelectValue placeholder="Tag" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="all">Por Tag</SelectItem>
             {availableTags.map((tag) => (
               <SelectItem key={tag} value={tag}>
                 {tag}
@@ -149,7 +152,7 @@ export function SearchFilters({
               <SelectItem value="priority">🎯 Prioridade</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Button
             variant="outline"
             size="default"
@@ -177,11 +180,16 @@ export function SearchFilters({
           </SelectContent>
         </Select>
       )}
-      
+
       {/* Controles de densidade e modo simplificado removidos - configurar em Setup */}
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="default" onClick={onClearFilters} className={`${buttonClass} ${compact ? "w-auto" : "w-full"}`}>
+        <Button
+          variant="ghost"
+          size="default"
+          onClick={onClearFilters}
+          className={`${buttonClass} ${compact ? "w-auto" : "w-full"}`}
+        >
           <X className="h-4 w-4 mr-2" />
           Limpar
         </Button>
@@ -189,7 +197,7 @@ export function SearchFilters({
     </>
   );
 
-  const containerClass = compact 
+  const containerClass = compact
     ? "grid grid-cols-3 gap-2 p-2 bg-card border-b"
     : "flex flex-row items-center gap-2 p-2 bg-card border-b flex-nowrap overflow-x-auto";
 
@@ -235,7 +243,7 @@ export function SearchFilters({
                     <SelectValue placeholder="Prioridade" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="all">Prioridade</SelectItem>
                     <SelectItem value="high">Alta</SelectItem>
                     <SelectItem value="medium">Média</SelectItem>
                     <SelectItem value="low">Baixa</SelectItem>
@@ -273,7 +281,7 @@ export function SearchFilters({
                         <SelectValue placeholder="Tag" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="all">Por Tag</SelectItem>
                         {availableTags.map((tag) => (
                           <SelectItem key={tag} value={tag}>
                             {tag}
@@ -308,9 +316,7 @@ export function SearchFilters({
         </Sheet>
       ) : (
         /* Desktop: Filtros inline - reorganizado em 2 linhas */
-        <div className="flex flex-wrap items-center gap-2 max-w-full">
-          {renderFilters()}
-        </div>
+        <div className="flex flex-wrap items-center gap-2 max-w-full">{renderFilters()}</div>
       )}
     </div>
   );
