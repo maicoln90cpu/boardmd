@@ -1,7 +1,8 @@
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { BaseBadge } from "@/components/ui/base-badge";
+import { FileText, Plus, Trash2, Pin, BookOpen } from "lucide-react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
@@ -222,7 +223,16 @@ function DraggableNote({
         className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
       >
         <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <span className="truncate text-sm">{note.title}</span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <span className="truncate text-sm">{note.title}</span>
+          <div className="flex items-center gap-1 mt-0.5">
+            {note.is_pinned && (
+              <BaseBadge variant="pinned" size="sm" icon={<Pin className="h-2.5 w-2.5" />}>
+                Fixada
+              </BaseBadge>
+            )}
+          </div>
+        </div>
       </div>
       <Button 
         variant="ghost" 
