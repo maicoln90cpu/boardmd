@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useDeferredValue, memo, useCallback } from "react";
 import { Column, useColumns } from "@/hooks/useColumns";
+import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter, isEqual } from "date-fns";
 import { Task, useTasks } from "@/hooks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
@@ -32,6 +33,7 @@ interface KanbanBoardProps {
   searchTerm?: string;
   priorityFilter?: string;
   tagFilter?: string;
+  dueDateFilter?: string;
   isDailyKanban?: boolean;
   sortOption?: string;
   showCategoryBadge?: boolean;
@@ -52,6 +54,7 @@ export function KanbanBoard({
   searchTerm = "",
   priorityFilter = "all",
   tagFilter = "all",
+  dueDateFilter = "all",
   isDailyKanban = false,
   sortOption = "manual",
   showCategoryBadge = false,
@@ -557,6 +560,43 @@ export function KanbanBoard({
       // Filtro de tag
       if (tagFilter !== "all" && !t.tags?.includes(tagFilter)) {
         return false;
+      }
+
+      // Filtro de data de vencimento
+      if (dueDateFilter && dueDateFilter !== "all") {
+        const today = startOfToday();
+        const taskDueDate = t.due_date ? parseISO(t.due_date) : null;
+        
+        switch (dueDateFilter) {
+          case "overdue":
+            // Tarefas atrasadas (data anterior a hoje e não concluídas)
+            if (!taskDueDate || !isBefore(taskDueDate, today) || t.is_completed) {
+              return false;
+            }
+            break;
+          case "today":
+            // Tarefas com vencimento hoje
+            if (!taskDueDate || taskDueDate.toDateString() !== today.toDateString()) {
+              return false;
+            }
+            break;
+          case "week":
+            // Tarefas desta semana
+            const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+            const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+            if (!taskDueDate || isBefore(taskDueDate, weekStart) || isAfter(taskDueDate, weekEnd)) {
+              return false;
+            }
+            break;
+          case "month":
+            // Tarefas deste mês
+            const monthStart = startOfMonth(today);
+            const monthEnd = endOfMonth(today);
+            if (!taskDueDate || isBefore(taskDueDate, monthStart) || isAfter(taskDueDate, monthEnd)) {
+              return false;
+            }
+            break;
+        }
       }
 
       // OTIMIZAÇÃO: Usar settings em vez de localStorage direto

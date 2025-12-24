@@ -125,6 +125,10 @@ function Index() {
   const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
   const [dailyTagFilter, setDailyTagFilter] = useLocalStorage<string>("daily-tag-filter", "all");
   const [dailySearchTerm, setDailySearchTerm] = useLocalStorage<string>("daily-search", "");
+  const [dailyDueDateFilter, setDailyDueDateFilter] = useLocalStorage<string>("daily-due-date-filter", "all");
+
+  // Filtro de data para Projetos
+  const [projectsDueDateFilter, setProjectsDueDateFilter] = useLocalStorage<string>("projects-due-date-filter", "all");
 
   // Estado para filtro de categoria no mobile (Kanban Projetos)
   const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
@@ -743,10 +747,13 @@ function Index() {
                 tagFilter={dailyTagFilter}
                 onTagChange={setDailyTagFilter}
                 availableTags={dailyAvailableTags}
+                dueDateFilter={dailyDueDateFilter}
+                onDueDateChange={setDailyDueDateFilter}
                 onClearFilters={() => {
                   setDailyPriorityFilter("all");
                   setDailyTagFilter("all");
                   setDailySearchTerm("");
+                  setDailyDueDateFilter("all");
                 }}
                 searchPlaceholder="Buscar no Diário..."
               />
@@ -756,7 +763,7 @@ function Index() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Kanban Board - ocupa tudo quando Favoritos oculto */}
               <div className={cn("overflow-y-auto", showFavoritesPanel ? "flex-1" : "w-full")}>
-                <KanbanBoard key={dailyBoardKey} columns={visibleColumns} categoryId={dailyCategory} compact isDailyKanban sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={dailyGridColumnsMobile} priorityFilter={dailyPriorityFilter} tagFilter={dailyTagFilter} searchTerm={dailySearchTerm} />
+                <KanbanBoard key={dailyBoardKey} columns={visibleColumns} categoryId={dailyCategory} compact isDailyKanban sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={dailyGridColumnsMobile} priorityFilter={dailyPriorityFilter} tagFilter={dailyTagFilter} searchTerm={dailySearchTerm} dueDateFilter={dailyDueDateFilter} />
               </div>
 
               {/* Favoritos - só renderiza se showFavoritesPanel = true */}
@@ -844,7 +851,12 @@ function Index() {
               tagFilter={tagFilter}
               onTagChange={setTagFilter}
               availableTags={availableTags}
-              onClearFilters={handleClearFilters}
+              dueDateFilter={projectsDueDateFilter}
+              onDueDateChange={setProjectsDueDateFilter}
+              onClearFilters={() => {
+                handleClearFilters();
+                setProjectsDueDateFilter("all");
+              }}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
               categories={categories.filter(c => c.name !== "Diário")}
@@ -863,7 +875,7 @@ function Index() {
                     {filteredTasks.length} {filteredTasks.length === 1 ? 'tarefa' : 'tarefas'}
                   </Badge>
                 </div>
-                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} categoryFilter={categoryFilter} categoryFilterInitialized={categoryFilterInitialized} />
+                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} dueDateFilter={projectsDueDateFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} categoryFilter={categoryFilter} categoryFilterInitialized={categoryFilterInitialized} />
               </div> : (/* Renderizar Kanbans por categoria */
         categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.includes(cat.id)).map(category => {
           const categoryTasks = filteredTasks.filter(t => t.category_id === category.id);
@@ -875,7 +887,7 @@ function Index() {
                   {categoryTasks.length} {categoryTasks.length === 1 ? 'tarefa' : 'tarefas'}
                 </Badge>
               </div>
-              <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
+              <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} dueDateFilter={projectsDueDateFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
             </div>
           );
         }))}
