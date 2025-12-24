@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
+import { CalendarColorLegend } from "@/components/calendar/CalendarColorLegend";
 interface Task {
   id: string;
   title: string;
@@ -514,6 +515,9 @@ export function FullScreenCalendar({
             </Button>
           </div>
         </div>
+
+        {/* Color Legend */}
+        <CalendarColorLegend columns={columns} />
       </div>
 
       {/* Calendar Grid */}
