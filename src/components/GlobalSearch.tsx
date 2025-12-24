@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Search, FileText } from "lucide-react";
+import { Search, FileText, StickyNote } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
   CommandEmpty,
@@ -16,14 +17,29 @@ interface Category {
   name: string;
 }
 
+interface Note {
+  id: string;
+  title: string;
+  content: string | null;
+  notebook_id: string | null;
+}
+
+interface Notebook {
+  id: string;
+  name: string;
+}
+
 interface GlobalSearchProps {
   tasks: Task[];
   onSelectTask: (task: Task) => void;
   categories: Category[];
+  notes?: Note[];
+  notebooks?: Notebook[];
 }
 
-export function GlobalSearch({ tasks, onSelectTask, categories }: GlobalSearchProps) {
+export function GlobalSearch({ tasks, onSelectTask, categories, notes = [], notebooks = [] }: GlobalSearchProps) {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -37,13 +53,28 @@ export function GlobalSearch({ tasks, onSelectTask, categories }: GlobalSearchPr
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  const handleSelect = (task: Task) => {
+  const handleSelectTask = (task: Task) => {
     setOpen(false);
     onSelectTask(task);
   };
 
+  const handleSelectNote = (note: Note) => {
+    setOpen(false);
+    navigate(`/notes?noteId=${note.id}`);
+  };
+
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name || "Sem categoria";
+  };
+
+  const getNotebookName = (notebookId: string | null) => {
+    if (!notebookId) return "Sem caderno";
+    return notebooks.find(n => n.id === notebookId)?.name || "Sem caderno";
+  };
+
+  const stripHtml = (html: string | null) => {
+    if (!html) return "";
+    return html.replace(/<[^>]*>/g, '').substring(0, 100);
   };
 
   return (
@@ -61,19 +92,19 @@ export function GlobalSearch({ tasks, onSelectTask, categories }: GlobalSearchPr
       </button>
 
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Buscar tarefas..." />
+        <CommandInput placeholder="Buscar tarefas e notas..." />
         <CommandList>
-          <CommandEmpty>Nenhuma tarefa encontrada.</CommandEmpty>
+          <CommandEmpty>Nenhum resultado encontrado.</CommandEmpty>
           <CommandGroup heading="Tarefas">
             {tasks.map((task) => (
               <CommandItem
                 key={task.id}
-                onSelect={() => handleSelect(task)}
+                onSelect={() => handleSelectTask(task)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <FileText className="h-4 w-4" />
-                <div className="flex-1">
-                  <div className="font-medium">{task.title}</div>
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{task.title}</div>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge variant="secondary" className="text-xs">
                       {getCategoryName(task.category_id)}
@@ -93,6 +124,32 @@ export function GlobalSearch({ tasks, onSelectTask, categories }: GlobalSearchPr
               </CommandItem>
             ))}
           </CommandGroup>
+          {notes.length > 0 && (
+            <CommandGroup heading="Notas">
+              {notes.map((note) => (
+                <CommandItem
+                  key={note.id}
+                  onSelect={() => handleSelectNote(note)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <StickyNote className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{note.title || "Sem título"}</div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="secondary" className="text-xs">
+                        {getNotebookName(note.notebook_id)}
+                      </Badge>
+                      {note.content && (
+                        <span className="text-sm text-muted-foreground line-clamp-1">
+                          {stripHtml(note.content)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

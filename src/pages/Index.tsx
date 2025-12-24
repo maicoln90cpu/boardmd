@@ -15,6 +15,8 @@ import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
+import { useNotes } from "@/hooks/useNotes";
+import { useNotebooks } from "@/hooks/useNotebooks";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { useActivityLog } from "@/hooks/useActivityLog";
@@ -55,6 +57,8 @@ function Index() {
     addColumn,
     toggleColumnKanbanVisibility
   } = useColumns();
+  const { notes } = useNotes();
+  const { notebooks } = useNotebooks();
   const {
     toggleTheme
   } = useTheme();
@@ -790,7 +794,7 @@ function Index() {
                       </div>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} />
+                    <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} notes={notes} notebooks={notebooks} />
                     <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
                       <Columns3 className="h-4 w-4 mr-2" />
                       Colunas
@@ -811,7 +815,7 @@ function Index() {
                   <div className="px-3 py-2 border-b flex items-center gap-2">
                     <h2 className="text-base font-semibold flex-shrink-0">📊 Todos</h2>
                     <div className="flex-1 min-w-0">
-                      <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} />
+                      <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} notes={notes} notebooks={notebooks} />
                     </div>
                   </div>
 
