@@ -128,7 +128,7 @@ export function SwipeableTaskCard({
     <div className="relative overflow-hidden rounded-lg" ref={constraintsRef}>
       {/* Ações da esquerda (aparece ao arrastar para direita) - Completar e Editar */}
       <motion.div
-        className="absolute inset-y-0 left-0 flex items-stretch"
+        className="absolute inset-y-0 left-0 flex items-stretch z-20"
         style={{ 
           opacity: leftActionsOpacity,
           scale: leftActionsScale,
@@ -137,10 +137,10 @@ export function SwipeableTaskCard({
         <button
           onClick={handleComplete}
           className={cn(
-            "flex items-center justify-center w-[60px] transition-colors",
+            "flex items-center justify-center w-[60px] transition-colors pointer-events-auto",
             isCompleted 
-              ? "bg-orange-500 hover:bg-orange-600" 
-              : "bg-emerald-500 hover:bg-emerald-600"
+              ? "bg-orange-500 hover:bg-orange-600 active:bg-orange-700" 
+              : "bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700"
           )}
         >
           {isCompleted ? (
@@ -151,7 +151,7 @@ export function SwipeableTaskCard({
         </button>
         <button
           onClick={handleEdit}
-          className="flex items-center justify-center w-[60px] bg-blue-500 hover:bg-blue-600 transition-colors"
+          className="flex items-center justify-center w-[60px] bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors pointer-events-auto"
         >
           <Pencil className="h-5 w-5 text-white" />
         </button>
@@ -159,7 +159,7 @@ export function SwipeableTaskCard({
 
       {/* Ações da direita (aparece ao arrastar para esquerda) - Deletar */}
       <motion.div
-        className="absolute inset-y-0 right-0 flex items-stretch"
+        className="absolute inset-y-0 right-0 flex items-stretch z-20"
         style={{ 
           opacity: rightActionsOpacity,
           scale: rightActionsScale,
@@ -167,7 +167,7 @@ export function SwipeableTaskCard({
       >
         <button
           onClick={handleDelete}
-          className="flex items-center justify-center w-[70px] bg-destructive hover:bg-destructive/90 transition-colors"
+          className="flex items-center justify-center w-[70px] bg-destructive hover:bg-destructive/90 active:bg-destructive/80 transition-colors pointer-events-auto"
         >
           <Trash2 className="h-5 w-5 text-white" />
         </button>
@@ -199,7 +199,7 @@ export function SwipeableTaskCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[5]"
+            className="fixed inset-0 z-[15]"
             onClick={handleClose}
           />
         )}

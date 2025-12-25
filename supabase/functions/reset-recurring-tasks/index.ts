@@ -11,7 +11,7 @@
  * 
  * REGRAS DE NEGÓCIO:
  * - APENAS tarefas com is_completed === true são resetadas
- * - Cálculo usa DATA ATUAL como base, NÃO a data original
+ * - Cálculo usa DATA ATUAL no TIMEZONE DO USUÁRIO como base
  * - Horário original é PRESERVADO
  * - Sincronização bidirecional: atualiza mirror_task_id + reverse mirrors
  */
@@ -39,17 +39,69 @@ interface Task {
   mirror_task_id: string | null;
 }
 
+interface UserSettings {
+  timezone?: string;
+}
+
+/**
+ * Obtém a data/hora atual no timezone do usuário
+ * @param timezone - IANA timezone string (ex: "America/Sao_Paulo")
+ * @returns Date object representando "agora" no timezone do usuário
+ */
+function getNowInUserTimezone(timezone: string): Date {
+  const now = new Date();
+  
+  try {
+    // Formatar a data atual no timezone do usuário
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
+    
+    // Criar uma nova data com os componentes no timezone do usuário
+    const year = parseInt(getValue('year'));
+    const month = parseInt(getValue('month')) - 1; // JS months are 0-indexed
+    const day = parseInt(getValue('day'));
+    const hour = parseInt(getValue('hour'));
+    const minute = parseInt(getValue('minute'));
+    const second = parseInt(getValue('second'));
+    
+    // Retornar como Date local (será usada para cálculo de próxima recorrência)
+    return new Date(year, month, day, hour, minute, second);
+  } catch (error) {
+    console.error(`[reset-recurring-tasks] Erro ao converter timezone ${timezone}, usando UTC:`, error);
+    return now;
+  }
+}
+
 /**
  * CÓPIA LOCAL de calculateNextRecurrenceDate
  * @see src/lib/recurrenceUtils.ts para documentação completa
  * 
  * IMPORTANTE: Manter sincronizado com a versão em recurrenceUtils.ts!
+ * 
+ * @param currentDueDate - Data de vencimento atual
+ * @param recurrenceRule - Regra de recorrência
+ * @param userTimezone - Timezone do usuário para cálculo correto
  */
 function calculateNextRecurrenceDate(
   currentDueDate: string | null,
-  recurrenceRule: RecurrenceRule | null
+  recurrenceRule: RecurrenceRule | null,
+  userTimezone: string = "America/Sao_Paulo"
 ): string {
-  const now = new Date();
+  // Usar a data atual no timezone do usuário
+  const now = getNowInUserTimezone(userTimezone);
+  
+  console.log(`[calculateNextRecurrenceDate] Timezone: ${userTimezone}, Now local: ${now.toISOString()}`);
 
   // Sem due_date = retorna hoje
   if (!currentDueDate) {
@@ -66,9 +118,9 @@ function calculateNextRecurrenceDate(
   const createDateWithTime = (date: Date): string => {
     return new Date(
       Date.UTC(
-        date.getUTCFullYear(),
-        date.getUTCMonth(),
-        date.getUTCDate(),
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
         hours,
         minutes,
         seconds
@@ -156,16 +208,39 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Buscar configurações de timezone de todos os usuários únicos
+    const userIds = [...new Set(tasks.map((t: Task) => t.user_id))];
+    const { data: userSettingsData } = await supabase
+      .from("user_settings")
+      .select("user_id, settings")
+      .in("user_id", userIds);
+
+    // Criar mapa de timezone por usuário
+    const userTimezones = new Map<string, string>();
+    if (userSettingsData) {
+      for (const setting of userSettingsData) {
+        const settings = setting.settings as UserSettings | null;
+        const timezone = settings?.timezone || "America/Sao_Paulo";
+        userTimezones.set(setting.user_id, timezone);
+      }
+    }
+
+    console.log(`[reset-recurring-tasks] Timezones carregados para ${userTimezones.size} usuários`);
+
     let processed = 0;
     let errors = 0;
     const processedMirrors = new Set<string>();
 
     for (const task of tasks as Task[]) {
       try {
-        // Calcular próxima data de recorrência
+        // Obter timezone do usuário (default: America/Sao_Paulo)
+        const userTimezone = userTimezones.get(task.user_id) || "America/Sao_Paulo";
+        
+        // Calcular próxima data de recorrência usando timezone do usuário
         const nextDueDate = calculateNextRecurrenceDate(
           task.due_date,
-          task.recurrence_rule
+          task.recurrence_rule,
+          userTimezone
         );
 
         console.log(
