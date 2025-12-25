@@ -202,6 +202,31 @@ export default function Settings() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
+                        <Label htmlFor="defaultView">Página Inicial</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Qual Kanban abrir após fazer login
+                        </p>
+                      </div>
+                      <Select
+                        value={settings.kanban.defaultView}
+                        onValueChange={(value: 'daily' | 'projects') =>
+                          updateSettings({
+                            kanban: { ...settings.kanban, defaultView: value },
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">📅 Kanban Diário</SelectItem>
+                          <SelectItem value="projects">📁 Kanban Projetos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
                         <Label htmlFor="autoReset">Auto-Reset Diário</Label>
                         <p className="text-sm text-muted-foreground">
                           Limpar automaticamente o Kanban Diário
