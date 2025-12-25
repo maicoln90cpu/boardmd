@@ -32,6 +32,8 @@ export interface AppSettings {
     // Filtros de data persistidos
     dailyDueDateFilter: string;
     projectsDueDateFilter: string;
+    // View padrão ao fazer login
+    defaultView: 'daily' | 'projects';
   };
   productivity: {
     dailyGoal: number;
@@ -88,6 +90,7 @@ const defaultSettings: AppSettings = {
     hideCompletedTasks: false,
     dailyDueDateFilter: 'all',
     projectsDueDateFilter: 'all',
+    defaultView: 'daily',
   },
   productivity: {
     dailyGoal: 5,

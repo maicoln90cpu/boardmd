@@ -1,4 +1,5 @@
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -72,13 +73,33 @@ export function KanbanFiltersBar({
   sortOption,
 }: KanbanFiltersBarProps) {
   const isMobile = useIsMobile();
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   
-  const hasActiveFilters = searchTerm || 
-    priorityFilter !== "all" || 
-    tagFilter !== "all" || 
-    (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) ||
-    (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) ||
-    (dueDateFilter && dueDateFilter !== "all");
+  // Contar filtros ativos
+  const countActiveFilters = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (priorityFilter !== "all") count++;
+    if (tagFilter !== "all") count++;
+    if (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) count++;
+    if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
+    if (dueDateFilter && dueDateFilter !== "all") count++;
+    if (displayMode && displayMode !== "all_tasks") count++;
+    return count;
+  };
+  
+  // Contar filtros secundários ativos (excluindo busca, prioridade e data)
+  const countSecondaryActiveFilters = () => {
+    let count = 0;
+    if (tagFilter !== "all") count++;
+    if (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) count++;
+    if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
+    if (displayMode && displayMode !== "all_tasks") count++;
+    return count;
+  };
+  
+  const hasActiveFilters = countActiveFilters() > 0;
+  const secondaryFiltersCount = countSecondaryActiveFilters();
 
   // Aplicar preset de filtros
   const handleApplyPreset = (filters: FilterPreset["filters"]) => {
@@ -103,8 +124,8 @@ export function KanbanFiltersBar({
     sortOption: sortOption || undefined,
   };
 
-  // Conteúdo dos filtros - compartilhado entre desktop e mobile
-  const renderFiltersContent = () => (
+  // Filtros primários (sempre visíveis em mobile)
+  const renderPrimaryFilters = () => (
     <>
       {/* Prioridade */}
       <Select value={priorityFilter} onValueChange={onPriorityChange}>
@@ -119,6 +140,28 @@ export function KanbanFiltersBar({
         </SelectContent>
       </Select>
 
+      {/* Data de Vencimento */}
+      {onDueDateChange && (
+        <Select value={dueDateFilter || "all"} onValueChange={onDueDateChange}>
+          <SelectTrigger className="w-full md:w-[160px] h-10">
+            <SelectValue placeholder="Vencimento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas datas</SelectItem>
+            <SelectItem value="no_date">📭 Sem data</SelectItem>
+            <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
+            <SelectItem value="today">📅 Hoje</SelectItem>
+            <SelectItem value="week">📆 Esta semana</SelectItem>
+            <SelectItem value="month">🗓️ Este mês</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+    </>
+  );
+
+  // Filtros secundários (em sheet no mobile)
+  const renderSecondaryFilters = () => (
+    <>
       {/* Tag */}
       {availableTags.length > 0 && (
         <Select value={tagFilter} onValueChange={onTagChange}>
@@ -179,23 +222,6 @@ export function KanbanFiltersBar({
         </Select>
       )}
 
-      {/* Data de Vencimento */}
-      {onDueDateChange && (
-        <Select value={dueDateFilter || "all"} onValueChange={onDueDateChange}>
-          <SelectTrigger className="w-full md:w-[160px] h-10">
-            <SelectValue placeholder="Vencimento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas datas</SelectItem>
-            <SelectItem value="no_date">📭 Sem data</SelectItem>
-            <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
-            <SelectItem value="today">📅 Hoje</SelectItem>
-            <SelectItem value="week">📆 Esta semana</SelectItem>
-            <SelectItem value="month">🗓️ Este mês</SelectItem>
-          </SelectContent>
-        </Select>
-      )}
-
       {/* Modo de exibição (apenas Projetos) */}
       {displayMode && onDisplayModeChange && (
         <Select value={displayMode} onValueChange={onDisplayModeChange}>
@@ -208,7 +234,15 @@ export function KanbanFiltersBar({
           </SelectContent>
         </Select>
       )}
+    </>
+  );
 
+  // Conteúdo completo dos filtros - para desktop
+  const renderAllFiltersContent = () => (
+    <>
+      {renderPrimaryFilters()}
+      {renderSecondaryFilters()}
+      
       {/* Limpar filtros */}
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={onClearFilters} className="h-10 w-full md:w-auto">
@@ -222,11 +256,11 @@ export function KanbanFiltersBar({
   return (
     <div className="px-4 md:px-6 py-2 border-b bg-card flex flex-wrap items-center gap-2">
       {/* Campo de Busca */}
-      <div className="relative flex-1 min-w-[150px] max-w-[280px]">
+      <div className="relative flex-1 min-w-[120px] max-w-[280px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           ref={searchInputRef}
-          placeholder={searchPlaceholder}
+          placeholder={isMobile ? "Buscar..." : searchPlaceholder}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 h-10"
@@ -242,7 +276,7 @@ export function KanbanFiltersBar({
       </div>
 
       {/* Presets de Filtros */}
-      {showPresets && (
+      {showPresets && !isMobile && (
         <FilterPresetsManager
           currentFilters={currentFilters}
           onApplyPreset={handleApplyPreset}
@@ -251,37 +285,68 @@ export function KanbanFiltersBar({
         />
       )}
 
-      {/* Mobile: Botão de filtros em Sheet */}
+      {/* Mobile: Filtros primários inline + botão para mais */}
       {isMobile ? (
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="gap-2 h-10">
-              <SlidersHorizontal className="h-4 w-4" />
-              Filtros
-              {hasActiveFilters && (
-                <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
-                  !
-                </Badge>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="bottom" className="h-[70vh]">
-            <SheetHeader>
-              <SheetTitle>Filtros</SheetTitle>
-            </SheetHeader>
-            <div className="flex flex-col gap-3 mt-4 overflow-y-auto">
-              {/* Filtros Básicos */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-muted-foreground">Filtros</h3>
-                {renderFiltersContent()}
+        <>
+          {/* Filtros primários inline */}
+          {renderPrimaryFilters()}
+          
+          {/* Botão para mais filtros */}
+          <Sheet open={showMoreFilters} onOpenChange={setShowMoreFilters}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                <SlidersHorizontal className="h-4 w-4" />
+                {secondaryFiltersCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
+                  >
+                    {secondaryFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-auto max-h-[60vh]">
+              <SheetHeader>
+                <SheetTitle>Mais Filtros</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-3 mt-4 pb-4">
+                {renderSecondaryFilters()}
+                
+                {/* Presets no mobile */}
+                {showPresets && (
+                  <div className="pt-2 border-t">
+                    <FilterPresetsManager
+                      currentFilters={currentFilters}
+                      onApplyPreset={handleApplyPreset}
+                      onClearFilters={onClearFilters}
+                      hasActiveFilters={!!hasActiveFilters}
+                    />
+                  </div>
+                )}
+                
+                {/* Limpar todos os filtros */}
+                {hasActiveFilters && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      onClearFilters();
+                      setShowMoreFilters(false);
+                    }} 
+                    className="w-full"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Limpar todos os filtros
+                  </Button>
+                )}
               </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+            </SheetContent>
+          </Sheet>
+        </>
       ) : (
         /* Desktop: Filtros inline */
         <div className="flex flex-wrap items-center gap-2">
-          {renderFiltersContent()}
+          {renderAllFiltersContent()}
         </div>
       )}
     </div>

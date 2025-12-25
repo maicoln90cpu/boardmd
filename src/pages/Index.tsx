@@ -74,7 +74,7 @@ function Index() {
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
   const [projectsBoardKey, setProjectsBoardKey] = useState(0); // Nova key para Projetos
-  const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
+  const [viewMode, setViewMode] = useState<"daily" | "all">("daily"); // Será ajustado pelo useEffect
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -236,13 +236,16 @@ function Index() {
     }
   });
 
-  // Ler view da URL na inicialização
+  // Ler view da URL na inicialização OU usar defaultView das configurações
   useEffect(() => {
     const view = searchParams.get("view");
     if (view === "all" || view === "daily") {
       setViewMode(view);
+    } else if (settings.kanban.defaultView) {
+      // Sem view na URL, usar configuração padrão
+      setViewMode(settings.kanban.defaultView === "projects" ? "all" : "daily");
     }
-  }, []);
+  }, [settings.kanban.defaultView]);
 
   // OTIMIZAÇÃO: Consolidar em uma única instância de useTasks
   // Busca todas as tarefas uma vez e usa filtros locais para diferentes views
