@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -11,6 +11,7 @@ import { TemplateSelector } from "@/components/templates/TemplateSelector";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
 import { TaskModal } from "@/components/TaskModal";
+import { DailyReviewModal } from "@/components/DailyReviewModal";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -36,6 +37,7 @@ import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { validateImportFile, prepareMergeData, ValidationResult, MergeResult, ImportCategory, ImportTask } from "@/lib/importValidation";
+import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 
 function Index() {
   const isMobile = useIsMobile();
@@ -84,6 +86,10 @@ function Index() {
 
   // Estado para modal de nova tarefa via atalho
   const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
+
+  // Estado para Daily Review Modal
+  const [showDailyReview, setShowDailyReview] = useState(false);
+  const [dailyReviewChecked, setDailyReviewChecked] = useState(false);
 
   // Estados para importação com preview
   const [showImportPreview, setShowImportPreview] = useState(false);
@@ -258,6 +264,105 @@ function Index() {
 
   // Hook de notificações de prazo - monitora TODAS as tarefas
   useDueDateAlerts(allTasks);
+
+  // ==========================================
+  // AUTOMAÇÃO: Mover tarefas para "Semana Atual"
+  // ==========================================
+  const moveTasksToCurrentWeek = useCallback(async () => {
+    if (!settings.kanban.autoMoveToCurrentWeek) return;
+    
+    // Encontrar coluna "Semana Atual"
+    const currentWeekColumn = columns.find(col => 
+      col.name.toLowerCase().includes("semana atual") || 
+      col.name.toLowerCase() === "esta semana"
+    );
+    
+    if (!currentWeekColumn) return;
+    
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
+    const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Domingo
+    
+    // Filtrar tarefas que devem ser movidas
+    const tasksToMove = allTasks.filter(task => {
+      // Já está na coluna "Semana Atual"?
+      if (task.column_id === currentWeekColumn.id) return false;
+      
+      // Está concluída?
+      if (task.is_completed) return false;
+      
+      // Tem due_date dentro da semana atual?
+      if (!task.due_date) return false;
+      
+      const dueDate = new Date(task.due_date);
+      return isWithinInterval(dueDate, { start: weekStart, end: weekEnd });
+    });
+    
+    if (tasksToMove.length === 0) return;
+    
+    // Mover tarefas
+    for (const task of tasksToMove) {
+      await supabase
+        .from("tasks")
+        .update({ column_id: currentWeekColumn.id })
+        .eq("id", task.id);
+    }
+    
+    // Disparar evento para refresh
+    window.dispatchEvent(new CustomEvent('task-updated'));
+    
+    toast({
+      title: "Automação Semana Atual",
+      description: `${tasksToMove.length} tarefa(s) movida(s) para "Semana Atual"`
+    });
+  }, [allTasks, columns, settings.kanban.autoMoveToCurrentWeek, toast]);
+
+  // Executar automação ao carregar a página
+  useEffect(() => {
+    if (allTasks.length > 0 && columns.length > 0 && settings.kanban.autoMoveToCurrentWeek) {
+      // Delay pequeno para garantir que tudo carregou
+      const timeout = setTimeout(() => {
+        moveTasksToCurrentWeek();
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [allTasks.length, columns.length, settings.kanban.autoMoveToCurrentWeek]);
+
+  // ==========================================
+  // DAILY REVIEW: Popup matinal
+  // ==========================================
+  useEffect(() => {
+    if (dailyReviewChecked) return;
+    if (!settings.productivity.dailyReviewEnabled) {
+      setDailyReviewChecked(true);
+      return;
+    }
+    
+    const lastShown = settings.productivity.dailyReviewLastShown;
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    // Verificar se já foi mostrado hoje
+    if (lastShown === today) {
+      setDailyReviewChecked(true);
+      return;
+    }
+    
+    // Aguardar tarefas carregarem e mostrar modal
+    if (allTasks.length > 0) {
+      setShowDailyReview(true);
+      setDailyReviewChecked(true);
+      
+      // Atualizar última exibição
+      updateSettings({
+        productivity: {
+          ...settings.productivity,
+          dailyReviewLastShown: today
+        }
+      });
+      saveSettings();
+    }
+  }, [allTasks.length, settings.productivity.dailyReviewEnabled, settings.productivity.dailyReviewLastShown, dailyReviewChecked]);
 
   // Filtrar tasks baseado no viewMode
   const tasks = useMemo(() => {
@@ -977,6 +1082,13 @@ function Index() {
         categoryId={viewMode === "daily" ? dailyCategory : (categories.find(c => c.name !== "Diário")?.id || "")}
         isDailyKanban={viewMode === "daily"}
         columns={columns}
+      />
+
+      {/* Daily Review Modal */}
+      <DailyReviewModal
+        open={showDailyReview}
+        onOpenChange={setShowDailyReview}
+        tasks={allTasks}
       />
     </div>;
 }

@@ -685,6 +685,44 @@ export default function Config() {
 
                 <Separator />
 
+                {/* Página Inicial */}
+                <div className="space-y-2">
+                  <Label>Página Inicial</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Qual Kanban abrir por padrão ao fazer login
+                  </p>
+                  <Select 
+                    value={settings.kanban.defaultView} 
+                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultView: value as 'daily' | 'projects' } })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Kanban Diário</SelectItem>
+                      <SelectItem value="projects">Kanban Projetos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Automação Semana Atual */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Automação "Semana Atual"</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Mover automaticamente tarefas com prazo na semana corrente para a coluna "Semana Atual"
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.kanban.autoMoveToCurrentWeek ?? false}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, autoMoveToCurrentWeek: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="space-y-2">
                   <Label>Ordenação Padrão (Diário)</Label>
                   <Select 
@@ -884,6 +922,28 @@ export default function Config() {
                   <p className="text-sm text-muted-foreground">
                     Tempo para adiar uma notificação antes de ser lembrado novamente
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Daily Review */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🌅 Revisão Diária</CardTitle>
+                <CardDescription>Popup matinal com resumo de tarefas</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Ativar Revisão Diária</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Exibir popup ao abrir o app com tarefas atrasadas e do dia
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.productivity.dailyReviewEnabled ?? true}
+                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, dailyReviewEnabled: checked } })}
+                  />
                 </div>
               </CardContent>
             </Card>
