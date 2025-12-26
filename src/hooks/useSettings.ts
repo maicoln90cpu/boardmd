@@ -34,11 +34,16 @@ export interface AppSettings {
     projectsDueDateFilter: string;
     // View padrão ao fazer login
     defaultView: 'daily' | 'projects';
+    // Automação: mover tarefas da semana atual automaticamente
+    autoMoveToCurrentWeek: boolean;
   };
   productivity: {
     dailyGoal: number;
     pomodoroEnabled: boolean;
     pomodoroDuration: number;
+    // Daily Review
+    dailyReviewEnabled: boolean;
+    dailyReviewLastShown: string | null; // ISO date string
     autoResetDailyStats: boolean;
   };
   interface: {
@@ -90,6 +95,7 @@ const defaultSettings: AppSettings = {
     hideCompletedTasks: false,
     dailyDueDateFilter: 'all',
     projectsDueDateFilter: 'all',
+    autoMoveToCurrentWeek: false,
     defaultView: 'daily',
   },
   productivity: {
@@ -97,6 +103,8 @@ const defaultSettings: AppSettings = {
     pomodoroEnabled: false,
     pomodoroDuration: 25,
     autoResetDailyStats: true,
+    dailyReviewEnabled: true,
+    dailyReviewLastShown: null,
   },
   interface: {
     sidebarPosition: 'left',
