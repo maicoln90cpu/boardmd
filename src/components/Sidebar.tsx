@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
-import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal } from "lucide-react";
+import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar as AnimatedSidebar, SidebarBody, SidebarLink, SidebarDivider, useSidebar } from "@/components/ui/animated-sidebar";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useCategories, Category } from "@/hooks/useCategories";
+import { CategoryTree } from "@/components/sidebar/CategoryTree";
+
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
   onThemeToggle: () => void;
   onViewChange: (mode: "daily" | "all") => void;
   viewMode: "daily" | "all";
+  onCategorySelect?: (categoryId: string | null) => void;
+  selectedCategoryId?: string | null;
 }
 
 // Logo component without pin button
@@ -38,11 +43,18 @@ const Logo = () => {
 // Desktop sidebar content
 const SidebarContent = ({
   viewMode,
-  onViewChange
+  onViewChange,
+  onCategorySelect,
+  selectedCategoryId
 }: {
   viewMode: "daily" | "all";
   onViewChange: (mode: "daily" | "all") => void;
+  onCategorySelect?: (categoryId: string | null) => void;
+  selectedCategoryId?: string | null;
 }) => {
+  const { categories } = useCategories();
+  const { open: sidebarOpen } = useSidebar();
+  const [showCategories, setShowCategories] = useState(true);
   const {
     signOut
   } = useAuth();
@@ -109,12 +121,62 @@ const SidebarContent = ({
     onClick: () => navigate("/config"),
     active: location.pathname === "/config"
   }];
+  const handleCategorySelect = (categoryId: string) => {
+    onCategorySelect?.(categoryId);
+    // Navigate to projects view when selecting a category
+    navigate("/");
+    setTimeout(() => onViewChange("all"), 50);
+  };
+
+  // Filter categories for projects (depth 0 or all)
+  const projectCategories = categories.filter(c => c.name !== "Diário");
+
   return <>
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
         <Logo />
         <div className="mt-6 flex flex-col gap-1">
           {primaryLinks.map(link => <SidebarLink key={link.label} link={link} active={link.active} />)}
         </div>
+        
+        {/* Hierarchical Categories Section */}
+        {projectCategories.length > 0 && (
+          <>
+            <SidebarDivider />
+            <div className="flex flex-col">
+              {sidebarOpen && (
+                <button
+                  onClick={() => setShowCategories(!showCategories)}
+                  className="flex items-center gap-2 px-2 py-1.5 text-[10px] uppercase font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <motion.div
+                    animate={{ rotate: showCategories ? 0 : -90 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </motion.div>
+                  Projetos
+                </button>
+              )}
+              <AnimatePresence>
+                {showCategories && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CategoryTree
+                      categories={projectCategories}
+                      onCategorySelect={handleCategorySelect}
+                      selectedCategoryId={selectedCategoryId}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
+        
         <SidebarDivider />
         <div className="flex flex-col gap-1">
           {secondaryLinks.map(link => <SidebarLink key={link.label} link={link} active={link.active} />)}
@@ -136,7 +198,9 @@ export function Sidebar({
   onImport,
   onThemeToggle,
   onViewChange,
-  viewMode
+  viewMode,
+  onCategorySelect,
+  selectedCategoryId
 }: SidebarProps) {
   const [open, setOpen] = useState(false);
   const [isPinned] = useLocalStorage("sidebar-pinned", false);
@@ -203,7 +267,7 @@ export function Sidebar({
       {/* Desktop Sidebar with hover animation */}
       <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned}>
         <SidebarBody className="justify-between gap-6">
-          <SidebarContent viewMode={viewMode} onViewChange={onViewChange} />
+          <SidebarContent viewMode={viewMode} onViewChange={onViewChange} onCategorySelect={onCategorySelect} selectedCategoryId={selectedCategoryId} />
         </SidebarBody>
       </AnimatedSidebar>
 
