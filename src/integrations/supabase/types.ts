@@ -41,26 +41,40 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          depth: number
           id: string
           name: string
+          parent_id: string | null
           position: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          depth?: number
           id?: string
           name: string
+          parent_id?: string | null
           position?: number
           user_id: string
         }
         Update: {
           created_at?: string
+          depth?: number
           id?: string
           name?: string
+          parent_id?: string | null
           position?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       columns: {
         Row: {
