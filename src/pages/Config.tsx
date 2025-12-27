@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
@@ -45,7 +45,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// Sortable category item component
+// Sortable category item component with hierarchy support
 function SortableCategoryItem({ 
   category, 
   editingId, 
@@ -53,7 +53,9 @@ function SortableCategoryItem({
   setEditingId, 
   setEditingName,
   handleEditCategory,
-  handleDeleteCategory 
+  handleDeleteCategory,
+  onAddSubcategory,
+  hasChildren
 }: any) {
   const {
     attributes,
@@ -70,10 +72,13 @@ function SortableCategoryItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const depth = category.depth || 0;
+  const paddingLeft = depth * 24; // 24px per level
+
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, marginLeft: `${paddingLeft}px` }}
       className="flex items-center gap-2 p-2 rounded-md border bg-card hover:bg-accent/50 transition-colors"
     >
       <div
@@ -83,6 +88,13 @@ function SortableCategoryItem({
       >
         <GripVertical className="h-4 w-4 text-muted-foreground" />
       </div>
+      
+      {depth > 0 && (
+        <div className="flex items-center text-muted-foreground">
+          <CornerDownRight className="h-3 w-3" />
+        </div>
+      )}
+      
       {editingId === category.id ? (
         <>
           <Input
@@ -119,7 +131,27 @@ function SortableCategoryItem({
         </>
       ) : (
         <>
-          <span className="flex-1 text-sm">{category.name}</span>
+          <span className="flex-1 text-sm font-medium">{category.name}</span>
+          
+          {/* Add subcategory button - only for root categories (depth 0) */}
+          {depth < 2 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary hover:text-primary"
+                    onClick={() => onAddSubcategory(category.id)}
+                  >
+                    <FolderPlus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Adicionar subcategoria</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          
           <Button
             size="icon"
             variant="ghost"
@@ -135,7 +167,9 @@ function SortableCategoryItem({
             size="icon"
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={() => handleDeleteCategory(category.id)}
+            onClick={() => handleDeleteCategory(category.id, hasChildren)}
+            disabled={hasChildren}
+            title={hasChildren ? "Exclua primeiro as subcategorias" : undefined}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -185,7 +219,7 @@ function SidebarPinOption() {
 export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading, getAIPrompt, updateAIPrompt, resetAIPrompt, resetAllAIPrompts } = useSettings();
   const { theme, setTheme, toggleTheme } = useTheme();
-  const { categories, addCategory, deleteCategory, reorderCategories } = useCategories();
+  const { categories, addCategory, deleteCategory, reorderCategories, getFlatHierarchy, getSubcategories } = useCategories();
   const { tags, addTag, updateTag, deleteTag } = useTags();
   const { toast } = useToast();
   const { signOut } = useAuth();
@@ -201,6 +235,8 @@ export default function Config() {
   const [editingName, setEditingName] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [addingSubcategoryParentId, setAddingSubcategoryParentId] = useState<string | null>(null);
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
   const [showColumnManager, setShowColumnManager] = useState(false);
   
   // Estados para gerenciamento de tags
@@ -280,10 +316,15 @@ export default function Config() {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
+  const handleDeleteCategory = async (id: string, hasChildren?: boolean) => {
     const category = categories.find(c => c.id === id);
     if (category?.name === "Diário") {
       toast({ title: "Não é possível excluir a categoria Diário", variant: "destructive" });
+      return;
+    }
+
+    if (hasChildren) {
+      toast({ title: "Exclua primeiro as subcategorias", variant: "destructive" });
       return;
     }
 
@@ -301,6 +342,23 @@ export default function Config() {
     await addCategory(newCategoryName.trim());
     setNewCategoryName("");
     setIsAddingCategory(false);
+  };
+
+  const handleAddSubcategory = async () => {
+    if (!newSubcategoryName.trim() || !addingSubcategoryParentId) {
+      toast({ title: "Nome não pode ser vazio", variant: "destructive" });
+      return;
+    }
+
+    await addCategory(newSubcategoryName.trim(), addingSubcategoryParentId);
+    setNewSubcategoryName("");
+    setAddingSubcategoryParentId(null);
+    toast({ title: "Subcategoria criada!" });
+  };
+
+  const startAddSubcategory = (parentId: string) => {
+    setAddingSubcategoryParentId(parentId);
+    setNewSubcategoryName("");
   };
 
   // Handlers para Tags
@@ -975,8 +1033,10 @@ export default function Config() {
           <TabsContent value="categories" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>📁 Categorias</CardTitle>
-                <CardDescription>Gerencie as categorias do seu Kanban</CardDescription>
+                <CardTitle>📁 Categorias & Subprojetos</CardTitle>
+                <CardDescription>
+                  Gerencie as categorias do seu Kanban. Use o ícone <FolderPlus className="h-4 w-4 inline mx-1" /> para criar subcategorias.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <DndContext
@@ -985,22 +1045,57 @@ export default function Config() {
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext
-                    items={categories.filter(cat => cat.name !== "Diário").map(cat => cat.id)}
+                    items={getFlatHierarchy().filter(cat => cat.name !== "Diário").map(cat => cat.id)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-2">
-                      {categories.filter(cat => cat.name !== "Diário").map((category) => (
-                        <SortableCategoryItem
-                          key={category.id}
-                          category={category}
-                          editingId={editingId}
-                          editingName={editingName}
-                          setEditingId={setEditingId}
-                          setEditingName={setEditingName}
-                          handleEditCategory={handleEditCategory}
-                          handleDeleteCategory={handleDeleteCategory}
-                        />
-                      ))}
+                      {getFlatHierarchy().filter(cat => cat.name !== "Diário").map((category) => {
+                        const hasChildren = categories.some(c => c.parent_id === category.id);
+                        return (
+                          <div key={category.id}>
+                            <SortableCategoryItem
+                              category={category}
+                              editingId={editingId}
+                              editingName={editingName}
+                              setEditingId={setEditingId}
+                              setEditingName={setEditingName}
+                              handleEditCategory={handleEditCategory}
+                              handleDeleteCategory={handleDeleteCategory}
+                              onAddSubcategory={startAddSubcategory}
+                              hasChildren={hasChildren}
+                            />
+                            
+                            {/* Inline subcategory form */}
+                            {addingSubcategoryParentId === category.id && (
+                              <div 
+                                className="flex items-center gap-2 p-2 rounded-md border bg-muted mt-2"
+                                style={{ marginLeft: `${((category.depth || 0) + 1) * 24}px` }}
+                              >
+                                <CornerDownRight className="h-3 w-3 text-muted-foreground" />
+                                <Input
+                                  value={newSubcategoryName}
+                                  onChange={(e) => setNewSubcategoryName(e.target.value)}
+                                  placeholder="Nome da subcategoria"
+                                  className="flex-1"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleAddSubcategory();
+                                    if (e.key === "Escape") {
+                                      setAddingSubcategoryParentId(null);
+                                      setNewSubcategoryName("");
+                                    }
+                                  }}
+                                />
+                                <Button size="sm" onClick={handleAddSubcategory}>Adicionar</Button>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                  setAddingSubcategoryParentId(null);
+                                  setNewSubcategoryName("");
+                                }}>Cancelar</Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </DndContext>
@@ -1010,7 +1105,7 @@ export default function Config() {
                     <Input
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Nome da categoria"
+                      placeholder="Nome da categoria principal"
                       className="flex-1"
                       autoFocus
                       onKeyDown={(e) => {
@@ -1034,7 +1129,7 @@ export default function Config() {
                     onClick={() => setIsAddingCategory(true)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Nova Categoria
+                    Nova Categoria Principal
                   </Button>
                 )}
               </CardContent>
