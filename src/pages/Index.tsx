@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { TaskModal } from "@/components/TaskModal";
 import { DailyReviewModal } from "@/components/DailyReviewModal";
-import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
+import { ImportPreviewModal } from "@/components/ImportPreviewModal";
 import { ActivityHistory } from "@/components/ActivityHistory";
 import { DailyKanbanView } from "@/components/kanban/DailyKanbanView";
 import { ProjectsKanbanView } from "@/components/kanban/ProjectsKanbanView";
@@ -23,9 +23,9 @@ import { useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
-import { validateImportFile, prepareMergeData, ValidationResult, MergeResult } from "@/lib/importValidation";
-import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { useWeeklyAutomation } from "@/hooks/useWeeklyAutomation";
+import { useTaskReset } from "@/hooks/useTaskReset";
+import { useDataImportExport } from "@/hooks/useDataImportExport";
 
 function Index() {
   const isMobile = useIsMobile();
@@ -78,14 +78,6 @@ function Index() {
   // Estado para Daily Review Modal
   const [showDailyReview, setShowDailyReview] = useState(false);
   const [dailyReviewChecked, setDailyReviewChecked] = useState(false);
-
-  // Estados para importação com preview
-  const [showImportPreview, setShowImportPreview] = useState(false);
-  const [importValidation, setImportValidation] = useState<ValidationResult | null>(null);
-  const [importMerge, setImportMerge] = useState<MergeResult | null>(null);
-  const [importFileName, setImportFileName] = useState("");
-  const [importFileData, setImportFileData] = useState<string>("");
-  const [isImporting, setIsImporting] = useState(false);
 
   // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
   const {
@@ -254,71 +246,44 @@ function Index() {
   useDueDateAlerts(allTasks);
 
   // ==========================================
-  // AUTOMAÇÃO: Mover tarefas para "Semana Atual"
+  // HOOKS CUSTOMIZADOS - Refatoração Fase 4
   // ==========================================
-  const moveTasksToCurrentWeek = useCallback(async () => {
-    if (!settings.kanban.autoMoveToCurrentWeek) return;
-    
-    // Encontrar coluna "Semana Atual"
-    const currentWeekColumn = columns.find(col => 
-      col.name.toLowerCase().includes("semana atual") || 
-      col.name.toLowerCase() === "esta semana"
-    );
-    
-    if (!currentWeekColumn) return;
-    
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Domingo
-    
-    // Filtrar tarefas que devem ser movidas
-    const tasksToMove = allTasks.filter(task => {
-      // Já está na coluna "Semana Atual"?
-      if (task.column_id === currentWeekColumn.id) return false;
-      
-      // Está concluída?
-      if (task.is_completed) return false;
-      
-      // Tem due_date dentro da semana atual?
-      if (!task.due_date) return false;
-      
-      const dueDate = new Date(task.due_date);
-      return isWithinInterval(dueDate, { start: weekStart, end: weekEnd });
-    });
-    
-    if (tasksToMove.length === 0) return;
-    
-    // OTIMIZAÇÃO: Batch update com .in() em vez de loop individual
-    const taskIds = tasksToMove.map(t => t.id);
-    const { error } = await supabase
-      .from("tasks")
-      .update({ column_id: currentWeekColumn.id })
-      .in("id", taskIds);
-    
-    if (error) {
-      if (import.meta.env.DEV) console.error("Erro ao mover tarefas:", error);
-      return;
-    }
-    
-    // Disparar evento para refresh
-    window.dispatchEvent(new CustomEvent('task-updated'));
-    
-    toast({
-      title: "Automação Semana Atual",
-      description: `${tasksToMove.length} tarefa(s) movida(s) para "Semana Atual"`
-    });
-  }, [allTasks, columns, settings.kanban.autoMoveToCurrentWeek, toast]);
+  
+  // Hook de automação semanal
+  useWeeklyAutomation({
+    tasks: allTasks,
+    columns,
+    autoMoveEnabled: settings.kanban.autoMoveToCurrentWeek
+  });
 
-  // Executar automação ao carregar a página
-  useEffect(() => {
-    if (allTasks.length > 0 && columns.length > 0 && settings.kanban.autoMoveToCurrentWeek) {
-      // Delay pequeno para garantir que tudo carregou
-      const timeout = setTimeout(() => {
-        moveTasksToCurrentWeek();
-      }, 1000);
-      return () => clearTimeout(timeout);
+  // Hook de reset de tarefas
+  const { handleResetRecurrentTasks, handleResetDaily } = useTaskReset({
+    columns,
+    resetAllTasksToFirstColumn: resetDailyTasks,
+    onBoardRefresh: () => setDailyBoardKey(k => k + 1)
+  });
+
+  // Hook de importação/exportação
+  const {
+    handleExport,
+    handleImport,
+    handleConfirmImport,
+    showImportPreview,
+    setShowImportPreview,
+    importValidation,
+    importMerge,
+    importFileName,
+    isImporting
+  } = useDataImportExport({
+    categories,
+    tasks: allTasks,
+    columns,
+    addCategory,
+    onBoardRefresh: () => {
+      setDailyBoardKey(k => k + 1);
+      setProjectsBoardKey(k => k + 1);
     }
-  }, [allTasks.length, columns.length, settings.kanban.autoMoveToCurrentWeek]);
+  });
 
   // ==========================================
   // DAILY REVIEW: Popup matinal
@@ -431,177 +396,6 @@ function Index() {
     });
     return Array.from(tags);
   }, [allTasks, dailyCategory]);
-  const handleExport = () => {
-    const data = {
-      categories,
-      tasks,
-      exportDate: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json"
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `kanban-export-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addActivity("export", "Dados exportados com sucesso");
-    toast({
-      title: "Exportação concluída",
-      description: "Arquivo JSON baixado com sucesso"
-    });
-  };
-  const handleImport = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json";
-    input.onchange = async (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        
-        // Validar arquivo e preparar preview
-        const validation = validateImportFile(text, categories, allTasks);
-        setImportValidation(validation);
-        setImportFileName(file.name);
-        setImportFileData(text);
-        
-        if (validation.isValid && validation.data) {
-          const merge = prepareMergeData(validation.data, categories, allTasks);
-          setImportMerge(merge);
-        } else {
-          setImportMerge(null);
-        }
-        
-        // Abrir modal de preview
-        setShowImportPreview(true);
-      } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error("Import error:", error);
-        }
-        toast({
-          title: "Erro na importação",
-          description: "Não foi possível ler o arquivo",
-          variant: "destructive"
-        });
-      }
-    };
-    input.click();
-  };
-
-  // Função para confirmar importação após preview
-  const handleConfirmImport = async (options: ImportOptions) => {
-    if (!importValidation?.data || !importMerge) return;
-    
-    setIsImporting(true);
-    
-    try {
-      let categoriesAdded = 0;
-      let tasksAdded = 0;
-      
-      // Mapear categorias antigas para novas (para tarefas)
-      const categoryMapping: Record<string, string> = {};
-      
-      // Importar categorias selecionadas
-      if (options.importCategories) {
-        for (const cat of importMerge.categoriesToAdd) {
-          if (options.selectedCategories.includes(cat.name)) {
-            const newCatId = await addCategory(cat.name);
-            if (newCatId && cat.id) {
-              categoryMapping[cat.id] = newCatId;
-            }
-            categoriesAdded++;
-          }
-        }
-      }
-      
-      // Importar tarefas selecionadas
-      if (options.importTasks && importMerge.tasksToAdd.length > 0) {
-        // Buscar primeira coluna disponível
-        const defaultColumn = columns[0];
-        
-        for (const task of importMerge.tasksToAdd) {
-          if (options.selectedTasks.includes(task.title)) {
-            // Mapear category_id se necessário
-            let targetCategoryId = task.category_id;
-            if (categoryMapping[task.category_id]) {
-              targetCategoryId = categoryMapping[task.category_id];
-            } else {
-              // Verificar se a categoria existe
-              const existingCat = categories.find(c => c.id === task.category_id);
-              if (!existingCat) {
-                // Usar primeira categoria não-diária
-                const fallbackCat = categories.find(c => c.name !== "Diário");
-                if (fallbackCat) {
-                  targetCategoryId = fallbackCat.id;
-                }
-              }
-            }
-            
-            // Verificar se a coluna existe
-            let targetColumnId = task.column_id;
-            const existingCol = columns.find(c => c.id === task.column_id);
-            if (!existingCol && defaultColumn) {
-              targetColumnId = defaultColumn.id;
-            }
-            
-            // Criar tarefa via Supabase
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user) {
-              const taskData = {
-                title: task.title,
-                description: task.description || null,
-                priority: task.priority || 'medium',
-                due_date: task.due_date || null,
-                column_id: targetColumnId,
-                category_id: targetCategoryId,
-                user_id: userData.user.id,
-                tags: task.tags || [],
-                subtasks: task.subtasks ? JSON.parse(JSON.stringify(task.subtasks)) : [],
-                recurrence_rule: task.recurrence_rule ? JSON.parse(JSON.stringify(task.recurrence_rule)) : null,
-                is_completed: task.is_completed || false,
-                is_favorite: task.is_favorite || false,
-                position: task.position || 0
-              };
-              await supabase.from("tasks").insert([taskData as any]);
-              tasksAdded++;
-            }
-          }
-        }
-      }
-      
-      addActivity("import", `Arquivo ${importFileName} importado: ${categoriesAdded} categorias, ${tasksAdded} tarefas`);
-      toast({
-        title: "Importação concluída",
-        description: `${categoriesAdded} categoria(s) e ${tasksAdded} tarefa(s) importada(s) com sucesso`
-      });
-      
-      // Fechar modal e limpar estados
-      setShowImportPreview(false);
-      setImportValidation(null);
-      setImportMerge(null);
-      setImportFileName("");
-      setImportFileData("");
-      
-      // Forçar refresh do board
-      window.dispatchEvent(new CustomEvent('task-updated'));
-      setDailyBoardKey(k => k + 1);
-      setProjectsBoardKey(k => k + 1);
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Import confirm error:", error);
-      }
-      toast({
-        title: "Erro na importação",
-        description: "Ocorreu um erro ao importar os dados",
-        variant: "destructive"
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
   const handleClearFilters = () => {
     setSearchTerm("");
     setPriorityFilter("all");
@@ -609,135 +403,7 @@ function Index() {
     setCategoryFilter([]);
     setDisplayMode("by_category");
   };
-  // handleResetRecurrentTasks usa função utilitária importada - só processa tarefas riscadas
-  const handleResetRecurrentTasks = async () => {
-    const recurrentColumn = columns.find(col => col.name.toLowerCase() === "recorrente");
-    if (!recurrentColumn) {
-      toast({
-        title: "Coluna não encontrada",
-        description: "Coluna 'Recorrente' não existe",
-        variant: "destructive"
-      });
-      return;
-    }
 
-    // Query direta ao Supabase para buscar TODAS as tarefas na coluna Recorrente
-    const {
-      data: recurrentTasks,
-      error: fetchError
-    } = await supabase.from("tasks").select("id, title, is_completed, recurrence_rule, tags, due_date").eq("column_id", recurrentColumn.id).not("recurrence_rule", "is", null);
-    if (fetchError) {
-      console.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
-      toast({
-        title: "Erro ao buscar tarefas",
-        description: fetchError.message,
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Filtrar: só tarefas riscadas (is_completed = true) e sem tag de espelho
-    const tasksToReset = recurrentTasks?.filter(task => !task.tags?.includes("espelho-diário") && task.is_completed === true) || [];
-    if (import.meta.env.DEV) console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
-    if (tasksToReset.length === 0) {
-      toast({
-        title: "Nenhuma tarefa",
-        description: "Não há tarefas recorrentes riscadas para resetar"
-      });
-      return;
-    }
-
-    // Limpar checkboxes do localStorage
-    tasksToReset.forEach(task => {
-      localStorage.removeItem(`task-completed-${task.id}`);
-    });
-
-    // OTIMIZAÇÃO: Preparar batch updates por data de próxima recorrência
-    const updatesByNextDate: Record<string, string[]> = {};
-    tasksToReset.forEach(task => {
-      const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
-      const dateKey = nextDueDate || 'null';
-      if (!updatesByNextDate[dateKey]) {
-        updatesByNextDate[dateKey] = [];
-      }
-      updatesByNextDate[dateKey].push(task.id);
-    });
-
-    // Batch update para cada grupo de data
-    let successCount = 0;
-    for (const [dateKey, taskIds] of Object.entries(updatesByNextDate)) {
-      const nextDueDate = dateKey === 'null' ? null : dateKey;
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          is_completed: false,
-          due_date: nextDueDate
-        })
-        .in("id", taskIds);
-      
-      if (error) {
-        if (import.meta.env.DEV) console.error("[RESET] Erro batch update:", error);
-      } else {
-        successCount += taskIds.length;
-      }
-    }
-
-    // Sincronização bidirecional - batch para mirrors
-    const allTaskIds = tasksToReset.map(t => t.id);
-    const { data: tasksWithMirrors } = await supabase
-      .from("tasks")
-      .select("id, mirror_task_id")
-      .in("id", allTaskIds)
-      .not("mirror_task_id", "is", null);
-    
-    if (tasksWithMirrors && tasksWithMirrors.length > 0) {
-      const mirrorIds = tasksWithMirrors.map(t => t.mirror_task_id).filter(Boolean) as string[];
-      await supabase
-        .from("tasks")
-        .update({ is_completed: false })
-        .in("id", mirrorIds);
-    }
-
-    // Buscar reverse mirrors em batch
-    const { data: reverseMirrors } = await supabase
-      .from("tasks")
-      .select("id")
-      .in("mirror_task_id", allTaskIds);
-    
-    if (reverseMirrors && reverseMirrors.length > 0) {
-      await supabase
-        .from("tasks")
-        .update({ is_completed: false })
-        .in("id", reverseMirrors.map(t => t.id));
-    }
-
-    // Disparar evento para forçar refetch
-    window.dispatchEvent(new CustomEvent('task-updated'));
-    addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
-    toast({
-      title: "Tarefas resetadas",
-      description: `${successCount} tarefa(s) recorrente(s) resetada(s) com próxima data calculada`
-    });
-    setDailyBoardKey(k => k + 1);
-  };
-  const handleResetDaily = async () => {
-    if (!columns.length) return;
-
-    // Identificar coluna "Recorrente" (se existir)
-    const recurrentColumn = columns.find(col => col.name.toLowerCase() === "recorrente");
-
-    // Identificar coluna "A Fazer" (destino padrão)
-    const targetColumn = columns.find(col => col.name === "A Fazer") || columns[0]; // Fallback para primeira coluna
-
-    const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
-    await resetDailyTasks(targetColumn.id, excludeIds);
-    addActivity("daily_reset", "Kanban Diário resetado");
-    toast({
-      title: "Kanban resetado",
-      description: "Todas as tarefas (exceto recorrentes) foram movidas"
-    });
-    setDailyBoardKey(k => k + 1);
-  };
   const handleTaskSelect = (task: Task) => {
     setSelectedTaskForHistory(task.id);
     setShowHistory(true);
