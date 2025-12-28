@@ -10,9 +10,9 @@ export const backgroundSync = {
       try {
         const registration = await navigator.serviceWorker.ready;
         await (registration as any).sync.register(SYNC_TAG);
-        console.log('Background sync registered');
+        if (import.meta.env.DEV) console.log('Background sync registered');
       } catch (error) {
-        console.log('Background sync not supported, using fallback');
+        if (import.meta.env.DEV) console.log('Background sync not supported, using fallback');
         this.startPolling();
       }
     } else {
@@ -56,7 +56,7 @@ export const backgroundSync = {
         offlineSync.removeOperation(operation.id);
         successCount++;
       } catch (error) {
-        console.error('Failed to sync operation:', error);
+        if (import.meta.env.DEV) console.error('Failed to sync operation:', error);
         hasErrors = true;
       }
     }

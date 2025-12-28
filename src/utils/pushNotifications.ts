@@ -249,7 +249,7 @@ export const pushNotifications = {
 
       if (error) throw error;
       
-      console.log('Push notification sent:', data);
+      if (import.meta.env.DEV) console.log('Push notification sent:', data);
       return data;
     } catch (error) {
       console.error('Error sending push notification:', error);
