@@ -1,17 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
-import { KanbanBoard } from "@/components/KanbanBoard";
-import { SearchFilters } from "@/components/SearchFilters";
-import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
-import { DashboardStats } from "@/components/DashboardStats";
-import { GlobalSearch } from "@/components/GlobalSearch";
-import { FavoritesSection } from "@/components/FavoritesSection";
-import { TemplateSelector } from "@/components/templates/TemplateSelector";
-import { ColumnManager } from "@/components/kanban/ColumnManager";
-import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
 import { TaskModal } from "@/components/TaskModal";
 import { DailyReviewModal } from "@/components/DailyReviewModal";
+import { ImportPreviewModal, ImportOptions } from "@/components/ImportPreviewModal";
+import { ActivityHistory } from "@/components/ActivityHistory";
+import { DailyKanbanView } from "@/components/kanban/DailyKanbanView";
+import { ProjectsKanbanView } from "@/components/kanban/ProjectsKanbanView";
 import { useCategories } from "@/hooks/useCategories";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -24,19 +18,13 @@ import { useActivityLog } from "@/hooks/useActivityLog";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSettings } from "@/hooks/useSettings";
-import { Button } from "@/components/ui/button";
-import { RotateCcw, BarChart3, FileText, Columns3, Star, Check, Square, Equal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ActivityHistory } from "@/components/ActivityHistory";
 import { useSearchParams } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
-import { validateImportFile, prepareMergeData, ValidationResult, MergeResult, ImportCategory, ImportTask } from "@/lib/importValidation";
+import { validateImportFile, prepareMergeData, ValidationResult, MergeResult } from "@/lib/importValidation";
 import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 
 function Index() {
@@ -859,208 +847,116 @@ function Index() {
   if (loadingCategories || loadingColumns) {
     return <KanbanLoadingSkeleton />;
   }
-  return <div className="min-h-screen bg-background pb-[140px] md:pb-0 flex">
-      <Sidebar onExport={handleExport} onImport={handleImport} onThemeToggle={toggleTheme} onViewChange={setViewMode} viewMode={viewMode} />
+  return (
+    <div className="min-h-screen bg-background pb-[140px] md:pb-0 flex">
+      <Sidebar 
+        onExport={handleExport} 
+        onImport={handleImport} 
+        onThemeToggle={toggleTheme} 
+        onViewChange={setViewMode} 
+        viewMode={viewMode} 
+      />
 
       <main className="flex-1 overflow-auto">
-        {/* Kanban Diário - modo daily sem divisor */}
-        {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && <div className="h-full flex flex-col overflow-hidden">
-            {/* Cabeçalho Kanban Diário */}
-            <div className="sticky top-0 z-10 bg-background border-b">
-              <div className="px-6 py-3 border-b flex-wrap gap-2 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-center">📅 Kanban Diário</h2>
-                <div className="gap-2 flex-wrap items-center justify-center flex flex-row">
-                  <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)} className="flex items-center gap-2">
-                    <Columns3 className="h-4 w-4" />
-                    Colunas
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={handleEqualizeColumns} title="Equalizar largura das colunas" className="h-9 w-9">
-                    <Equal className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setShowTemplates(true)} className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Templates
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleResetRecurrentTasks} className="flex items-center gap-2">
-                    <RotateCcw className="h-4 w-4" />
-                    Resetar Recorrentes
-                  </Button>
-                </div>
-              </div>
-
-              {/* Controles de grid e badges removidos - configurar em Setup */}
-              
-              {/* Filtros do Kanban Diário (unificado com KanbanFiltersBar) */}
-              <KanbanFiltersBar
-                searchTerm={dailySearchTerm}
-                onSearchChange={setDailySearchTerm}
-                priorityFilter={dailyPriorityFilter}
-                onPriorityChange={setDailyPriorityFilter}
-                tagFilter={dailyTagFilter}
-                onTagChange={setDailyTagFilter}
-                availableTags={dailyAvailableTags}
-                dueDateFilter={dailyDueDateFilter}
-                onDueDateChange={setDailyDueDateFilter}
-                onClearFilters={() => {
-                  setDailyPriorityFilter("all");
-                  setDailyTagFilter("all");
-                  setDailySearchTerm("");
-                  setDailyDueDateFilter("all");
-                }}
-                searchPlaceholder="Buscar no Diário..."
-              />
-            </div>
-
-            {/* Layout Kanban + Favoritos */}
-            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-              {/* Kanban Board - ocupa tudo quando Favoritos oculto */}
-              <div className={cn("overflow-y-auto", showFavoritesPanel ? "flex-1" : "w-full")}>
-                <KanbanBoard key={dailyBoardKey} columns={visibleColumns} categoryId={dailyCategory} compact isDailyKanban sortOption={dailySortOrder === "asc" ? `${dailySortOption === "time" ? "date" : dailySortOption}_asc` : `${dailySortOption === "time" ? "date" : dailySortOption}_desc`} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={dailyGridColumnsMobile} priorityFilter={dailyPriorityFilter} tagFilter={dailyTagFilter} searchTerm={dailySearchTerm} dueDateFilter={dailyDueDateFilter} />
-              </div>
-
-              {/* Favoritos - só renderiza se showFavoritesPanel = true */}
-              {showFavoritesPanel && <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l overflow-y-auto">
-                  <FavoritesSection columns={columns} categories={categories} />
-                </div>}
-            </div>
-          </div>}
+        {/* Kanban Diário - modo daily */}
+        {viewMode === "daily" && dailyCategory && visibleColumns.length > 0 && (
+          <DailyKanbanView
+            columns={visibleColumns}
+            allColumns={columns}
+            categories={categories}
+            dailyCategory={dailyCategory}
+            availableTags={dailyAvailableTags}
+            boardKey={dailyBoardKey}
+            densityMode={densityMode}
+            hideBadges={hideBadgesMobile}
+            gridColumns={dailyGridColumnsMobile}
+            showFavoritesPanel={showFavoritesPanel}
+            sortOption={dailySortOption}
+            sortOrder={dailySortOrder}
+            searchTerm={dailySearchTerm}
+            priorityFilter={dailyPriorityFilter}
+            tagFilter={dailyTagFilter}
+            dueDateFilter={dailyDueDateFilter}
+            onSearchChange={setDailySearchTerm}
+            onPriorityChange={setDailyPriorityFilter}
+            onTagChange={setDailyTagFilter}
+            onDueDateChange={setDailyDueDateFilter}
+            onClearFilters={() => {
+              setDailyPriorityFilter("all");
+              setDailyTagFilter("all");
+              setDailySearchTerm("");
+              setDailyDueDateFilter("all");
+            }}
+            onResetRecurrentTasks={handleResetRecurrentTasks}
+            onEqualizeColumns={handleEqualizeColumns}
+            hiddenColumns={hiddenColumns}
+            onToggleColumnVisibility={toggleColumnVisibility}
+            onDeleteColumn={deleteColumn}
+            onResetToDefault={resetToDefaultView}
+            onRenameColumn={renameColumn}
+            onAddColumn={addColumn}
+            onReorderColumns={reorderColumns}
+            onToggleKanbanVisibility={toggleColumnKanbanVisibility}
+            showTemplates={showTemplates}
+            onShowTemplatesChange={setShowTemplates}
+            showColumnManager={showColumnManager}
+            onShowColumnManagerChange={setShowColumnManager}
+          />
+        )}
         
         {/* Todos os Projetos - modo all */}
-        {viewMode === "all" && visibleColumns.length > 0 && <>
-            <div className="border-b bg-background">
-              {/* DESKTOP: Layout original em 1 linha */}
-              {!isMobile && <div className="px-6 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
-                    {simplifiedMode && <Badge variant="secondary" className="text-xs">Modo Simplificado</Badge>}
-                    {/* Item 2: Badges com contadores */}
-                    {taskCounters && <div className="flex gap-3">
-                        <Badge variant="outline" className="text-xs">
-                          Total: {taskCounters.total}
-                        </Badge>
-                        {taskCounters.recorrente && <Badge variant="secondary" className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-                            🔄 Recorrente: {taskCounters.recorrente}
-                          </Badge>}
-                        {taskCounters.afazer && <Badge variant="secondary" className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                            📋 A Fazer: {taskCounters.afazer}
-                          </Badge>}
-                        {taskCounters.emprogresso && <Badge variant="secondary" className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
-                            🚀 Em Progresso: {taskCounters.emprogresso}
-                          </Badge>}
-                        {taskCounters.futuro && <Badge variant="secondary" className="text-xs bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
-                            📅 Futuro: {taskCounters.futuro}
-                          </Badge>}
-                      </div>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} notes={notes} notebooks={notebooks} />
-                    <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)}>
-                      <Columns3 className="h-4 w-4 mr-2" />
-                      Colunas
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={handleEqualizeColumns} title="Equalizar largura das colunas" className="h-9 w-9">
-                      <Equal className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowStats(true)}>
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Estatísticas
-                    </Button>
-                  </div>
-                </div>}
-
-              {/* MOBILE: Layout em 3 linhas */}
-              {isMobile && <>
-                  {/* LINHA 1: Logo + Buscar */}
-                  <div className="px-3 py-2 border-b flex items-center gap-2">
-                    <h2 className="text-base font-semibold flex-shrink-0">📊 Todos</h2>
-                    <div className="flex-1 min-w-0">
-                      <GlobalSearch tasks={filteredTasks} onSelectTask={handleTaskSelect} categories={categories} notes={notes} notebooks={notebooks} />
-                    </div>
-                  </div>
-
-                  {/* LINHA 2: Botão Colunas + Botão Estatísticas */}
-                  <div className="px-3 py-2 border-b flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setShowColumnManager(true)} className="flex-1 h-10">
-                      <Columns3 className="h-4 w-4 mr-2" />
-                      Colunas
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setShowStats(true)} className="flex-1 h-10">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Estatísticas
-                    </Button>
-                  </div>
-
-                  {/* Controles de grid e badges removidos - configurar em Setup */}
-                </>}
-            </div>
-            
-            {/* Filtros do Kanban Projetos (unificado com KanbanFiltersBar) */}
-            <KanbanFiltersBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              priorityFilter={priorityFilter}
-              onPriorityChange={setPriorityFilter}
-              tagFilter={tagFilter}
-              onTagChange={setTagFilter}
-              availableTags={availableTags}
-              dueDateFilter={projectsDueDateFilter}
-              onDueDateChange={setProjectsDueDateFilter}
-              onClearFilters={() => {
-                handleClearFilters();
-                setProjectsDueDateFilter("all");
-              }}
-              categoryFilter={categoryFilter}
-              onCategoryChange={setCategoryFilter}
-              categories={categories.filter(c => c.name !== "Diário")}
-              tasks={tasks}
-              displayMode={displayMode}
-              onDisplayModeChange={(value: string) => setDisplayMode(value as "by_category" | "all_tasks")}
-              searchInputRef={searchInputRef}
-              searchPlaceholder="Buscar em Projetos..."
-            />
-
-            {/* Renderizar baseado no displayMode */}
-            {displayMode === "all_tasks" ? <div className="mb-8" key={`all-tasks-${projectsBoardKey}`}>
-                <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {filteredTasks.length} {filteredTasks.length === 1 ? 'tarefa' : 'tarefas'}
-                  </Badge>
-                </div>
-                <KanbanBoard key={`all-board-${projectsBoardKey}`} columns={visibleColumns} categoryId="all" searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} dueDateFilter={projectsDueDateFilter} sortOption={projectsSortOption} viewMode={viewMode} showCategoryBadge densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} categoryFilter={categoryFilter} categoryFilterInitialized={categoryFilterInitialized} />
-              </div> : (/* Renderizar Kanbans por categoria */
-        categories.filter(cat => cat.name !== "Diário").filter(cat => !categoryFilterInitialized || categoryFilter.includes(cat.id)).map(category => {
-          const categoryTasks = filteredTasks.filter(t => t.category_id === category.id);
-          return (
-            <div key={`${category.id}-${projectsBoardKey}`} className="mb-8">
-              <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{category.name}</h3>
-                <Badge variant="secondary" className="text-xs">
-                  {categoryTasks.length} {categoryTasks.length === 1 ? 'tarefa' : 'tarefas'}
-                </Badge>
-              </div>
-              <KanbanBoard key={`board-${category.id}-${projectsBoardKey}`} columns={visibleColumns} categoryId={category.id} searchTerm={searchTerm} priorityFilter={priorityFilter} tagFilter={tagFilter} dueDateFilter={projectsDueDateFilter} sortOption={projectsSortOption} viewMode={viewMode} densityMode={densityMode} hideBadges={hideBadgesMobile} gridColumns={projectsGridColumnsMobile} />
-            </div>
-          );
-        }))}
-          </>}
+        {viewMode === "all" && visibleColumns.length > 0 && (
+          <ProjectsKanbanView
+            columns={visibleColumns}
+            allColumns={columns}
+            categories={categories}
+            tasks={tasks}
+            filteredTasks={filteredTasks}
+            notes={notes}
+            notebooks={notebooks}
+            availableTags={availableTags}
+            taskCounters={taskCounters}
+            boardKey={projectsBoardKey}
+            isMobile={isMobile}
+            simplifiedMode={simplifiedMode}
+            densityMode={densityMode}
+            hideBadges={hideBadgesMobile}
+            gridColumns={projectsGridColumnsMobile}
+            displayMode={displayMode}
+            sortOption={projectsSortOption}
+            searchTerm={searchTerm}
+            priorityFilter={priorityFilter}
+            tagFilter={tagFilter}
+            dueDateFilter={projectsDueDateFilter}
+            categoryFilter={categoryFilter}
+            categoryFilterInitialized={categoryFilterInitialized}
+            onSearchChange={setSearchTerm}
+            onPriorityChange={setPriorityFilter}
+            onTagChange={setTagFilter}
+            onDueDateChange={setProjectsDueDateFilter}
+            onCategoryChange={setCategoryFilter}
+            onDisplayModeChange={(value) => setDisplayMode(value as "by_category" | "all_tasks")}
+            onClearFilters={() => {
+              handleClearFilters();
+              setProjectsDueDateFilter("all");
+            }}
+            onTaskSelect={handleTaskSelect}
+            onEqualizeColumns={handleEqualizeColumns}
+            hiddenColumns={hiddenColumns}
+            onToggleColumnVisibility={toggleColumnVisibility}
+            onDeleteColumn={deleteColumn}
+            onResetToDefault={resetToDefaultView}
+            onRenameColumn={renameColumn}
+            onAddColumn={addColumn}
+            onReorderColumns={reorderColumns}
+            onToggleKanbanVisibility={toggleColumnKanbanVisibility}
+            showStats={showStats}
+            onShowStatsChange={setShowStats}
+            showColumnManager={showColumnManager}
+            onShowColumnManagerChange={setShowColumnManager}
+          />
+        )}
       </main>
-
-      {/* Dialog de Estatísticas */}
-      <Dialog open={showStats} onOpenChange={setShowStats}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>📊 Estatísticas do Projeto</DialogTitle>
-          </DialogHeader>
-          <DashboardStats tasks={filteredTasks} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog de Templates */}
-      <TemplateSelector open={showTemplates} onOpenChange={setShowTemplates} />
-
-      {/* Dialog de Gerenciamento de Colunas */}
-      <ColumnManager open={showColumnManager} onOpenChange={setShowColumnManager} columns={columns} hiddenColumns={hiddenColumns} onToggleVisibility={toggleColumnVisibility} onDeleteColumn={deleteColumn} onResetToDefault={resetToDefaultView} onRenameColumn={renameColumn} onAddColumn={addColumn} onReorderColumns={reorderColumns} onToggleKanbanVisibility={toggleColumnKanbanVisibility} />
 
       {/* Dialog de Histórico */}
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
@@ -1114,6 +1010,7 @@ function Index() {
         onOpenChange={setShowDailyReview}
         tasks={allTasks}
       />
-    </div>;
+    </div>
+  );
 }
 export default Index;
