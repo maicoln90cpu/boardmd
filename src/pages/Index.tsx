@@ -300,12 +300,16 @@ function Index() {
     
     if (tasksToMove.length === 0) return;
     
-    // Mover tarefas
-    for (const task of tasksToMove) {
-      await supabase
-        .from("tasks")
-        .update({ column_id: currentWeekColumn.id })
-        .eq("id", task.id);
+    // OTIMIZAÇÃO: Batch update com .in() em vez de loop individual
+    const taskIds = tasksToMove.map(t => t.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ column_id: currentWeekColumn.id })
+      .in("id", taskIds);
+    
+    if (error) {
+      if (import.meta.env.DEV) console.error("Erro ao mover tarefas:", error);
+      return;
     }
     
     // Disparar evento para refresh
@@ -660,44 +664,63 @@ function Index() {
       localStorage.removeItem(`task-completed-${task.id}`);
     });
 
-    // Atualizar cada tarefa individualmente com a próxima data de recorrência
-    let successCount = 0;
-    for (const task of tasksToReset) {
+    // OTIMIZAÇÃO: Preparar batch updates por data de próxima recorrência
+    const updatesByNextDate: Record<string, string[]> = {};
+    tasksToReset.forEach(task => {
       const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
-      const {
-        error
-      } = await supabase.from("tasks").update({
-        is_completed: false,
-        due_date: nextDueDate
-      }).eq("id", task.id);
-      if (error) {
-        console.error(`[DEBUG RESET] Erro ao atualizar tarefa ${task.id}:`, error);
-      } else {
-        successCount++;
-
-        // BUG 1 FIX: Sincronização bidirecional - atualizar tarefa espelhada (projetos)
-        // Buscar mirror_task_id se existir
-        const {
-          data: taskData
-        } = await supabase.from("tasks").select("mirror_task_id").eq("id", task.id).single();
-        if (taskData?.mirror_task_id) {
-          await supabase.from("tasks").update({
-            is_completed: false,
-            due_date: nextDueDate
-          }).eq("id", taskData.mirror_task_id);
-        }
-
-        // Buscar tarefas que apontam para ESTA tarefa como espelho (link reverso)
-        const {
-          data: reverseMirrors
-        } = await supabase.from("tasks").select("id").eq("mirror_task_id", task.id);
-        if (reverseMirrors && reverseMirrors.length > 0) {
-          await supabase.from("tasks").update({
-            is_completed: false,
-            due_date: nextDueDate
-          }).in("id", reverseMirrors.map(t => t.id));
-        }
+      const dateKey = nextDueDate || 'null';
+      if (!updatesByNextDate[dateKey]) {
+        updatesByNextDate[dateKey] = [];
       }
+      updatesByNextDate[dateKey].push(task.id);
+    });
+
+    // Batch update para cada grupo de data
+    let successCount = 0;
+    for (const [dateKey, taskIds] of Object.entries(updatesByNextDate)) {
+      const nextDueDate = dateKey === 'null' ? null : dateKey;
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          is_completed: false,
+          due_date: nextDueDate
+        })
+        .in("id", taskIds);
+      
+      if (error) {
+        if (import.meta.env.DEV) console.error("[RESET] Erro batch update:", error);
+      } else {
+        successCount += taskIds.length;
+      }
+    }
+
+    // Sincronização bidirecional - batch para mirrors
+    const allTaskIds = tasksToReset.map(t => t.id);
+    const { data: tasksWithMirrors } = await supabase
+      .from("tasks")
+      .select("id, mirror_task_id")
+      .in("id", allTaskIds)
+      .not("mirror_task_id", "is", null);
+    
+    if (tasksWithMirrors && tasksWithMirrors.length > 0) {
+      const mirrorIds = tasksWithMirrors.map(t => t.mirror_task_id).filter(Boolean) as string[];
+      await supabase
+        .from("tasks")
+        .update({ is_completed: false })
+        .in("id", mirrorIds);
+    }
+
+    // Buscar reverse mirrors em batch
+    const { data: reverseMirrors } = await supabase
+      .from("tasks")
+      .select("id")
+      .in("mirror_task_id", allTaskIds);
+    
+    if (reverseMirrors && reverseMirrors.length > 0) {
+      await supabase
+        .from("tasks")
+        .update({ is_completed: false })
+        .in("id", reverseMirrors.map(t => t.id));
     }
 
     // Disparar evento para forçar refetch
@@ -731,31 +754,32 @@ function Index() {
     setSelectedTaskForHistory(task.id);
     setShowHistory(true);
   };
-  const handleReorderDailyTasks = async (reorderedTasks: Array<{
+  const handleReorderDailyTasks = useCallback(async (reorderedTasks: Array<{
     id: string;
     position: number;
   }>) => {
     if (!updateDailyTask) return;
     try {
-      // Update all tasks with new positions
-      await Promise.all(reorderedTasks.map(({
-        id,
-        position
-      }) => updateDailyTask(id, {
-        position
-      })));
+      // OTIMIZAÇÃO: Batch update de posições
+      for (const { id, position } of reorderedTasks) {
+        await supabase
+          .from("tasks")
+          .update({ position, updated_at: new Date().toISOString() })
+          .eq("id", id);
+      }
 
       // Força refresh do board
+      window.dispatchEvent(new CustomEvent('task-updated'));
       setDailyBoardKey(k => k + 1);
       addActivity("ai_organize", "Tarefas organizadas com IA");
     } catch (error) {
-      console.error("Error reordering tasks:", error);
+      if (import.meta.env.DEV) console.error("Error reordering tasks:", error);
       toast({
         title: "Erro ao reordenar tarefas",
         variant: "destructive"
       });
     }
-  };
+  }, [updateDailyTask, addActivity, toast]);
 
   // Função para equalizar largura das colunas
   const handleEqualizeColumns = () => {

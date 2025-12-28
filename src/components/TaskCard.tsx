@@ -379,7 +379,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           ? "A tarefa agora é recorrente e ficará na coluna Recorrente"
           : "A tarefa não é mais recorrente",
       });
-      window.location.reload();
+      // OTIMIZAÇÃO: Usar evento em vez de reload completo
+      window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId: task.id } }));
     }
   };
   const handleShare = () => {
