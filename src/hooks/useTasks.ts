@@ -318,19 +318,31 @@ export function useTasks(categoryId: string | null | "all") {
       }
     });
 
-    const updates = tasksToReset.map((task, index) => 
-      supabase
-        .from("tasks")
-        .update({ 
-          column_id: firstColumnId,
-          position: index,
-          due_date: todayISO,
-          is_completed: false
-        })
-        .eq("id", task.id)
-    );
+    // OTIMIZAÇÃO: Batch update com .in() em vez de Promise.all de updates individuais
+    const taskIds = tasksToReset.map(t => t.id);
+    const { error } = await supabase
+      .from("tasks")
+      .update({ 
+        column_id: firstColumnId,
+        due_date: todayISO,
+        is_completed: false
+      })
+      .in("id", taskIds);
     
-    await Promise.all(updates);
+    if (error) {
+      if (import.meta.env.DEV) console.error("Erro ao resetar tarefas:", error);
+      toast({ title: "Erro ao resetar tarefas", variant: "destructive" });
+      return;
+    }
+    
+    // Atualizar posições sequencialmente (necessário para ordem)
+    for (let i = 0; i < tasksToReset.length; i++) {
+      await supabase
+        .from("tasks")
+        .update({ position: i })
+        .eq("id", tasksToReset[i].id);
+    }
+    
     toast({ title: `${tasksToReset.length} tarefa(s) resetada(s)!` });
     fetchTasks();
   };
