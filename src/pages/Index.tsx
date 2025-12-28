@@ -650,7 +650,7 @@ function Index() {
 
     // Filtrar: só tarefas riscadas (is_completed = true) e sem tag de espelho
     const tasksToReset = recurrentTasks?.filter(task => !task.tags?.includes("espelho-diário") && task.is_completed === true) || [];
-    console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
+    if (import.meta.env.DEV) console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
     if (tasksToReset.length === 0) {
       toast({
         title: "Nenhuma tarefa",

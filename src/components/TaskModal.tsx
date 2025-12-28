@@ -182,7 +182,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             
             if (task.mirror_task_id) {
               // Já tem referência direta ao espelho
-              console.log("[ESPELHAMENTO] Espelho já vinculado na tarefa:", task.mirror_task_id);
               existingMirror = { id: task.mirror_task_id };
             } else {
               // Fallback: buscar espelho que aponta para esta tarefa
@@ -195,7 +194,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             }
 
             if (!existingMirror) {
-              console.log("[ESPELHAMENTO] Criando espelho para tarefa existente:", task.id);
+              // Criar espelho para tarefa existente
               // 1. Salvar tarefa original primeiro
               onSave(taskData);
 
@@ -215,7 +214,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 .single();
 
               if (!mirrorError && newMirror) {
-                console.log("[ESPELHAMENTO] Espelho criado:", newMirror.id);
                 // Atualizar tarefa original com ID do espelho
                 await supabase
                   .from("tasks")
@@ -228,7 +226,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                   .update({ mirror_task_id: task.id } as any)
                   .eq("id", newMirror.id);
 
-                console.log("[ESPELHAMENTO] Referências mútuas criadas");
                 toast({
                   title: "🔄 Tarefa recorrente espelhada!",
                   description: "A tarefa permanece aqui e também aparece no Kanban Diário na coluna Recorrente.",
@@ -240,7 +237,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               return;
             } else {
               // Espelho já existe, ATUALIZAR ele também
-              console.log("[ESPELHAMENTO] Atualizando espelho existente:", existingMirror.id);
               
               // 1. Salvar tarefa original
               onSave(taskData);
@@ -263,7 +259,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 .eq("id", existingMirror.id);
 
               if (!updateError) {
-                console.log("[ESPELHAMENTO] Espelho atualizado com sucesso");
                 toast({
                   title: "✅ Tarefa atualizada!",
                   description: "A tarefa e seu espelho no Kanban Diário foram atualizados.",
@@ -278,7 +273,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             }
           } else {
             // Se está criando nova tarefa recorrente, criar ambas diretamente no banco
-            console.log("[ESPELHAMENTO] Criando nova tarefa recorrente com espelho");
             if (!user) {
               toast({
                 title: "Erro",
@@ -341,7 +335,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
               .single();
 
             if (!mirrorError && newMirror) {
-              console.log("[ESPELHAMENTO] Original e espelho criados:", newOriginal.id, newMirror.id);
               // Atualizar ambas com referências mútuas
               await supabase
                 .from("tasks")
@@ -353,7 +346,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 .update({ mirror_task_id: newOriginal.id } as any)
                 .eq("id", newMirror.id);
 
-              console.log("[ESPELHAMENTO] Referências mútuas criadas");
               toast({
                 title: "🔄 Tarefa recorrente espelhada!",
                 description: "A tarefa foi criada e espelhada no Kanban Diário na coluna Recorrente.",
@@ -401,8 +393,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
 
     // SINCRONIZAÇÃO BIDIRECIONAL: Se está editando uma tarefa espelhada (diário → projetos)
     if (task?.id && task.mirror_task_id) {
-      console.log("[SINCRONIZAÇÃO BIDIRECIONAL] Atualizando tarefa original:", task.mirror_task_id);
-      
       // Atualizar a tarefa original (projetos) com os mesmos dados
       const mirrorUpdate = {
         title,
@@ -421,7 +411,6 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
         .eq("id", task.mirror_task_id);
 
       if (!updateError) {
-        console.log("[SINCRONIZAÇÃO BIDIRECIONAL] Tarefa original atualizada com sucesso");
         toast({
           title: "✅ Tarefa sincronizada!",
           description: "A tarefa e seu original em Projetos foram atualizados.",

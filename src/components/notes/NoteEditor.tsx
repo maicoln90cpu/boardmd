@@ -336,9 +336,7 @@ export function NoteEditor({
   // Listener para evento customizado de salvamento
   useEffect(() => {
     const handleSaveEvent = () => {
-      console.log("[NOTA AUTO-SAVE] Evento 'save-current-note' recebido");
       if (hasUnsavedChanges.current) {
-        console.log("[NOTA AUTO-SAVE] Salvando mudanças pendentes...");
         autoSave();
       }
     };
@@ -349,9 +347,7 @@ export function NoteEditor({
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
   useEffect(() => {
     return () => {
-      console.log("[NOTA AUTO-SAVE] Componente desmontando, verificando mudanças...");
       if (hasUnsavedChanges.current) {
-        console.log("[NOTA AUTO-SAVE] Salvando ao desmontar componente");
         const currentTitle = titleRef.current;
         const currentContent = contentRef.current;
         const currentColor = colorRef.current;

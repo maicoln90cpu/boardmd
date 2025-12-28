@@ -31,7 +31,7 @@ const updateSW = registerSW({
     });
   },
   onRegistered(registration) {
-    console.log('SW registered:', registration);
+    if (import.meta.env.DEV) console.log('SW registered:', registration);
     
     // Check for updates every hour
     if (registration) {
@@ -70,7 +70,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
 
 if (isIOS && isStandalone) {
-  console.log('Running as iOS PWA');
+  if (import.meta.env.DEV) console.log('Running as iOS PWA');
   // Add any iOS-specific PWA handling here
 }
 

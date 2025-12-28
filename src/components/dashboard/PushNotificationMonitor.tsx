@@ -95,7 +95,7 @@ export function PushNotificationMonitor() {
           table: "push_logs",
         },
         (payload) => {
-          console.log("Realtime update:", payload);
+          if (import.meta.env.DEV) console.log("Realtime update:", payload);
           fetchData(); // Refresh data on any change
         }
       )
