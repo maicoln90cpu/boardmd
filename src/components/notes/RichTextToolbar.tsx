@@ -51,6 +51,7 @@ interface RichTextToolbarProps {
   editor: Editor | null;
   tasks?: Task[];
   onInsertTaskBlock?: (task: Task) => void;
+  onCreateTask?: (taskData: { title: string; description?: string; priority: string }) => Promise<Task | null>;
 }
 
 const TEXT_COLORS = [
@@ -78,7 +79,7 @@ const FONT_SIZES = [
   { name: "Muito Grande", value: "26px" },
 ];
 
-export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock }: RichTextToolbarProps) {
+export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreateTask }: RichTextToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
@@ -747,6 +748,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock }: RichT
             onInsertTaskBlock(task);
           }
         }}
+        onCreateTask={onCreateTask}
       />
     </div>
   );
