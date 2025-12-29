@@ -28,6 +28,7 @@ import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
+import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
 interface NoteEditorProps {
   note: Note;
@@ -63,7 +64,8 @@ export function NoteEditor({
 
   // Buscar tarefas disponíveis
   const {
-    tasks
+    tasks,
+    fetchTasks: refetchTasks
   } = useTasks("all");
   const {
     share
@@ -207,7 +209,9 @@ export function NoteEditor({
     }
   });
 
-  // Helper function to process clipboard HTML and preserve formatting
+  // Hook para sincronização bidirecional com Kanban via Realtime
+  useNoteTaskSync(editor);
+
   const processClipboardHtml = (html: string): string => {
     const container = document.createElement('div');
     container.innerHTML = html;
