@@ -26,6 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWeeklyAutomation } from "@/hooks/useWeeklyAutomation";
 import { useTaskReset } from "@/hooks/useTaskReset";
 import { useDataImportExport } from "@/hooks/useDataImportExport";
+import { useCategoryFilters } from "@/hooks/useCategoryFilters";
+import { useDailyReview } from "@/hooks/useDailyReview";
 
 function Index() {
   const isMobile = useIsMobile();
@@ -60,11 +62,9 @@ function Index() {
   } = useActivityLog();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [dailyCategory, setDailyCategory] = useState<string>("");
   const [dailyBoardKey, setDailyBoardKey] = useState(0);
-  const [projectsBoardKey, setProjectsBoardKey] = useState(0); // Nova key para Projetos
-  const [viewMode, setViewMode] = useState<"daily" | "all">("daily"); // Será ajustado pelo useEffect
+  const [projectsBoardKey, setProjectsBoardKey] = useState(0);
+  const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
   const [showStats, setShowStats] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -74,10 +74,6 @@ function Index() {
 
   // Estado para modal de nova tarefa via atalho
   const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
-
-  // Estado para Daily Review Modal
-  const [showDailyReview, setShowDailyReview] = useState(false);
-  const [dailyReviewChecked, setDailyReviewChecked] = useState(false);
 
   // CORREÇÃO: Usar useSettings em vez de useLocalStorage para configurações
   const {
@@ -96,12 +92,25 @@ function Index() {
   const dailyGridColumnsMobile = settings.mobile.dailyGridColumns;
   const projectsGridColumnsMobile = settings.mobile.projectsGridColumns;
 
+  // ==========================================
+  // HOOKS DE FILTROS DE CATEGORIA
+  // ==========================================
+  const {
+    selectedCategory,
+    dailyCategory,
+    categoryFilter,
+    categoryFilterInitialized,
+    selectedCategoryFilterMobile,
+    setSelectedCategory,
+    setCategoryFilter,
+    setSelectedCategoryFilterMobile,
+    clearCategoryFilters,
+  } = useCategoryFilters(categories);
+
   // Filtros (persistidos no localStorage - são filtros temporários, não configs)
   const [searchTerm, setSearchTerm] = useLocalStorage<string>("filter-search", "");
   const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
   const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [categoryFilterInitialized, setCategoryFilterInitialized] = useState(false);
   
   // CORREÇÃO: Usar settings.kanban.projectsSortOption em vez de localStorage
   const projectsSortOption = settings.kanban.projectsSortOption;
@@ -115,9 +124,6 @@ function Index() {
   // Filtros de data persistidos via settings (banco de dados)
   const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
   const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
-
-  // Estado para filtro de categoria no mobile (Kanban Projetos)
-  const [selectedCategoryFilterMobile, setSelectedCategoryFilterMobile] = useState<string>("all");
 
   // Funções para atualizar settings localmente (com sync para DB)
   const setSimplifiedMode = async (value: boolean) => {
@@ -285,41 +291,13 @@ function Index() {
     }
   });
 
-  // ==========================================
-  // DAILY REVIEW: Popup matinal
-  // ==========================================
-  useEffect(() => {
-    if (dailyReviewChecked) return;
-    if (!settings.productivity.dailyReviewEnabled) {
-      setDailyReviewChecked(true);
-      return;
-    }
-    
-    const lastShown = settings.productivity.dailyReviewLastShown;
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    
-    // Verificar se já foi mostrado hoje
-    if (lastShown === today) {
-      setDailyReviewChecked(true);
-      return;
-    }
-    
-    // Aguardar tarefas carregarem e mostrar modal
-    if (allTasks.length > 0) {
-      setShowDailyReview(true);
-      setDailyReviewChecked(true);
-      
-      // Atualizar última exibição
-      updateSettings({
-        productivity: {
-          ...settings.productivity,
-          dailyReviewLastShown: today
-        }
-      });
-      saveSettings();
-    }
-  }, [allTasks.length, settings.productivity.dailyReviewEnabled, settings.productivity.dailyReviewLastShown, dailyReviewChecked]);
+  // Hook de Daily Review
+  const { showDailyReview, setShowDailyReview } = useDailyReview({
+    tasks: allTasks,
+    settings,
+    updateSettings,
+    saveSettings,
+  });
 
   // Filtrar tasks baseado no viewMode
   const tasks = useMemo(() => {
@@ -352,31 +330,7 @@ function Index() {
       }
       return true;
     });
-  }, [tasks, viewMode, categoryFilter, categories, isMobile, selectedCategoryFilterMobile]);
-  useEffect(() => {
-    if (categories.length > 0) {
-      // Encontrar categoria "Diário"
-      const daily = categories.find(c => c.name === "Diário");
-      if (daily) {
-        setDailyCategory(daily.id);
-      }
-
-      // Selecionar primeira categoria que não seja "Diário"
-      if (!selectedCategory) {
-        const firstNonDaily = categories.find(c => c.name !== "Diário");
-        if (firstNonDaily) {
-          setSelectedCategory(firstNonDaily.id);
-        }
-      }
-
-      // Inicializar filtro de categorias com todas (exceto Diário) - apenas na primeira vez
-      if (!categoryFilterInitialized) {
-        const allCategoryIds = categories.filter(c => c.name !== "Diário").map(c => c.id);
-        setCategoryFilter(allCategoryIds);
-        setCategoryFilterInitialized(true);
-      }
-    }
-  }, [categories, selectedCategory, categoryFilterInitialized]);
+  }, [tasks, viewMode, categoryFilter, categories, isMobile, selectedCategoryFilterMobile, categoryFilterInitialized]);
 
   // Tags disponíveis (usar filteredTasks)
   const availableTags = useMemo(() => {
@@ -400,7 +354,7 @@ function Index() {
     setSearchTerm("");
     setPriorityFilter("all");
     setTagFilter("all");
-    setCategoryFilter([]);
+    clearCategoryFilters();
     setDisplayMode("by_category");
   };
 
