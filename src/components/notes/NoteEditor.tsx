@@ -3,7 +3,7 @@ import { Notebook } from "@/hooks/useNotebooks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -26,8 +26,9 @@ import FontSize from "@tiptap/extension-font-size";
 import { common, createLowlight } from "lowlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { ColorPicker } from "./ColorPicker";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, Task } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
+import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
 interface NoteEditorProps {
   note: Note;
   notebooks: Notebook[];
@@ -127,7 +128,7 @@ export function NoteEditor({
       HTMLAttributes: {
         class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto'
       }
-    })],
+    }), TaskBlockExtension],
     content: note.content || "",
     onUpdate: ({
       editor
@@ -407,6 +408,22 @@ export function NoteEditor({
       url: window.location.href
     });
   };
+
+  // Inserir bloco de tarefa do Kanban no editor
+  const handleInsertTaskBlock = useCallback((task: Task) => {
+    if (!editor) return;
+    
+    editor.chain().focus().insertTaskBlock({
+      taskId: task.id,
+      title: task.title,
+      isCompleted: task.is_completed ?? false,
+      priority: task.priority || 'medium',
+      dueDate: task.due_date || undefined,
+    }).run();
+    
+    toast.success(`Tarefa "${task.title}" inserida`);
+  }, [editor]);
+
   return <div className="flex flex-col min-h-[100dvh] transition-colors" style={{
     backgroundColor: color || undefined
   }}>
@@ -473,7 +490,11 @@ export function NoteEditor({
 
       {/* Editor de conteúdo */}
       <div className="flex-1 flex flex-col min-h-0 my-0 py-0">
-        <RichTextToolbar editor={editor} />
+        <RichTextToolbar 
+          editor={editor} 
+          tasks={tasks}
+          onInsertTaskBlock={handleInsertTaskBlock}
+        />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
           <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
         </div>
