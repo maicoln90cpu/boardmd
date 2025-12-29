@@ -1,18 +1,57 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, GripVertical, ExternalLink } from 'lucide-react';
+import { Calendar, GripVertical, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function TaskBlockComponent({ node, updateAttributes, selected }: NodeViewProps) {
   const { taskId, title, isCompleted, priority, dueDate } = node.attrs;
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const handleToggleComplete = () => {
-    updateAttributes({ isCompleted: !isCompleted });
-    // Nota: A sincronização com o Kanban será implementada na Etapa 4.2
-  };
+  const handleToggleComplete = useCallback(async () => {
+    if (isSyncing || !taskId) return;
+    
+    const newCompletedState = !isCompleted;
+    setIsSyncing(true);
+
+    // Atualização otimista no editor
+    updateAttributes({ isCompleted: newCompletedState });
+
+    try {
+      // Sincronizar com o banco de dados
+      const { error } = await supabase
+        .from("tasks")
+        .update({ 
+          is_completed: newCompletedState,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", taskId);
+
+      if (error) {
+        // Reverter em caso de erro
+        updateAttributes({ isCompleted: !newCompletedState });
+        toast.error("Erro ao sincronizar tarefa");
+        console.error("Erro ao atualizar tarefa:", error);
+      } else {
+        toast.success(newCompletedState ? "Tarefa concluída" : "Tarefa reaberta");
+        
+        // Disparar evento para atualizar Kanban
+        window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId } }));
+      }
+    } catch (err) {
+      // Reverter em caso de erro
+      updateAttributes({ isCompleted: !newCompletedState });
+      toast.error("Erro ao sincronizar");
+      console.error("Erro na sincronização:", err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [taskId, isCompleted, isSyncing, updateAttributes]);
 
   const getPriorityStyles = () => {
     switch (priority) {
@@ -66,12 +105,19 @@ export function TaskBlockComponent({ node, updateAttributes, selected }: NodeVie
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
 
-        {/* Checkbox */}
-        <Checkbox
-          checked={isCompleted}
-          onCheckedChange={handleToggleComplete}
-          className="mt-0.5 h-5 w-5"
-        />
+        {/* Checkbox com indicador de loading */}
+        <div className="relative mt-0.5">
+          {isSyncing ? (
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          ) : (
+            <Checkbox
+              checked={isCompleted}
+              onCheckedChange={handleToggleComplete}
+              className="h-5 w-5"
+              disabled={isSyncing}
+            />
+          )}
+        </div>
 
         {/* Conteúdo */}
         <div className="flex-1 min-w-0">
@@ -85,13 +131,14 @@ export function TaskBlockComponent({ node, updateAttributes, selected }: NodeVie
               {title || "Tarefa sem título"}
             </span>
             
-            {/* Link para abrir no Kanban (futuro) */}
+            {/* Link para abrir no Kanban */}
             <button
               className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded"
               title="Abrir no Kanban"
               onClick={(e) => {
                 e.stopPropagation();
-                // Futuro: Navegar para a tarefa no Kanban
+                // Navegar para a tarefa no Kanban
+                window.location.href = `/?task=${taskId}`;
               }}
             >
               <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
