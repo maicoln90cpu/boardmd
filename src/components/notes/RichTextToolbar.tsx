@@ -30,6 +30,7 @@ import {
   Target,
   LayoutList,
   Type,
+  ClipboardList,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -43,9 +44,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Task } from "@/hooks/useTasks";
+import { TaskSelectorModal } from "./TaskSelectorModal";
 
 interface RichTextToolbarProps {
   editor: Editor | null;
+  tasks?: Task[];
+  onInsertTaskBlock?: (task: Task) => void;
 }
 
 const TEXT_COLORS = [
@@ -73,12 +78,13 @@ const FONT_SIZES = [
   { name: "Muito Grande", value: "26px" },
 ];
 
-export function RichTextToolbar({ editor }: RichTextToolbarProps) {
+export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock }: RichTextToolbarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
+  const [showTaskSelector, setShowTaskSelector] = useState(false);
 
   if (!editor) return null;
 
@@ -663,6 +669,21 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
 
       <div className="w-px h-6 bg-border mx-1" />
 
+      {/* Inserir Tarefa do Kanban */}
+      {onInsertTaskBlock && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowTaskSelector(true)}
+          title="Inserir tarefa do Kanban"
+          className="text-primary hover:text-primary"
+        >
+          <ClipboardList className="h-4 w-4" />
+        </Button>
+      )}
+
+      <div className="w-px h-6 bg-border mx-1" />
+
       {/* AI Formatting */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -670,7 +691,7 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
             <Sparkles className={`h-4 w-4 ${isFormattingWithAI ? "animate-pulse" : ""}`} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
           <DropdownMenuItem onClick={() => formatWithAI("improve")}>
             <Sparkles className="mr-2 h-4 w-4" />
             Melhorar legibilidade
@@ -715,6 +736,18 @@ export function RichTextToolbar({ editor }: RichTextToolbarProps) {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Modal de seleção de tarefa */}
+      <TaskSelectorModal
+        open={showTaskSelector}
+        onOpenChange={setShowTaskSelector}
+        tasks={tasks}
+        onSelectTask={(task) => {
+          if (onInsertTaskBlock) {
+            onInsertTaskBlock(task);
+          }
+        }}
+      />
     </div>
   );
 }
