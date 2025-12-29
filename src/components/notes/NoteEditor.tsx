@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -30,6 +31,7 @@ import { useTasks, Task } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
+import { supabase } from "@/integrations/supabase/client";
 interface NoteEditorProps {
   note: Note;
   notebooks: Notebook[];
@@ -65,11 +67,13 @@ export function NoteEditor({
   // Buscar tarefas disponíveis
   const {
     tasks,
+    addTask,
     fetchTasks: refetchTasks
   } = useTasks("all");
   const {
     share
   } = useWebShare();
+  const { user } = useAuth();
 
   // Initialize lowlight for syntax highlighting
   const lowlight = createLowlight(common);
@@ -428,6 +432,63 @@ export function NoteEditor({
     toast.success(`Tarefa "${task.title}" inserida`);
   }, [editor]);
 
+  // Criar nova tarefa e retorná-la para inserção
+  const handleCreateTask = useCallback(async (taskData: { title: string; description?: string; priority: string }): Promise<Task | null> => {
+    // Buscar primeira categoria e coluna para inserir a tarefa
+    const { data: categoriesData } = await supabase
+      .from("categories")
+      .select("id")
+      .limit(1)
+      .single();
+
+    const { data: columnsData } = await supabase
+      .from("columns")
+      .select("id")
+      .order("position")
+      .limit(1)
+      .single();
+
+    if (!categoriesData || !columnsData) {
+      toast.error("Erro: Configure categorias e colunas primeiro");
+      return null;
+    }
+
+    if (!user) {
+      toast.error("Erro: Você precisa estar logado");
+      return null;
+    }
+
+    // Criar a tarefa
+    const { data: newTask, error } = await supabase
+      .from("tasks")
+      .insert([{
+        title: taskData.title,
+        description: taskData.description || null,
+        priority: taskData.priority,
+        category_id: categoriesData.id,
+        column_id: columnsData.id,
+        position: 0,
+        is_completed: false,
+        is_favorite: false,
+        user_id: user.id,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Erro ao criar tarefa");
+      console.error("Erro ao criar tarefa:", error);
+      return null;
+    }
+
+    toast.success("Tarefa criada com sucesso");
+    
+    // Refetch tasks para atualizar a lista
+    await refetchTasks();
+    
+    return newTask as unknown as Task;
+  }, [refetchTasks]);
+
   return <div className="flex flex-col min-h-[100dvh] transition-colors" style={{
     backgroundColor: color || undefined
   }}>
@@ -498,6 +559,7 @@ export function NoteEditor({
           editor={editor} 
           tasks={tasks}
           onInsertTaskBlock={handleInsertTaskBlock}
+          onCreateTask={handleCreateTask}
         />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
           <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
