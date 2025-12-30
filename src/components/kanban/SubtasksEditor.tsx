@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,6 +6,13 @@ import { Plus, X, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DndContext,
   closestCenter,
@@ -192,6 +199,12 @@ function SortableSubtask({
 export function SubtasksEditor({ subtasks, onChange }: SubtasksEditorProps) {
   const [newSubtask, setNewSubtask] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  
+  // Modal state for adding child subtask
+  const [addChildModalOpen, setAddChildModalOpen] = useState(false);
+  const [addChildParentId, setAddChildParentId] = useState<string | null>(null);
+  const [addChildTitle, setAddChildTitle] = useState("");
+  const childInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -273,27 +286,44 @@ export function SubtasksEditor({ subtasks, onChange }: SubtasksEditorProps) {
     onChange(findAndUpdate(subtasks, id, () => null));
   };
 
-  const addChildSubtask = (parentId: string) => {
-    const title = prompt("Nome do subitem:");
-    if (!title?.trim()) return;
+  const openAddChildModal = (parentId: string) => {
+    setAddChildParentId(parentId);
+    setAddChildTitle("");
+    setAddChildModalOpen(true);
+  };
+
+  const handleAddChildConfirm = () => {
+    if (!addChildTitle.trim() || !addChildParentId) return;
 
     const newChild: Subtask = {
       id: crypto.randomUUID(),
-      title: title.trim(),
+      title: addChildTitle.trim(),
       completed: false,
       children: [],
     };
 
     onChange(
-      findAndUpdate(subtasks, parentId, (item) => ({
+      findAndUpdate(subtasks, addChildParentId, (item) => ({
         ...item,
         children: [...(item.children || []), newChild],
       }))
     );
 
     // Expandir o parent automaticamente
-    setExpandedIds((prev) => new Set([...prev, parentId]));
+    setExpandedIds((prev) => new Set([...prev, addChildParentId]));
+    
+    // Fechar modal e limpar estado
+    setAddChildModalOpen(false);
+    setAddChildParentId(null);
+    setAddChildTitle("");
   };
+
+  // Focus input when modal opens
+  useEffect(() => {
+    if (addChildModalOpen && childInputRef.current) {
+      setTimeout(() => childInputRef.current?.focus(), 50);
+    }
+  }, [addChildModalOpen]);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -363,7 +393,7 @@ export function SubtasksEditor({ subtasks, onChange }: SubtasksEditorProps) {
                   depth={0}
                   onToggle={toggleSubtask}
                   onRemove={removeSubtask}
-                  onAddChild={addChildSubtask}
+                  onAddChild={openAddChildModal}
                   onToggleExpand={toggleExpand}
                   expandedIds={expandedIds}
                   onChildrenChange={handleChildrenChange}
@@ -391,6 +421,37 @@ export function SubtasksEditor({ subtasks, onChange }: SubtasksEditorProps) {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Modal para adicionar subitem */}
+      <Dialog open={addChildModalOpen} onOpenChange={setAddChildModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar subitem</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              ref={childInputRef}
+              placeholder="Nome do subitem..."
+              value={addChildTitle}
+              onChange={(e) => setAddChildTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddChildConfirm();
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddChildModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddChildConfirm} disabled={!addChildTitle.trim()}>
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
