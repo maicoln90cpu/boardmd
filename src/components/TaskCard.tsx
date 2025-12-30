@@ -12,6 +12,7 @@ import {
   Repeat,
   Copy,
   Share2,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWebShare } from "@/hooks/useWebShare";
@@ -32,6 +33,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR, formatDateOnlyBR } from "@/lib/dateUtils";
+import { useNavigate } from "react-router-dom";
+import confetti from "canvas-confetti";
 interface PriorityColors {
   high: { background: string; text: string };
   medium: { background: string; text: string };
@@ -233,6 +236,28 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const isUltraCompact = densityMode === "ultra-compact";
   const { toast } = useToast();
   const { share } = useWebShare();
+  const navigate = useNavigate();
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  // Função para disparar confetti a partir do card
+  const triggerConfetti = React.useCallback(() => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = (rect.left + rect.width / 2) / window.innerWidth;
+    const y = (rect.top + rect.height / 2) / window.innerHeight;
+    
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { x, y },
+      colors: ['#22c55e', '#16a34a', '#4ade80', '#86efac'],
+      ticks: 200,
+      gravity: 1.2,
+      scalar: 0.8,
+      shapes: ['circle', 'square'],
+    });
+  }, []);
 
   // Estado local otimista para animação instantânea
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
@@ -260,6 +285,12 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const executeToggleCompleted = async (checked: boolean, moveToCompleted: boolean = false) => {
     // Update otimista imediato
     setIsLocalCompleted(checked);
+    
+    // Disparar confetti se marcando como completa
+    if (checked) {
+      triggerConfetti();
+    }
+    
     try {
       const { error } = await supabase
         .from("tasks")
@@ -401,6 +432,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   };
   return (
     <>
+    <div ref={cardRef}>
     <HoverCard openDelay={300}>
       <HoverCardTrigger asChild>
         <motion.div
@@ -560,6 +592,19 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                       <ChevronRight className="h-3 w-3" />
                     </Button>
                   )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-4 w-4 p-0 text-primary hover:text-primary hover:bg-primary/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Navegar para Pomodoro com a tarefa selecionada
+                      navigate(`/pomodoro?task=${task.id}&title=${encodeURIComponent(task.title)}`);
+                    }}
+                    title="Iniciar Pomodoro com esta tarefa"
+                  >
+                    <Play className="h-3 w-3" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -939,6 +984,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         </div>
       </HoverCardContent>
     </HoverCard>
+    </div>
 
     {/* Modal de confirmação ao marcar tarefa como concluída */}
     <AlertDialog open={confirmCompleteOpen} onOpenChange={setConfirmCompleteOpen}>
