@@ -42,6 +42,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Task } from "@/hooks/useTasks";
@@ -168,39 +169,58 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
   };
 
   return (
-    <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10 overflow-x-auto">
-      {/* Formatação básica */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        className={editor.isActive("bold") ? "bg-accent" : ""}
-        title="Negrito (Ctrl+B)"
-      >
-        <Bold className="h-4 w-4" />
-      </Button>
+    <TooltipProvider delayDuration={300}>
+      <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10 overflow-x-auto">
+        {/* Formatação básica */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={editor.isActive("bold") ? "bg-accent" : ""}
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Negrito <kbd className="ml-1 text-xs bg-muted px-1 rounded">Ctrl+B</kbd></p>
+          </TooltipContent>
+        </Tooltip>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={editor.isActive("italic") ? "bg-accent" : ""}
-        title="Itálico (Ctrl+I)"
-      >
-        <Italic className="h-4 w-4" />
-      </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              className={editor.isActive("italic") ? "bg-accent" : ""}
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Itálico <kbd className="ml-1 text-xs bg-muted px-1 rounded">Ctrl+I</kbd></p>
+          </TooltipContent>
+        </Tooltip>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={editor.isActive("underline") ? "bg-accent" : ""}
-        title="Sublinhado (Ctrl+U)"
-      >
-        <Underline className="h-4 w-4" />
-      </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().toggleUnderline().run()}
+              className={editor.isActive("underline") ? "bg-accent" : ""}
+            >
+              <Underline className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Sublinhado <kbd className="ml-1 text-xs bg-muted px-1 rounded">Ctrl+U</kbd></p>
+          </TooltipContent>
+        </Tooltip>
 
-      <div className="w-px h-6 bg-border mx-1" />
+        <div className="w-px h-6 bg-border mx-1" />
 
       {/* Tamanho da fonte */}
       <DropdownMenu>
@@ -750,6 +770,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
         }}
         onCreateTask={onCreateTask}
       />
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

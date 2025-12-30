@@ -61,8 +61,14 @@ export function KanbanColumnHeader({
       <div className={`flex items-center justify-between ${styles.headerPadding}`}>
         <div className="flex items-center gap-2 flex-wrap">
           <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
-          <span className={`${styles.countText} text-muted-foreground`}>
-            ({taskCount})
+          <span className={`inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold ${
+            taskCount === 0 
+              ? "bg-muted text-muted-foreground" 
+              : taskCount > 5 
+                ? "bg-primary text-primary-foreground" 
+                : "bg-accent text-accent-foreground"
+          }`}>
+            {taskCount}
           </span>
           {isRecurrentColumn && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-medium">
