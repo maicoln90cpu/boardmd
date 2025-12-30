@@ -317,8 +317,13 @@ function Index() {
         return false;
       }
 
-      // Filtro de categoria (apenas no modo "all" e após inicialização)
-      if (viewMode === "all" && categoryFilterInitialized && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
+      // Filtro por categoria selecionada na sidebar (prioridade alta)
+      if (viewMode === "all" && selectedCategory && task.category_id !== selectedCategory) {
+        return false;
+      }
+
+      // Filtro de categoria (apenas no modo "all" e após inicialização, e quando não há categoria selecionada)
+      if (viewMode === "all" && !selectedCategory && categoryFilterInitialized && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
         return false;
       }
 
@@ -330,7 +335,7 @@ function Index() {
       }
       return true;
     });
-  }, [tasks, viewMode, categoryFilter, categories, isMobile, selectedCategoryFilterMobile, categoryFilterInitialized]);
+  }, [tasks, viewMode, categoryFilter, categories, isMobile, selectedCategoryFilterMobile, categoryFilterInitialized, selectedCategory]);
 
   // Tags disponíveis (usar filteredTasks)
   const availableTags = useMemo(() => {
@@ -474,7 +479,9 @@ function Index() {
         onImport={handleImport} 
         onThemeToggle={toggleTheme} 
         onViewChange={setViewMode} 
-        viewMode={viewMode} 
+        viewMode={viewMode}
+        onCategorySelect={setSelectedCategory}
+        selectedCategoryId={selectedCategory}
       />
 
       <main className="flex-1 overflow-auto">

@@ -159,7 +159,8 @@ export function CategoryTree({ categories, onCategorySelect, selectedCategoryId 
 
   const tree = buildTree(categories);
 
-  if (categories.length === 0) {
+  // Quando sidebar está colapsada, não mostrar a árvore de categorias
+  if (!sidebarOpen || categories.length === 0) {
     return null;
   }
 
