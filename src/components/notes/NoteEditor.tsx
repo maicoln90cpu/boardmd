@@ -26,6 +26,7 @@ import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import FontSize from "@tiptap/extension-font-size";
 import { common, createLowlight } from "lowlight";
 import { RichTextToolbar } from "./RichTextToolbar";
+import { TaskSelectorModal } from "./TaskSelectorModal";
 import { ColorPicker } from "./ColorPicker";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
@@ -370,12 +371,20 @@ export function NoteEditor({
     };
   }, []);
 
-  // Atalho de teclado para salvar (Ctrl+Enter / Cmd+Enter)
+  // Estado para modal de inserir tarefa via atalho
+  const [showTaskSelectorShortcut, setShowTaskSelectorShortcut] = useState(false);
+
+  // Atalhos de teclado para salvar (Ctrl+Enter) e inserir tarefa (Ctrl+Shift+T)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         handleSave();
+      }
+      // Ctrl+Shift+T para inserir tarefa do Kanban
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "t") {
+        e.preventDefault();
+        setShowTaskSelectorShortcut(true);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -580,5 +589,14 @@ export function NoteEditor({
           Cancelar
         </Button>
       </div>
+
+      {/* Modal de seleção de tarefa via atalho Ctrl+Shift+T */}
+      <TaskSelectorModal
+        open={showTaskSelectorShortcut}
+        onOpenChange={setShowTaskSelectorShortcut}
+        tasks={tasks}
+        onSelectTask={handleInsertTaskBlock}
+        onCreateTask={handleCreateTask}
+      />
     </div>;
 }
