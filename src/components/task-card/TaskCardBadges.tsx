@@ -1,0 +1,222 @@
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
+
+// Premium category color palette
+const categoryColorPalette = [
+  { bg: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #84cc16 0%, #65a30d 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #a855f7 0%, #9333ea 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)", text: "#ffffff" },
+  { bg: "linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)", text: "#ffffff" },
+];
+
+const priorityGradients = {
+  high: "linear-gradient(135deg, #ef4444 0%, #dc2626 50%, #b91c1c 100%)",
+  medium: "linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)",
+  low: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
+};
+
+const getCategoryColorIndex = (categoryName: string): number => {
+  let hash = 0;
+  for (let i = 0; i < categoryName.length; i++) {
+    hash = categoryName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % categoryColorPalette.length;
+};
+
+export const getCategoryBadgeStyle = (categoryName: string) => {
+  const colorIndex = getCategoryColorIndex(categoryName);
+  const color = categoryColorPalette[colorIndex];
+  return {
+    background: color.bg,
+    color: color.text,
+    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.12)",
+    border: "none",
+  };
+};
+
+export const getPriorityBadgeStyle = (priority: string) => {
+  const gradient = priorityGradients[priority as keyof typeof priorityGradients] || priorityGradients.low;
+  return {
+    background: gradient,
+    color: "#ffffff",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+    border: "none",
+  };
+};
+
+interface TaskCardBadgesProps {
+  dueDate: string | null;
+  priority: string | null;
+  categoryName?: string;
+  originalCategoryName?: string | null;
+  subtasksCount: number;
+  subtasksCompleted: number;
+  isDailyKanban: boolean;
+  hideBadges: boolean;
+  showCategoryBadge: boolean;
+  hasRecurrence: boolean;
+  densityMode: "comfortable" | "compact" | "ultra-compact";
+  urgency: "overdue" | "urgent" | "warning" | "normal";
+}
+
+export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
+  dueDate,
+  priority,
+  categoryName,
+  originalCategoryName,
+  subtasksCount,
+  subtasksCompleted,
+  isDailyKanban,
+  hideBadges,
+  showCategoryBadge,
+  hasRecurrence,
+  densityMode,
+  urgency,
+}) => {
+  const isOverdue = urgency === "overdue";
+  const isUrgent = urgency === "urgent";
+  const isWarning = urgency === "warning";
+
+  return (
+    <div
+      className={cn(
+        "flex items-center flex-wrap",
+        densityMode === "compact" && "gap-1.5",
+        densityMode === "comfortable" && "gap-2",
+      )}
+    >
+      {/* Date + time in daily kanban */}
+      {dueDate && isDailyKanban && (
+        <div
+          className={cn(
+            "flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded",
+            densityMode === "compact" && "text-[10px]",
+            densityMode === "comfortable" && "text-xs py-1 px-2",
+          )}
+        >
+          <Calendar
+            className={cn(
+              densityMode === "compact" && "h-2.5 w-2.5",
+              densityMode === "comfortable" && "h-3.5 w-3.5",
+            )}
+          />
+          {formatDateShortBR(dueDate)}
+          <Clock
+            className={cn(
+              "ml-1",
+              densityMode === "compact" && "h-2.5 w-2.5",
+              densityMode === "comfortable" && "h-3.5 w-3.5",
+            )}
+          />
+          {formatTimeOnlyBR(dueDate)}
+        </div>
+      )}
+
+      {dueDate && !isDailyKanban && (
+        <div
+          className={cn(
+            "flex items-center gap-0.5 rounded",
+            densityMode === "compact" && "px-1.5 py-0.5 text-[10px]",
+            densityMode === "comfortable" && "px-2 py-1 text-xs",
+            isOverdue
+              ? "bg-destructive/10 text-destructive"
+              : isUrgent
+                ? "bg-orange-500/10 text-orange-600"
+                : isWarning
+                  ? "bg-yellow-500/10 text-yellow-600"
+                  : "bg-muted",
+          )}
+        >
+          {isOverdue || isUrgent ? (
+            <AlertCircle
+              className={cn(
+                densityMode === "compact" && "h-2.5 w-2.5",
+                densityMode === "comfortable" && "h-3.5 w-3.5",
+              )}
+            />
+          ) : (
+            <Calendar
+              className={cn(
+                densityMode === "compact" && "h-2.5 w-2.5",
+                densityMode === "comfortable" && "h-3.5 w-3.5",
+              )}
+            />
+          )}
+          {formatDateShortBR(dueDate)}
+          <Clock
+            className={cn(
+              "ml-1",
+              densityMode === "compact" && "h-2.5 w-2.5",
+              densityMode === "comfortable" && "h-3.5 w-3.5",
+            )}
+          />
+          {formatTimeOnlyBR(dueDate)}
+        </div>
+      )}
+
+      {/* Priority badge */}
+      {!hideBadges && priority && (
+        <Badge
+          className={cn(
+            "rounded-full font-semibold tracking-wide shadow-sm transition-transform hover:scale-105",
+            densityMode === "compact" && "text-[10px] px-2.5 py-0.5",
+            densityMode === "comfortable" && "text-xs px-3 py-1",
+          )}
+          style={getPriorityBadgeStyle(priority)}
+        >
+          {priority === "high" ? "Alta" : priority === "medium" ? "Média" : "Baixa"}
+        </Badge>
+      )}
+
+      {/* Category badge for recurrent tasks in daily */}
+      {!hideBadges && isDailyKanban && hasRecurrence && originalCategoryName && (
+        <Badge
+          className={cn(
+            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+            densityMode === "compact" && "text-[10px] px-2 py-0.5",
+            densityMode === "comfortable" && "text-xs px-2.5 py-1",
+          )}
+          style={getCategoryBadgeStyle(originalCategoryName)}
+        >
+          📁 {originalCategoryName}
+        </Badge>
+      )}
+
+      {/* Category badge in projects */}
+      {!hideBadges && !isDailyKanban && showCategoryBadge && categoryName && (
+        <Badge
+          className={cn(
+            "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
+            densityMode === "compact" && "text-[10px] px-2 py-0.5",
+            densityMode === "comfortable" && "text-xs px-2.5 py-1",
+          )}
+          style={getCategoryBadgeStyle(categoryName)}
+        >
+          {categoryName}
+        </Badge>
+      )}
+
+      {/* Subtasks counter */}
+      {subtasksCount > 0 && (
+        <Badge
+          variant="outline"
+          className={cn(
+            densityMode === "compact" && "text-[10px] px-1 py-0",
+            densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
+          )}
+        >
+          ✓ {subtasksCompleted}/{subtasksCount}
+        </Badge>
+      )}
+    </div>
+  );
+};
