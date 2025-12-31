@@ -344,7 +344,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         }),
       );
     } catch (error) {
-      console.error("Erro ao atualizar tarefa:", error);
+      // Log apenas em DEV para evitar vazamento em produção
+      if (import.meta.env.DEV) {
+        console.error("Erro ao atualizar tarefa:", error);
+      }
       // Reverter se falhar
       setIsLocalCompleted(!checked);
       toast({
