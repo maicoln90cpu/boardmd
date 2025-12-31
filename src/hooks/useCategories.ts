@@ -138,7 +138,14 @@ export function useCategories() {
   const subscribeToCategories = () => {
     const channel = supabase
       .channel("categories-subscription")
-      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => {
+      // OTIMIZAÇÃO: Filtrar eventos específicos em vez de "*"
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "categories" }, () => {
+        fetchCategories();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "categories" }, () => {
+        fetchCategories();
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "categories" }, () => {
         fetchCategories();
       })
       .subscribe();
@@ -280,19 +287,26 @@ export function useCategories() {
 
   const reorderCategories = async (reorderedCategories: Category[]) => {
     try {
-      // Update all positions in a single transaction
+      // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = reorderedCategories.map((category, index) => ({
         id: category.id,
         position: index,
       }));
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from("categories")
-          .update({ position: update.position })
-          .eq("id", update.id);
+      // Executar todos os updates em paralelo
+      const results = await Promise.all(
+        updates.map(update =>
+          supabase
+            .from("categories")
+            .update({ position: update.position })
+            .eq("id", update.id)
+        )
+      );
 
-        if (error) throw error;
+      // Verificar se algum falhou
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        throw errors[0].error;
       }
 
       setCategories(reorderedCategories);

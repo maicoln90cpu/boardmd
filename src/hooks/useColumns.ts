@@ -77,7 +77,14 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
   const subscribeToColumns = () => {
     const channel = supabase
       .channel("columns-subscription")
-      .on("postgres_changes", { event: "*", schema: "public", table: "columns" }, () => {
+      // OTIMIZAÇÃO: Filtrar eventos específicos em vez de "*"
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "columns" }, () => {
+        fetchColumns();
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "columns" }, () => {
+        fetchColumns();
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "columns" }, () => {
         fetchColumns();
       })
       .subscribe();
@@ -244,17 +251,26 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
 
   const reorderColumns = async (newOrder: Column[]) => {
     try {
-      // Atualizar posições no banco
+      // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = newOrder.map((col, index) => ({
         id: col.id,
         position: index,
       }));
 
-      for (const update of updates) {
-        await supabase
-          .from("columns")
-          .update({ position: update.position })
-          .eq("id", update.id);
+      // Executar todos os updates em paralelo
+      const results = await Promise.all(
+        updates.map(update =>
+          supabase
+            .from("columns")
+            .update({ position: update.position })
+            .eq("id", update.id)
+        )
+      );
+
+      // Verificar se algum falhou
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        throw errors[0].error;
       }
 
       toast({ title: "Ordem das colunas atualizada" });

@@ -101,15 +101,37 @@ export function useTasks(categoryId: string | null | "all") {
     // Não podemos usar filtro direto na subscription, então monitoramos tudo
     const channel = supabase
       .channel(`tasks-${categoryId}`)
+      // OTIMIZAÇÃO: Filtrar eventos específicos em vez de "*"
       .on(
         "postgres_changes", 
         { 
-          event: "*", 
+          event: "INSERT", 
           schema: "public", 
           table: "tasks"
         }, 
         () => {
-          // Sempre refetch para aplicar filtros localmente
+          fetchTasks();
+        }
+      )
+      .on(
+        "postgres_changes", 
+        { 
+          event: "UPDATE", 
+          schema: "public", 
+          table: "tasks"
+        }, 
+        () => {
+          fetchTasks();
+        }
+      )
+      .on(
+        "postgres_changes", 
+        { 
+          event: "DELETE", 
+          schema: "public", 
+          table: "tasks"
+        }, 
+        () => {
           fetchTasks();
         }
       )
