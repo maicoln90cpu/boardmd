@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
@@ -213,6 +213,121 @@ function SidebarPinOption() {
         </div>
       )}
     </div>
+  );
+}
+
+// Componente para deletar conta (LGPD/GDPR)
+function DeleteAccountButton() {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDeleteAccount = async () => {
+    if (confirmText !== "DELETAR") {
+      toast({ 
+        title: "Confirmação incorreta", 
+        description: "Digite DELETAR para confirmar",
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({ 
+          title: "Erro", 
+          description: "Você precisa estar logado para deletar sua conta",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("delete-account", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error("Erro ao deletar conta:", error);
+        toast({ 
+          title: "Erro ao deletar conta", 
+          description: error.message,
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      toast({ 
+        title: "Conta deletada", 
+        description: "Todos os seus dados foram removidos permanentemente" 
+      });
+
+      await signOut();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Erro ao deletar conta:", error);
+      toast({ 
+        title: "Erro ao deletar conta", 
+        description: "Tente novamente mais tarde",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive">
+          <UserX className="h-4 w-4 mr-2" />
+          Excluir Conta
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-destructive">⚠️ Excluir Conta Permanentemente</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-4">
+            <p>
+              Esta ação é <strong>irreversível</strong>. Todos os seus dados serão permanentemente deletados, incluindo:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li>Tarefas e categorias</li>
+              <li>Notas e cadernos</li>
+              <li>Sessões Pomodoro e estatísticas</li>
+              <li>Configurações e preferências</li>
+              <li>Histórico de atividades</li>
+            </ul>
+            <div className="pt-4">
+              <Label htmlFor="confirm-delete">Digite <strong>DELETAR</strong> para confirmar:</Label>
+              <Input
+                id="confirm-delete"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="DELETAR"
+                className="mt-2"
+              />
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setConfirmText("")}>Cancelar</AlertDialogCancel>
+          <Button 
+            variant="destructive" 
+            onClick={handleDeleteAccount}
+            disabled={isDeleting || confirmText !== "DELETAR"}
+          >
+            {isDeleting ? "Deletando..." : "Excluir Conta Permanentemente"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1434,10 +1549,13 @@ export default function Config() {
 
                 <div className="space-y-2">
                   <Label>Conta</Label>
-                  <Button variant="destructive" onClick={handleLogout}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sair da Conta
-                  </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" onClick={handleLogout}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sair da Conta
+                    </Button>
+                    <DeleteAccountButton />
+                  </div>
                 </div>
               </CardContent>
             </Card>
