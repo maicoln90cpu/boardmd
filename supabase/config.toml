@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.cleanup-old-logs]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
