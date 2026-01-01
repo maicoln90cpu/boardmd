@@ -4,6 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { z } from "zod";
+import { toast } from "sonner";
+
+// Schema de validação para registro
+const signUpSchema = z.object({
+  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(100, "Senha muito longa"),
+  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome muito longo"),
+  phone: z.string().max(20, "Telefone muito longo").optional().or(z.literal(""))
+});
+
+// Schema de validação para login
+const signInSchema = z.object({
+  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(1, "Senha é obrigatória").max(100, "Senha muito longa")
+});
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -24,6 +40,22 @@ export function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação com Zod
+    try {
+      if (isSignUp) {
+        signUpSchema.parse({ email, password, name, phone: phone || undefined });
+      } else {
+        signInSchema.parse({ email, password });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const firstError = error.errors[0];
+        toast.error("Erro de validação", { description: firstError.message });
+        return;
+      }
+    }
+    
     setLoading(true);
     try {
       if (isSignUp) {
