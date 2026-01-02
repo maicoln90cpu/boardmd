@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { pushNotifications } from "@/utils/pushNotifications";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useSettings } from "./useSettings";
 import { Task } from "./useTasks";
 import { differenceInMinutes, isPast } from "date-fns";

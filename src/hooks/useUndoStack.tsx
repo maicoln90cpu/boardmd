@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
 
 /**

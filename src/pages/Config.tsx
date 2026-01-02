@@ -4,7 +4,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/useCategories";
 import { useTags, TAG_PRESET_COLORS } from "@/hooks/useTags";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";

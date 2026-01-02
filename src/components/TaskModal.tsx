@@ -17,7 +17,7 @@ import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
 import { TagSelector } from "@/components/TagSelector";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { ScrollArea } from "@/components/ui/scroll-area";

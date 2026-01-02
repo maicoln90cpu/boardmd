@@ -1,4 +1,4 @@
-import { useToast } from "./use-toast";
+import { useToast } from "./useToast";
 
 export interface ShareData {
   title: string;

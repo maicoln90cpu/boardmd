@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Column } from "@/hooks/useColumns";
 import { Task } from "@/hooks/useTasks";
 import { useUndo } from "@/hooks/useUndoStack";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
 

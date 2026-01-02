@@ -9,7 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/useSettings";
 import { useCategoryFilters } from "@/hooks/useCategoryFilters";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
 export function useIndexState() {

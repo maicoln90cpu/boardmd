@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Task } from "./useTasks";
-import { useToast } from "./use-toast";
+import { useToast } from "./useToast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "./useSettings";
