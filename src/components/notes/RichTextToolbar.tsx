@@ -47,6 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Task } from "@/hooks/useTasks";
 import { TaskSelectorModal } from "./TaskSelectorModal";
+import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 
 interface RichTextToolbarProps {
   editor: Editor | null;
@@ -87,6 +88,9 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
   const [imageUrl, setImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
+  
+  // Rate limiter para endpoint de IA
+  const { checkLimit: checkAILimit } = useRateLimiter(RATE_LIMIT_CONFIGS.ai);
 
   if (!editor) return null;
 
@@ -129,6 +133,9 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
   };
 
   const formatWithAI = async (action: string) => {
+    // Verificar rate limit antes de fazer requisição
+    if (!checkAILimit()) return;
+    
     if (!editor) return;
 
     const content = editor.getHTML();
