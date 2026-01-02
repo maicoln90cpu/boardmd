@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSettings } from "./useSettings";
-import { useToast } from "./use-toast";
+import { useToast } from "./useToast";
 
 export interface FilterPreset {
   id: string;

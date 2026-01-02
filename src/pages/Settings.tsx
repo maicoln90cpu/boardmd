@@ -10,7 +10,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { Home, Settings as SettingsIcon } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 export default function Settings() {
   const { settings, updateSettings, resetSettings } = useSettings();

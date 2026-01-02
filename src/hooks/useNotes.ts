@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { offlineSync } from "@/utils/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { toast as sonnerToast } from "sonner";

@@ -181,7 +181,7 @@ export function KanbanBoard({
       const finalCategoryId = categoryId === "all" ? taskData.category_id : categoryId;
       
       if (!finalCategoryId || finalCategoryId === "all") {
-        const { toast } = await import("@/hooks/use-toast");
+        const { toast } = await import("@/hooks/useToast");
         toast({
           title: "Categoria obrigatória",
           description: "Por favor, selecione uma categoria para a tarefa.",

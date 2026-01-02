@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { validateImportFile, prepareMergeData, ValidationResult, MergeResult } from "@/lib/importValidation";
 import { Task } from "@/hooks/useTasks";
