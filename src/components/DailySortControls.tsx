@@ -5,6 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Task } from "@/hooks/useTasks";
+import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 import {
   Dialog,
   DialogContent,
@@ -44,8 +45,14 @@ export function DailySortControls({
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [aiResult, setAiResult] = useState<AIOrganizationResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Rate limiter para endpoint de IA
+  const { checkLimit: checkAILimit } = useRateLimiter(RATE_LIMIT_CONFIGS.ai);
 
   const organizeWithAI = async () => {
+    // Verificar rate limit antes de fazer requisição
+    if (!checkAILimit()) return;
+    
     if (!tasks || tasks.length === 0) {
       toast.error("Não há tarefas para organizar");
       return;
