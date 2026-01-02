@@ -50,6 +50,18 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     // Ordem de deleção para respeitar dependências
+    // Registrar evento de auditoria ANTES de deletar
+    console.log(`[delete-account] Logging audit event for user: ${userId}`);
+    await adminClient.from("audit_logs").insert({
+      user_id: userId,
+      event_type: "delete_account",
+      metadata: { 
+        requested_at: new Date().toISOString(),
+        reason: "user_requested"
+      },
+      user_agent: req.headers.get("user-agent") || "unknown"
+    });
+
     const tablesToDelete = [
       { table: "push_logs", column: "user_id" },
       { table: "push_subscriptions", column: "user_id" },
@@ -67,6 +79,7 @@ Deno.serve(async (req) => {
       { table: "user_settings", column: "user_id" },
       { table: "trash", column: "user_id" },
       { table: "project_templates", column: "created_by" },
+      { table: "audit_logs", column: "user_id" }, // Deletar logs de auditoria por último
       { table: "profiles", column: "id" },
     ];
 

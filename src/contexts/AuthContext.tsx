@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAuditEvent } from "@/hooks/useAuditLog";
 
 interface AuthContextType {
   user: User | null;
@@ -62,6 +63,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     toast.success("Sucesso!", { description: "Conta criada com sucesso" });
+    
+    // Log de auditoria
+    if (data.user) {
+      setTimeout(() => {
+        logAuditEvent({ eventType: 'signup', metadata: { email } });
+      }, 0);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -100,9 +108,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     setLoading(false);
     toast.success("Sucesso!", { description: "Login realizado com sucesso" });
+    
+    // Log de auditoria
+    setTimeout(() => {
+      logAuditEvent({ eventType: 'login', metadata: { email } });
+    }, 0);
   };
 
   const signOut = async () => {
+    // Log de auditoria antes do logout
+    await logAuditEvent({ eventType: 'logout' });
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       toast.error("Erro ao sair", { description: error.message });
