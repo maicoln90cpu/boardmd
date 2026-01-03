@@ -1,7 +1,12 @@
 import { useMemo } from "react";
 import { Task } from "./useTasks";
 import { Category } from "./useCategories";
-import { isToday, isTomorrow, isThisWeek, isPast, parseISO, startOfDay } from "date-fns";
+import {
+  filterBySearchTerm,
+  filterByPriority,
+  filterByTag,
+  filterByDueDate,
+} from "@/lib/taskFilters";
 
 export interface TaskFilterOptions {
   searchTerm?: string;
@@ -60,57 +65,31 @@ export function useTaskFiltering(
     });
   }, [tasks, excludeCategoryId, categoryFilter, categoryFilterInitialized, selectedCategoryFilterMobile, isMobile, viewMode]);
 
-  // Aplicar filtros de busca, prioridade, tag e data
+  // Aplicar filtros de busca, prioridade, tag e data usando funções centralizadas
   const filteredTasks = useMemo(() => {
-    return categoryFilteredTasks.filter((task) => {
-      // Filtro de busca
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesTitle = task.title.toLowerCase().includes(searchLower);
-        const matchesDescription = task.description?.toLowerCase().includes(searchLower);
-        const matchesTags = task.tags?.some((tag) => tag.toLowerCase().includes(searchLower));
-        if (!matchesTitle && !matchesDescription && !matchesTags) {
-          return false;
-        }
-      }
+    let result = categoryFilteredTasks;
 
-      // Filtro de prioridade
-      if (priorityFilter !== "all" && task.priority !== priorityFilter) {
-        return false;
-      }
+    // Filtro de busca
+    if (searchTerm) {
+      result = filterBySearchTerm(result, searchTerm);
+    }
 
-      // Filtro de tag
-      if (tagFilter !== "all" && !task.tags?.includes(tagFilter)) {
-        return false;
-      }
+    // Filtro de prioridade
+    if (priorityFilter !== "all") {
+      result = filterByPriority(result, priorityFilter);
+    }
 
-      // Filtro de data de vencimento
-      if (dueDateFilter !== "all" && task.due_date) {
-        const dueDate = parseISO(task.due_date);
-        const today = startOfDay(new Date());
+    // Filtro de tag
+    if (tagFilter !== "all") {
+      result = filterByTag(result, tagFilter);
+    }
 
-        switch (dueDateFilter) {
-          case "today":
-            if (!isToday(dueDate)) return false;
-            break;
-          case "tomorrow":
-            if (!isTomorrow(dueDate)) return false;
-            break;
-          case "this_week":
-            if (!isThisWeek(dueDate, { weekStartsOn: 1 })) return false;
-            break;
-          case "overdue":
-            if (!isPast(dueDate) || isToday(dueDate)) return false;
-            break;
-          case "no_date":
-            return false; // Tem data, então não passa neste filtro
-        }
-      } else if (dueDateFilter === "no_date" && task.due_date) {
-        return false; // Filtro "sem data" mas tarefa tem data
-      }
+    // Filtro de data de vencimento
+    if (dueDateFilter !== "all") {
+      result = filterByDueDate(result, dueDateFilter);
+    }
 
-      return true;
-    });
+    return result;
   }, [categoryFilteredTasks, searchTerm, priorityFilter, tagFilter, dueDateFilter]);
 
   // Extrair tags disponíveis das tarefas filtradas

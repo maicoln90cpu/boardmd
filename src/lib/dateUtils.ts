@@ -118,3 +118,49 @@ export const formatCalendarDateBR = (date: Date | string): string => {
     month: "short",
   });
 };
+
+// ============= Tipos para DateTime =============
+
+export interface DateTimeParsed {
+  date: number;
+  time: number;
+}
+
+/**
+ * Extrai data e hora como números para ordenação
+ * @param dateStr - String de data ISO ou null
+ * @param defaultValue - Valor padrão quando dateStr é null (usar Infinity para ordenação)
+ * @returns Objeto com date (YYYYMMDD) e time (minutos desde meia-noite)
+ */
+export const parseDateTimeForSort = (
+  dateStr: string | null,
+  defaultValue: number = Number.POSITIVE_INFINITY
+): DateTimeParsed => {
+  if (!dateStr) return { date: defaultValue, time: defaultValue };
+
+  const date = new Date(dateStr);
+  const tz = getTimezone();
+
+  const dateOnlyStr = date.toLocaleDateString("pt-BR", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const [day, month, year] = dateOnlyStr.split("/").map(Number);
+  const dateNum = year * 10000 + month * 100 + day;
+
+  const timeStr = date.toLocaleTimeString("pt-BR", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const [hours, minutes] = timeStr.split(":").map(Number);
+  return { date: dateNum, time: hours * 60 + minutes };
+};
+
+// Alias para compatibilidade com código existente
+export const getDateTimeSP = parseDateTimeForSort;
