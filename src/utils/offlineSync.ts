@@ -1,10 +1,6 @@
-interface QueuedOperation {
-  id: string;
-  type: 'task' | 'note' | 'category';
-  action: 'create' | 'update' | 'delete';
-  data: any;
-  timestamp: number;
-}
+import { QueuedOperation } from "@/types";
+
+export type { QueuedOperation };
 
 const QUEUE_KEY = 'offline_operations_queue';
 

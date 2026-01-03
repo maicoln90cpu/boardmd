@@ -1,26 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSettings } from "./useSettings";
+import { useSettings, AppSettings } from "./useSettings";
 import { useToast } from "./useToast";
+import { FilterPreset, FilterPresetsData } from "@/types";
 
-export interface FilterPreset {
-  id: string;
-  name: string;
-  icon?: string;
-  filters: {
-    searchTerm?: string;
-    priorityFilter?: string;
-    tagFilter?: string;
-    categoryFilter?: string[];
-    displayMode?: string;
-    sortOption?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-exportar tipos para compatibilidade
+export type { FilterPreset, FilterPresetsData };
 
-export interface FilterPresetsData {
-  presets: FilterPreset[];
-  activePresetId?: string;
+// Extensão do AppSettings para incluir filterPresets
+interface SettingsWithPresets extends AppSettings {
+  filterPresets?: FilterPresetsData;
 }
 
 const defaultPresetsData: FilterPresetsData = {
@@ -33,8 +21,11 @@ export function useFilterPresets() {
   const { toast } = useToast();
   const [activePresetId, setActivePresetId] = useState<string | undefined>(undefined);
 
+  // Cast settings para incluir filterPresets
+  const settingsWithPresets = settings as SettingsWithPresets;
+
   // Carregar presets do settings
-  const presetsData: FilterPresetsData = (settings as any).filterPresets || defaultPresetsData;
+  const presetsData: FilterPresetsData = settingsWithPresets.filterPresets || defaultPresetsData;
   const presets = presetsData.presets || [];
 
   // Sincronizar activePresetId com settings
@@ -60,14 +51,15 @@ export function useFilterPresets() {
     };
 
     const updatedPresets = [...presets, newPreset];
-    
+
+    // Usar cast para extender settings com filterPresets
     updateSettings({
-      ...(settings as any),
+      ...settingsWithPresets,
       filterPresets: {
         presets: updatedPresets,
         activePresetId: newPreset.id,
       },
-    } as any);
+    } as Partial<AppSettings>);
 
     try {
       await saveSettings();
@@ -85,7 +77,7 @@ export function useFilterPresets() {
       });
       return null;
     }
-  }, [presets, settings, updateSettings, saveSettings, toast]);
+  }, [presets, settingsWithPresets, updateSettings, saveSettings, toast]);
 
   // Atualizar preset existente
   const updatePreset = useCallback(async (
@@ -103,12 +95,12 @@ export function useFilterPresets() {
     };
 
     updateSettings({
-      ...(settings as any),
+      ...settingsWithPresets,
       filterPresets: {
         ...presetsData,
         presets: updatedPresets,
       },
-    } as any);
+    } as Partial<AppSettings>);
 
     try {
       await saveSettings();
@@ -125,7 +117,7 @@ export function useFilterPresets() {
       });
       return false;
     }
-  }, [presets, presetsData, settings, updateSettings, saveSettings, toast]);
+  }, [presets, presetsData, settingsWithPresets, updateSettings, saveSettings, toast]);
 
   // Deletar preset
   const deletePreset = useCallback(async (presetId: string): Promise<boolean> => {
@@ -136,12 +128,12 @@ export function useFilterPresets() {
     const newActiveId = activePresetId === presetId ? undefined : activePresetId;
 
     updateSettings({
-      ...(settings as any),
+      ...settingsWithPresets,
       filterPresets: {
         presets: updatedPresets,
         activePresetId: newActiveId,
       },
-    } as any);
+    } as Partial<AppSettings>);
 
     try {
       await saveSettings();
@@ -161,7 +153,7 @@ export function useFilterPresets() {
       });
       return false;
     }
-  }, [presets, activePresetId, settings, updateSettings, saveSettings, toast]);
+  }, [presets, activePresetId, settingsWithPresets, updateSettings, saveSettings, toast]);
 
   // Aplicar preset (retorna os filtros para o componente aplicar)
   const applyPreset = useCallback(async (presetId: string): Promise<FilterPreset["filters"] | null> => {
@@ -176,12 +168,12 @@ export function useFilterPresets() {
 
     // Atualizar activePresetId nos settings
     updateSettings({
-      ...(settings as any),
+      ...settingsWithPresets,
       filterPresets: {
         ...presetsData,
         activePresetId: presetId,
       },
-    } as any);
+    } as Partial<AppSettings>);
 
     try {
       await saveSettings();
@@ -194,25 +186,25 @@ export function useFilterPresets() {
     } catch (error) {
       return preset.filters; // Ainda retorna os filtros mesmo se falhar o save
     }
-  }, [presets, presetsData, settings, updateSettings, saveSettings, toast]);
+  }, [presets, presetsData, settingsWithPresets, updateSettings, saveSettings, toast]);
 
   // Limpar preset ativo
   const clearActivePreset = useCallback(async () => {
     updateSettings({
-      ...(settings as any),
+      ...settingsWithPresets,
       filterPresets: {
         ...presetsData,
         activePresetId: undefined,
       },
-    } as any);
+    } as Partial<AppSettings>);
 
     try {
       await saveSettings();
       setActivePresetId(undefined);
-    } catch (error) {
+    } catch {
       // Ignora erro
     }
-  }, [presetsData, settings, updateSettings, saveSettings]);
+  }, [presetsData, settingsWithPresets, updateSettings, saveSettings]);
 
   // Obter preset ativo
   const getActivePreset = useCallback((): FilterPreset | undefined => {

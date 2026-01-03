@@ -1,4 +1,5 @@
 import { useTrash, TrashItem } from "@/hooks/useTrash";
+import { TrashNoteData, TrashNotebookData } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Trash2, RotateCcw, X } from "lucide-react";
@@ -41,9 +42,17 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
 
   const getItemTitle = (item: TrashItem) => {
     if (item.item_type === "notebook") {
-      return `📓 ${item.item_data.notebook?.name || "Caderno sem nome"}`;
+      const data = item.item_data as TrashNotebookData;
+      return `📓 ${data.notebook?.name || "Caderno sem nome"}`;
     }
-    return `📝 ${item.item_data.title || "Nota sem título"}`;
+    const data = item.item_data as TrashNoteData;
+    return `📝 ${data.title || "Nota sem título"}`;
+  };
+
+  const getNotebookNotesCount = (item: TrashItem): number => {
+    if (item.item_type !== "notebook") return 0;
+    const data = item.item_data as TrashNotebookData;
+    return data.notes?.length || 0;
   };
 
   return (
@@ -91,9 +100,9 @@ export function TrashDialog({ open, onOpenChange }: TrashDialogProps) {
                       })}
                     </p>
                     {item.item_type === "notebook" &&
-                      item.item_data.notes?.length > 0 && (
+                      getNotebookNotesCount(item) > 0 && (
                         <p className="text-xs text-muted-foreground">
-                          ({item.item_data.notes.length} notas incluídas)
+                          ({getNotebookNotesCount(item)} notas incluídas)
                         </p>
                       )}
                   </div>
