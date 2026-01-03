@@ -185,10 +185,3 @@ export interface TaskWithCategory {
     name: string;
   } | null;
 }
-
-// ============= Tipos para DateTime SP =============
-
-export interface DateTimeSP {
-  date: number;
-  time: number;
-}

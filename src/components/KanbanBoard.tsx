@@ -18,7 +18,8 @@ import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { useKanbanDragDrop } from "@/hooks/useKanbanDragDrop";
 import { useKanbanTaskActions } from "@/hooks/useKanbanTaskActions";
 import { supabase } from "@/integrations/supabase/client";
-import { TaskWithCategory, DateTimeSP } from "@/types";
+import { TaskWithCategory } from "@/types";
+import { sortTasksByOption, SortOptionType } from "@/lib/taskFilters";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -92,28 +93,6 @@ export function KanbanBoard({
 
   // Mapa de categorias originais para tarefas espelhadas
   const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});
-
-  // Função auxiliar para extrair data/hora no fuso SP
-  const getDateTimeSP = useCallback((dateStr: string | null, defaultValue: number): DateTimeSP => {
-    if (!dateStr) return { date: defaultValue, time: defaultValue };
-    const date = new Date(dateStr);
-    const dateOnlySP = date.toLocaleDateString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-    const [day, month, year] = dateOnlySP.split("/").map(Number);
-    const dateNum = year * 10000 + month * 100 + day;
-    const timeStr = date.toLocaleTimeString("pt-BR", {
-      timeZone: "America/Sao_Paulo",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    return { date: dateNum, time: hours * 60 + minutes };
-  }, []);
 
   useEffect(() => {
     if (!isDailyKanban) return;
@@ -270,40 +249,9 @@ export function KanbanBoard({
       return true;
     });
 
-    // Aplicar ordenação
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortOption) {
-        case "name_asc":
-          return a.title.localeCompare(b.title, "pt-BR");
-        case "name_desc":
-          return b.title.localeCompare(a.title, "pt-BR");
-        case "priority_asc": {
-          const priorityMap: Record<string, number> = { low: 1, medium: 2, high: 3 };
-          return (priorityMap[a.priority || "medium"] || 2) - (priorityMap[b.priority || "medium"] || 2);
-        }
-        case "priority_desc": {
-          const priorityMap: Record<string, number> = { low: 1, medium: 2, high: 3 };
-          return (priorityMap[b.priority || "medium"] || 2) - (priorityMap[a.priority || "medium"] || 2);
-        }
-        case "date_asc": {
-          const dtA = getDateTimeSP(a.due_date, Number.POSITIVE_INFINITY);
-          const dtB = getDateTimeSP(b.due_date, Number.POSITIVE_INFINITY);
-          if (dtA.date !== dtB.date) return dtA.date - dtB.date;
-          return dtA.time - dtB.time;
-        }
-        case "date_desc": {
-          const dtA = getDateTimeSP(a.due_date, Number.NEGATIVE_INFINITY);
-          const dtB = getDateTimeSP(b.due_date, Number.NEGATIVE_INFINITY);
-          if (dtA.date !== dtB.date) return dtB.date - dtA.date;
-          return dtB.time - dtA.time;
-        }
-        default:
-          return a.position - b.position;
-      }
-    });
-
-    return sorted;
-  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, settings.kanban.hideCompletedTasks, sortOption, getDateTimeSP]);
+    // Aplicar ordenação usando função centralizada
+    return sortTasksByOption(filtered, sortOption as SortOptionType);
+  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, settings.kanban.hideCompletedTasks, sortOption]);
 
   // Mobile view
   if (isMobile) {
