@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/useToast";
+import { logger } from "@/lib/logger";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -112,7 +113,7 @@ export function MobileKanbanView({
         duration: 1500,
       });
     } catch (error) {
-      console.error("Erro ao atualizar tarefa:", error);
+      logger.error("Erro ao atualizar tarefa:", error);
       toast({
         title: "Erro ao atualizar tarefa",
         variant: "destructive",

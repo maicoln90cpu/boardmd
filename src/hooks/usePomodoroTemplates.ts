@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface PomodoroTemplate {
   id: string;
@@ -37,7 +38,7 @@ export function usePomodoroTemplates() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching templates:", error);
+        logger.error("Error fetching templates:", error);
         toast.error("Erro ao carregar templates");
       } else {
         setTemplates((data as PomodoroTemplate[]) || []);
@@ -89,7 +90,7 @@ export function usePomodoroTemplates() {
       .single();
 
     if (error) {
-      console.error("Error creating template:", error);
+      logger.error("Error creating template:", error);
       toast.error("Erro ao criar template");
     } else {
       setTemplates((prev) => [data as PomodoroTemplate, ...prev]);
@@ -110,7 +111,7 @@ export function usePomodoroTemplates() {
       .eq("id", id);
 
     if (error) {
-      console.error("Error updating template:", error);
+      logger.error("Error updating template:", error);
       toast.error("Erro ao atualizar template");
     } else {
       setTemplates((prev) =>
@@ -127,7 +128,7 @@ export function usePomodoroTemplates() {
       .eq("id", id);
 
     if (error) {
-      console.error("Error deleting template:", error);
+      logger.error("Error deleting template:", error);
       toast.error("Erro ao excluir template");
     } else {
       setTemplates((prev) => prev.filter((t) => t.id !== id));

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function PushNotificationsSettings() {
   const { tasks } = useTasks("all");
@@ -38,7 +39,7 @@ export function PushNotificationsSettings() {
       const subs = await pushNotifications.getActiveSubscriptions();
       setDevices(subs);
     } catch (error) {
-      console.error('Error loading devices:', error);
+      logger.error('Error loading devices:', error);
     }
   };
 
@@ -47,7 +48,7 @@ export function PushNotificationsSettings() {
       const pushLogs = await pushNotifications.getPushLogs(20);
       setLogs(pushLogs);
     } catch (error) {
-      console.error('Error loading logs:', error);
+      logger.error('Error loading logs:', error);
     }
   };
 
@@ -113,7 +114,7 @@ export function PushNotificationsSettings() {
       await loadDevices();
       await loadLogs();
     } catch (error) {
-      console.error('Error sending test notification:', error);
+      logger.error('Error sending test notification:', error);
       toast.error('Erro ao enviar notificação de teste');
     } finally {
       setTesting(false);

@@ -2,6 +2,7 @@ import { offlineSync, QueuedOperation } from "./offlineSync";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { logger } from "@/lib/logger";
 
 const SYNC_TAG = "supabase-sync";
 
@@ -11,9 +12,9 @@ export const backgroundSync = {
       try {
         const registration = await navigator.serviceWorker.ready;
         await (registration as any).sync.register(SYNC_TAG);
-        if (import.meta.env.DEV) console.log('Background sync registered');
+        logger.log('Background sync registered');
       } catch (error) {
-        if (import.meta.env.DEV) console.log('Background sync not supported, using fallback');
+        logger.info('Background sync not supported, using fallback');
         this.startPolling();
       }
     } else {
@@ -57,7 +58,7 @@ export const backgroundSync = {
         offlineSync.removeOperation(operation.id);
         successCount++;
       } catch (error) {
-        if (import.meta.env.DEV) console.error('Failed to sync operation:', error);
+        logger.error('Failed to sync operation:', error);
         hasErrors = true;
       }
     }

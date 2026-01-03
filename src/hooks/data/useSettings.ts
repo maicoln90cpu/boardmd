@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
 import { getDefaultPrompt } from "@/lib/defaultAIPrompts";
+import { logger } from "@/lib/logger";
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -182,7 +183,7 @@ export function useSettings() {
         .maybeSingle();
 
       if (error) {
-        console.error("Error loading settings:", error);
+        logger.error("Error loading settings:", error);
         setSettings(defaultSettings);
       } else if (data?.settings) {
         const loadedSettings = data.settings as Partial<AppSettings>;

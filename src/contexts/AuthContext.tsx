@@ -3,6 +3,7 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/hooks/useAuditLog";
+import { logger } from "@/lib/logger";
 
 interface AuthContextType {
   user: User | null;
@@ -100,8 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phone: null 
           }]);
 
-        if (insertError && import.meta.env.DEV) {
-          console.error("Erro ao criar perfil:", insertError);
+        if (insertError) {
+          logger.error("Erro ao criar perfil:", insertError);
         }
       }
     }

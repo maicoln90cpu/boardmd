@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { logger } from "@/lib/logger";
 
 interface IntegrityIssue {
   type: 'broken_reference' | 'duplicate' | 'orphan_mirror' | 'missing_mutual';
@@ -151,7 +152,7 @@ export function DataIntegrityMonitor() {
       }
 
     } catch (err) {
-      console.error('Erro na verificação:', err);
+      logger.error('Erro na verificação:', err);
       toast.error('Erro ao verificar integridade');
     } finally {
       setLoading(false);
@@ -197,7 +198,7 @@ export function DataIntegrityMonitor() {
       }
       await runIntegrityCheck();
     } catch (err) {
-      console.error('Erro ao corrigir:', err);
+      logger.error('Erro ao corrigir:', err);
       toast.error('Erro ao corrigir problema');
     } finally {
       setFixing(false);
@@ -220,7 +221,7 @@ export function DataIntegrityMonitor() {
             .eq('id', issue.taskId);
           
           if (error) {
-            console.error('Erro ao corrigir broken_reference:', issue.taskId, error);
+            logger.error('Erro ao corrigir broken_reference:', issue.taskId, error);
             failed++;
           } else {
             fixed++;
@@ -234,7 +235,7 @@ export function DataIntegrityMonitor() {
               .eq('id', issue.mirrorTaskId);
             
             if (error) {
-              console.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
+              logger.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
               failed++;
             } else {
               fixed++;
@@ -242,7 +243,7 @@ export function DataIntegrityMonitor() {
           }
         }
       } catch (err) {
-        console.error('Erro ao corrigir:', issue, err);
+        logger.error('Erro ao corrigir:', issue, err);
         failed++;
       }
     }
