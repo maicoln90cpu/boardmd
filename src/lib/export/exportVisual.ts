@@ -1,5 +1,6 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { logger } from '@/lib/logger';
 
 export async function exportToPNG(elementId: string, filename: string = 'kanban-export') {
   const element = document.getElementById(elementId);
@@ -27,7 +28,7 @@ export async function exportToPNG(elementId: string, filename: string = 'kanban-
       }
     });
   } catch (error) {
-    console.error('Error exporting to PNG:', error);
+    logger.error('Error exporting to PNG:', error);
     throw error;
   }
 }
@@ -56,7 +57,7 @@ export async function exportToPDF(elementId: string, filename: string = 'kanban-
     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
     pdf.save(`${filename}.pdf`);
   } catch (error) {
-    console.error('Error exporting to PDF:', error);
+    logger.error('Error exporting to PDF:', error);
     throw error;
   }
 }

@@ -4,6 +4,7 @@ import "./index.css";
 import { registerSW } from 'virtual:pwa-register';
 import { backgroundSync } from './utils/backgroundSync';
 import { toast } from 'sonner';
+import { logger, prodLogger } from './lib/logger';
 
 // Register service worker with enhanced update handling
 const updateSW = registerSW({
@@ -31,7 +32,7 @@ const updateSW = registerSW({
     });
   },
   onRegistered(registration) {
-    if (import.meta.env.DEV) console.log('SW registered:', registration);
+    logger.log('SW registered:', registration);
     
     // Check for updates every hour
     if (registration) {
@@ -41,7 +42,7 @@ const updateSW = registerSW({
     }
   },
   onRegisterError(error) {
-    console.error('SW registration error:', error);
+    prodLogger.error('SW registration error:', error);
   },
   immediate: true
 });
@@ -70,7 +71,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 const isStandalone = ('standalone' in window.navigator) && (window.navigator as any).standalone;
 
 if (isIOS && isStandalone) {
-  if (import.meta.env.DEV) console.log('Running as iOS PWA');
+  logger.log('Running as iOS PWA');
   // Add any iOS-specific PWA handling here
 }
 
