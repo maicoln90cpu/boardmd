@@ -18,6 +18,7 @@ import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { useKanbanDragDrop } from "@/hooks/useKanbanDragDrop";
 import { useKanbanTaskActions } from "@/hooks/useKanbanTaskActions";
 import { supabase } from "@/integrations/supabase/client";
+import { TaskWithCategory, DateTimeSP } from "@/types";
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -60,73 +61,98 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { tasks: rawTasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { columns: allColumns, updateColumnColor } = useColumns();
-  
+
   // FILTRO DE CATEGORIAS
   const tasks = useMemo(() => {
     if (categoryId !== "all") return rawTasks;
     if (!categoryFilterInitialized) return rawTasks;
     if (categoryFilter.length === 0) return [];
-    return rawTasks.filter(task => categoryFilter.includes(task.category_id));
+    return rawTasks.filter((task) => categoryFilter.includes(task.category_id));
   }, [rawTasks, categoryId, categoryFilter, categoryFilterInitialized]);
-  
-  const completedColumnId = allColumns.find(c => c.name.toLowerCase() === "concluído")?.id;
+
+  const completedColumnId = allColumns.find((c) => c.name.toLowerCase() === "concluído")?.id;
   const { settings } = useSettings();
   const { getTagColor } = useTags();
   const { addTaskCompletion } = useUserStats();
-  const { 
-    isSelectionMode, 
-    isSelected, 
-    toggleSelection, 
-    enterSelectionMode, 
+  const {
+    isSelectionMode,
+    isSelected,
+    toggleSelection,
+    enterSelectionMode,
     exitSelectionMode,
   } = useBulkSelection();
-  
-  const isMobile = useBreakpoint() === 'mobile';
+
+  const isMobile = useBreakpoint() === "mobile";
   const compact = isMobile || compactProp;
-  
+
   const [columnSizes, setColumnSizes] = useLocalStorage<number[]>(
     `kanban-column-sizes-${categoryId}`,
     columns.map(() => 100 / columns.length)
   );
-  
+
   // Mapa de categorias originais para tarefas espelhadas
   const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});
-  
+
+  // Função auxiliar para extrair data/hora no fuso SP
+  const getDateTimeSP = useCallback((dateStr: string | null, defaultValue: number): DateTimeSP => {
+    if (!dateStr) return { date: defaultValue, time: defaultValue };
+    const date = new Date(dateStr);
+    const dateOnlySP = date.toLocaleDateString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const [day, month, year] = dateOnlySP.split("/").map(Number);
+    const dateNum = year * 10000 + month * 100 + day;
+    const timeStr = date.toLocaleTimeString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    return { date: dateNum, time: hours * 60 + minutes };
+  }, []);
+
   useEffect(() => {
     if (!isDailyKanban) return;
-    
-    const dailyRecurrentIds = tasks.filter(t => t.recurrence_rule).map(t => t.id);
-    const mirrorIds = tasks.filter(t => t.mirror_task_id).map(t => t.mirror_task_id!);
-    
-    const fetchFromMirrorIds = mirrorIds.length > 0 ? supabase
-      .from("tasks")
-      .select("id, categories:categories(name)")
-      .in("id", mirrorIds) : Promise.resolve({ data: [] });
-    
-    const fetchFromProjectMirrors = dailyRecurrentIds.length > 0 ? supabase
-      .from("tasks")
-      .select("id, mirror_task_id, categories:categories(name)")
-      .in("mirror_task_id", dailyRecurrentIds) : Promise.resolve({ data: [] });
-    
+
+    const dailyRecurrentIds = tasks.filter((t) => t.recurrence_rule).map((t) => t.id);
+    const mirrorIds = tasks.filter((t) => t.mirror_task_id).map((t) => t.mirror_task_id!);
+
+    const fetchFromMirrorIds =
+      mirrorIds.length > 0
+        ? supabase.from("tasks").select("id, categories:categories(name)").in("id", mirrorIds)
+        : Promise.resolve({ data: [] });
+
+    const fetchFromProjectMirrors =
+      dailyRecurrentIds.length > 0
+        ? supabase
+            .from("tasks")
+            .select("id, mirror_task_id, categories:categories(name)")
+            .in("mirror_task_id", dailyRecurrentIds)
+        : Promise.resolve({ data: [] });
+
     Promise.all([fetchFromMirrorIds, fetchFromProjectMirrors]).then(([result1, result2]) => {
       const map: Record<string, string> = {};
-      
+
       if (result1.data) {
-        result1.data.forEach((task: any) => {
+        (result1.data as TaskWithCategory[]).forEach((task) => {
           if (task.categories?.name) {
             map[task.id] = task.categories.name;
           }
         });
       }
-      
+
       if (result2.data) {
-        result2.data.forEach((task: any) => {
+        (result2.data as TaskWithCategory[]).forEach((task) => {
           if (task.categories?.name && task.mirror_task_id) {
             map[task.mirror_task_id] = task.categories.name;
           }
         });
       }
-      
+
       setOriginalCategoriesMap(map);
     });
   }, [isDailyKanban, tasks]);
@@ -260,54 +286,14 @@ export function KanbanBoard({
           return (priorityMap[b.priority || "medium"] || 2) - (priorityMap[a.priority || "medium"] || 2);
         }
         case "date_asc": {
-          const getDateTimeSP = (dateStr: string | null) => {
-            if (!dateStr) return { date: Number.POSITIVE_INFINITY, time: Number.POSITIVE_INFINITY };
-            const date = new Date(dateStr);
-            const dateOnlySP = date.toLocaleDateString("pt-BR", { 
-              timeZone: "America/Sao_Paulo",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit"
-            });
-            const [day, month, year] = dateOnlySP.split("/").map(Number);
-            const dateNum = year * 10000 + month * 100 + day;
-            const timeStr = date.toLocaleTimeString("pt-BR", { 
-              timeZone: "America/Sao_Paulo",
-              hour: "2-digit", 
-              minute: "2-digit",
-              hour12: false 
-            });
-            const [hours, minutes] = timeStr.split(":").map(Number);
-            return { date: dateNum, time: hours * 60 + minutes };
-          };
-          const dtA = getDateTimeSP(a.due_date);
-          const dtB = getDateTimeSP(b.due_date);
+          const dtA = getDateTimeSP(a.due_date, Number.POSITIVE_INFINITY);
+          const dtB = getDateTimeSP(b.due_date, Number.POSITIVE_INFINITY);
           if (dtA.date !== dtB.date) return dtA.date - dtB.date;
           return dtA.time - dtB.time;
         }
         case "date_desc": {
-          const getDateTimeSP = (dateStr: string | null) => {
-            if (!dateStr) return { date: Number.NEGATIVE_INFINITY, time: Number.NEGATIVE_INFINITY };
-            const date = new Date(dateStr);
-            const dateOnlySP = date.toLocaleDateString("pt-BR", { 
-              timeZone: "America/Sao_Paulo",
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit"
-            });
-            const [day, month, year] = dateOnlySP.split("/").map(Number);
-            const dateNum = year * 10000 + month * 100 + day;
-            const timeStr = date.toLocaleTimeString("pt-BR", { 
-              timeZone: "America/Sao_Paulo",
-              hour: "2-digit", 
-              minute: "2-digit",
-              hour12: false 
-            });
-            const [hours, minutes] = timeStr.split(":").map(Number);
-            return { date: dateNum, time: hours * 60 + minutes };
-          };
-          const dtA = getDateTimeSP(a.due_date);
-          const dtB = getDateTimeSP(b.due_date);
+          const dtA = getDateTimeSP(a.due_date, Number.NEGATIVE_INFINITY);
+          const dtB = getDateTimeSP(b.due_date, Number.NEGATIVE_INFINITY);
           if (dtA.date !== dtB.date) return dtB.date - dtA.date;
           return dtB.time - dtA.time;
         }
@@ -317,7 +303,7 @@ export function KanbanBoard({
     });
 
     return sorted;
-  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, settings.kanban.hideCompletedTasks, sortOption]);
+  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, settings.kanban.hideCompletedTasks, sortOption, getDateTimeSP]);
 
   // Mobile view
   if (isMobile) {
