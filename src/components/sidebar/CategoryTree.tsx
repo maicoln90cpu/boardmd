@@ -54,14 +54,25 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
     <div>
       <motion.div
         className={cn(
-          "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors group",
+          "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all group relative",
           "hover:bg-accent/50",
-          isSelected && "bg-primary/10 text-primary font-medium"
+          isSelected && "bg-primary/15 text-primary font-medium shadow-sm border border-primary/20"
         )}
         style={{ paddingLeft: sidebarOpen ? `${8 + level * 12}px` : '8px' }}
         onClick={handleSelect}
         whileTap={{ scale: 0.98 }}
       >
+        {/* Active indicator bar */}
+        {isSelected && (
+          <motion.div
+            layoutId="activeCategory"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4/5 bg-primary rounded-r-full"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+          />
+        )}
+        
         {/* Expand/collapse button */}
         {hasChildren ? (
           <button
@@ -72,7 +83,10 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
               animate={{ rotate: isExpanded ? 90 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className={cn(
+                "h-3.5 w-3.5",
+                isSelected ? "text-primary" : "text-muted-foreground"
+              )} />
             </motion.div>
           </button>
         ) : (
@@ -81,9 +95,15 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
 
         {/* Folder icon */}
         {hasChildren && isExpanded ? (
-          <FolderOpen className="h-4 w-4 text-primary/70 flex-shrink-0" />
+          <FolderOpen className={cn(
+            "h-4 w-4 flex-shrink-0",
+            isSelected ? "text-primary" : "text-primary/70"
+          )} />
         ) : (
-          <Folder className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Folder className={cn(
+            "h-4 w-4 flex-shrink-0",
+            isSelected ? "text-primary" : "text-muted-foreground"
+          )} />
         )}
 
         {/* Category name */}
@@ -91,7 +111,10 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-sm truncate flex-1"
+            className={cn(
+              "text-sm truncate flex-1",
+              isSelected && "text-primary"
+            )}
           >
             {category.name}
           </motion.span>
@@ -99,7 +122,12 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
 
         {/* Children count badge */}
         {sidebarOpen && hasChildren && (
-          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded-full transition-opacity",
+            isSelected 
+              ? "bg-primary/20 text-primary opacity-100" 
+              : "text-muted-foreground bg-muted opacity-0 group-hover:opacity-100"
+          )}>
             {category.children?.length}
           </span>
         )}
