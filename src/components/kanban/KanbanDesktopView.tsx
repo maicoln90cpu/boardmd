@@ -1,13 +1,12 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Column } from "@/hooks/data/useColumns";
 import { Task } from "@/hooks/tasks/useTasks";
-import { TaskCard } from "@/components/TaskCard";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DroppableColumn } from "./DroppableColumn";
 import { KanbanColumnHeader } from "./KanbanColumnHeader";
+import { VirtualizedTaskList } from "./VirtualizedTaskList";
 import { getColumnBackgroundClass } from "./ColumnColorPicker";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface KanbanDesktopViewProps {
   columns: Column[];
@@ -156,49 +155,30 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                         isDropTarget ? "!bg-primary/10 border-primary/30" : ""
                       }`}
                     >
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        {columnTasks.map((task) => (
-                          <motion.div
-                            key={task.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, transition: { duration: 0.1 } }}
-                            transition={{
-                              duration: 0.15,
-                              ease: "easeOut",
-                            }}
-                          >
-                            <TaskCard
-                              task={{
-                                ...task,
-                                originalCategory: originalCategoriesMap[task.id] || 
-                                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
-                              }}
-                              onEdit={onEditTask}
-                              onDelete={onDeleteClick}
-                              onMoveLeft={() => onMoveTask(task.id, "left")}
-                              onMoveRight={() => onMoveTask(task.id, "right")}
-                              canMoveLeft={columnIndex > 0}
-                              canMoveRight={columnIndex < columns.length - 1}
-                              compact={compact || densityMode !== "comfortable"}
-                              isDailyKanban={isDailyKanban}
-                              showCategoryBadge={showCategoryBadge}
-                              onToggleFavorite={toggleFavorite}
-                              onDuplicate={duplicateTask}
-                              densityMode={densityMode}
-                              priorityColors={priorityColors}
-                              getTagColor={getTagColor}
-                              onAddPoints={onAddPoints}
-                              isSelected={isSelected(task.id)}
-                              isSelectionMode={isSelectionMode}
-                              onToggleSelection={onToggleSelection}
-                              columnName={column.name}
-                              completedColumnId={completedColumnId}
-                              onMoveToCompleted={(taskId, colId) => updateTask(taskId, { column_id: colId })}
-                            />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                      <VirtualizedTaskList
+                        tasks={columnTasks}
+                        columnIndex={columnIndex}
+                        columnsLength={columns.length}
+                        densityMode={densityMode}
+                        compact={compact}
+                        isSelectionMode={isSelectionMode}
+                        isSelected={isSelected}
+                        onToggleSelection={onToggleSelection}
+                        onEditTask={onEditTask}
+                        onDeleteClick={onDeleteClick}
+                        onMoveTask={onMoveTask}
+                        toggleFavorite={toggleFavorite}
+                        duplicateTask={duplicateTask}
+                        updateTask={updateTask}
+                        isDailyKanban={isDailyKanban}
+                        showCategoryBadge={showCategoryBadge}
+                        priorityColors={priorityColors}
+                        getTagColor={getTagColor}
+                        onAddPoints={onAddPoints}
+                        originalCategoriesMap={originalCategoriesMap}
+                        completedColumnId={completedColumnId}
+                        columnName={column.name}
+                      />
                     </DroppableColumn>
                   </SortableContext>
                 </div>
