@@ -17,7 +17,7 @@ export interface CategoryFiltersActions {
 }
 
 export function useCategoryFilters(categories: Category[]): CategoryFiltersState & CategoryFiltersActions {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategoryState] = useState<string>("");
   const [dailyCategory, setDailyCategory] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [categoryFilterInitialized, setCategoryFilterInitialized] = useState(false);
@@ -32,14 +32,6 @@ export function useCategoryFilters(categories: Category[]): CategoryFiltersState
         setDailyCategory(daily.id);
       }
 
-      // Selecionar primeira categoria que não seja "Diário"
-      if (!selectedCategory) {
-        const firstNonDaily = categories.find(c => c.name !== "Diário");
-        if (firstNonDaily) {
-          setSelectedCategory(firstNonDaily.id);
-        }
-      }
-
       // Inicializar filtro de categorias com todas (exceto Diário) - apenas na primeira vez
       if (!categoryFilterInitialized) {
         const allCategoryIds = categories.filter(c => c.name !== "Diário").map(c => c.id);
@@ -47,11 +39,28 @@ export function useCategoryFilters(categories: Category[]): CategoryFiltersState
         setCategoryFilterInitialized(true);
       }
     }
-  }, [categories, selectedCategory, categoryFilterInitialized]);
+  }, [categories, categoryFilterInitialized]);
+
+  // Quando selectedCategory mudar, sincronizar com categoryFilter
+  const setSelectedCategory = (id: string) => {
+    setSelectedCategoryState(id);
+    if (id) {
+      // Quando seleciona um projeto específico, filtrar apenas por ele
+      setCategoryFilter([id]);
+      setSelectedCategoryFilterMobile(id);
+    } else {
+      // Quando limpa a seleção, mostrar todos os projetos
+      const allCategoryIds = categories.filter(c => c.name !== "Diário").map(c => c.id);
+      setCategoryFilter(allCategoryIds);
+      setSelectedCategoryFilterMobile("all");
+    }
+  };
 
   // Limpar filtros de categoria
   const clearCategoryFilters = () => {
-    setCategoryFilter([]);
+    setSelectedCategoryState("");
+    const allCategoryIds = categories.filter(c => c.name !== "Diário").map(c => c.id);
+    setCategoryFilter(allCategoryIds);
     setSelectedCategoryFilterMobile("all");
   };
 

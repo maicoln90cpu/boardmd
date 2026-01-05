@@ -52,6 +52,7 @@ interface ProjectsKanbanViewProps {
   dueDateFilter: string;
   categoryFilter: string[];
   categoryFilterInitialized: boolean;
+  selectedCategory?: string;
   
   // Callbacks de filtro
   onSearchChange: (value: string) => void;
@@ -61,6 +62,7 @@ interface ProjectsKanbanViewProps {
   onCategoryChange: (value: string[]) => void;
   onDisplayModeChange: (value: string) => void;
   onClearFilters: () => void;
+  onClearCategorySelection?: () => void;
   
   // Callbacks de ação
   onTaskSelect: (task: Task) => void;
@@ -107,6 +109,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   dueDateFilter,
   categoryFilter,
   categoryFilterInitialized,
+  selectedCategory,
   onSearchChange,
   onPriorityChange,
   onTagChange,
@@ -114,6 +117,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   onCategoryChange,
   onDisplayModeChange,
   onClearFilters,
+  onClearCategorySelection,
   onTaskSelect,
   onEqualizeColumns,
   hiddenColumns,
@@ -131,6 +135,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
 }: ProjectsKanbanViewProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const nonDailyCategories = categories.filter((c) => c.name !== "Diário");
+  const selectedCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
 
   return (
     <>
@@ -139,7 +144,19 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         {!isMobile && (
           <div className="px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold">📊 Todos os Projetos</h2>
+              <h2 className="text-lg font-semibold">
+                {selectedCategoryName ? `📁 ${selectedCategoryName}` : "📊 Todos os Projetos"}
+              </h2>
+              {selectedCategory && onClearCategorySelection && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearCategorySelection}
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Ver todos
+                </Button>
+              )}
               {simplifiedMode && (
                 <Badge variant="secondary" className="text-xs">
                   Modo Simplificado
@@ -220,7 +237,19 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
           <>
             {/* LINHA 1: Logo + Buscar */}
             <div className="px-3 py-2 border-b flex items-center gap-2">
-              <h2 className="text-base font-semibold flex-shrink-0">📊 Todos</h2>
+              <h2 className="text-base font-semibold flex-shrink-0">
+                {selectedCategoryName ? `📁 ${selectedCategoryName}` : "📊 Todos"}
+              </h2>
+              {selectedCategory && onClearCategorySelection && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearCategorySelection}
+                  className="h-6 px-1.5 text-[10px]"
+                >
+                  ✕
+                </Button>
+              )}
               <div className="flex-1 min-w-0">
                 <GlobalSearch
                   tasks={filteredTasks}
