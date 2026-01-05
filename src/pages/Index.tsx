@@ -207,6 +207,7 @@ function Index() {
             dueDateFilter={state.projectsDueDateFilter}
             categoryFilter={state.categoryFilter}
             categoryFilterInitialized={state.categoryFilterInitialized}
+            selectedCategory={state.selectedCategory}
             onSearchChange={state.setSearchTerm}
             onPriorityChange={state.setPriorityFilter}
             onTagChange={state.setTagFilter}
@@ -217,6 +218,7 @@ function Index() {
               state.handleClearFilters();
               settingsUpdaters.setProjectsDueDateFilter("all");
             }}
+            onClearCategorySelection={() => state.setSelectedCategory("")}
             onTaskSelect={state.handleTaskSelect}
             onEqualizeColumns={viewHandlers.handleEqualizeColumns}
             hiddenColumns={state.hiddenColumns}
