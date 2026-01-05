@@ -1,5 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-import { ReactNode } from "react";
+import { ReactNode, memo } from "react";
 
 interface DroppableColumnProps {
   id: string;
@@ -8,7 +8,12 @@ interface DroppableColumnProps {
   className?: string;
 }
 
-export function DroppableColumn({ id, children, isActive, className = "" }: DroppableColumnProps) {
+export const DroppableColumn = memo(function DroppableColumn({ 
+  id, 
+  children, 
+  isActive, 
+  className = "" 
+}: DroppableColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `column-${id}`,
     data: {
@@ -31,4 +36,4 @@ export function DroppableColumn({ id, children, isActive, className = "" }: Drop
       {children}
     </div>
   );
-}
+});

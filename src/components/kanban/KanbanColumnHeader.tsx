@@ -1,3 +1,4 @@
+import { memo, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, CheckSquare } from "lucide-react";
 import { Column } from "@/hooks/data/useColumns";
@@ -14,7 +15,7 @@ interface KanbanColumnHeaderProps {
   onToggleSelectionMode: () => void;
 }
 
-export function KanbanColumnHeader({
+export const KanbanColumnHeader = memo(function KanbanColumnHeader({
   column,
   taskCount,
   densityMode,
@@ -26,8 +27,8 @@ export function KanbanColumnHeader({
 }: KanbanColumnHeaderProps) {
   const isRecurrentColumn = column.name.toLowerCase() === "recorrente";
   
-  // Estilos baseados no modo de densidade
-  const getStyles = () => {
+  // Memoizar estilos baseados no modo de densidade
+  const styles = useMemo(() => {
     switch (densityMode) {
       case "ultra-compact":
         return {
@@ -51,9 +52,11 @@ export function KanbanColumnHeader({
           iconSize: "h-4 w-4",
         };
     }
-  };
-  
-  const styles = getStyles();
+  }, [densityMode]);
+
+  // Memoizar handlers
+  const handleAddTask = useCallback(() => onAddTask(column.id), [onAddTask, column.id]);
+  const handleUncheck = useCallback(() => onUncheckRecurrentTasks?.(column.id), [onUncheckRecurrentTasks, column.id]);
 
   return (
     <div className={`rounded-t-lg overflow-hidden border border-b-0 ${getColumnBackgroundClass(column.color)}`}>
@@ -90,7 +93,7 @@ export function KanbanColumnHeader({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onUncheckRecurrentTasks(column.id)}
+              onClick={handleUncheck}
               title="Desmarcar todas as tarefas recorrentes"
             >
               <RotateCcw className={styles.iconSize} />
@@ -102,7 +105,7 @@ export function KanbanColumnHeader({
           />
           <Button
             size="sm"
-            onClick={() => onAddTask(column.id)}
+            onClick={handleAddTask}
             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-full group"
           >
             <Plus className={`${styles.iconSize} transition-transform group-hover:rotate-90 duration-200`} />
@@ -111,4 +114,4 @@ export function KanbanColumnHeader({
       </div>
     </div>
   );
-}
+});
