@@ -54,65 +54,90 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
     <div>
       <motion.div
         className={cn(
-          "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-all group relative",
-          "hover:bg-accent/50",
-          isSelected && "bg-primary/15 text-primary font-medium shadow-sm border border-primary/20"
+          "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer group relative overflow-hidden",
+          "hover:bg-accent/50"
         )}
         style={{ paddingLeft: sidebarOpen ? `${8 + level * 12}px` : '8px' }}
         onClick={handleSelect}
         whileTap={{ scale: 0.98 }}
+        initial={false}
       >
-        {/* Active indicator bar */}
-        {isSelected && (
-          <motion.div
-            layoutId="activeCategory"
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4/5 bg-primary rounded-r-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
+        {/* Animated background for selection */}
+        <AnimatePresence>
+          {isSelected && (
+            <motion.div
+              className="absolute inset-0 bg-primary/15 border border-primary/20 rounded-md"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Active indicator bar with smooth animation */}
+        <AnimatePresence>
+          {isSelected && (
+            <motion.div
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4/5 bg-primary rounded-r-full"
+              initial={{ opacity: 0, scaleY: 0 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              exit={{ opacity: 0, scaleY: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
         
         {/* Expand/collapse button */}
         {hasChildren ? (
           <button
             onClick={handleToggle}
-            className="p-0.5 hover:bg-accent rounded transition-colors"
+            className="p-0.5 hover:bg-accent rounded transition-colors relative z-10"
           >
             <motion.div
               animate={{ rotate: isExpanded ? 90 : 0 }}
               transition={{ duration: 0.2 }}
             >
               <ChevronRight className={cn(
-                "h-3.5 w-3.5",
+                "h-3.5 w-3.5 transition-colors duration-200",
                 isSelected ? "text-primary" : "text-muted-foreground"
               )} />
             </motion.div>
           </button>
         ) : (
-          <div className="w-4" /> // Spacer for alignment
+          <div className="w-4 relative z-10" /> // Spacer for alignment
         )}
 
-        {/* Folder icon */}
-        {hasChildren && isExpanded ? (
-          <FolderOpen className={cn(
-            "h-4 w-4 flex-shrink-0",
-            isSelected ? "text-primary" : "text-primary/70"
-          )} />
-        ) : (
-          <Folder className={cn(
-            "h-4 w-4 flex-shrink-0",
-            isSelected ? "text-primary" : "text-muted-foreground"
-          )} />
-        )}
+        {/* Folder icon with color transition */}
+        <motion.div 
+          className="relative z-10"
+          animate={{ scale: isSelected ? 1.05 : 1 }}
+          transition={{ duration: 0.2 }}
+        >
+          {hasChildren && isExpanded ? (
+            <FolderOpen className={cn(
+              "h-4 w-4 flex-shrink-0 transition-colors duration-200",
+              isSelected ? "text-primary" : "text-primary/70"
+            )} />
+          ) : (
+            <Folder className={cn(
+              "h-4 w-4 flex-shrink-0 transition-colors duration-200",
+              isSelected ? "text-primary" : "text-muted-foreground"
+            )} />
+          )}
+        </motion.div>
 
-        {/* Category name */}
+        {/* Category name with smooth font weight transition */}
         {sidebarOpen && (
           <motion.span
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ 
+              opacity: 1,
+              fontWeight: isSelected ? 500 : 400
+            }}
+            transition={{ duration: 0.2 }}
             className={cn(
-              "text-sm truncate flex-1",
+              "text-sm truncate flex-1 relative z-10 transition-colors duration-200",
               isSelected && "text-primary"
             )}
           >
@@ -120,16 +145,25 @@ function CategoryItem({ category, onSelect, selectedId, level = 0 }: CategoryIte
           </motion.span>
         )}
 
-        {/* Children count badge */}
+        {/* Children count badge with animation */}
         {sidebarOpen && hasChildren && (
-          <span className={cn(
-            "text-[10px] px-1.5 py-0.5 rounded-full transition-opacity",
-            isSelected 
-              ? "bg-primary/20 text-primary opacity-100" 
-              : "text-muted-foreground bg-muted opacity-0 group-hover:opacity-100"
-          )}>
+          <motion.span 
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full relative z-10 transition-colors duration-200",
+              isSelected 
+                ? "bg-primary/20 text-primary" 
+                : "text-muted-foreground bg-muted"
+            )}
+            initial={false}
+            animate={{ 
+              opacity: isSelected ? 1 : 0,
+              scale: isSelected ? 1 : 0.9
+            }}
+            whileHover={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.15 }}
+          >
             {category.children?.length}
-          </span>
+          </motion.span>
         )}
       </motion.div>
 
