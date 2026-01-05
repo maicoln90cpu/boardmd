@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { pushNotifications } from "@/utils/pushNotifications";
-import { useToast } from "@/hooks/useToast";
-import { useSettings } from "./useSettings";
-import { Task } from "./useTasks";
+import { pushNotifications } from "@/lib/push/pushNotifications";
+import { useToast } from "@/hooks/ui/useToast";
+import { useSettings } from "@/hooks/data/useSettings";
+import { Task } from "@/hooks/tasks/useTasks";
 import { differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { 

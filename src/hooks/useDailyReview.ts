@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Task } from "./useTasks";
-import { AppSettings } from "./useSettings";
+import { Task } from "@/hooks/tasks/useTasks";
+import { AppSettings } from "@/hooks/data/useSettings";
 
 interface UseDailyReviewOptions {
   tasks: Task[];

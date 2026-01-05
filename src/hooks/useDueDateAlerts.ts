@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Task } from "./useTasks";
-import { useToast } from "./useToast";
+import { Task } from "@/hooks/tasks/useTasks";
+import { useToast } from "@/hooks/ui/useToast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useSettings } from "./useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 
 // Request browser notification permission on first call
 let permissionRequested = false;
