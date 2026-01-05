@@ -179,7 +179,7 @@ export function KanbanBoard({
     onTaskCompleted: addTaskCompletion,
   });
 
-  const handleSaveTask = async (taskData: Partial<Task>) => {
+  const handleSaveTask = useCallback(async (taskData: Partial<Task>) => {
     if (selectedTask) {
       await updateTask(selectedTask.id, taskData);
     } else {
@@ -197,7 +197,7 @@ export function KanbanBoard({
       
       await addTask({ ...taskData, column_id: selectedColumn, category_id: finalCategoryId });
     }
-  };
+  }, [selectedTask, updateTask, categoryId, addTask, selectedColumn]);
 
   const getTasksForColumn = useCallback((columnId: string) => {
     const filtered = tasks.filter((t) => {
@@ -253,6 +253,24 @@ export function KanbanBoard({
     return sortTasksByOption(filtered, sortOption as SortOptionType);
   }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, settings.kanban.hideCompletedTasks, sortOption]);
 
+  // Memoizar handlers para evitar re-renders em componentes filhos
+  const handleUncheckRecurrentTasksWrapper = useCallback(
+    (colId: string) => handleUncheckRecurrentTasks(colId, getTasksForColumn),
+    [handleUncheckRecurrentTasks, getTasksForColumn]
+  );
+
+  const handleDragEndWrapper = useCallback((e: Parameters<typeof handleDragEnd>[0]) => {
+    handleDragEnd(e);
+    setActiveId(null);
+    setOverId(null);
+  }, [handleDragEnd, setActiveId, setOverId]);
+
+  // Memoizar tarefa ativa para DragOverlay
+  const activeTask = useMemo(
+    () => activeId ? tasks.find((t) => t.id === activeId) : null,
+    [activeId, tasks]
+  );
+
   // Mobile view
   if (isMobile) {
     return (
@@ -273,7 +291,7 @@ export function KanbanBoard({
           toggleFavorite={toggleFavorite}
           duplicateTask={duplicateTask}
           handleMoveTask={handleMoveTask}
-          handleUncheckRecurrentTasks={(colId) => handleUncheckRecurrentTasks(colId, getTasksForColumn)}
+          handleUncheckRecurrentTasks={handleUncheckRecurrentTasksWrapper}
           isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
           densityMode={densityMode}
@@ -313,11 +331,7 @@ export function KanbanBoard({
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
-        onDragEnd={(e) => {
-          handleDragEnd(e);
-          setActiveId(null);
-          setOverId(null);
-        }}
+        onDragEnd={handleDragEndWrapper}
         onDragCancel={handleDragCancel}
       >
         <KanbanDesktopView
@@ -338,7 +352,7 @@ export function KanbanBoard({
           onEditTask={handleEditTask}
           onDeleteClick={handleDeleteClick}
           onMoveTask={handleMoveTask}
-          onUncheckRecurrentTasks={(colId) => handleUncheckRecurrentTasks(colId, getTasksForColumn)}
+          onUncheckRecurrentTasks={handleUncheckRecurrentTasksWrapper}
           onColorChange={updateColumnColor}
           toggleFavorite={toggleFavorite}
           duplicateTask={duplicateTask}
@@ -356,10 +370,10 @@ export function KanbanBoard({
           duration: 150,
           easing: 'ease-out',
         }}>
-          {activeId ? (
+          {activeTask ? (
             <div className="rotate-2 scale-[1.02] shadow-xl shadow-primary/15 cursor-grabbing opacity-95">
               <TaskCard
-                task={tasks.find((t) => t.id === activeId)!}
+                task={activeTask}
                 onEdit={() => {}}
                 onDelete={() => {}}
                 priorityColors={settings.customization?.priorityColors}

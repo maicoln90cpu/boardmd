@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo, useCallback, useMemo } from "react";
 import { Column } from "@/hooks/data/useColumns";
 import { Task } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "../TaskCard";
@@ -41,7 +41,7 @@ interface MobileKanbanViewProps {
   onAddPoints?: () => void;
 }
 
-export function MobileKanbanView({
+export const MobileKanbanView = memo(function MobileKanbanView({
   columns,
   tasks,
   getTasksForColumn,
@@ -65,12 +65,16 @@ export function MobileKanbanView({
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
   const { toast } = useToast();
 
-  const currentColumnIndex = columns.findIndex(col => col.id === activeTab);
+  // Memoizar valores calculados
+  const currentColumnIndex = useMemo(
+    () => columns.findIndex(col => col.id === activeTab),
+    [columns, activeTab]
+  );
   const canMoveLeft = currentColumnIndex > 0;
   const canMoveRight = currentColumnIndex < columns.length - 1;
 
-  // Handler para toggle de completion via swipe
-  const handleSwipeComplete = async (task: Task) => {
+  // Handler memoizado para toggle de completion via swipe
+  const handleSwipeComplete = useCallback(async (task: Task) => {
     try {
       const newCompleted = !task.is_completed;
       const { error } = await supabase
@@ -119,7 +123,7 @@ export function MobileKanbanView({
         variant: "destructive",
       });
     }
-  };
+  }, [onAddPoints, toast]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -261,4 +265,4 @@ export function MobileKanbanView({
       </div>
     </div>
   );
-}
+});
