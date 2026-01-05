@@ -66,8 +66,11 @@
 - ✅ Configurações sincronizadas
 - ✅ Atalhos de teclado (Ctrl+K, Ctrl+N)
 - ✅ Indicador de status online
-
----
+- ✅ Recuperação de senha via email
+- ✅ Toggle de visibilidade de senha
+- ✅ Confirmação de senha no registro
+- ✅ Health Check de módulos (edge function)
+- ✅ Monitor de saúde do sistema no dashboard
 
 ## 🔄 Pendências de Desenvolvimento
 
@@ -95,15 +98,32 @@
 - [ ] Exportação para outros formatos (CSV, Excel)
 - [ ] Webhooks para automações
 
+#### 5. 🆕 Tour de Onboarding (Fase 4 - Planejada)
+- [ ] Instalar react-joyride para tour interativo
+- [ ] Definir 5-7 etapas principais:
+  - [ ] Boas-vindas e visão geral
+  - [ ] Criar primeira tarefa no Kanban
+  - [ ] Explorar colunas e arrastar tarefas
+  - [ ] Usar filtros e busca
+  - [ ] Acessar notas e calendário
+  - [ ] Configurar preferências
+  - [ ] Timer Pomodoro básico
+- [ ] Salvar progresso do tour no banco de dados
+- [ ] Opção de re-executar tour nas configurações
+- [ ] Suporte multilíngue (PT-BR / EN)
+- **Prioridade**: Média
+- **Complexidade**: Alta
+- **Estimativa**: 4-6 horas
+
 ### Baixa Prioridade
 
-#### 5. Refinamentos de UI/UX
+#### 6. Refinamentos de UI/UX
 - [ ] Animações de transição mais suaves
 - [ ] Loading states mais elegantes
 - [ ] Empty states personalizados
 - [ ] Mais atalhos de teclado
 
-#### 6. Colaboração (Futuro)
+#### 7. Colaboração (Futuro)
 - [ ] Compartilhamento de projetos
 - [ ] Comentários em tarefas
 - [ ] Atribuição de tarefas

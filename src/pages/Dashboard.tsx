@@ -8,6 +8,7 @@ import { WeeklyProgress } from "@/components/dashboard/WeeklyProgress";
 import { GamificationPanel } from "@/components/dashboard/GamificationPanel";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ProductivityInsights } from "@/components/dashboard/ProductivityInsights";
+import { SystemHealthMonitor } from "@/components/dashboard/SystemHealthMonitor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -137,6 +138,9 @@ export default function Dashboard() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* System Health */}
+                <SystemHealthMonitor />
               </div>
             </div>
           </div>
