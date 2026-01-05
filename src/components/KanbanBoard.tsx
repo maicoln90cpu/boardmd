@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { Column, useColumns } from "@/hooks/data/useColumns";
 import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter } from "date-fns";
 import { Task, useTasks } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "./TaskCard";
-import { TaskModal } from "./TaskModal";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
 import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { KanbanDesktopView } from "./kanban/KanbanDesktopView";
@@ -20,6 +19,9 @@ import { useKanbanTaskActions } from "@/hooks/useKanbanTaskActions";
 import { supabase } from "@/integrations/supabase/client";
 import { TaskWithCategory } from "@/types";
 import { sortTasksByOption, SortOptionType } from "@/lib/taskFilters";
+
+// Lazy load TaskModal - componente pesado com muitas dependências
+const TaskModal = lazy(() => import("./TaskModal").then(m => ({ default: m.TaskModal })));
 
 interface KanbanBoardProps {
   columns: Column[];
@@ -303,17 +305,21 @@ export function KanbanBoard({
           onAddPoints={addTaskCompletion}
         />
 
-        <TaskModal
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          onSave={handleSaveTask}
-          task={selectedTask}
-          columnId={selectedColumn}
-          isDailyKanban={isDailyKanban}
-          viewMode={viewMode}
-          categoryId={categoryId}
-          columns={columns}
-        />
+        {modalOpen && (
+          <Suspense fallback={null}>
+            <TaskModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              onSave={handleSaveTask}
+              task={selectedTask}
+              columnId={selectedColumn}
+              isDailyKanban={isDailyKanban}
+              viewMode={viewMode}
+              categoryId={categoryId}
+              columns={columns}
+            />
+          </Suspense>
+        )}
 
         <DeleteTaskDialog
           open={deleteDialogOpen}
@@ -384,17 +390,21 @@ export function KanbanBoard({
         </DragOverlay>
       </DndContext>
 
-      <TaskModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        onSave={handleSaveTask}
-        task={selectedTask}
-        columnId={selectedColumn}
-        isDailyKanban={isDailyKanban}
-        viewMode={viewMode}
-        categoryId={categoryId}
-        columns={columns}
-      />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <TaskModal
+            open={modalOpen}
+            onOpenChange={setModalOpen}
+            onSave={handleSaveTask}
+            task={selectedTask}
+            columnId={selectedColumn}
+            isDailyKanban={isDailyKanban}
+            viewMode={viewMode}
+            categoryId={categoryId}
+            columns={columns}
+          />
+        </Suspense>
+      )}
 
       <DeleteTaskDialog
         open={deleteDialogOpen}
