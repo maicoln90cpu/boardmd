@@ -1,6 +1,6 @@
 # Arquitetura do Projeto
 
-Este documento descreve a estrutura de diretórios, convenções de nomenclatura, padrões de código e guia de contribuição do projeto.
+Este documento descreve a estrutura de diretórios, convenções de nomenclatura, padrões de código, otimizações de performance e guia de contribuição do projeto.
 
 ## 📁 Estrutura de Diretórios
 
@@ -271,6 +271,100 @@ prodLogger.error("Critical error:", error);
 prodLogger.warn("Important warning:", message);
 ```
 
+## ⚡ Otimizações de Performance
+
+### Code Splitting
+
+O projeto utiliza `React.lazy()` para carregamento sob demanda das páginas:
+
+```typescript
+// ✅ Páginas lazy-loaded
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Notes = lazy(() => import("@/pages/Notes"));
+const Calendar = lazy(() => import("@/pages/Calendar"));
+const Pomodoro = lazy(() => import("@/pages/Pomodoro"));
+
+// ✅ Componentes pesados lazy-loaded
+const TaskModal = lazy(() => 
+  import("./TaskModal").then(m => ({ default: m.TaskModal }))
+);
+
+// ❌ Páginas críticas NÃO devem ser lazy
+import Index from "@/pages/Index";  // Página inicial
+import Landing from "@/pages/Landing";  // Landing page
+```
+
+Loading skeletons específicos são usados durante o carregamento:
+- `StatsLoadingSkeleton` - Dashboard
+- `NotesLoadingSkeleton` - Notes
+- `CalendarLoadingSkeleton` - Calendar
+- `PomodoroLoadingSkeleton` - Pomodoro
+
+### Virtualização de Listas
+
+Para listas com mais de 50 itens, utilizamos `@tanstack/react-virtual`:
+
+```typescript
+// src/components/kanban/VirtualizedTaskList.tsx
+const VIRTUALIZATION_THRESHOLD = 50;
+
+// Altura estimada baseada no modo de densidade
+const getEstimatedItemSize = (densityMode: string) => {
+  switch (densityMode) {
+    case "ultra-compact": return 40;
+    case "compact": return 72;
+    default: return 120;
+  }
+};
+
+// Listas menores usam animações normais
+// Listas maiores usam virtualização
+if (tasks.length <= VIRTUALIZATION_THRESHOLD) {
+  return <AnimatePresence>...</AnimatePresence>;
+}
+
+return <VirtualizedList>...</VirtualizedList>;
+```
+
+### Memoização
+
+Padrões de memoização aplicados nos componentes do Kanban:
+
+```typescript
+// ✅ Componentes memoizados com React.memo
+export const KanbanDesktopView = memo(function KanbanDesktopView(props) { ... });
+export const DroppableColumn = memo(function DroppableColumn(props) { ... });
+export const KanbanColumnHeader = memo(function KanbanColumnHeader(props) { ... });
+export const MobileKanbanView = memo(function MobileKanbanView(props) { ... });
+export const VirtualizedTaskList = memo(function VirtualizedTaskList(props) { ... });
+
+// ✅ Handlers memoizados com useCallback
+const handleSaveTask = useCallback(async (taskData) => {
+  // ...
+}, [dependencies]);
+
+// ✅ Valores derivados memoizados com useMemo
+const activeTask = useMemo(
+  () => activeId ? tasks.find((t) => t.id === activeId) : null,
+  [activeId, tasks]
+);
+
+// ✅ Estilos baseados em props memoizados
+const headerStyles = useMemo(() => ({
+  padding: densityMode === "ultra-compact" ? "px-2 py-1" : "px-3 py-2",
+}), [densityMode]);
+```
+
+### Estratégias de Otimização
+
+| Técnica | Quando Usar | Componentes Aplicados |
+|---------|-------------|----------------------|
+| `React.memo` | Componentes que recebem as mesmas props frequentemente | TaskCard, DroppableColumn, KanbanColumnHeader |
+| `useMemo` | Cálculos custosos derivados de estado | Filtros, ordenação, estilos dinâmicos |
+| `useCallback` | Handlers passados como props para componentes memoizados | onEdit, onDelete, onMoveTask |
+| `React.lazy` | Páginas e modais pesados | TaskModal, Dashboard, Notes |
+| Virtualização | Listas com >50 itens | VirtualizedTaskList |
+
 ## 🗄️ Padrões de Banco de Dados
 
 ### Supabase
@@ -315,6 +409,14 @@ USING (auth.uid() = user_id);
 - [ ] Offline sync funciona
 - [ ] Autenticação (login/logout)
 
+### Checklist de Performance
+
+- [ ] Carregamento inicial < 3s
+- [ ] Navegação entre páginas suave
+- [ ] Scroll em listas longas sem travamentos
+- [ ] Drag and drop responsivo
+- [ ] Modais abrem rapidamente
+
 ## 📝 Guia de Contribuição
 
 ### Antes de Começar
@@ -329,6 +431,7 @@ USING (auth.uid() = user_id);
 2. Use TypeScript com interfaces explícitas para props
 3. Exporte componentes com `export function` (não `export default`)
 4. Documente props complexas com comentários JSDoc
+5. **Considere memoização** se o componente será renderizado frequentemente
 
 ### Criando Novos Hooks
 
@@ -336,6 +439,7 @@ USING (auth.uid() = user_id);
 2. Prefixe com `use`
 3. Retorne objeto com nomes consistentes
 4. Adicione re-export no `index.ts` da pasta
+5. **Use useCallback/useMemo** para valores que serão passados a componentes filhos
 
 ### Adicionando Utilitários
 
@@ -352,6 +456,7 @@ fix: corrige bug no drag and drop mobile
 refactor: reorganiza estrutura de hooks
 docs: atualiza ARCHITECTURE.md
 style: ajusta espaçamento do TaskCard
+perf: adiciona virtualização para listas longas
 ```
 
 ## 🔗 Links Úteis
@@ -361,3 +466,4 @@ style: ajusta espaçamento do TaskCard
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [Supabase Docs](https://supabase.com/docs)
 - [React Query](https://tanstack.com/query/latest)
+- [TanStack Virtual](https://tanstack.com/virtual/latest)
