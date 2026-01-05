@@ -104,7 +104,18 @@ function Index() {
     },
     onNewTask: () => {
       state.setShowQuickTaskModal(true);
-    }
+    },
+    onClearSelection: () => {
+      if (state.selectedCategory) {
+        state.setSelectedCategory(null);
+        state.setCategoryFilter(state.categories.map(c => c.id));
+        toast({
+          title: "Filtro limpo",
+          description: "Exibindo todas as tarefas",
+        });
+      }
+    },
+    hasActiveSelection: !!state.selectedCategory,
   });
 
   // Read view from URL or use default from settings

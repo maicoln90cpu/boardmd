@@ -5,6 +5,8 @@ interface KeyboardShortcutsConfig {
   onSearch?: () => void;
   onDuplicate?: () => void;
   onCloseModal?: () => void;
+  onClearSelection?: () => void;
+  hasActiveSelection?: boolean;
 }
 
 export function useKeyboardShortcuts({
@@ -12,6 +14,8 @@ export function useKeyboardShortcuts({
   onSearch,
   onDuplicate,
   onCloseModal,
+  onClearSelection,
+  hasActiveSelection,
 }: KeyboardShortcutsConfig) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,8 +40,13 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // Esc - Fechar modal
+      // Esc - Limpar seleção de projeto ou fechar modal
       if (e.key === "Escape") {
+        // Prioriza limpar seleção de projeto se houver uma ativa
+        if (hasActiveSelection && onClearSelection) {
+          onClearSelection();
+          return;
+        }
         onCloseModal?.();
         return;
       }
@@ -45,5 +54,5 @@ export function useKeyboardShortcuts({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onNewTask, onSearch, onDuplicate, onCloseModal]);
+  }, [onNewTask, onSearch, onDuplicate, onCloseModal, onClearSelection, hasActiveSelection]);
 }
