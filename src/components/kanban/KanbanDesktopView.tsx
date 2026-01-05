@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import { Column } from "@/hooks/data/useColumns";
 import { Task } from "@/hooks/tasks/useTasks";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
