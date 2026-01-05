@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 
 export function useSettingsUpdaters() {
   const { settings, updateSettings, saveSettings } = useSettings();

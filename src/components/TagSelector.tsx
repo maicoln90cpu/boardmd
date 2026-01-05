@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useTags, TAG_PRESET_COLORS } from "@/hooks/useTags";
+import { useTags, TAG_PRESET_COLORS } from "@/hooks/data/useTags";
 import { cn } from "@/lib/utils";
 
 interface TagSelectorProps {

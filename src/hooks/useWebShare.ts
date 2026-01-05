@@ -1,4 +1,4 @@
-import { useToast } from "./useToast";
+import { useToast } from "@/hooks/ui/useToast";
 
 export interface ShareData {
   title: string;

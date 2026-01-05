@@ -1,8 +1,8 @@
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { Card } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import React from "react";
 import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";

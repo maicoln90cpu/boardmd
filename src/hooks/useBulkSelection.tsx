@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from "react";
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface BulkSelectionContextType {
   selectedTaskIds: Set<string>;

@@ -4,7 +4,7 @@ import { useNotes, Note } from "@/hooks/useNotes";
 import { NotebooksList } from "@/components/notes/NotebooksList";
 import { NotesList } from "@/components/notes/NotesList";
 import { NoteEditor } from "@/components/notes/NoteEditor";
-import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
 import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";

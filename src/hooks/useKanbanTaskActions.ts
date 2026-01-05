@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { Column } from "@/hooks/useColumns";
-import { Task } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 import { useUndo } from "@/hooks/useUndoStack";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 import { supabase } from "@/integrations/supabase/client";
 

@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { supabase } from "@/integrations/supabase/client";
 import type { UserStats } from "@/hooks/useUserStats";
-import type { Task } from "@/hooks/useTasks";
+import type { Task } from "@/hooks/tasks/useTasks";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 interface ProductivityInsightsProps {

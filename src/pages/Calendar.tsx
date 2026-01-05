@@ -3,8 +3,8 @@ import { isSameDay, parseISO, startOfDay, isToday, isBefore, startOfWeek, endOfW
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
-import { useColumns } from "@/hooks/useColumns";
-import { useCategories } from "@/hooks/useCategories";
+import { useColumns } from "@/hooks/data/useColumns";
+import { useCategories } from "@/hooks/data/useCategories";
 import { supabase } from "@/integrations/supabase/client";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

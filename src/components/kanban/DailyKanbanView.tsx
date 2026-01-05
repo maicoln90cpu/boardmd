@@ -7,8 +7,8 @@ import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, FileText, Columns3, Equal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Column } from "@/hooks/useColumns";
-import { Category } from "@/hooks/useCategories";
+import { Column } from "@/hooks/data/useColumns";
+import { Category } from "@/hooks/data/useCategories";
 
 interface DailyKanbanViewProps {
   // Dados

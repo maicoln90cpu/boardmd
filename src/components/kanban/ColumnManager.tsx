@@ -9,8 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Eye, EyeOff, RefreshCw, GripVertical, Pencil } from "lucide-react";
-import { Column } from "@/hooks/useColumns";
-import { useTasks } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";

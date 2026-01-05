@@ -6,11 +6,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { Home, Settings as SettingsIcon } from "lucide-react";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 
 export default function Settings() {
   const { settings, updateSettings, resetSettings } = useSettings();

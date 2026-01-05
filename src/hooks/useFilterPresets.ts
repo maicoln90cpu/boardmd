@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSettings, AppSettings } from "./useSettings";
-import { useToast } from "./useToast";
+import { useSettings, AppSettings } from "@/hooks/data/useSettings";
+import { useToast } from "@/hooks/ui/useToast";
 import { FilterPreset, FilterPresetsData } from "@/types";
 
 // Re-exportar tipos para compatibilidade

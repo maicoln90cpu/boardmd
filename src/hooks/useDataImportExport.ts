@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { validateImportFile, prepareMergeData, ValidationResult, MergeResult } from "@/lib/importValidation";
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface Category {
   id: string;

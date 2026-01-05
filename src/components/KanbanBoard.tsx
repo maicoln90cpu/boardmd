@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Column, useColumns } from "@/hooks/useColumns";
+import { Column, useColumns } from "@/hooks/data/useColumns";
 import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter } from "date-fns";
-import { Task, useTasks } from "@/hooks/useTasks";
+import { Task, useTasks } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { TaskModal } from "./TaskModal";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
@@ -9,10 +9,10 @@ import { MobileKanbanView } from "./kanban/MobileKanbanView";
 import { KanbanDesktopView } from "./kanban/KanbanDesktopView";
 import { DeleteTaskDialog } from "./kanban/DeleteTaskDialog";
 import { BulkActionsBar } from "./kanban/BulkActionsBar";
-import { useBreakpoint } from "@/hooks/useBreakpoint";
+import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useSettings } from "@/hooks/useSettings";
-import { useTags } from "@/hooks/useTags";
+import { useSettings } from "@/hooks/data/useSettings";
+import { useTags } from "@/hooks/data/useTags";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { useKanbanDragDrop } from "@/hooks/useKanbanDragDrop";
@@ -186,7 +186,7 @@ export function KanbanBoard({
       const finalCategoryId = categoryId === "all" ? taskData.category_id : categoryId;
       
       if (!finalCategoryId || finalCategoryId === "all") {
-        const { toast } = await import("@/hooks/useToast");
+        const { toast } = await import("@/hooks/ui/useToast");
         toast({
           title: "Categoria obrigatória",
           description: "Por favor, selecione uma categoria para a tarefa.",

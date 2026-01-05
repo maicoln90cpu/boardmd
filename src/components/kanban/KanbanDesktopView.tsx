@@ -1,6 +1,6 @@
 import { memo } from "react";
-import { Column } from "@/hooks/useColumns";
-import { Task } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "@/components/TaskCard";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DroppableColumn } from "./DroppableColumn";

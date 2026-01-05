@@ -8,7 +8,7 @@ import {
   CheckSquare
 } from "lucide-react";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { Column } from "@/hooks/useColumns";
+import { Column } from "@/hooks/data/useColumns";
 import {
   DropdownMenu,
   DropdownMenuContent,

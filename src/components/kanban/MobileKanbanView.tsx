@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Column } from "@/hooks/useColumns";
-import { Task } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "../TaskCard";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
 
 interface PriorityColors {

@@ -33,7 +33,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Sidebar } from "@/components/Sidebar";
 import { usePomodoro } from "@/hooks/usePomodoro";
 import { usePomodoroTemplates, PomodoroTemplate } from "@/hooks/usePomodoroTemplates";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";

@@ -1,15 +1,15 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useCategories } from "@/hooks/useCategories";
-import { useColumns } from "@/hooks/useColumns";
-import { useTasks, Task } from "@/hooks/useTasks";
+import { useCategories } from "@/hooks/data/useCategories";
+import { useColumns } from "@/hooks/data/useColumns";
+import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { useNotes } from "@/hooks/useNotes";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useCategoryFilters } from "@/hooks/useCategoryFilters";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 
 export function useIndexState() {
