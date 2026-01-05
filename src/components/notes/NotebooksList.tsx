@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText, ArrowUpDown, Tag } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useDroppable } from "@dnd-kit/core";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -144,6 +145,13 @@ export function NotebooksList({
           </div>
         )}
 
+        {notebooks.length === 0 ? (
+          <EmptyState 
+            variant="notebooks" 
+            onAction={handleAddNotebook}
+            className="py-4"
+          />
+        ) : (
         <AnimatePresence mode="popLayout">
           {notebooks.map((notebook, index) => {
             const notebookNotes = getNotebookNotes(notebook.id);
@@ -217,6 +225,7 @@ export function NotebooksList({
             );
           })}
         </AnimatePresence>
+        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

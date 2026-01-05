@@ -4,6 +4,7 @@ import * as React from "react";
 import { add, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isEqual, isSameDay, isSameMonth, isToday, isBefore, parse, parseISO, startOfToday, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { AnimatePresence, motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
@@ -621,14 +622,11 @@ export function FullScreenCalendar({
             }} className="overflow-hidden">
                   <ScrollArea className="flex-1">
                     <div className="flex flex-col flex-1 px-4 pb-4 space-y-2">
-                      {selectedDayTasks.length === 0 ? <div className="flex flex-col items-center justify-center py-8 text-center">
-                          <Calendar className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                          <p className="text-sm text-muted-foreground mb-3">Nenhuma tarefa para este dia</p>
-                          <Button size="sm" variant="outline" onClick={() => handleCreateTaskOnDay(selectedDay)} className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Criar tarefa
-                          </Button>
-                        </div> : <>
+                      {selectedDayTasks.length === 0 ? <EmptyState
+                          variant="calendar"
+                          onAction={() => handleCreateTaskOnDay(selectedDay)}
+                          className="py-4"
+                        /> : <>
                           {selectedDayTasks.map(task => {
                       const column = columns.find(c => c.id === task.column_id);
                       const category = categories.find(c => c.id === task.category_id);

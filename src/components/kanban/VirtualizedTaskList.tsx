@@ -2,6 +2,7 @@ import { memo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Task } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "@/components/TaskCard";
+import { EmptyStateCompact } from "@/components/ui/empty-state";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface VirtualizedTaskListProps {
@@ -81,6 +82,11 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
     estimateSize: () => getEstimatedItemSize(densityMode),
     overscan: 5,
   });
+
+  // Empty state quando não há tarefas
+  if (tasks.length === 0) {
+    return <EmptyStateCompact variant="column" />;
+  }
 
   // Lista normal para poucos itens
   if (!shouldVirtualize) {
