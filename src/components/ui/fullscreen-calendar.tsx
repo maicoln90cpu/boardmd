@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { CalendarColorLegend } from "@/components/calendar/CalendarColorLegend";

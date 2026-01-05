@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { registerSW } from 'virtual:pwa-register';
-import { backgroundSync } from './utils/backgroundSync';
+import { backgroundSync } from '@/lib/sync/backgroundSync';
 import { toast } from 'sonner';
 import { logger, prodLogger } from './lib/logger';
 

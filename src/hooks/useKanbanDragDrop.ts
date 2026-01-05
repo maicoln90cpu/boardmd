@@ -1,7 +1,7 @@
 import { useState, useDeferredValue } from "react";
 import { DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Column } from "@/hooks/useColumns";
-import { Task } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface UseKanbanDragDropOptions {
   columns: Column[];

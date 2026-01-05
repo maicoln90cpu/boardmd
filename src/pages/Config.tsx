@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCategories } from "@/hooks/useCategories";
-import { useTags, TAG_PRESET_COLORS } from "@/hooks/useTags";
-import { useToast } from "@/hooks/useToast";
+import { useCategories } from "@/hooks/data/useCategories";
+import { useTags, TAG_PRESET_COLORS } from "@/hooks/data/useTags";
+import { useToast } from "@/hooks/ui/useToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +23,7 @@ import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
-import { useColumns } from "@/hooks/useColumns";
+import { useColumns } from "@/hooks/data/useColumns";
 import { getAllPrompts } from "@/lib/defaultAIPrompts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sidebar } from "@/components/Sidebar";

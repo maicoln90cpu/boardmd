@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 
 export interface NotebookTag {
   id: string;

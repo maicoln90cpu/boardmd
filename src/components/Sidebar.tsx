@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar as AnimatedSidebar, SidebarBody, SidebarLink, SidebarDivider, useSidebar } from "@/components/ui/animated-sidebar";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { useCategories, Category } from "@/hooks/useCategories";
+import { useCategories, Category } from "@/hooks/data/useCategories";
 import { CategoryTree } from "@/components/sidebar/CategoryTree";
 
 interface SidebarProps {

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Save, TestTube2 } from "lucide-react";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings } from "@/hooks/data/useSettings";
 import { 
   defaultNotificationTemplates, 
   NotificationTemplate,
@@ -81,7 +81,7 @@ export function NotificationTemplatesEditor() {
 
     // Try to send via push notification system for real device testing
     try {
-      const { pushNotifications } = await import("@/utils/pushNotifications");
+      const { pushNotifications } = await import("@/lib/push/pushNotifications");
       await pushNotifications.sendPushNotification({
         title: formatted.title,
         body: formatted.body,

@@ -9,7 +9,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { Badge } from "@/components/ui/badge";
 
 interface Category {

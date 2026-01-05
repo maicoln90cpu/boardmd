@@ -1,4 +1,4 @@
-import { useTaskHistory } from "@/hooks/useTaskHistory";
+import { useTaskHistory } from "@/hooks/tasks/useTaskHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";

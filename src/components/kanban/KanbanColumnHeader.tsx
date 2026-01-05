@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, CheckSquare } from "lucide-react";
-import { Column } from "@/hooks/useColumns";
+import { Column } from "@/hooks/data/useColumns";
 import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
 
 interface KanbanColumnHeaderProps {

@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Sparkles
 } from "lucide-react";
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { formatRelativeDateBR } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
 

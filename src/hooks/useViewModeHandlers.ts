@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from "react";
-import { Task } from "@/hooks/useTasks";
-import { Column } from "@/hooks/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
 
 interface UseViewModeHandlersProps {
   viewMode: "daily" | "all";

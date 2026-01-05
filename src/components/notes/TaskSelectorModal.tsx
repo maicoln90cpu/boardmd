@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, CheckCircle2, Clock, AlertCircle, Plus, ArrowLeft } from "lucide-react";
-import { Task } from "@/hooks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";

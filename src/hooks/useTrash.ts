@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks/ui/useToast";
 import { TrashItem, TrashNoteData, TrashNotebookData } from "@/types";
 
 // Re-exportar tipo para compatibilidade

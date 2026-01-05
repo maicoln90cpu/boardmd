@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCategories } from "@/hooks/useCategories";
+import { useCategories } from "@/hooks/data/useCategories";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { WeeklyProgress } from "@/components/dashboard/WeeklyProgress";
 import { GamificationPanel } from "@/components/dashboard/GamificationPanel";

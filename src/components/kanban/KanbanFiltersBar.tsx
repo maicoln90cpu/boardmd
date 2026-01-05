@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/useMobile";
+import { useIsMobile } from "@/hooks/ui/useMobile";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { FilterPresetsManager } from "./FilterPresetsManager";
 import { FilterPreset } from "@/hooks/useFilterPresets";

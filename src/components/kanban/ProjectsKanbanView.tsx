@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Columns3, Equal } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Column } from "@/hooks/useColumns";
-import { Category } from "@/hooks/useCategories";
-import { Task } from "@/hooks/useTasks";
+import { Column } from "@/hooks/data/useColumns";
+import { Category } from "@/hooks/data/useCategories";
+import { Task } from "@/hooks/tasks/useTasks";
 import { Note } from "@/hooks/useNotes";
 
 interface TaskCounters {

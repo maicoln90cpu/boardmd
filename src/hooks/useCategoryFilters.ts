@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Category } from "./useCategories";
+import { Category } from "@/hooks/data/useCategories";
 
 export interface CategoryFiltersState {
   selectedCategory: string;

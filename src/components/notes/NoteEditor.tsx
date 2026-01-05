@@ -28,7 +28,7 @@ import { common, createLowlight } from "lowlight";
 import { RichTextToolbar } from "./RichTextToolbar";
 import { TaskSelectorModal } from "./TaskSelectorModal";
 import { ColorPicker } from "./ColorPicker";
-import { useTasks, Task } from "@/hooks/useTasks";
+import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
