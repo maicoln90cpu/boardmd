@@ -2,6 +2,7 @@ import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
 import { BaseBadge } from "@/components/ui/base-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FileText, Plus, Trash2, Pin, BookOpen } from "lucide-react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -132,12 +133,11 @@ export function NotesList({
       )}
 
       {notes.length === 0 && (
-        <div className="px-2 py-8 text-center">
-          <p className="text-sm text-muted-foreground">Nenhuma nota ainda</p>
-          <Button variant="link" size="sm" onClick={onAddNote}>
-            Criar primeira nota
-          </Button>
-        </div>
+        <EmptyState
+          variant="notes"
+          onAction={onAddNote}
+          className="py-4"
+        />
       )}
     </div>
   );
