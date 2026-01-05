@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -172,6 +172,16 @@ export function Auth() {
                     <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
                 </Button>
+              </div>
+            )}
+            {!isSignUp && (
+              <div className="text-center">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Esqueceu sua senha?
+                </Link>
               </div>
             )}
             <Button type="submit" className="w-full" disabled={loading}>

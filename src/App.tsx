@@ -36,6 +36,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Config = lazy(() => import("./pages/Config"));
 const NotificationsDashboard = lazy(() => import("./pages/NotificationsDashboard"));
 const Pomodoro = lazy(() => import("./pages/Pomodoro"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
 
@@ -48,6 +50,22 @@ function AppContent() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         <Route 
+          path="/forgot-password" 
+          element={
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <ForgotPassword />
+            </Suspense>
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <ResetPassword />
+            </Suspense>
+          } 
+        />
+        <Route
           path="/" 
           element={
             <ProtectedRoute>
