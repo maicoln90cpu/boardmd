@@ -81,7 +81,10 @@ const SidebarContent = ({
     label: "Projetos",
     href: "/",
     icon: <Layers className="h-5 w-5" />,
-    onClick: () => handleNavigation("/", "all"),
+    onClick: () => {
+      onCategorySelect?.(null);
+      handleNavigation("/", "all");
+    },
     active: viewMode === "all" && location.pathname === "/"
   }, {
     label: "Anotações",
@@ -230,7 +233,10 @@ export function Sidebar({
     icon: Layers,
     label: "Projetos",
     active: viewMode === "all" && location.pathname === "/",
-    onClick: () => handleNavigation("/", "all")
+    onClick: () => {
+      onCategorySelect?.(null);
+      handleNavigation("/", "all");
+    }
   }, {
     icon: FileText,
     label: "Anotações",

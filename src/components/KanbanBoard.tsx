@@ -228,6 +228,13 @@ export function KanbanBoard({
           case "overdue":
             if (!taskDueDate || !isBefore(taskDueDate, today) || t.is_completed) return false;
             break;
+          case "overdue_today": {
+            if (!taskDueDate) return false;
+            const isOverdue = isBefore(taskDueDate, today) && !t.is_completed;
+            const isToday = taskDueDate.toDateString() === today.toDateString();
+            if (!isOverdue && !isToday) return false;
+            break;
+          }
           case "today":
             if (!taskDueDate || taskDueDate.toDateString() !== today.toDateString()) return false;
             break;

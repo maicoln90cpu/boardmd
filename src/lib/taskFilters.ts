@@ -39,6 +39,7 @@ export type DueDateFilterType =
   | "all"
   | "no_date"
   | "overdue"
+  | "overdue_today"
   | "today"
   | "tomorrow"
   | "week"
@@ -130,6 +131,13 @@ export function filterByDueDateKanban<T extends TaskLike>(
       case "overdue":
         return taskDueDate && isBefore(taskDueDate, today) && !task.is_completed;
 
+      case "overdue_today": {
+        if (!taskDueDate) return false;
+        const isOverdue = isBefore(taskDueDate, today) && !task.is_completed;
+        const isToday = taskDueDate.toDateString() === today.toDateString();
+        return isOverdue || isToday;
+      }
+
       case "today":
         return taskDueDate && taskDueDate.toDateString() === today.toDateString();
 
@@ -197,6 +205,8 @@ export function filterByDueDate<T extends TaskLike>(
         return isThisWeek(dueDate, { weekStartsOn: 1 });
       case "overdue":
         return isPast(dueDate) && !isToday(dueDate);
+      case "overdue_today":
+        return isPast(dueDate) || isToday(dueDate);
       default:
         return true;
     }

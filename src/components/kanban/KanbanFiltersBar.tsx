@@ -143,12 +143,13 @@ export function KanbanFiltersBar({
       {/* Data de Vencimento */}
       {onDueDateChange && (
         <Select value={dueDateFilter || "all"} onValueChange={onDueDateChange}>
-          <SelectTrigger className="w-full md:w-[160px] h-10">
+          <SelectTrigger className="w-full md:w-[180px] h-10">
             <SelectValue placeholder="Vencimento" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas datas</SelectItem>
             <SelectItem value="no_date">📭 Sem data</SelectItem>
+            <SelectItem value="overdue_today">🔥 Atrasadas + Hoje</SelectItem>
             <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
             <SelectItem value="today">📅 Hoje</SelectItem>
             <SelectItem value="week">📆 Esta semana</SelectItem>
