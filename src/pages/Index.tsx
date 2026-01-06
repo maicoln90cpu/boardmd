@@ -168,12 +168,12 @@ function Index() {
             onSearchChange={state.setDailySearchTerm}
             onPriorityChange={state.setDailyPriorityFilter}
             onTagChange={state.setDailyTagFilter}
-            onDueDateChange={settingsUpdaters.setDailyDueDateFilter}
+            onDueDateChange={state.setDailyDueDateFilter}
             onClearFilters={() => {
               state.setDailyPriorityFilter("all");
               state.setDailyTagFilter("all");
               state.setDailySearchTerm("");
-              settingsUpdaters.setDailyDueDateFilter("all");
+              state.setDailyDueDateFilter("all");
             }}
             onResetRecurrentTasks={handleResetRecurrentTasks}
             onEqualizeColumns={viewHandlers.handleEqualizeColumns}
@@ -222,12 +222,12 @@ function Index() {
             onSearchChange={state.setSearchTerm}
             onPriorityChange={state.setPriorityFilter}
             onTagChange={state.setTagFilter}
-            onDueDateChange={settingsUpdaters.setProjectsDueDateFilter}
+            onDueDateChange={state.setProjectsDueDateFilter}
             onCategoryChange={state.setCategoryFilter}
             onDisplayModeChange={(value) => state.setDisplayMode(value as "by_category" | "all_tasks")}
             onClearFilters={() => {
               state.handleClearFilters();
-              settingsUpdaters.setProjectsDueDateFilter("all");
+              state.setProjectsDueDateFilter("all");
             }}
             onClearCategorySelection={() => state.setSelectedCategory("")}
             onTaskSelect={state.handleTaskSelect}

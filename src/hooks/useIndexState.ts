@@ -78,6 +78,10 @@ export function useIndexState() {
   const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
   const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
   const [dailyTagFilter, setDailyTagFilter] = useLocalStorage<string>("daily-tag-filter", "all");
+  
+  // Local storage for date filters (immediate sync)
+  const [dailyDueDateFilter, setDailyDueDateFilter] = useLocalStorage<string>("daily-duedate-filter", "all");
+  const [projectsDueDateFilter, setProjectsDueDateFilter] = useLocalStorage<string>("projects-duedate-filter", "all");
   const [dailySearchTerm, setDailySearchTerm] = useLocalStorage<string>("daily-search", "");
 
   // Tasks
@@ -99,8 +103,6 @@ export function useIndexState() {
   const projectsGridColumnsMobile = settings.mobile.projectsGridColumns;
   const projectsSortOption = settings.kanban.projectsSortOption;
   const projectsSortOrder = settings.kanban.projectsSortOrder;
-  const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
-  const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
 
   // Refresh board functions
   const refreshDailyBoard = useCallback(() => setDailyBoardKey(k => k + 1), []);
@@ -145,7 +147,10 @@ export function useIndexState() {
     setTagFilter("all");
     clearCategoryFilters();
     setDisplayMode("by_category");
-  }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters]);
+    // Clear date filters as well
+    setDailyDueDateFilter("all");
+    setProjectsDueDateFilter("all");
+  }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters, setDailyDueDateFilter, setProjectsDueDateFilter]);
 
   return {
     // Refs
@@ -242,6 +247,10 @@ export function useIndexState() {
     setDailyTagFilter,
     dailySearchTerm,
     setDailySearchTerm,
+    
+    // Date filters (local storage for immediate sync)
+    setDailyDueDateFilter,
+    setProjectsDueDateFilter,
     
     // Task reset
     resetDailyTasks,
