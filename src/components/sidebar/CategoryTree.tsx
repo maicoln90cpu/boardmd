@@ -3,6 +3,7 @@ import { ChevronRight, Folder, FolderOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/animated-sidebar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Category {
   id: string;
@@ -227,24 +228,49 @@ export function CategoryTree({ categories, onCategorySelect, selectedCategoryId 
   }
 
   return (
-    <div className="flex flex-col gap-0.5 mt-2">
-      {sidebarOpen && (
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-[10px] uppercase font-semibold text-muted-foreground px-2 mb-1"
-        >
-          Projetos
-        </motion.span>
-      )}
-      {tree.map((category) => (
-        <CategoryItem
-          key={category.id}
-          category={category}
-          onSelect={onCategorySelect}
-          selectedId={selectedCategoryId}
-        />
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="flex flex-col gap-0.5 mt-2">
+        {sidebarOpen && (
+          <div className="flex items-center justify-between px-2 mb-1">
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-[10px] uppercase font-semibold text-muted-foreground"
+            >
+              Projetos
+            </motion.span>
+            
+            {/* Tooltip showing Esc shortcut when a project is selected */}
+            <AnimatePresence>
+              {selectedCategoryId && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground cursor-help"
+                    >
+                      Esc
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="text-xs">
+                    <p>Pressione <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">Esc</kbd> para limpar filtro</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+        {tree.map((category) => (
+          <CategoryItem
+            key={category.id}
+            category={category}
+            onSelect={onCategorySelect}
+            selectedId={selectedCategoryId}
+          />
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
