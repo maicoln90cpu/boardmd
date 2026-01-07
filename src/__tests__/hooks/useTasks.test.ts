@@ -3,6 +3,14 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
+// Helper para aguardar condição assíncrona
+const waitForCondition = async (callback: () => boolean, timeout = 1000) => {
+  const start = Date.now();
+  while (!callback() && Date.now() - start < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+};
+
 // Mock dependencies antes dos imports
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -163,9 +171,7 @@ describe('useTasks', () => {
     it('deve retornar array vazio quando categoryId é null', async () => {
       const { result } = renderHook(() => useTasks(null), { wrapper });
       
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
       
       expect(result.current.tasks).toEqual([]);
     });
@@ -175,9 +181,7 @@ describe('useTasks', () => {
     it('deve carregar tarefas de uma categoria específica', async () => {
       const { result } = renderHook(() => useTasks('cat-1'), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       expect(result.current.tasks).toHaveLength(2);
     });
@@ -185,9 +189,7 @@ describe('useTasks', () => {
     it('deve carregar todas as tarefas quando categoryId é "all"', async () => {
       const { result } = renderHook(() => useTasks('all'), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       expect(supabase.from).toHaveBeenCalledWith('tasks');
     });
@@ -219,9 +221,7 @@ describe('useTasks', () => {
     it('deve retornar todas as funções esperadas', async () => {
       const { result } = renderHook(() => useTasks('cat-1'), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       expect(typeof result.current.addTask).toBe('function');
       expect(typeof result.current.updateTask).toBe('function');
