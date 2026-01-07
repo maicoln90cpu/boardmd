@@ -3,6 +3,14 @@ import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
+// Helper para aguardar condição assíncrona
+const waitForCondition = async (callback: () => boolean, timeout = 1000) => {
+  const start = Date.now();
+  while (!callback() && Date.now() - start < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+};
+
 // Mock dependencies
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -142,9 +150,7 @@ describe('useCategories', () => {
     it('deve carregar categorias do banco', async () => {
       const { result } = renderHook(() => useCategories(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       expect(result.current.categories).toHaveLength(3);
     });
@@ -154,9 +160,7 @@ describe('useCategories', () => {
     it('deve retornar árvore hierárquica de categorias', async () => {
       const { result } = renderHook(() => useCategories(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       const tree = result.current.getCategoryTree();
       
@@ -170,9 +174,7 @@ describe('useCategories', () => {
     it('deve retornar subcategorias de uma categoria pai', async () => {
       const { result } = renderHook(() => useCategories(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       const subcategories = result.current.getSubcategories('cat-projetos');
       expect(subcategories).toHaveLength(1);
@@ -182,9 +184,7 @@ describe('useCategories', () => {
     it('deve retornar array vazio para categoria sem filhos', async () => {
       const { result } = renderHook(() => useCategories(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       const subcategories = result.current.getSubcategories('cat-diario');
       expect(subcategories).toHaveLength(0);
@@ -209,9 +209,7 @@ describe('useCategories', () => {
     it('deve retornar todas as funções esperadas', async () => {
       const { result } = renderHook(() => useCategories(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      await waitForCondition(() => result.current.loading === false);
 
       expect(typeof result.current.addCategory).toBe('function');
       expect(typeof result.current.deleteCategory).toBe('function');
