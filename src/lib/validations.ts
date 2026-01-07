@@ -1,5 +1,36 @@
 import { z } from 'zod';
 
+// Schema para validação de telefone brasileiro
+export const phoneSchema = z.string()
+  .transform(val => val.replace(/\D/g, '')) // Remove não-dígitos
+  .refine(val => val === '' || (val.length >= 10 && val.length <= 11), {
+    message: "Telefone deve ter 10 ou 11 dígitos (com DDD)"
+  })
+  .refine(val => val === '' || /^[1-9][0-9]/.test(val), {
+    message: "DDD inválido"
+  });
+
+// Schema para validação de email
+export const emailSchema = z.string()
+  .trim()
+  .email("Email inválido")
+  .max(255, "Email deve ter menos de 255 caracteres")
+  .transform(val => val.toLowerCase());
+
+// Schema para validação de nome
+export const nameSchema = z.string()
+  .trim()
+  .min(2, "Nome deve ter no mínimo 2 caracteres")
+  .max(100, "Nome deve ter menos de 100 caracteres")
+  .refine(val => /^[a-zA-ZÀ-ÿ\s'-]+$/.test(val), {
+    message: "Nome contém caracteres inválidos"
+  });
+
+// Schema para validação de senha
+export const passwordSchema = z.string()
+  .min(6, "Senha deve ter no mínimo 6 caracteres")
+  .max(100, "Senha deve ter menos de 100 caracteres");
+
 // Schema para subtarefas
 const subtaskSchema = z.object({
   id: z.string(),
@@ -64,4 +95,28 @@ export const columnSchema = z.object({
     .max(100, "O nome da coluna deve ter menos de 100 caracteres"),
   position: z.number().int().min(0),
   user_id: z.string().uuid("ID de usuário inválido").optional()
+});
+
+// Schema para perfil do usuário
+export const profileSchema = z.object({
+  name: nameSchema,
+  phone: phoneSchema.optional().or(z.literal(""))
+});
+
+// Schema para registro de usuário
+export const signUpSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  confirmPassword: z.string().min(1, "Confirme sua senha"),
+  name: nameSchema,
+  phone: phoneSchema.optional().or(z.literal(""))
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
+});
+
+// Schema para login
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Senha é obrigatória").max(100, "Senha muito longa")
 });

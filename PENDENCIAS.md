@@ -90,47 +90,89 @@
 - [x] Implementar modal de nova tarefa via Ctrl+N
 - [x] Seleção rápida de categoria e coluna
 
+#### 3. ~~Testes Automatizados~~ ✅ CONCLUÍDO (Fase 1)
+- [x] Configurar vitest e testing-library
+- [x] Testes unitários para hooks críticos (useTasks, useCategories, useRateLimiter)
+- [x] Testes de componentes (Auth, TaskCard)
+- [x] Helper waitForCondition para testes assíncronos
+
+#### 4. ~~Segurança - Validações~~ ✅ CONCLUÍDO (Fase 2.2)
+- [x] Validação robusta de telefone brasileiro (10-11 dígitos, DDD válido)
+- [x] Validação de nome (caracteres permitidos)
+- [x] Schemas centralizados em validations.ts
+- [x] RLS em push_subscriptions verificado (já seguro)
+- [x] project_templates públicos: INTENCIONAL (templates de exemplo)
+
 ### Média Prioridade
 
-#### 3. Busca Global Aprimorada
+#### 5. Busca Global Aprimorada
 - [ ] Busca em notas a partir da busca global
 - [ ] Filtros avançados na busca
 - [ ] Histórico de buscas recentes
 
-#### 4. Integrações
+#### 6. Integrações
 - [ ] Sincronização com Google Calendar
 - [ ] Exportação para outros formatos (CSV, Excel)
 - [ ] Webhooks para automações
 
-#### 5. 🆕 Tour de Onboarding (Fase 4 - Planejada)
-- [ ] Instalar react-joyride para tour interativo
-- [ ] Definir 5-7 etapas principais:
-  - [ ] Boas-vindas e visão geral
-  - [ ] Criar primeira tarefa no Kanban
-  - [ ] Explorar colunas e arrastar tarefas
-  - [ ] Usar filtros e busca
-  - [ ] Acessar notas e calendário
-  - [ ] Configurar preferências
-  - [ ] Timer Pomodoro básico
-- [ ] Salvar progresso do tour no banco de dados
-- [ ] Opção de re-executar tour nas configurações
-- [ ] Suporte multilíngue (PT-BR / EN)
-- **Prioridade**: Média
-- **Complexidade**: Alta
-- **Estimativa**: 4-6 horas
-
 ### Baixa Prioridade
 
-#### 6. Refinamentos de UI/UX
+#### 7. Refinamentos de UI/UX
 - [ ] Animações de transição mais suaves
 - [ ] Loading states mais elegantes
-- [ ] Empty states personalizados
 - [ ] Mais atalhos de teclado
 
-#### 7. Colaboração (Futuro)
+#### 8. Colaboração (Futuro)
 - [ ] Compartilhamento de projetos
 - [ ] Comentários em tarefas
 - [ ] Atribuição de tarefas
+
+---
+
+## 🔒 Segurança - Pendências para Implementação Futura
+
+> ⚠️ Estes itens serão implementados apenas quando solicitados explicitamente.
+
+### 2.1 Leaked Password Protection
+- [ ] Habilitar via configuração do backend (Lovable Cloud)
+- **Prioridade**: Alta
+- **Estimativa**: 30 minutos
+
+### 2.3 Autenticação de Dois Fatores (2FA)
+- [ ] Integrar TOTP via Supabase Auth
+- [ ] Criar UI de configuração em Settings
+- [ ] Adicionar verificação no login
+- **Arquivos a modificar**:
+  - `src/pages/Settings.tsx` - adicionar seção 2FA
+  - `src/components/Auth.tsx` - verificar 2FA no login
+- **Prioridade**: Média
+- **Estimativa**: 2-3 horas
+
+---
+
+## 🎯 Onboarding Interativo - Pendência para Implementação Futura
+
+> ⚠️ Este item será implementado apenas quando solicitado explicitamente.
+
+### Fase 3: Tour de Onboarding
+- [ ] Instalar biblioteca de tour (react-joyride ou similar)
+- [ ] Criar componente `OnboardingTour.tsx`
+- [ ] Definir passos do tour:
+  - Boas-vindas ao sistema
+  - Criar primeira tarefa
+  - Navegar entre Diário e Projetos
+  - Usar filtros
+  - Acessar Notas
+  - Configurar Pomodoro
+- [ ] Persistir progresso (campo em `user_settings` ou tabela dedicada)
+- [ ] Permitir pular ou refazer tour
+- [ ] Tooltips contextuais ("?" para ajuda)
+- **Arquivos a criar**:
+  - `src/components/onboarding/OnboardingTour.tsx`
+  - `src/components/onboarding/OnboardingStep.tsx`
+  - `src/hooks/useOnboarding.ts`
+- **Prioridade**: Média
+- **Estimativa**: 2-3 horas
 
 ---
 
