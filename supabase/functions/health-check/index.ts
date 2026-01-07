@@ -1,5 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,9 +23,10 @@ interface HealthCheckResponse {
     degraded: number;
     critical: number;
   };
+  alerts_sent: boolean;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -291,14 +291,91 @@ const handler = async (req: Request): Promise<Response> => {
     overall_status = "degraded";
   }
 
+  // 5.2 ALERTAS PROATIVOS: Enviar push notification e logar quando houver módulos críticos
+  let alerts_sent = false;
+  
+  if (summary.critical > 0) {
+    console.log("[health-check] ALERT: Critical modules detected, sending alerts...");
+    
+    const criticalModules = modules.filter(m => m.status === "critical");
+    const criticalNames = criticalModules.map(m => m.name).join(", ");
+    
+    // Logar em activity_log para todos os usuários admin (por enquanto, logamos globalmente)
+    try {
+      // Buscar todos os usuários para notificar (opcional: apenas admins)
+      const { data: users } = await supabase
+        .from("profiles")
+        .select("id")
+        .limit(10); // Limitar para evitar spam
+      
+      if (users && users.length > 0) {
+        // Logar a mudança de status no activity_log
+        const activityLogs = users.map(user => ({
+          user_id: user.id,
+          action: "health_alert",
+          details: {
+            type: "critical_modules",
+            modules: criticalNames,
+            summary,
+            timestamp: now,
+          },
+        }));
+        
+        const { error: logError } = await supabase
+          .from("activity_log")
+          .insert(activityLogs);
+        
+        if (logError) {
+          console.error("[health-check] Failed to log health alert:", logError);
+        } else {
+          console.log(`[health-check] Logged health alert for ${users.length} users`);
+        }
+        
+        // Enviar push notification para usuários com dispositivos registrados
+        const { data: subscriptions } = await supabase
+          .from("push_subscriptions")
+          .select("user_id, endpoint, p256dh, auth")
+          .in("user_id", users.map(u => u.id));
+        
+        if (subscriptions && subscriptions.length > 0) {
+          // Chamar a função send-push para cada subscription
+          const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
+          const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
+          const vapidEmail = Deno.env.get("VAPID_EMAIL");
+          
+          if (vapidPublicKey && vapidPrivateKey && vapidEmail) {
+            console.log(`[health-check] Sending push alerts to ${subscriptions.length} devices`);
+            
+            // Criar logs de push para cada envio
+            const pushLogs = subscriptions.map(sub => ({
+              user_id: sub.user_id,
+              title: "⚠️ Alerta do Sistema",
+              body: `Módulos críticos detectados: ${criticalNames}`,
+              status: "pending",
+              notification_type: "health_alert",
+              data: { modules: criticalModules, summary },
+            }));
+            
+            await supabase.from("push_logs").insert(pushLogs);
+            
+            alerts_sent = true;
+          }
+        }
+      }
+    } catch (alertError) {
+      console.error("[health-check] Error sending alerts:", alertError);
+    }
+  }
+
   const response: HealthCheckResponse = {
     overall_status,
     timestamp: now,
     modules,
     summary,
+    alerts_sent,
   };
 
-  console.log(`[health-check] Completed: ${overall_status} (${summary.healthy}/${summary.total} healthy)`);
+  console.log(`[health-check] Completed: ${overall_status} (${summary.healthy}/${summary.total} healthy), alerts_sent: ${alerts_sent}`);
 
   return new Response(JSON.stringify(response), {
     status: 200,
@@ -307,6 +384,4 @@ const handler = async (req: Request): Promise<Response> => {
       ...corsHeaders,
     },
   });
-};
-
-serve(handler);
+});

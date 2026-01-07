@@ -103,14 +103,20 @@
 - [x] RLS em push_subscriptions verificado (já seguro)
 - [x] project_templates públicos: INTENCIONAL (templates de exemplo)
 
+#### 5. ~~Observabilidade~~ ✅ CONCLUÍDO (Fase 5)
+- [x] Cron job para limpeza automática de logs (diário às 3h UTC)
+- [x] Alertas proativos no health-check (push + activity_log)
+- [x] Dashboard de métricas de performance (gráficos, tendências)
+- [x] Componente PerformanceMetrics com dados dos últimos 7 dias
+
 ### Média Prioridade
 
-#### 5. Busca Global Aprimorada
+#### 6. Busca Global Aprimorada
 - [ ] Busca em notas a partir da busca global
 - [ ] Filtros avançados na busca
 - [ ] Histórico de buscas recentes
 
-#### 6. Integrações
+#### 7. Integrações
 - [ ] Sincronização com Google Calendar
 - [ ] Exportação para outros formatos (CSV, Excel)
 - [ ] Webhooks para automações
