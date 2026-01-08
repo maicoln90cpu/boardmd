@@ -513,7 +513,7 @@ export function NoteEditor({
 
   return (
     <div 
-      className="flex flex-col h-full transition-colors" 
+      className="flex flex-col h-full min-h-0 overflow-hidden transition-colors" 
       style={{ backgroundColor: color || undefined }}
     >
       {/* Título e ações */}
