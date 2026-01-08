@@ -121,13 +121,40 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
         user_id: user.id 
       });
 
-      const { error } = await supabase
+      // ATUALIZAÇÃO OTIMISTA: Criar coluna temporária
+      const tempId = `temp-col-${Date.now()}`;
+      const tempColumn: Column = {
+        id: tempId,
+        name,
+        position: maxPosition + 1,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        color: null,
+      };
+      
+      setColumns(prev => [...prev, tempColumn]);
+
+      const { data, error } = await supabase
         .from("columns")
-        .insert([validated as any]);
+        .insert([validated as any])
+        .select()
+        .single();
 
       if (error) {
+        // ROLLBACK
+        setColumns(prev => prev.filter(c => c.id !== tempId));
         toast({ title: "Erro ao criar coluna", variant: "destructive" });
+        return;
       }
+
+      // Substituir temp pelo real
+      if (data) {
+        setColumns(prev => prev.map(c => 
+          c.id === tempId ? (data as Column) : c
+        ));
+      }
+
+      toast({ title: "Coluna criada com sucesso" });
     } catch (e) {
       if (e instanceof z.ZodError) {
         toast({
@@ -176,12 +203,20 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
         return false;
       }
 
+      // ATUALIZAÇÃO OTIMISTA
+      const previousColumns = [...columns];
+      setColumns(prev => prev.filter(c => c.id !== columnId));
+
       const { error } = await supabase
         .from("columns")
         .delete()
         .eq("id", columnId);
 
-      if (error) throw error;
+      if (error) {
+        // ROLLBACK
+        setColumns(previousColumns);
+        throw error;
+      }
 
       toast({ title: "Coluna deletada com sucesso" });
       return true;
@@ -255,6 +290,14 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
   };
 
   const reorderColumns = async (newOrder: Column[]) => {
+    // ATUALIZAÇÃO OTIMISTA
+    const previousColumns = [...columns];
+    const updatedColumns = newOrder.map((col, index) => ({
+      ...col,
+      position: index
+    }));
+    setColumns(updatedColumns);
+
     try {
       // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = newOrder.map((col, index) => ({
@@ -280,6 +323,8 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
 
       toast({ title: "Ordem das colunas atualizada" });
     } catch (error) {
+      // ROLLBACK
+      setColumns(previousColumns);
       toast({
         title: "Erro ao reordenar colunas",
         variant: "destructive",

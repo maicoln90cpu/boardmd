@@ -168,6 +168,30 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(taskData);
 
+      // ATUALIZAÇÃO OTIMISTA: Criar tarefa temporária
+      const tempId = `temp-${Date.now()}`;
+      const tempTask: Task = {
+        id: tempId,
+        title: task.title || '',
+        description: task.description || null,
+        priority: task.priority || 'medium',
+        due_date: task.due_date || null,
+        tags: task.tags || null,
+        column_id: task.column_id || '',
+        category_id: task.category_id || '',
+        position: maxPosition + 1,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        is_favorite: false,
+        is_completed: false,
+        subtasks: task.subtasks || null,
+        recurrence_rule: task.recurrence_rule || null,
+        mirror_task_id: task.mirror_task_id || null,
+      };
+      
+      setTasks(prev => [...prev, tempTask]);
+
       if (!isOnline) {
         offlineSync.queueOperation({
           type: 'task',
@@ -185,6 +209,8 @@ export function useTasks(categoryId: string | null | "all") {
         .single();
 
       if (error) {
+        // ROLLBACK: Remover tarefa temporária
+        setTasks(prev => prev.filter(t => t.id !== tempId));
         offlineSync.queueOperation({
           type: 'task',
           action: 'create',
@@ -198,8 +224,13 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // Registrar no histórico
+      // Substituir temp pelo real
       if (data) {
+        setTasks(prev => prev.map(t => 
+          t.id === tempId ? { ...data as unknown as Task } : t
+        ));
+
+        // Registrar no histórico
         await supabase.from("task_history").insert([{
           task_id: data.id,
           user_id: user.id,
@@ -209,7 +240,6 @@ export function useTasks(categoryId: string | null | "all") {
       }
 
       toast({ title: "Tarefa criada com sucesso" });
-      await fetchTasks();
     } catch (e) {
       if (e instanceof z.ZodError) {
         toast({
@@ -226,6 +256,12 @@ export function useTasks(categoryId: string | null | "all") {
 
     try {
       const validated = taskSchema.partial().parse(updates);
+
+      // ATUALIZAÇÃO OTIMISTA
+      const previousTasks = [...tasks];
+      setTasks(prev => prev.map(t => 
+        t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t
+      ));
 
       if (!isOnline) {
         offlineSync.queueOperation({
@@ -246,6 +282,8 @@ export function useTasks(categoryId: string | null | "all") {
         .eq("id", id);
 
       if (error) {
+        // ROLLBACK
+        setTasks(previousTasks);
         offlineSync.queueOperation({
           type: 'task',
           action: 'update',
@@ -269,9 +307,9 @@ export function useTasks(categoryId: string | null | "all") {
       }]);
 
       toast({ title: "Tarefa atualizada com sucesso" });
-      await fetchTasks();
     } catch (e) {
       if (e instanceof z.ZodError) {
+        // ROLLBACK em caso de erro de validação
         toast({
           title: "Erro de validação",
           description: e.errors[0].message,
@@ -283,6 +321,10 @@ export function useTasks(categoryId: string | null | "all") {
 
   const deleteTask = async (id: string) => {
     if (!user) return;
+
+    // ATUALIZAÇÃO OTIMISTA
+    const previousTasks = [...tasks];
+    setTasks(prev => prev.filter(t => t.id !== id));
 
     if (!isOnline) {
       offlineSync.queueOperation({
@@ -297,6 +339,8 @@ export function useTasks(categoryId: string | null | "all") {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (error) {
+      // ROLLBACK
+      setTasks(previousTasks);
       offlineSync.queueOperation({
         type: 'task',
         action: 'delete',
@@ -304,7 +348,7 @@ export function useTasks(categoryId: string | null | "all") {
       });
       toast({ title: "Erro ao deletar. Salvo offline", variant: "destructive" });
     } else {
-      // Registrar no histórico antes de deletar
+      // Registrar no histórico
       await supabase.from("task_history").insert([{
         task_id: id,
         user_id: user.id,
@@ -313,7 +357,6 @@ export function useTasks(categoryId: string | null | "all") {
       }]);
 
       toast({ title: "Tarefa deletada com sucesso" });
-      await fetchTasks();
     }
   };
 
@@ -375,19 +418,28 @@ export function useTasks(categoryId: string | null | "all") {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
+    // ATUALIZAÇÃO OTIMISTA
+    const previousValue = task.is_favorite;
+    setTasks(prev => prev.map(t => 
+      t.id === taskId ? { ...t, is_favorite: !t.is_favorite } : t
+    ));
+
     try {
       const { error } = await supabase
         .from("tasks")
-        .update({ is_favorite: !task.is_favorite })
+        .update({ is_favorite: !previousValue })
         .eq("id", taskId);
 
       if (error) throw error;
 
       toast({
-        title: task.is_favorite ? "Removido dos favoritos" : "Adicionado aos favoritos",
+        title: previousValue ? "Removido dos favoritos" : "Adicionado aos favoritos",
       });
-      await fetchTasks();
     } catch (error) {
+      // ROLLBACK
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { ...t, is_favorite: previousValue } : t
+      ));
       if (import.meta.env.DEV) {
         console.error("Error toggling favorite:", error);
       }
@@ -417,6 +469,17 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(duplicatedTask);
 
+      // ATUALIZAÇÃO OTIMISTA: Criar tarefa temporária
+      const tempId = `temp-dup-${Date.now()}`;
+      const tempTask: Task = {
+        id: tempId,
+        ...duplicatedTask,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Task;
+      
+      setTasks(prev => [...prev, tempTask]);
+
       const { data, error } = await supabase
         .from("tasks")
         .insert([validated as any])
@@ -424,6 +487,8 @@ export function useTasks(categoryId: string | null | "all") {
         .single();
 
       if (error) {
+        // ROLLBACK
+        setTasks(prev => prev.filter(t => t.id !== tempId));
         toast({
           title: "Erro ao duplicar tarefa",
           description: error.message,
@@ -432,8 +497,13 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // Registrar no histórico
+      // Substituir temp pelo real
       if (data) {
+        setTasks(prev => prev.map(t => 
+          t.id === tempId ? { ...data as unknown as Task } : t
+        ));
+
+        // Registrar no histórico
         await supabase.from("task_history").insert([{
           task_id: data.id,
           user_id: user.id,
@@ -443,7 +513,6 @@ export function useTasks(categoryId: string | null | "all") {
       }
 
       toast({ title: "Tarefa duplicada com sucesso" });
-      await fetchTasks();
     } catch (e) {
       if (e instanceof z.ZodError) {
         toast({
