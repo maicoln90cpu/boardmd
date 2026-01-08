@@ -10,6 +10,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface NotesListProps {
   notes: Note[];
@@ -194,6 +199,13 @@ function DraggableNote({
     locale: ptBR 
   });
 
+  // Extract preview from content
+  const contentPreview = useMemo(() => {
+    if (!note.content) return "Nota vazia...";
+    const stripped = note.content.replace(/<[^>]*>/g, '');
+    return stripped.length > 200 ? stripped.slice(0, 200) + '...' : stripped;
+  }, [note.content]);
+
   const mergedStyle = {
     ...combinedStyle,
     borderLeftColor: notebookColor && !isSelected ? notebookColor : undefined,
@@ -201,70 +213,98 @@ function DraggableNote({
   };
 
   return (
-    <motion.div 
-      ref={setNodeRef} 
-      style={mergedStyle} 
-      {...attributes} 
-      {...listeners}
-      whileHover={{ x: 2, transition: { duration: 0.15 } }}
-      className={`
-        relative flex items-center gap-3 p-3 rounded-xl group
-        transition-all duration-200
-        border
-        ${isSelected 
-          ? "bg-accent shadow-lg border-primary/20" 
-          : notebookColor 
-            ? "hover:shadow-md border-transparent hover:border-border/30" 
-            : "hover:bg-accent/40 border-transparent hover:border-border/30 hover:shadow-sm"
-        }
-        ${notebookColor && !isSelected ? "border-l-[3px]" : ""}
-      `}
-    >
-      {/* Icon container */}
-      <div className={`
-        flex-shrink-0 p-2 rounded-lg transition-colors
-        ${isSelected ? "bg-primary/20" : "bg-muted/50"}
-      `}>
-        <FileText className="h-4 w-4 text-muted-foreground" />
-      </div>
-      
-      {/* Content */}
-      <div 
-        onClick={() => onSelect(note.id)} 
-        className="flex-1 min-w-0 cursor-pointer"
-      >
-        <p className="font-medium text-sm truncate">{note.title}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-xs text-muted-foreground truncate">
-            {relativeDate}
-          </span>
-          {note.is_pinned && (
-            <BaseBadge 
-              variant="pinned" 
-              size="sm" 
-              icon={<Pin className="h-2.5 w-2.5" />}
-              className="font-semibold shadow-sm hover:scale-105 transition-transform text-[10px]"
-              style={getPinnedBadgeStyle()}
-            >
-              Fixada
-            </BaseBadge>
-          )}
-        </div>
-      </div>
+    <HoverCard openDelay={400} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <motion.div 
+          ref={setNodeRef} 
+          style={mergedStyle} 
+          {...attributes} 
+          {...listeners}
+          whileHover={{ x: 2, transition: { duration: 0.15 } }}
+          className={`
+            relative flex items-center gap-3 p-3 rounded-xl group
+            transition-all duration-200
+            border
+            ${isSelected 
+              ? "bg-accent shadow-lg border-primary/20" 
+              : notebookColor 
+                ? "hover:shadow-md border-transparent hover:border-border/30" 
+                : "hover:bg-accent/40 border-transparent hover:border-border/30 hover:shadow-sm"
+            }
+            ${notebookColor && !isSelected ? "border-l-[3px]" : ""}
+          `}
+        >
+          {/* Icon container */}
+          <div className={`
+            flex-shrink-0 p-2 rounded-lg transition-colors
+            ${isSelected ? "bg-primary/20" : "bg-muted/50"}
+          `}>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </div>
+          
+          {/* Content */}
+          <div 
+            onClick={() => onSelect(note.id)} 
+            className="flex-1 min-w-0 cursor-pointer"
+          >
+            <p className="font-medium text-sm truncate">{note.title}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-muted-foreground truncate">
+                {relativeDate}
+              </span>
+              {note.is_pinned && (
+                <BaseBadge 
+                  variant="pinned" 
+                  size="sm" 
+                  icon={<Pin className="h-2.5 w-2.5" />}
+                  className="font-semibold shadow-sm hover:scale-105 transition-transform text-[10px]"
+                  style={getPinnedBadgeStyle()}
+                >
+                  Fixada
+                </BaseBadge>
+              )}
+            </div>
+          </div>
 
-      {/* Delete button */}
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(note.id);
-        }} 
-        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all flex-shrink-0 rounded-lg"
+          {/* Delete button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(note.id);
+            }} 
+            className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all flex-shrink-0 rounded-lg"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </motion.div>
+      </HoverCardTrigger>
+      <HoverCardContent 
+        side="right" 
+        align="start" 
+        className="w-72 p-3"
+        sideOffset={8}
       >
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
-    </motion.div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <h4 className="font-semibold text-sm line-clamp-1">{note.title}</h4>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {contentPreview}
+          </p>
+          <div className="flex items-center justify-between pt-2 border-t text-[10px] text-muted-foreground">
+            <span>Atualizado {relativeDate}</span>
+            {note.is_pinned && (
+              <span className="flex items-center gap-1 text-amber-600">
+                <Pin className="h-2.5 w-2.5" /> Fixada
+              </span>
+            )}
+          </div>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
