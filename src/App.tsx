@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +13,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
-import { initOneSignal } from "@/lib/push/oneSignalProvider";
 import {
   KanbanLoadingSkeleton,
   StatsLoadingSkeleton,
@@ -44,11 +43,6 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   useForegroundPushHandler();
-  
-  // Inicializar OneSignal
-  useEffect(() => {
-    initOneSignal();
-  }, []);
   
   return (
     <BrowserRouter>

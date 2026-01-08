@@ -14,7 +14,7 @@ export function useOneSignal() {
     const init = async () => {
       setIsLoading(true);
       
-      const supported = oneSignalUtils.isSupported();
+      const supported = 'Notification' in window && 'serviceWorker' in navigator;
       setIsSupported(supported);
       
       if (supported) {
@@ -22,9 +22,12 @@ export function useOneSignal() {
         setIsInitialized(initialized);
         
         if (initialized) {
+          // Aguardar um momento para o SDK estar totalmente pronto
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const subscribed = await oneSignalUtils.isSubscribed();
           setIsSubscribed(subscribed);
-          setPermission(oneSignalUtils.getPermissionStatus());
+          setPermission(Notification.permission);
         }
       }
       
@@ -37,8 +40,12 @@ export function useOneSignal() {
   // Solicitar permissão e inscrever
   const subscribe = useCallback(async () => {
     if (!isInitialized) {
-      console.warn('[useOneSignal] Not initialized');
-      return false;
+      console.warn('[useOneSignal] Not initialized, trying to initialize...');
+      const initialized = await initOneSignal();
+      if (!initialized) {
+        console.error('[useOneSignal] Failed to initialize');
+        return false;
+      }
     }
 
     try {
@@ -69,7 +76,7 @@ export function useOneSignal() {
       
       const subscribed = await oneSignalUtils.isSubscribed();
       setIsSubscribed(subscribed);
-      setPermission(oneSignalUtils.getPermissionStatus());
+      setPermission(Notification.permission);
       
       console.log('[useOneSignal] Subscribe complete. Subscribed:', subscribed);
       return subscribed;
