@@ -41,6 +41,7 @@ interface KanbanBoardProps {
   gridColumns?: 1 | 2;
   categoryFilter?: string[];
   categoryFilterInitialized?: boolean;
+  selectedCategoryId?: string;
 }
 
 export function KanbanBoard({ 
@@ -60,7 +61,8 @@ export function KanbanBoard({
   hideBadges = false,
   gridColumns = 2,
   categoryFilter = [],
-  categoryFilterInitialized = false
+  categoryFilterInitialized = false,
+  selectedCategoryId
 }: KanbanBoardProps) {
   const { tasks: rawTasks, addTask, updateTask, deleteTask, toggleFavorite, duplicateTask } = useTasks(categoryId);
   const { columns: allColumns, updateColumnColor } = useColumns();
@@ -322,7 +324,7 @@ export function KanbanBoard({
               columnId={selectedColumn}
               isDailyKanban={isDailyKanban}
               viewMode={viewMode}
-              categoryId={categoryId}
+              categoryId={selectedCategoryId || categoryId}
               columns={columns}
             />
           </Suspense>
@@ -397,21 +399,21 @@ export function KanbanBoard({
         </DragOverlay>
       </DndContext>
 
-      {modalOpen && (
-        <Suspense fallback={null}>
-          <TaskModal
-            open={modalOpen}
-            onOpenChange={setModalOpen}
-            onSave={handleSaveTask}
-            task={selectedTask}
-            columnId={selectedColumn}
-            isDailyKanban={isDailyKanban}
-            viewMode={viewMode}
-            categoryId={categoryId}
-            columns={columns}
-          />
-        </Suspense>
-      )}
+        {modalOpen && (
+          <Suspense fallback={null}>
+            <TaskModal
+              open={modalOpen}
+              onOpenChange={setModalOpen}
+              onSave={handleSaveTask}
+              task={selectedTask}
+              columnId={selectedColumn}
+              isDailyKanban={isDailyKanban}
+              viewMode={viewMode}
+              categoryId={selectedCategoryId || categoryId}
+              columns={columns}
+            />
+          </Suspense>
+        )}
 
       <DeleteTaskDialog
         open={deleteDialogOpen}

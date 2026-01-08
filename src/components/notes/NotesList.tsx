@@ -18,6 +18,7 @@ interface NotesListProps {
   onAddNote: () => void;
   onDeleteNote: (noteId: string) => void;
   notebooks?: Notebook[];
+  viewMode?: 'list' | 'grid';
 }
 
 export function NotesList({
@@ -26,7 +27,8 @@ export function NotesList({
   onSelectNote,
   onAddNote,
   onDeleteNote,
-  notebooks = []
+  notebooks = [],
+  viewMode = 'list'
 }: NotesListProps) {
   // Mapa de notebook_id -> cor para acesso O(1)
   const notebookColorMap = useMemo(() => {
@@ -66,28 +68,40 @@ export function NotesList({
 
       {/* Lista de notas */}
       <AnimatePresence mode="popLayout">
-        {notes.map((note, index) => (
-          <motion.div
-            key={note.id}
-            initial={{ opacity: 0, y: 15, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
-            transition={{
-              duration: 0.25,
-              delay: index * 0.02,
-              ease: [0.25, 0.46, 0.45, 0.94],
-            }}
-            layout
-          >
-            <DraggableNote
-              note={note}
-              isSelected={selectedNoteId === note.id}
-              onSelect={onSelectNote}
-              onDelete={onDeleteNote}
-              notebookColor={getNotebookColor(note.notebook_id)}
-            />
-          </motion.div>
-        ))}
+        <div className={viewMode === 'grid' ? "grid grid-cols-2 gap-3" : "space-y-2"}>
+          {notes.map((note, index) => (
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+              transition={{
+                duration: 0.25,
+                delay: index * 0.02,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              }}
+              layout
+            >
+              {viewMode === 'grid' ? (
+                <GridNoteCard
+                  note={note}
+                  isSelected={selectedNoteId === note.id}
+                  onSelect={onSelectNote}
+                  onDelete={onDeleteNote}
+                  notebookColor={getNotebookColor(note.notebook_id)}
+                />
+              ) : (
+                <DraggableNote
+                  note={note}
+                  isSelected={selectedNoteId === note.id}
+                  onSelect={onSelectNote}
+                  onDelete={onDeleteNote}
+                  notebookColor={getNotebookColor(note.notebook_id)}
+                />
+              )}
+            </motion.div>
+          ))}
+        </div>
       </AnimatePresence>
 
       {notes.length === 0 && (
@@ -250,6 +264,80 @@ function DraggableNote({
       >
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
+    </motion.div>
+  );
+}
+
+function GridNoteCard({
+  note,
+  isSelected,
+  onSelect,
+  onDelete,
+  notebookColor
+}: {
+  note: Note;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  notebookColor: string | null;
+}) {
+  // Extract preview from content (strip HTML, first 100 chars)
+  const contentPreview = useMemo(() => {
+    if (!note.content) return "Nota vazia...";
+    const stripped = note.content.replace(/<[^>]*>/g, '');
+    return stripped.length > 100 ? stripped.slice(0, 100) + '...' : stripped;
+  }, [note.content]);
+
+  // Format relative date
+  const relativeDate = formatDistanceToNow(new Date(note.updated_at), { 
+    addSuffix: true,
+    locale: ptBR 
+  });
+
+  return (
+    <motion.div
+      whileHover={{ y: -4, boxShadow: "0 12px 24px -8px rgba(0,0,0,0.15)" }}
+      onClick={() => onSelect(note.id)}
+      className={`
+        group p-3 rounded-xl border cursor-pointer h-36 flex flex-col
+        transition-all duration-200
+        ${isSelected 
+          ? "bg-accent border-primary/20 shadow-lg" 
+          : "bg-card hover:border-border/50 hover:shadow-md border-border/30"
+        }
+      `}
+      style={{
+        borderLeftColor: notebookColor && !isSelected ? notebookColor : undefined,
+        borderLeftWidth: notebookColor && !isSelected ? 3 : undefined,
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-medium text-sm line-clamp-1 flex-1">{note.title}</h4>
+        {note.is_pinned && (
+          <Pin className="h-3 w-3 text-amber-500 flex-shrink-0 ml-2" />
+        )}
+      </div>
+      
+      {/* Preview */}
+      <p className="text-xs text-muted-foreground line-clamp-3 flex-1">
+        {contentPreview}
+      </p>
+      
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+        <span className="text-[10px] text-muted-foreground">
+          {relativeDate}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
+          className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all"
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
+      </div>
     </motion.div>
   );
 }

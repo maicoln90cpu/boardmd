@@ -317,7 +317,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa" : "tarefas"}
             </Badge>
           </div>
-          <KanbanBoard
+        <KanbanBoard
             key={`all-board-${boardKey}`}
             columns={columns}
             categoryId="all"
@@ -333,6 +333,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
             gridColumns={gridColumns}
             categoryFilter={categoryFilter}
             categoryFilterInitialized={categoryFilterInitialized}
+            selectedCategoryId={selectedCategory}
           />
         </div>
       ) : (
@@ -362,6 +363,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                   densityMode={densityMode}
                   hideBadges={hideBadges}
                   gridColumns={gridColumns}
+                  selectedCategoryId={selectedCategory}
                 />
               </div>
             );
