@@ -3,11 +3,13 @@ import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
 import { BaseBadge, getPinnedBadgeStyle } from "@/components/ui/base-badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, Plus, Trash2, Pin, BookOpen } from "lucide-react";
+import { FileText, Plus, Trash2, Pin, Notebook as NotebookIcon } from "lucide-react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NotesListProps {
   notes: Note[];
@@ -15,7 +17,7 @@ interface NotesListProps {
   onSelectNote: (noteId: string) => void;
   onAddNote: () => void;
   onDeleteNote: (noteId: string) => void;
-  notebooks?: Notebook[]; // Para buscar cor do caderno
+  notebooks?: Notebook[];
 }
 
 export function NotesList({
@@ -26,11 +28,10 @@ export function NotesList({
   onDeleteNote,
   notebooks = []
 }: NotesListProps) {
-  // Criar mapa de notebook_id -> cor para acesso O(1)
+  // Mapa de notebook_id -> cor para acesso O(1)
   const notebookColorMap = useMemo(() => {
     const map = new Map<string, string>();
     notebooks.forEach(nb => {
-      // Usar primeira tag do notebook como cor principal
       const color = nb.tags?.[0]?.color;
       if (color) {
         map.set(nb.id, color);
@@ -39,21 +40,18 @@ export function NotesList({
     return map;
   }, [notebooks]);
 
-  // Função para obter cor do caderno
   const getNotebookColor = (notebookId: string | null): string | null => {
     if (!notebookId) return null;
     return notebookColorMap.get(notebookId) || null;
   };
 
-  // Separar notas soltas (sem caderno) e notas em cadernos
-  const looseNotes = notes.filter(note => !note.notebook_id);
-  const notesInNotebooks = notes.filter(note => note.notebook_id);
-
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between p-2">
-        <h3 className="text-sm font-semibold text-muted-foreground">TODAS AS NOTAS</h3>
-        {/* Botão premium "Nova Nota" */}
+    <div className="space-y-2">
+      {/* Header com botão premium */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          {notes.length} {notes.length === 1 ? 'nota' : 'notas'}
+        </span>
         <Button 
           variant="ghost" 
           size="sm" 
@@ -66,78 +64,54 @@ export function NotesList({
 
       <NoneDropArea />
 
-      {/* Notas soltas */}
-      {looseNotes.length > 0 && (
-        <div className="space-y-1">
-          <div className="px-2 py-1">
-            <span className="text-xs text-muted-foreground">Sem caderno</span>
-          </div>
-          <AnimatePresence mode="popLayout">
-            {looseNotes.map((note, index) => (
-              <motion.div
-                key={note.id}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
-                transition={{
-                  duration: 0.25,
-                  delay: index * 0.03,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                layout
-              >
-                <DraggableNote
-                  note={note}
-                  isSelected={selectedNoteId === note.id}
-                  onSelect={onSelectNote}
-                  onDelete={onDeleteNote}
-                  notebookColor={null} // Notas soltas não têm cor
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Notas em cadernos */}
-      {notesInNotebooks.length > 0 && (
-        <div className="space-y-1">
-          <div className="px-2 py-1">
-            <span className="text-xs text-muted-foreground">Em cadernos</span>
-          </div>
-          <AnimatePresence mode="popLayout">
-            {notesInNotebooks.map((note, index) => (
-              <motion.div
-                key={note.id}
-                initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
-                transition={{
-                  duration: 0.25,
-                  delay: index * 0.03,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                layout
-              >
-                <DraggableNote
-                  note={note}
-                  isSelected={selectedNoteId === note.id}
-                  onSelect={onSelectNote}
-                  onDelete={onDeleteNote}
-                  notebookColor={getNotebookColor(note.notebook_id)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+      {/* Lista de notas */}
+      <AnimatePresence mode="popLayout">
+        {notes.map((note, index) => (
+          <motion.div
+            key={note.id}
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+            transition={{
+              duration: 0.25,
+              delay: index * 0.02,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
+            layout
+          >
+            <DraggableNote
+              note={note}
+              isSelected={selectedNoteId === note.id}
+              onSelect={onSelectNote}
+              onDelete={onDeleteNote}
+              notebookColor={getNotebookColor(note.notebook_id)}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
 
       {notes.length === 0 && (
-        <EmptyState
-          variant="notes"
-          onAction={onAddNote}
-          className="py-4"
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 mb-4">
+              <NotebookIcon className="h-10 w-10 text-muted-foreground/50" />
+            </div>
+            <h4 className="font-medium text-muted-foreground mb-1">
+              Nenhuma nota ainda
+            </h4>
+            <p className="text-sm text-muted-foreground/70 mb-4">
+              Crie sua primeira nota neste caderno
+            </p>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={onAddNote}>
+              <Plus className="h-4 w-4 mr-1" />
+              Nova Nota
+            </Button>
+          </div>
+        </motion.div>
       )}
     </div>
   );
@@ -150,16 +124,23 @@ function NoneDropArea() {
   });
 
   return (
-    <div 
-      ref={setNodeRef} 
+    <motion.div 
+      ref={setNodeRef}
+      whileHover={{ scale: 1.01 }}
       className={`
-        border-2 border-dashed rounded-lg p-2 mb-2 text-xs text-center text-muted-foreground
-        transition-colors
-        ${isOver ? "bg-accent/50 border-primary" : "border-muted"}
+        border-2 border-dashed rounded-xl p-3 mb-3 text-xs text-center text-muted-foreground
+        transition-all duration-200
+        ${isOver 
+          ? "bg-primary/10 border-primary shadow-md shadow-primary/10" 
+          : "border-muted/50 hover:border-muted"
+        }
       `}
     >
-      Arraste aqui para remover do caderno
-    </div>
+      <span className="flex items-center justify-center gap-1.5">
+        <FileText className="h-3 w-3" />
+        Arraste para remover do caderno
+      </span>
+    </motion.div>
   );
 }
 
@@ -187,59 +168,77 @@ function DraggableNote({
     data: { type: "note", noteId: note.id }
   });
 
-  // Combinar estilos de forma limpa
   const combinedStyle = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
     cursor: isDragging ? "grabbing" : "grab",
-    // Cor sutil do caderno (15% opacidade) - não aplicar quando selecionado
-    backgroundColor: notebookColor && !isSelected ? `${notebookColor}15` : undefined,
-    // Borda esquerda com cor do caderno
+  };
+
+  // Format relative date
+  const relativeDate = formatDistanceToNow(new Date(note.updated_at), { 
+    addSuffix: true,
+    locale: ptBR 
+  });
+
+  const mergedStyle = {
+    ...combinedStyle,
     borderLeftColor: notebookColor && !isSelected ? notebookColor : undefined,
+    backgroundColor: notebookColor && !isSelected ? `${notebookColor}08` : undefined,
   };
 
   return (
     <motion.div 
       ref={setNodeRef} 
-      style={combinedStyle} 
+      style={mergedStyle} 
       {...attributes} 
       {...listeners}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileHover={{ x: 2, transition: { duration: 0.15 } }}
       className={`
-        flex items-center gap-2 px-2 py-1.5 rounded-md group
+        relative flex items-center gap-3 p-3 rounded-xl group
         transition-all duration-200
-        hover:shadow-md hover:shadow-primary/10
+        border
         ${isSelected 
-          ? "bg-accent shadow-md" 
+          ? "bg-accent shadow-lg border-primary/20" 
           : notebookColor 
-            ? "hover:brightness-95" 
-            : "hover:bg-accent/60"
+            ? "hover:shadow-md border-transparent hover:border-border/30" 
+            : "hover:bg-accent/40 border-transparent hover:border-border/30 hover:shadow-sm"
         }
-        ${notebookColor && !isSelected ? "border-l-2" : ""}
+        ${notebookColor && !isSelected ? "border-l-[3px]" : ""}
       `}
     >
+      {/* Icon container */}
+      <div className={`
+        flex-shrink-0 p-2 rounded-lg transition-colors
+        ${isSelected ? "bg-primary/20" : "bg-muted/50"}
+      `}>
+        <FileText className="h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      {/* Content */}
       <div 
         onClick={() => onSelect(note.id)} 
-        className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+        className="flex-1 min-w-0 cursor-pointer"
       >
-        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <div className="flex flex-col min-w-0 flex-1">
-          <span className="truncate text-sm">{note.title}</span>
-          <div className="flex items-center gap-1 mt-0.5">
-            {note.is_pinned && (
-              <BaseBadge 
-                variant="pinned" 
-                size="sm" 
-                icon={<Pin className="h-2.5 w-2.5" />}
-                className="font-semibold shadow-sm hover:scale-105 transition-transform"
-                style={getPinnedBadgeStyle()}
-              >
-                Fixada
-              </BaseBadge>
-            )}
-          </div>
+        <p className="font-medium text-sm truncate">{note.title}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-muted-foreground truncate">
+            {relativeDate}
+          </span>
+          {note.is_pinned && (
+            <BaseBadge 
+              variant="pinned" 
+              size="sm" 
+              icon={<Pin className="h-2.5 w-2.5" />}
+              className="font-semibold shadow-sm hover:scale-105 transition-transform text-[10px]"
+              style={getPinnedBadgeStyle()}
+            >
+              Fixada
+            </BaseBadge>
+          )}
         </div>
       </div>
+
+      {/* Delete button */}
       <Button 
         variant="ghost" 
         size="sm" 
@@ -247,9 +246,9 @@ function DraggableNote({
           e.stopPropagation();
           onDelete(note.id);
         }} 
-        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity flex-shrink-0"
+        className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all flex-shrink-0 rounded-lg"
       >
-        <Trash2 className="h-3 w-3" />
+        <Trash2 className="h-3.5 w-3.5" />
       </Button>
     </motion.div>
   );

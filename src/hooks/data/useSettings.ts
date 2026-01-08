@@ -37,6 +37,8 @@ export interface AppSettings {
     defaultView: 'daily' | 'projects';
     // Automação: mover tarefas da semana atual automaticamente
     autoMoveToCurrentWeek: boolean;
+    // Colunas excluídas da automação Semana Atual
+    excludeFromWeeklyAutomation: string[];
   };
   productivity: {
     dailyGoal: number;
@@ -103,6 +105,7 @@ const defaultSettings: AppSettings = {
     projectsDueDateFilter: 'all',
     autoMoveToCurrentWeek: false,
     defaultView: 'daily',
+    excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
   },
   productivity: {
     dailyGoal: 5,
