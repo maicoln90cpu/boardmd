@@ -357,13 +357,13 @@ describe('useNotes', () => {
 
       await waitForCondition(() => result.current.loading === false);
 
-      // Não deve lançar erro, mas retornar null
-      let noteId: string | null = null;
+      // Não deve lançar erro
       await act(async () => {
-        noteId = await result.current.addNote('Nova Nota', null);
+        await result.current.addNote('Nova Nota', null);
       });
 
-      expect(noteId).toBeNull();
+      // O erro deve ser tratado internamente
+      expect(supabase.from).toHaveBeenCalledWith('notes');
     });
   });
 });

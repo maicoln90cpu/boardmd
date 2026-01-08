@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -68,7 +68,7 @@ vi.mock('@/hooks/ui/useBreakpoint', () => ({
 vi.mock('@/hooks/data/useSettings', () => ({
   useSettings: vi.fn(() => ({
     settings: {
-      theme: 'system',
+      theme: 'auto',
       kanban: {
         showTaskCount: true,
         compactMode: false,
@@ -101,7 +101,7 @@ vi.mock('@/lib/sync/offlineSync', () => ({
 
 // Mock child components to simplify testing
 vi.mock('@/components/kanban/KanbanDesktopView', () => ({
-  default: ({ columns, getTasksForColumn }: any) => (
+  default: ({ columns }: any) => (
     <div data-testid="kanban-desktop-view">
       {columns?.map((col: any) => (
         <div key={col.id} data-testid={`column-${col.id}`}>
@@ -117,7 +117,7 @@ vi.mock('@/components/kanban/MobileKanbanView', () => ({
 }));
 
 vi.mock('@/components/TaskModal', () => ({
-  default: () => null,
+  TaskModal: () => null,
 }));
 
 vi.mock('@/components/kanban/DeleteTaskDialog', () => ({
@@ -129,7 +129,7 @@ vi.mock('@/components/kanban/BulkActionsBar', () => ({
 }));
 
 // Import after mocks
-import KanbanBoard from '@/components/KanbanBoard';
+import { KanbanBoard } from '@/components/KanbanBoard';
 import { useBreakpoint } from '@/hooks/ui/useBreakpoint';
 
 describe('KanbanBoard', () => {
@@ -198,22 +198,22 @@ describe('KanbanBoard', () => {
 
   describe('Renderização Desktop', () => {
     it('deve renderizar view desktop quando não é mobile', () => {
-      renderBoard();
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard();
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
 
     it('deve renderizar colunas', () => {
-      renderBoard();
-      expect(screen.getByTestId('column-col-1')).toBeInTheDocument();
-      expect(screen.getByTestId('column-col-2')).toBeInTheDocument();
-      expect(screen.getByTestId('column-col-3')).toBeInTheDocument();
+      const { getByTestId } = renderBoard();
+      expect(getByTestId('column-col-1')).toBeInTheDocument();
+      expect(getByTestId('column-col-2')).toBeInTheDocument();
+      expect(getByTestId('column-col-3')).toBeInTheDocument();
     });
 
     it('deve exibir nomes das colunas', () => {
-      renderBoard();
-      expect(screen.getByText('A Fazer')).toBeInTheDocument();
-      expect(screen.getByText('Em Andamento')).toBeInTheDocument();
-      expect(screen.getByText('Concluído')).toBeInTheDocument();
+      const { getByText } = renderBoard();
+      expect(getByText('A Fazer')).toBeInTheDocument();
+      expect(getByText('Em Andamento')).toBeInTheDocument();
+      expect(getByText('Concluído')).toBeInTheDocument();
     });
   });
 
@@ -225,33 +225,33 @@ describe('KanbanBoard', () => {
         isDesktop: false,
       } as any);
 
-      renderBoard();
-      expect(screen.getByTestId('kanban-mobile-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard();
+      expect(getByTestId('kanban-mobile-view')).toBeInTheDocument();
     });
   });
 
   describe('Loading state', () => {
     it('deve passar loading para componentes filhos', () => {
-      renderBoard({ loading: true });
+      const { getByTestId } = renderBoard({ loading: true });
       // Componentes devem ser renderizados mesmo durante loading
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
   });
 
   describe('Props do KanbanBoard', () => {
     it('deve aceitar categoryId', () => {
-      renderBoard({ categoryId: 'cat-projetos' });
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard({ categoryId: 'cat-projetos' });
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
 
     it('deve aceitar isDailyKanban', () => {
-      renderBoard({ isDailyKanban: true });
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard({ isDailyKanban: true });
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
 
     it('deve aceitar showColumnManager', () => {
-      renderBoard({ showColumnManager: true });
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard({ showColumnManager: true });
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
   });
 
@@ -261,21 +261,21 @@ describe('KanbanBoard', () => {
       const onTaskDelete = vi.fn();
       const onAddTask = vi.fn();
 
-      renderBoard({ onTaskUpdate, onTaskDelete, onAddTask });
+      const { getByTestId } = renderBoard({ onTaskUpdate, onTaskDelete, onAddTask });
 
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
   });
 
   describe('Sem dados', () => {
     it('deve renderizar com array de colunas vazio', () => {
-      renderBoard({ columns: [] });
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard({ columns: [] });
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
 
     it('deve renderizar com array de tarefas vazio', () => {
-      renderBoard({ tasks: [] });
-      expect(screen.getByTestId('kanban-desktop-view')).toBeInTheDocument();
+      const { getByTestId } = renderBoard({ tasks: [] });
+      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
   });
 });
