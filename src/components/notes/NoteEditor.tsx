@@ -3,7 +3,7 @@ import { Notebook } from "@/hooks/useNotebooks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +56,19 @@ export function NoteEditor({
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+
+  // Word and character counter
+  const wordCount = useMemo(() => {
+    if (!content) return 0;
+    const stripped = content.replace(/<[^>]*>/g, '').trim();
+    if (!stripped) return 0;
+    return stripped.split(/\s+/).filter(word => word.length > 0).length;
+  }, [content]);
+
+  const charCount = useMemo(() => {
+    if (!content) return 0;
+    return content.replace(/<[^>]*>/g, '').length;
+  }, [content]);
 
   // Refs para rastrear mudanças e auto-save
   const hasUnsavedChanges = useRef(false);
@@ -572,6 +585,19 @@ export function NoteEditor({
         />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
           <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
+        </div>
+        
+        {/* Word/Character counter */}
+        <div className="px-4 sm:px-6 py-2 border-t bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <span className="font-medium">{wordCount.toLocaleString()}</span>
+            {wordCount === 1 ? "palavra" : "palavras"}
+          </span>
+          <span className="w-px h-3 bg-border" />
+          <span className="flex items-center gap-1.5">
+            <span className="font-medium">{charCount.toLocaleString()}</span>
+            {charCount === 1 ? "caractere" : "caracteres"}
+          </span>
         </div>
       </div>
 
