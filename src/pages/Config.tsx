@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSettings } from "@/hooks/data/useSettings";
+import { useSettings, AppSettings } from "@/hooks/data/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/data/useCategories";
 import { useTags, TAG_PRESET_COLORS } from "@/hooks/data/useTags";
@@ -178,9 +178,10 @@ function SortableCategoryItem({
   );
 }
 // Componente para opção de fixar menu lateral
-function SidebarPinOption() {
-  const { settings, updateSettings } = useSettings();
-  
+function SidebarPinOption({ settings, updateSettings }: { 
+  settings: AppSettings; 
+  updateSettings: (newSettings: Partial<AppSettings>) => void;
+}) {
   const sidebarPinned = settings.interface.sidebarPinned;
   const sidebarExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
 
@@ -665,7 +666,7 @@ export default function Config() {
                 <Separator />
 
                 {/* Opção de fixar menu lateral */}
-                <SidebarPinOption />
+                <SidebarPinOption settings={settings} updateSettings={updateSettings} />
 
                 <Separator />
 
