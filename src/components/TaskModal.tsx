@@ -119,8 +119,23 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
     }
   }, [task, open, categoryId, isDailyKanban, dailyCategory, defaultDueDate]);
 
+  // Validação de categoria para tipo "projects"
+  const isCategoryValid = selectedKanbanType === "daily" 
+    ? !!dailyCategory 
+    : !!selectedCategory;
+
   const handleSave = async () => {
     if (!title.trim()) return;
+    
+    // Validar categoria obrigatória para projetos
+    if (selectedKanbanType === "projects" && !selectedCategory) {
+      toast({
+        title: "Categoria obrigatória",
+        description: "Selecione uma categoria para salvar a tarefa.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     let dueDateTimestamp: string | null = null;
     
@@ -231,6 +246,9 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                   description: "A tarefa permanece aqui e também aparece no Kanban Diário na coluna Recorrente.",
                   duration: 5000,
                 });
+                
+                // Disparar evento para atualização otimista
+                window.dispatchEvent(new CustomEvent('task-updated'));
               }
 
               onOpenChange(false);
@@ -351,6 +369,9 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 description: "A tarefa foi criada e espelhada no Kanban Diário na coluna Recorrente.",
                 duration: 5000,
               });
+              
+              // Disparar evento para atualização otimista
+              window.dispatchEvent(new CustomEvent('task-updated'));
             }
 
             onOpenChange(false);
@@ -605,9 +626,14 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             {/* Categoria - apenas para Projetos */}
             {selectedKanbanType === "projects" && (
               <div>
-                <Label>Categoria</Label>
+                <Label className={!selectedCategory ? 'text-destructive' : ''}>
+                  Categoria {!selectedCategory && <span className="text-destructive">*</span>}
+                </Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                  <SelectTrigger className={cn(
+                    isMobile ? 'min-h-[48px]' : '',
+                    !selectedCategory && 'border-destructive focus:ring-destructive'
+                  )}>
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -620,6 +646,11 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                       ))}
                   </SelectContent>
                 </Select>
+                {!selectedCategory && (
+                  <p className="text-xs text-destructive mt-1">
+                    Selecione uma categoria para salvar a tarefa
+                  </p>
+                )}
               </div>
             )}
 
@@ -656,6 +687,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
           </Button>
           <Button 
             onClick={handleSave}
+            disabled={!title.trim() || !isCategoryValid}
             className={isMobile ? 'min-h-[48px] order-1' : ''}
           >
             Salvar
