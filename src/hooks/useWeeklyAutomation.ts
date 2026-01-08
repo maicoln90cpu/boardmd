@@ -14,12 +14,14 @@ interface UseWeeklyAutomationProps {
   tasks: Task[];
   columns: Column[];
   autoMoveEnabled: boolean;
+  excludeColumnNames?: string[]; // Nomes de colunas a excluir da automação
 }
 
 export function useWeeklyAutomation({
   tasks,
   columns,
-  autoMoveEnabled
+  autoMoveEnabled,
+  excludeColumnNames = ["recorrente", "recorrentes"] // Padrão: excluir recorrente
 }: UseWeeklyAutomationProps) {
   const { toast } = useToast();
 
@@ -34,14 +36,28 @@ export function useWeeklyAutomation({
     
     if (!currentWeekColumn) return;
     
+    // Identificar IDs das colunas a excluir
+    const excludedColumnIds = new Set(
+      columns
+        .filter(col => 
+          excludeColumnNames.some(name => 
+            col.name.toLowerCase().includes(name.toLowerCase())
+          )
+        )
+        .map(col => col.id)
+    );
+    
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Segunda-feira
     const weekEnd = endOfWeek(today, { weekStartsOn: 1 }); // Domingo
     
-    // Filtrar tarefas que devem ser movidas
+    // Filtrar tarefas que devem ser movidas (de TODAS as colunas, exceto excluídas)
     const tasksToMove = tasks.filter(task => {
       // Já está na coluna "Semana Atual"?
       if (task.column_id === currentWeekColumn.id) return false;
+      
+      // Está em coluna excluída (Recorrente)?
+      if (excludedColumnIds.has(task.column_id)) return false;
       
       // Está concluída?
       if (task.is_completed) return false;
@@ -54,6 +70,12 @@ export function useWeeklyAutomation({
     });
     
     if (tasksToMove.length === 0) return;
+    
+    // Log para debug
+    if (import.meta.env.DEV) {
+      console.log(`[WeeklyAutomation] Movendo ${tasksToMove.length} tarefas para Semana Atual`);
+      console.log(`[WeeklyAutomation] Colunas excluídas:`, excludeColumnNames);
+    }
     
     // Batch update
     const taskIds = tasksToMove.map(t => t.id);
@@ -74,7 +96,7 @@ export function useWeeklyAutomation({
       title: "Automação Semana Atual",
       description: `${tasksToMove.length} tarefa(s) movida(s) para "Semana Atual"`
     });
-  }, [tasks, columns, autoMoveEnabled, toast]);
+  }, [tasks, columns, autoMoveEnabled, excludeColumnNames, toast]);
 
   // Executar automação ao carregar
   useEffect(() => {

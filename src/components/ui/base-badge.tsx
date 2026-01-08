@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const baseBadgeVariants = cva(
-  "inline-flex items-center justify-center rounded-full text-xs font-medium transition-colors focus:outline-none",
+  "inline-flex items-center justify-center rounded-full text-xs font-medium transition-all focus:outline-none",
   {
     variants: {
       variant: {
@@ -15,8 +15,8 @@ const baseBadgeVariants = cva(
         destructive: "bg-destructive/10 text-destructive border border-destructive/20",
         outline: "text-foreground border border-border bg-transparent",
         ghost: "bg-muted/50 text-muted-foreground",
-        pinned: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800",
-        notebook: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800",
+        pinned: "", // Estilo aplicado via getPinnedBadgeStyle()
+        notebook: "", // Estilo aplicado via getNotebookBadgeStyle()
       },
       size: {
         sm: "px-2 py-0.5 text-[10px]",
@@ -30,6 +30,25 @@ const baseBadgeVariants = cva(
     },
   }
 );
+
+// Estilos premium com gradientes para badges
+export const getPinnedBadgeStyle = () => ({
+  background: "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)",
+  color: "#ffffff",
+  boxShadow: "0 2px 6px rgba(234, 179, 8, 0.3)",
+  border: "none",
+});
+
+export const getNotebookBadgeStyle = (color?: string) => ({
+  background: color 
+    ? `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`
+    : "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+  color: "#ffffff",
+  boxShadow: color 
+    ? `0 2px 6px ${color}4d`
+    : "0 2px 6px rgba(139, 92, 246, 0.3)",
+  border: "none",
+});
 
 export interface BaseBadgeProps
   extends React.HTMLAttributes<HTMLSpanElement>,
