@@ -14,6 +14,15 @@ interface UseDailyReviewReturn {
   setShowDailyReview: (show: boolean) => void;
 }
 
+// Horários permitidos para mostrar Daily Review: 00h, 06h, 12h, 18h
+const ALLOWED_HOURS = [0, 6, 12, 18];
+const HOURS_BETWEEN_REVIEWS = 6;
+
+function isInAllowedTimeWindow(currentHour: number): boolean {
+  // Verificar se está dentro de ±30 minutos de um horário permitido
+  return ALLOWED_HOURS.some(hour => currentHour === hour);
+}
+
 export function useDailyReview({
   tasks,
   settings,
@@ -32,14 +41,26 @@ export function useDailyReview({
       return;
     }
     
-    const lastShown = settings.productivity.dailyReviewLastShown;
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const currentHour = now.getHours();
     
-    // Verificar se já foi mostrado hoje
-    if (lastShown === today) {
+    // Verificar se está em janela de horário permitido (00h, 06h, 12h, 18h)
+    if (!isInAllowedTimeWindow(currentHour)) {
       setDailyReviewChecked(true);
       return;
+    }
+    
+    // Verificar última exibição (agora é timestamp ISO completo)
+    const lastShown = settings.productivity.dailyReviewLastShown;
+    if (lastShown) {
+      const lastShownDate = new Date(lastShown);
+      const hoursSinceLastShown = (now.getTime() - lastShownDate.getTime()) / (1000 * 60 * 60);
+      
+      // Se ainda não passaram 6 horas, não mostrar
+      if (hoursSinceLastShown < HOURS_BETWEEN_REVIEWS) {
+        setDailyReviewChecked(true);
+        return;
+      }
     }
     
     // Aguardar tarefas carregarem e mostrar modal
@@ -47,11 +68,11 @@ export function useDailyReview({
       setShowDailyReview(true);
       setDailyReviewChecked(true);
       
-      // Atualizar última exibição
+      // Atualizar última exibição com timestamp completo
       updateSettings({
         productivity: {
           ...settings.productivity,
-          dailyReviewLastShown: today
+          dailyReviewLastShown: now.toISOString() // Timestamp completo
         }
       });
       saveSettings();
