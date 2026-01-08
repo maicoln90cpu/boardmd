@@ -122,16 +122,21 @@ export function usePomodoroTemplates() {
   };
 
   const deleteTemplate = async (id: string) => {
+    // ATUALIZAÇÃO OTIMISTA
+    const previousTemplates = [...templates];
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+
     const { error } = await supabase
       .from("pomodoro_templates")
       .delete()
       .eq("id", id);
 
     if (error) {
+      // ROLLBACK
+      setTemplates(previousTemplates);
       logger.error("Error deleting template:", error);
       toast.error("Erro ao excluir template");
     } else {
-      setTemplates((prev) => prev.filter((t) => t.id !== id));
       toast.success("Template excluído!");
     }
   };
