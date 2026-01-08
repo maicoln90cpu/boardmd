@@ -32,6 +32,7 @@ import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
+import { PriorityBadgeExtension } from "./extensions/PriorityBadgeExtension";
 import { supabase } from "@/integrations/supabase/client";
 interface NoteEditorProps {
   note: Note;
@@ -148,7 +149,7 @@ export function NoteEditor({
       HTMLAttributes: {
         class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto'
       }
-    }), TaskBlockExtension],
+    }), TaskBlockExtension, PriorityBadgeExtension],
     content: note.content || "",
     onUpdate: ({
       editor
