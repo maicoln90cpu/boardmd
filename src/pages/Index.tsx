@@ -290,7 +290,10 @@ function Index() {
           });
         }}
         columnId={state.columns[0]?.id || ""}
-        categoryId={state.viewMode === "daily" ? state.dailyCategory : (state.categories.find(c => c.name !== "Diário")?.id || "")}
+        categoryId={state.viewMode === "daily" 
+          ? state.dailyCategory 
+          : (state.selectedCategory || state.categories.find(c => c.name !== "Diário")?.id || "")
+        }
         isDailyKanban={state.viewMode === "daily"}
         columns={state.columns}
       />

@@ -9,7 +9,7 @@ import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, Plus, Sparkles } from "lucide-react";
+import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
@@ -26,6 +26,7 @@ export default function Notes() {
   const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created' | 'tag'>('updated');
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>('list');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -359,14 +360,36 @@ export default function Notes() {
           {/* Coluna 2 - Lista de Notas */}
           <div className="w-72 border-r flex flex-col bg-gradient-to-b from-card/80 via-muted/10 to-muted/20 shadow-inner">
             <div className="sticky top-0 z-10 p-4 border-b bg-card/80 backdrop-blur-md">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
-                {selectedNotebookId === null
-                  ? "Todas as Notas"
-                  : selectedNotebookId === "loose"
-                    ? "Notas Soltas"
-                    : sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
-                }
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {selectedNotebookId === null
+                    ? "Todas as Notas"
+                    : selectedNotebookId === "loose"
+                      ? "Notas Soltas"
+                      : sortedNotebooks.find(n => n.id === selectedNotebookId)?.name || "Notas"
+                  }
+                </h3>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant={notesViewMode === 'list' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => setNotesViewMode('list')}
+                    className="h-7 w-7"
+                    title="Visualização em lista"
+                  >
+                    <List className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant={notesViewMode === 'grid' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => setNotesViewMode('grid')}
+                    className="h-7 w-7"
+                    title="Visualização em grid"
+                  >
+                    <LayoutGrid className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
               <NotesSearch
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
@@ -383,6 +406,7 @@ export default function Notes() {
                 onAddNote={() => handleAddNote(selectedNotebookId)}
                 onDeleteNote={handleDeleteNote}
                 notebooks={notebooks}
+                viewMode={notesViewMode}
               />
             </div>
           </div>
