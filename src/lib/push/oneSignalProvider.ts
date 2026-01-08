@@ -1,49 +1,52 @@
 import OneSignal from 'react-onesignal';
 
-let isInitialized = false;
+let initPromise: Promise<boolean> | null = null;
 
 export const initOneSignal = async (): Promise<boolean> => {
-  if (isInitialized) {
-    console.log('[OneSignal] Already initialized');
-    return true;
+  // Se já existe uma promessa de inicialização, aguardar ela
+  if (initPromise) {
+    console.log('[OneSignal] Returning existing init promise');
+    return initPromise;
   }
 
   // App ID é público e seguro de expor no frontend
-  // A REST API Key continua protegida na Edge Function
   const appId = '36035405-9aa5-4e4f-b6cf-237d873bcd47';
 
-  try {
-    await OneSignal.init({
-      appId,
-      allowLocalhostAsSecureOrigin: true,
-      serviceWorkerParam: {
-        scope: '/',
-      },
-      serviceWorkerPath: '/OneSignalSDKWorker.js',
-    });
+  initPromise = (async () => {
+    try {
+      await OneSignal.init({
+        appId,
+        allowLocalhostAsSecureOrigin: true,
+        serviceWorkerParam: {
+          scope: '/',
+        },
+        serviceWorkerPath: '/OneSignalSDKWorker.js',
+      });
 
-    isInitialized = true;
-    console.log('[OneSignal] Initialized successfully');
-    return true;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    // Se o SDK já foi inicializado, tratamos como sucesso
-    if (errorMessage.includes('already initialized')) {
-      isInitialized = true;
-      console.log('[OneSignal] SDK was already initialized, treating as success');
+      console.log('[OneSignal] Initialized successfully');
       return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Se o SDK já foi inicializado, tratamos como sucesso
+      if (errorMessage.includes('already initialized')) {
+        console.log('[OneSignal] SDK was already initialized (OK)');
+        return true;
+      }
+
+      console.error('[OneSignal] Init error:', error);
+      initPromise = null; // Reset para permitir retry
+      return false;
     }
-    
-    console.error('[OneSignal] Init error:', error);
-    return false;
-  }
+  })();
+
+  return initPromise;
 };
 
 export const oneSignalUtils = {
   // Verificar se está inicializado
   isInitialized(): boolean {
-    return isInitialized;
+    return initPromise !== null;
   },
 
   // Solicitar permissão de notificação
