@@ -179,19 +179,17 @@ function SortableCategoryItem({
 }
 // Componente para opção de fixar menu lateral
 function SidebarPinOption() {
-  const { settings, updateSettings, saveSettings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   
   const sidebarPinned = settings.interface.sidebarPinned;
   const sidebarExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
 
-  const handlePinnedChange = async (value: boolean) => {
+  const handlePinnedChange = (value: boolean) => {
     updateSettings({ interface: { ...settings.interface, sidebarPinned: value } });
-    await saveSettings();
   };
 
-  const handleExpandedChange = async (value: boolean) => {
+  const handleExpandedChange = (value: boolean) => {
     updateSettings({ interface: { ...settings.interface, sidebarExpandedWhenPinned: value } });
-    await saveSettings();
   };
 
   return (
