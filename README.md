@@ -1,8 +1,24 @@
 # TaskFlow - Sistema de Gestão de Tarefas e Produtividade
 
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://lovable.dev)
+[![Tests](https://img.shields.io/badge/tests-vitest%20%2B%20playwright-blue)](./src/__tests__)
+[![Coverage](https://img.shields.io/badge/coverage-expanding-yellow)](./src/__tests__)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue)](./ROADMAP.md)
+
+> **Última atualização**: Janeiro 2025
+
 ## Visão Geral
 
 TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, construída com tecnologias modernas. O sistema oferece múltiplas visualizações (Kanban, Calendário), notas, timer Pomodoro, e recursos avançados de organização.
+
+## 📚 Documentação
+
+| Documento | Descrição |
+|-----------|-----------|
+| [PRD.md](./PRD.md) | Requisitos do produto e backlog |
+| [ROADMAP.md](./ROADMAP.md) | Planejamento 2025-2026 |
+| [PENDENCIAS.md](./PENDENCIAS.md) | Changelog e pendências |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Estrutura técnica do projeto |
 
 ## Stack Tecnológica
 
@@ -33,11 +49,18 @@ TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, 
 - **jspdf** - Geração de PDFs
 - **zod** - Validação de schemas
 - **lucide-react** - Ícones
+- **vitest** - Testes unitários
+- **@playwright/test** - Testes E2E
 
 ## Arquitetura do Projeto
 
 ```
 src/
+├── __tests__/           # Testes automatizados
+│   ├── components/      # Testes de componentes
+│   ├── hooks/           # Testes de hooks
+│   ├── lib/             # Testes de utilitários
+│   └── contexts/        # Testes de contextos
 ├── components/           # Componentes React
 │   ├── ui/              # Componentes base (shadcn)
 │   ├── kanban/          # Componentes do Kanban
@@ -45,34 +68,20 @@ src/
 │   ├── dashboard/       # Componentes do Dashboard
 │   └── templates/       # Sistema de templates
 ├── contexts/            # Contextos React
-│   ├── AuthContext      # Autenticação
-│   ├── ThemeContext     # Tema dark/light
-│   └── SwipeContext     # Gestos mobile
-├── hooks/               # Custom hooks
-│   ├── useTasks         # CRUD de tarefas
-│   ├── useColumns       # Gestão de colunas
-│   ├── useNotes         # CRUD de notas
-│   ├── usePomodoro      # Timer Pomodoro
-│   └── ...              # +25 hooks especializados
+├── hooks/               # Custom hooks (+30 hooks)
 ├── pages/               # Páginas da aplicação
-│   ├── Index            # Kanban principal
-│   ├── Dashboard        # Estatísticas
-│   ├── Calendar         # Visualização calendário
-│   ├── Notes            # Sistema de notas
-│   ├── Pomodoro         # Timer Pomodoro
-│   └── Settings         # Configurações
 ├── lib/                 # Utilitários
-├── utils/               # Funções auxiliares
 └── integrations/        # Integrações externas
+
+e2e/                     # Testes E2E com Playwright
+├── auth.spec.ts
+├── tasks.spec.ts
+├── kanban.spec.ts
+├── notes.spec.ts
+└── pomodoro.spec.ts
 
 supabase/
 ├── functions/           # Edge Functions
-│   ├── daily-assistant  # Assistente IA diário
-│   ├── format-note      # Formatação de notas
-│   ├── productivity-insights  # Insights de produtividade
-│   ├── reset-daily-stats     # Reset estatísticas
-│   ├── reset-recurring-tasks # Reset tarefas recorrentes
-│   └── send-push        # Notificações push
 └── migrations/          # Migrações do banco
 ```
 
@@ -107,11 +116,64 @@ O projeto usa Lovable Cloud, que configura automaticamente:
 ### Scripts Disponíveis
 
 ```bash
-npm run dev      # Servidor de desenvolvimento
-npm run build    # Build de produção
-npm run preview  # Preview do build
-npm run lint     # Linting do código
+# Desenvolvimento
+npm run dev          # Servidor de desenvolvimento
+npm run build        # Build de produção
+npm run preview      # Preview do build
+npm run lint         # Linting do código
+
+# Testes
+npm run test         # Rodar testes unitários (watch mode)
+npm run test:run     # Rodar testes unitários (single run)
+npm run test:coverage # Rodar testes com cobertura
+npm run test:e2e     # Rodar testes E2E com Playwright
+npm run test:e2e:ui  # Rodar testes E2E com UI interativa
 ```
+
+## 🧪 Testes Automatizados
+
+### Estrutura de Testes
+
+```
+src/__tests__/
+├── components/
+│   ├── Auth.test.tsx
+│   ├── TaskCard.test.tsx
+│   ├── TaskModal.test.tsx
+│   └── KanbanBoard.test.tsx
+├── hooks/
+│   ├── useTasks.test.ts
+│   ├── useCategories.test.ts
+│   ├── useColumns.test.ts
+│   ├── useSettings.test.ts
+│   ├── useNotes.test.ts
+│   ├── usePomodoro.test.ts
+│   └── useRateLimiter.test.ts
+├── lib/
+│   ├── dateUtils.test.ts
+│   ├── taskFilters.test.ts
+│   └── validations.test.ts
+└── contexts/
+    └── AuthContext.test.tsx
+
+e2e/
+├── auth.spec.ts        # Login, registro, recuperação de senha
+├── tasks.spec.ts       # CRUD de tarefas
+├── kanban.spec.ts      # Drag and drop, filtros
+├── notes.spec.ts       # Notas e cadernos
+└── pomodoro.spec.ts    # Timer e sessões
+```
+
+### Cobertura de Testes
+
+| Área | Cobertura |
+|------|-----------|
+| Hooks de dados | ✅ useTasks, useCategories, useColumns, useSettings, useNotes, usePomodoro |
+| Hooks utilitários | ✅ useRateLimiter |
+| Componentes | ✅ Auth, TaskCard, TaskModal, KanbanBoard |
+| Utilitários | ✅ dateUtils, taskFilters, validations |
+| Contextos | ✅ AuthContext |
+| E2E | ✅ Auth, Tasks, Kanban, Notes, Pomodoro |
 
 ## Deploy
 
@@ -159,6 +221,8 @@ Todas as tabelas possuem Row Level Security (RLS) habilitado, garantindo que usu
 - ✅ Exportação PNG/PDF
 - ✅ Favoritos
 - ✅ Gamificação (pontos, níveis, streaks)
+- ✅ Filtros de projetos mobile (Sheet)
+- ✅ Testes automatizados (unitários + E2E)
 
 ## Contribuição
 
@@ -167,6 +231,8 @@ Todas as tabelas possuem Row Level Security (RLS) habilitado, garantindo que usu
 3. Commit suas mudanças (`git commit -m 'Adiciona nova feature'`)
 4. Push para a branch (`git push origin feature/nova-feature`)
 5. Abra um Pull Request
+
+Consulte o [ARCHITECTURE.md](./ARCHITECTURE.md) para padrões de código.
 
 ## Licença
 

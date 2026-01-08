@@ -1,8 +1,34 @@
 # Pendências e Changelog - TaskFlow
 
+## 📚 Documentação Relacionada
+
+- [README.md](./README.md) - Setup e visão geral
+- [PRD.md](./PRD.md) - Requisitos do produto
+- [ROADMAP.md](./ROADMAP.md) - Planejamento futuro
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Estrutura técnica
+
+---
+
 ## 📋 Features Implementadas Recentemente
 
-### Versão Atual (Dezembro 2024)
+### Versão 1.1 (Janeiro 2025)
+
+#### Testes Automatizados ✅ NOVO
+- ✅ Configuração do Vitest + Testing Library
+- ✅ Testes unitários para hooks (useTasks, useCategories, useColumns, useSettings, useNotes, usePomodoro, useRateLimiter)
+- ✅ Testes de componentes (Auth, TaskCard, TaskModal, KanbanBoard)
+- ✅ Testes de utilitários (dateUtils, taskFilters, validations)
+- ✅ Testes de contexto (AuthContext)
+- ✅ Configuração do Playwright para E2E
+- ✅ Testes E2E (auth, tasks, kanban, notes, pomodoro)
+- ✅ Workflow CI/CD (.github/workflows/test.yml)
+
+#### Mobile UX ✅ NOVO
+- ✅ Sheet de projetos no mobile (filtro de categorias)
+- ✅ Indicador visual de projeto selecionado
+- ✅ Contagem de tarefas por categoria no Sheet
+
+### Versão 1.0 (Dezembro 2024)
 
 #### Kanban Board
 - ✅ Sistema de colunas customizáveis com cores
@@ -80,46 +106,38 @@
 
 ### Alta Prioridade
 
-#### 1. ~~Melhorias na Importação de JSON~~ ✅ CONCLUÍDO
-- [x] Validação mais robusta do arquivo JSON
-- [x] Merge inteligente de dados (não sobrescrever, apenas adicionar)
-- [x] Preview dos dados antes de importar
-- [x] Opção de importar apenas categorias ou apenas tarefas
-
-#### 2. ~~Atalho para Nova Tarefa~~ ✅ CONCLUÍDO
-- [x] Implementar modal de nova tarefa via Ctrl+N
-- [x] Seleção rápida de categoria e coluna
-
-#### 3. ~~Testes Automatizados~~ ✅ CONCLUÍDO (Fase 1)
+#### 1. ~~Testes Automatizados~~ ✅ CONCLUÍDO
 - [x] Configurar vitest e testing-library
-- [x] Testes unitários para hooks críticos (useTasks, useCategories, useRateLimiter)
-- [x] Testes de componentes (Auth, TaskCard)
-- [x] Helper waitForCondition para testes assíncronos
+- [x] Testes unitários para hooks críticos
+- [x] Testes de componentes
+- [x] Testes E2E com Playwright
+- [x] Workflow CI/CD
 
-#### 4. ~~Segurança - Validações~~ ✅ CONCLUÍDO (Fase 2.2)
-- [x] Validação robusta de telefone brasileiro (10-11 dígitos, DDD válido)
-- [x] Validação de nome (caracteres permitidos)
-- [x] Schemas centralizados em validations.ts
-- [x] RLS em push_subscriptions verificado (já seguro)
-- [x] project_templates públicos: INTENCIONAL (templates de exemplo)
+#### 2. ~~Filtros Mobile~~ ✅ CONCLUÍDO
+- [x] Sheet de projetos no mobile
+- [x] Indicador de projeto selecionado
+- [x] Contagem de tarefas por categoria
 
-#### 5. ~~Observabilidade~~ ✅ CONCLUÍDO (Fase 5)
-- [x] Cron job para limpeza automática de logs (diário às 3h UTC)
-- [x] Alertas proativos no health-check (push + activity_log)
-- [x] Dashboard de métricas de performance (gráficos, tendências)
-- [x] Componente PerformanceMetrics com dados dos últimos 7 dias
-
-### Média Prioridade
-
-#### 6. Busca Global Aprimorada
+#### 3. Busca Global Aprimorada
 - [ ] Busca em notas a partir da busca global
 - [ ] Filtros avançados na busca
 - [ ] Histórico de buscas recentes
 
-#### 7. Integrações
+#### 4. Anexos em Tarefas
+- [ ] Upload de imagens
+- [ ] Upload de documentos
+- [ ] Preview inline
+
+### Média Prioridade
+
+#### 5. Integrações
 - [ ] Sincronização com Google Calendar
 - [ ] Exportação para outros formatos (CSV, Excel)
 - [ ] Webhooks para automações
+
+#### 6. Onboarding
+- [ ] Tour guiado para novos usuários
+- [ ] Tooltips contextuais
 
 ### Baixa Prioridade
 
@@ -156,32 +174,6 @@
 
 ---
 
-## 🎯 Onboarding Interativo - Pendência para Implementação Futura
-
-> ⚠️ Este item será implementado apenas quando solicitado explicitamente.
-
-### Fase 3: Tour de Onboarding
-- [ ] Instalar biblioteca de tour (react-joyride ou similar)
-- [ ] Criar componente `OnboardingTour.tsx`
-- [ ] Definir passos do tour:
-  - Boas-vindas ao sistema
-  - Criar primeira tarefa
-  - Navegar entre Diário e Projetos
-  - Usar filtros
-  - Acessar Notas
-  - Configurar Pomodoro
-- [ ] Persistir progresso (campo em `user_settings` ou tabela dedicada)
-- [ ] Permitir pular ou refazer tour
-- [ ] Tooltips contextuais ("?" para ajuda)
-- **Arquivos a criar**:
-  - `src/components/onboarding/OnboardingTour.tsx`
-  - `src/components/onboarding/OnboardingStep.tsx`
-  - `src/hooks/useOnboarding.ts`
-- **Prioridade**: Média
-- **Estimativa**: 2-3 horas
-
----
-
 ## 💡 Sugestões de Melhoria
 
 ### UX/UI
@@ -210,6 +202,14 @@
 ---
 
 ## 📝 Changelog
+
+### [2025-01-08]
+- ✨ Adicionado: Sheet de projetos no mobile para filtrar categorias
+- ✨ Adicionado: Testes unitários para hooks (useSettings, useColumns, useNotes, usePomodoro)
+- ✨ Adicionado: Testes de componentes (TaskModal, KanbanBoard)
+- ✨ Adicionado: Testes E2E com Playwright (auth, tasks, kanban, notes, pomodoro)
+- ✨ Adicionado: Workflow CI/CD para testes automatizados
+- 📚 Atualizado: Documentação técnica completa
 
 ### [2024-12-19]
 - 🔧 Corrigido: Cores de tarefas no calendário (concluídas aparecem verdes)
@@ -285,12 +285,14 @@
 
 ## 📊 Métricas de Código
 
-- **Componentes**: ~80
-- **Hooks customizados**: 29
+- **Componentes**: ~85
+- **Hooks customizados**: 32
 - **Páginas**: 10
-- **Edge Functions**: 6
+- **Edge Functions**: 7
 - **Tabelas no banco**: 16
+- **Arquivos de teste**: 15
+- **Testes E2E**: 5 specs
 
 ---
 
-*Última atualização: 19/12/2024*
+*Última atualização: Janeiro 2025*
