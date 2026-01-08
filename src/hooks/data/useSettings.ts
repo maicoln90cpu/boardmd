@@ -50,6 +50,8 @@ export interface AppSettings {
   interface: {
     sidebarPosition: 'left' | 'right';
     language: 'pt-BR' | 'en' | 'es';
+    sidebarPinned: boolean;
+    sidebarExpandedWhenPinned: boolean;
   };
   mobile: {
     dailyGridColumns: 1 | 2;
@@ -110,6 +112,8 @@ const defaultSettings: AppSettings = {
   interface: {
     sidebarPosition: 'left',
     language: 'pt-BR',
+    sidebarPinned: false,
+    sidebarExpandedWhenPinned: true,
   },
   mobile: {
     dailyGridColumns: 2,

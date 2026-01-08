@@ -180,8 +180,20 @@ function SortableCategoryItem({
 }
 // Componente para opção de fixar menu lateral
 function SidebarPinOption() {
-  const [sidebarPinned, setSidebarPinned] = useLocalStorage("sidebar-pinned", false);
-  const [sidebarExpandedWhenPinned, setSidebarExpandedWhenPinned] = useLocalStorage("sidebar-expanded-when-pinned", true);
+  const { settings, updateSettings, saveSettings } = useSettings();
+  
+  const sidebarPinned = settings.interface.sidebarPinned;
+  const sidebarExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
+
+  const handlePinnedChange = async (value: boolean) => {
+    updateSettings({ interface: { ...settings.interface, sidebarPinned: value } });
+    await saveSettings();
+  };
+
+  const handleExpandedChange = async (value: boolean) => {
+    updateSettings({ interface: { ...settings.interface, sidebarExpandedWhenPinned: value } });
+    await saveSettings();
+  };
 
   return (
     <div className="space-y-4">
@@ -194,7 +206,7 @@ function SidebarPinOption() {
         </div>
         <Switch
           checked={sidebarPinned}
-          onCheckedChange={setSidebarPinned}
+          onCheckedChange={handlePinnedChange}
         />
       </div>
       
@@ -208,7 +220,7 @@ function SidebarPinOption() {
           </div>
           <Switch
             checked={sidebarExpandedWhenPinned}
-            onCheckedChange={setSidebarExpandedWhenPinned}
+            onCheckedChange={handleExpandedChange}
           />
         </div>
       )}
