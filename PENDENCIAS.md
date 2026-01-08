@@ -11,9 +11,24 @@
 
 ## 📋 Features Implementadas Recentemente
 
+### Versão 1.2 (Janeiro 2026)
+
+#### Melhorias no Sistema de Notas ✅ NOVO
+- ✅ Visualização em grid para lista de notas
+- ✅ Preview de conteúdo em hover (primeiras 200 caracteres)
+- ✅ Contador de palavras e caracteres em tempo real no editor
+- ✅ Layout compacto para cadernos (1 linha por item)
+- ✅ Coluna de cadernos mais larga (w-64)
+- ✅ Correção do scroll vertical no editor
+- ✅ Auto-save melhorado
+
+#### Melhorias no Kanban ✅ NOVO
+- ✅ Auto-preenchimento de categoria ao abrir modal
+- ✅ Categoria selecionada passada para TaskModal
+
 ### Versão 1.1 (Janeiro 2025)
 
-#### Testes Automatizados ✅ NOVO
+#### Testes Automatizados ✅
 - ✅ Configuração do Vitest + Testing Library
 - ✅ Testes unitários para hooks (useTasks, useCategories, useColumns, useSettings, useNotes, usePomodoro, useRateLimiter)
 - ✅ Testes de componentes (Auth, TaskCard, TaskModal, KanbanBoard)
@@ -23,7 +38,7 @@
 - ✅ Testes E2E (auth, tasks, kanban, notes, pomodoro)
 - ✅ Workflow CI/CD (.github/workflows/test.yml)
 
-#### Mobile UX ✅ NOVO
+#### Mobile UX ✅
 - ✅ Sheet de projetos no mobile (filtro de categorias)
 - ✅ Indicador visual de projeto selecionado
 - ✅ Contagem de tarefas por categoria no Sheet
@@ -62,12 +77,13 @@
 #### Notas
 - ✅ Editor de texto rico (TipTap)
 - ✅ Cadernos para organização
-- ✅ Tags em notas
+- ✅ Tags em cadernos (coloridas)
 - ✅ Cores personalizadas
 - ✅ Fixar notas importantes
 - ✅ Busca em notas
 - ✅ Lixeira com restauração
 - ✅ Formatação com IA
+- ✅ Vinculação com tarefas (blocos de tarefa no editor)
 
 #### Pomodoro
 - ✅ Timer configurável
@@ -83,20 +99,20 @@
 - ✅ Insights com IA
 - ✅ Gamificação (pontos, níveis, streaks)
 - ✅ Monitor de notificações push
+- ✅ Monitor de saúde do sistema
 
 #### Sistema
 - ✅ Autenticação completa
 - ✅ PWA com modo offline
-- ✅ Notificações push
+- ✅ Notificações push (OneSignal)
 - ✅ Tema dark/light
 - ✅ Configurações sincronizadas
-- ✅ Atalhos de teclado (Ctrl+K, Ctrl+N)
+- ✅ Atalhos de teclado (Ctrl+K, Ctrl+N, Ctrl+Enter, Ctrl+Shift+T)
 - ✅ Indicador de status online
 - ✅ Recuperação de senha via email
 - ✅ Toggle de visibilidade de senha
 - ✅ Confirmação de senha no registro
 - ✅ Health Check de módulos (edge function)
-- ✅ Monitor de saúde do sistema no dashboard
 - ✅ Empty states personalizados com ilustrações
 - ✅ CTAs contextuais em listas vazias
 
@@ -106,47 +122,43 @@
 
 ### Alta Prioridade
 
-#### 1. ~~Testes Automatizados~~ ✅ CONCLUÍDO
-- [x] Configurar vitest e testing-library
-- [x] Testes unitários para hooks críticos
-- [x] Testes de componentes
-- [x] Testes E2E com Playwright
-- [x] Workflow CI/CD
-
-#### 2. ~~Filtros Mobile~~ ✅ CONCLUÍDO
-- [x] Sheet de projetos no mobile
-- [x] Indicador de projeto selecionado
-- [x] Contagem de tarefas por categoria
-
-#### 3. Busca Global Aprimorada
-- [ ] Busca em notas a partir da busca global
-- [ ] Filtros avançados na busca
-- [ ] Histórico de buscas recentes
-
-#### 4. Anexos em Tarefas
+#### 1. Anexos em Tarefas
 - [ ] Upload de imagens
 - [ ] Upload de documentos
 - [ ] Preview inline
+- [ ] Storage bucket configurado
+
+#### 2. Busca Global Aprimorada
+- [ ] Busca em notas a partir da busca global
+- [ ] Filtros avançados na busca
+- [ ] Histórico de buscas recentes
+- [ ] Highlight de termos encontrados
 
 ### Média Prioridade
 
-#### 5. Integrações
+#### 3. Melhorias no Sistema de Notas
+- [ ] Ícones personalizados para cadernos
+- [ ] Destaque do termo buscado na lista
+- [ ] Drag & drop para reordenar cadernos
+- [ ] Exportação de notas (Markdown, PDF)
+
+#### 4. Integrações
 - [ ] Sincronização com Google Calendar
 - [ ] Exportação para outros formatos (CSV, Excel)
 - [ ] Webhooks para automações
 
-#### 6. Onboarding
+#### 5. Onboarding
 - [ ] Tour guiado para novos usuários
 - [ ] Tooltips contextuais
 
 ### Baixa Prioridade
 
-#### 7. Refinamentos de UI/UX
+#### 6. Refinamentos de UI/UX
 - [ ] Animações de transição mais suaves
 - [ ] Loading states mais elegantes
 - [ ] Mais atalhos de teclado
 
-#### 8. Colaboração (Futuro)
+#### 7. Colaboração (Futuro)
 - [ ] Compartilhamento de projetos
 - [ ] Comentários em tarefas
 - [ ] Atribuição de tarefas
@@ -157,12 +169,12 @@
 
 > ⚠️ Estes itens serão implementados apenas quando solicitados explicitamente.
 
-### 2.1 Leaked Password Protection
+### Leaked Password Protection
 - [ ] Habilitar via configuração do backend (Lovable Cloud)
 - **Prioridade**: Alta
 - **Estimativa**: 30 minutos
 
-### 2.3 Autenticação de Dois Fatores (2FA)
+### Autenticação de Dois Fatores (2FA)
 - [ ] Integrar TOTP via Supabase Auth
 - [ ] Criar UI de configuração em Settings
 - [ ] Adicionar verificação no login
@@ -179,17 +191,17 @@
 ### UX/UI
 | Sugestão | Prioridade | Complexidade |
 |----------|------------|--------------|
-| Legenda de cores das colunas no calendário | Média | Baixa |
-| Editar cores das colunas nas configurações | Alta | Média |
-| Tour guiado para novos usuários | Baixa | Alta |
+| Ícones personalizados para cadernos | Alta | Baixa |
+| Destaque de termos na busca | Alta | Média |
+| Tour guiado para novos usuários | Média | Alta |
 | Temas customizáveis além de dark/light | Baixa | Média |
 
 ### Performance
 | Sugestão | Prioridade | Complexidade |
 |----------|------------|--------------|
-| Virtualização de listas longas | Média | Alta |
+| Virtualização de listas longas | Média | ✅ Implementado |
 | Cache mais agressivo de dados | Média | Média |
-| Lazy loading de componentes | Baixa | Baixa |
+| Lazy loading de componentes | Baixa | ✅ Implementado |
 
 ### Funcionalidades
 | Sugestão | Prioridade | Complexidade |
@@ -203,13 +215,23 @@
 
 ## 📝 Changelog
 
+### [2026-01-08]
+- ✨ Adicionado: Visualização em grid para notas
+- ✨ Adicionado: Preview de conteúdo em hover nas notas
+- ✨ Adicionado: Contador de palavras/caracteres no editor
+- ✨ Adicionado: Auto-preenchimento de categoria no TaskModal
+- 🔧 Corrigido: Scroll vertical do editor de notas
+- 🔧 Melhorado: Layout compacto dos cadernos (1 linha)
+- 🔧 Melhorado: Largura da coluna de cadernos aumentada
+- 📚 Atualizado: Documentação técnica completa
+
 ### [2025-01-08]
 - ✨ Adicionado: Sheet de projetos no mobile para filtrar categorias
 - ✨ Adicionado: Testes unitários para hooks (useSettings, useColumns, useNotes, usePomodoro)
 - ✨ Adicionado: Testes de componentes (TaskModal, KanbanBoard)
 - ✨ Adicionado: Testes E2E com Playwright (auth, tasks, kanban, notes, pomodoro)
 - ✨ Adicionado: Workflow CI/CD para testes automatizados
-- 📚 Atualizado: Documentação técnica completa
+- 📚 Atualizado: Documentação técnica
 
 ### [2024-12-19]
 - 🔧 Corrigido: Cores de tarefas no calendário (concluídas aparecem verdes)
@@ -285,14 +307,17 @@
 
 ## 📊 Métricas de Código
 
-- **Componentes**: ~85
-- **Hooks customizados**: 32
-- **Páginas**: 10
-- **Edge Functions**: 7
-- **Tabelas no banco**: 16
-- **Arquivos de teste**: 15
-- **Testes E2E**: 5 specs
+| Métrica | Quantidade |
+|---------|------------|
+| Componentes React | ~90 |
+| Hooks customizados | 35 |
+| Páginas | 11 |
+| Edge Functions | 9 |
+| Tabelas no banco | 16+ |
+| Arquivos de teste unitário | 15 |
+| Specs E2E | 5 |
+| Componentes UI (shadcn) | 50+ |
 
 ---
 
-*Última atualização: Janeiro 2025*
+*Última atualização: 08 de Janeiro de 2026*

@@ -3,13 +3,13 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://lovable.dev)
 [![Tests](https://img.shields.io/badge/tests-vitest%20%2B%20playwright-blue)](./src/__tests__)
 [![Coverage](https://img.shields.io/badge/coverage-expanding-yellow)](./src/__tests__)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue)](./ROADMAP.md)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue)](./ROADMAP.md)
 
-> **Última atualização**: Janeiro 2025
+> **Última atualização**: 08 de Janeiro de 2026
 
 ## Visão Geral
 
-TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, construída com tecnologias modernas. O sistema oferece múltiplas visualizações (Kanban, Calendário), notas, timer Pomodoro, e recursos avançados de organização.
+TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, construída com tecnologias modernas. O sistema oferece múltiplas visualizações (Kanban, Calendário), notas com editor rico, timer Pomodoro, e recursos avançados de organização com gamificação.
 
 ## 📚 Documentação
 
@@ -23,57 +23,69 @@ TaskFlow é uma aplicação web completa de gestão de tarefas e produtividade, 
 ## Stack Tecnológica
 
 ### Frontend
-- **React 18** - Biblioteca UI
+- **React 18.3** - Biblioteca UI
 - **TypeScript** - Tipagem estática
 - **Vite** - Build tool e dev server
 - **Tailwind CSS** - Framework de estilos utilitários
 - **shadcn/ui** - Componentes UI acessíveis
-- **Framer Motion** - Animações
+- **Framer Motion** - Animações fluidas
 - **React Router DOM v7** - Roteamento
-- **TanStack Query** - Gerenciamento de estado servidor
+- **TanStack Query v5** - Gerenciamento de estado servidor
 - **Recharts** - Gráficos e visualizações
 
 ### Backend (Lovable Cloud)
 - **Supabase** - Backend as a Service
   - PostgreSQL - Banco de dados
   - Row Level Security (RLS) - Segurança
-  - Edge Functions - Lógica serverless
+  - Edge Functions - Lógica serverless (9 funções)
   - Realtime - Atualizações em tempo real
   - Auth - Autenticação
 
 ### Bibliotecas Principais
-- **@dnd-kit** - Drag and drop
-- **@tiptap** - Editor de texto rico
-- **date-fns** - Manipulação de datas
-- **html2canvas** - Exportação visual
-- **jspdf** - Geração de PDFs
-- **zod** - Validação de schemas
-- **lucide-react** - Ícones
-- **vitest** - Testes unitários
-- **@playwright/test** - Testes E2E
+| Categoria | Bibliotecas |
+|-----------|-------------|
+| Drag & Drop | `@dnd-kit/core`, `@dnd-kit/sortable` |
+| Editor Rico | `@tiptap/react`, `@tiptap/starter-kit`, extensões |
+| Datas | `date-fns` |
+| Exportação | `html2canvas`, `jspdf` |
+| Validação | `zod`, `react-hook-form` |
+| Ícones | `lucide-react` |
+| Testes | `vitest`, `@playwright/test`, `@testing-library/react` |
+| PWA | `vite-plugin-pwa` |
 
 ## Arquitetura do Projeto
 
 ```
 src/
-├── __tests__/           # Testes automatizados
-│   ├── components/      # Testes de componentes
-│   ├── hooks/           # Testes de hooks
-│   ├── lib/             # Testes de utilitários
-│   └── contexts/        # Testes de contextos
-├── components/           # Componentes React
-│   ├── ui/              # Componentes base (shadcn)
-│   ├── kanban/          # Componentes do Kanban
-│   ├── notes/           # Componentes de Notas
-│   ├── dashboard/       # Componentes do Dashboard
+├── __tests__/           # Testes automatizados (15 arquivos)
+│   ├── components/      # Testes de componentes (4)
+│   ├── hooks/           # Testes de hooks (7)
+│   ├── lib/             # Testes de utilitários (3)
+│   └── contexts/        # Testes de contextos (1)
+├── components/          # Componentes React (~90 componentes)
+│   ├── ui/              # Componentes base shadcn (50+)
+│   ├── kanban/          # Componentes do Kanban (15)
+│   ├── notes/           # Componentes de Notas (12)
+│   ├── dashboard/       # Componentes do Dashboard (7)
+│   ├── task-card/       # Subcomponentes do TaskCard (8)
+│   ├── calendar/        # Componentes do Calendário
+│   ├── notifications/   # Componentes de Notificações
+│   ├── sidebar/         # Componentes da Sidebar
 │   └── templates/       # Sistema de templates
-├── contexts/            # Contextos React
-├── hooks/               # Custom hooks (+30 hooks)
-├── pages/               # Páginas da aplicação
+├── contexts/            # Contextos React (4)
+├── hooks/               # Custom hooks (35 hooks)
+│   ├── data/            # Hooks de dados (useCategories, useColumns, useSettings, useTags)
+│   ├── tasks/           # Hooks de tarefas (useTasks, useTaskFiltering, etc.)
+│   └── ui/              # Hooks de UI (useBreakpoint, useMobile, useToast)
+├── pages/               # Páginas da aplicação (11)
 ├── lib/                 # Utilitários
+│   ├── sync/            # Sincronização offline
+│   ├── push/            # Notificações push
+│   ├── export/          # Exportação visual
+│   └── pwa/             # PWA utilities
 └── integrations/        # Integrações externas
 
-e2e/                     # Testes E2E com Playwright
+e2e/                     # Testes E2E com Playwright (5 specs)
 ├── auth.spec.ts
 ├── tasks.spec.ts
 ├── kanban.spec.ts
@@ -81,7 +93,16 @@ e2e/                     # Testes E2E com Playwright
 └── pomodoro.spec.ts
 
 supabase/
-├── functions/           # Edge Functions
+├── functions/           # Edge Functions (9 funções)
+│   ├── cleanup-old-logs/
+│   ├── daily-assistant/
+│   ├── delete-account/
+│   ├── format-note/
+│   ├── health-check/
+│   ├── productivity-insights/
+│   ├── reset-daily-stats/
+│   ├── reset-recurring-tasks/
+│   └── send-onesignal/
 └── migrations/          # Migrações do banco
 ```
 
@@ -132,48 +153,19 @@ npm run test:e2e:ui  # Rodar testes E2E com UI interativa
 
 ## 🧪 Testes Automatizados
 
-### Estrutura de Testes
-
-```
-src/__tests__/
-├── components/
-│   ├── Auth.test.tsx
-│   ├── TaskCard.test.tsx
-│   ├── TaskModal.test.tsx
-│   └── KanbanBoard.test.tsx
-├── hooks/
-│   ├── useTasks.test.ts
-│   ├── useCategories.test.ts
-│   ├── useColumns.test.ts
-│   ├── useSettings.test.ts
-│   ├── useNotes.test.ts
-│   ├── usePomodoro.test.ts
-│   └── useRateLimiter.test.ts
-├── lib/
-│   ├── dateUtils.test.ts
-│   ├── taskFilters.test.ts
-│   └── validations.test.ts
-└── contexts/
-    └── AuthContext.test.tsx
-
-e2e/
-├── auth.spec.ts        # Login, registro, recuperação de senha
-├── tasks.spec.ts       # CRUD de tarefas
-├── kanban.spec.ts      # Drag and drop, filtros
-├── notes.spec.ts       # Notas e cadernos
-└── pomodoro.spec.ts    # Timer e sessões
-```
-
 ### Cobertura de Testes
 
-| Área | Cobertura |
-|------|-----------|
-| Hooks de dados | ✅ useTasks, useCategories, useColumns, useSettings, useNotes, usePomodoro |
-| Hooks utilitários | ✅ useRateLimiter |
-| Componentes | ✅ Auth, TaskCard, TaskModal, KanbanBoard |
-| Utilitários | ✅ dateUtils, taskFilters, validations |
-| Contextos | ✅ AuthContext |
-| E2E | ✅ Auth, Tasks, Kanban, Notes, Pomodoro |
+| Área | Arquivos | Status |
+|------|----------|--------|
+| Hooks de dados | useTasks, useCategories, useColumns, useSettings, useNotes, usePomodoro | ✅ |
+| Hooks utilitários | useRateLimiter | ✅ |
+| Componentes | Auth, TaskCard, TaskModal, KanbanBoard | ✅ |
+| Utilitários | dateUtils, taskFilters, validations | ✅ |
+| Contextos | AuthContext | ✅ |
+| E2E | Auth, Tasks, Kanban, Notes, Pomodoro | ✅ |
+
+### CI/CD
+O workflow `.github/workflows/test.yml` executa testes automaticamente em push/PR para branches `main` e `develop`.
 
 ## Deploy
 
@@ -188,41 +180,65 @@ O deploy é feito automaticamente através do Lovable:
 
 ## Banco de Dados
 
-### Tabelas Principais
-- `tasks` - Tarefas do Kanban
-- `columns` - Colunas do Kanban
-- `categories` - Categorias/Projetos
-- `notes` - Notas e documentos
-- `notebooks` - Cadernos de notas
-- `pomodoro_sessions` - Sessões Pomodoro
-- `user_stats` - Estatísticas do usuário
-- `profiles` - Perfis de usuário
-- `tags` - Tags para organização
-- `activity_log` - Log de atividades
-- `push_subscriptions` - Notificações push
-- `push_logs` - Logs de notificações
+### Tabelas Principais (16 tabelas)
+| Tabela | Descrição |
+|--------|-----------|
+| `tasks` | Tarefas do Kanban |
+| `columns` | Colunas do Kanban |
+| `categories` | Categorias/Projetos |
+| `notes` | Notas e documentos |
+| `notebooks` | Cadernos de notas |
+| `tags` | Tags para organização |
+| `pomodoro_sessions` | Sessões Pomodoro |
+| `pomodoro_templates` | Templates de Pomodoro |
+| `user_stats` | Estatísticas e gamificação |
+| `user_settings` | Configurações do usuário |
+| `profiles` | Perfis de usuário |
+| `activity_log` | Log de atividades |
+| `audit_logs` | Logs de auditoria |
+| `task_history` | Histórico de alterações |
+| `push_subscriptions` | Notificações push |
+| `push_logs` | Logs de notificações |
+| `trash` | Lixeira (soft delete) |
+| `project_templates` | Templates de projetos |
 
 ### Segurança
 Todas as tabelas possuem Row Level Security (RLS) habilitado, garantindo que usuários só acessem seus próprios dados.
 
 ## Features Principais
 
-- ✅ Kanban Board com drag & drop
-- ✅ Calendário com visualização mensal
-- ✅ Sistema de notas com editor rico
+### Kanban Board
+- ✅ Drag & drop com @dnd-kit
+- ✅ Múltiplas categorias/projetos
+- ✅ Kanban Diário separado
+- ✅ Colunas customizáveis com cores
+- ✅ Filtros avançados e presets
+- ✅ Ações em lote
+- ✅ Tarefas recorrentes
+- ✅ Subtarefas com checklist
+- ✅ Favoritos
+- ✅ Espelhamento de tarefas
+
+### Notas
+- ✅ Editor TipTap com formatação rica
+- ✅ Cadernos com tags coloridas
+- ✅ Visualização em lista e grid
+- ✅ Preview de conteúdo em hover
+- ✅ Contador de palavras/caracteres
+- ✅ Vinculação com tarefas
+- ✅ Cores personalizadas
+- ✅ Auto-save
+
+### Sistema
+- ✅ PWA (instalável) com modo offline
+- ✅ Notificações push
+- ✅ Tema dark/light
 - ✅ Timer Pomodoro com templates
 - ✅ Dashboard de produtividade
-- ✅ Notificações push (PWA)
-- ✅ Modo offline
-- ✅ Tema dark/light
-- ✅ Tarefas recorrentes
-- ✅ Subtarefas
-- ✅ Tags e prioridades
-- ✅ Exportação PNG/PDF
-- ✅ Favoritos
 - ✅ Gamificação (pontos, níveis, streaks)
-- ✅ Filtros de projetos mobile (Sheet)
-- ✅ Testes automatizados (unitários + E2E)
+- ✅ Calendário com drag & drop
+- ✅ Exportação PNG/PDF/JSON
+- ✅ Atalhos de teclado
 
 ## Contribuição
 

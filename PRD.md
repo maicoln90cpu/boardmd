@@ -2,8 +2,8 @@
 
 ## TaskFlow - Sistema de Gestão de Tarefas e Produtividade
 
-**Versão**: 1.1  
-**Data**: Janeiro 2025  
+**Versão**: 1.2  
+**Data**: Janeiro 2026  
 **Status**: Em Produção
 
 ---
@@ -33,7 +33,7 @@ Soluções existentes são fragmentadas, exigindo múltiplas ferramentas (uma pa
 
 TaskFlow é uma plataforma unificada que combina:
 - **Kanban Board** para gestão visual de tarefas
-- **Sistema de Notas** para documentação
+- **Sistema de Notas** para documentação rica
 - **Timer Pomodoro** para foco
 - **Dashboard** para insights de produtividade
 - **Calendário** para visão temporal
@@ -130,6 +130,7 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 | RF-002.11 | Ações em lote | Média | ✅ Implementado |
 | RF-002.12 | Presets de filtros | Baixa | ✅ Implementado |
 | RF-002.13 | Filtros mobile (Sheet) | Média | ✅ Implementado |
+| RF-002.14 | Auto-fill categoria no modal | Média | ✅ Implementado |
 
 ### 3.3 Calendário (RF-003)
 
@@ -146,15 +147,20 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 
 | ID | Requisito | Prioridade | Status |
 |----|-----------|------------|--------|
-| RF-004.1 | Editor de texto rico | Alta | ✅ Implementado |
+| RF-004.1 | Editor de texto rico (TipTap) | Alta | ✅ Implementado |
 | RF-004.2 | Criar/editar/excluir notas | Alta | ✅ Implementado |
 | RF-004.3 | Cadernos (notebooks) | Alta | ✅ Implementado |
 | RF-004.4 | Busca em notas | Alta | ✅ Implementado |
-| RF-004.5 | Tags em notas | Média | ✅ Implementado |
+| RF-004.5 | Tags em cadernos | Média | ✅ Implementado |
 | RF-004.6 | Cores personalizadas | Média | ✅ Implementado |
 | RF-004.7 | Fixar notas | Média | ✅ Implementado |
 | RF-004.8 | Lixeira | Média | ✅ Implementado |
 | RF-004.9 | Formatação com IA | Baixa | ✅ Implementado |
+| RF-004.10 | Visualização em grid | Média | ✅ Implementado |
+| RF-004.11 | Preview em hover | Média | ✅ Implementado |
+| RF-004.12 | Contador palavras/caracteres | Baixa | ✅ Implementado |
+| RF-004.13 | Vinculação com tarefas | Média | ✅ Implementado |
+| RF-004.14 | Auto-save | Alta | ✅ Implementado |
 
 ### 3.5 Pomodoro (RF-005)
 
@@ -176,6 +182,7 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 | RF-006.3 | Insights com IA | Média | ✅ Implementado |
 | RF-006.4 | Gamificação | Média | ✅ Implementado |
 | RF-006.5 | Monitor de push | Baixa | ✅ Implementado |
+| RF-006.6 | Monitor de saúde | Baixa | ✅ Implementado |
 
 ### 3.7 Sistema (RF-007)
 
@@ -190,7 +197,7 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 | RF-007.7 | Exportação PNG/PDF | Média | ✅ Implementado |
 | RF-007.8 | Configurações sincronizadas | Média | ✅ Implementado |
 
-### 3.8 Testes (RF-008) - NOVO
+### 3.8 Testes (RF-008)
 
 | ID | Requisito | Prioridade | Status |
 |----|-----------|------------|--------|
@@ -258,9 +265,10 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 
 | Feature | Descrição | Prioridade |
 |---------|-----------|------------|
-| Importação Avançada | Preview e merge de dados | Alta |
-| Anexos em Tarefas | Upload de arquivos | Alta |
+| Anexos em Tarefas | Upload de imagens e arquivos | Alta |
 | Busca Global v2 | Busca em notas + histórico | Alta |
+| Ícones para Cadernos | Ícones personalizados | Média |
+| Destaque na Busca | Highlight de termos | Média |
 
 ### 5.3 Backlog Futuro
 
@@ -298,14 +306,15 @@ Uma feature é considerada pronta quando:
 - [x] Tarefa aparece na coluna correta
 - [x] Toast de confirmação exibido
 - [x] Funciona offline (sync posterior)
+- [x] Categoria é auto-preenchida quando selecionada
 
 #### Notas - Criar Nota
 - [x] Usuário pode criar nova nota
 - [x] Editor de texto rico funcional
 - [x] Salvamento automático
 - [x] Pode associar a caderno
-- [x] Pode adicionar tags
-- [x] Pode definir cor
+- [x] Pode adicionar cor
+- [x] Contador de palavras atualiza em tempo real
 
 ---
 
@@ -313,13 +322,13 @@ Uma feature é considerada pronta quando:
 
 ### 7.1 KPIs de Produto
 
-| Métrica | Meta Q1 2025 |
+| Métrica | Meta Q1 2026 |
 |---------|--------------|
-| Usuários ativos mensais | 500 |
-| Tarefas criadas/dia | 1000 |
-| Sessões Pomodoro/dia | 200 |
-| Notas criadas/dia | 100 |
-| NPS | > 40 |
+| Usuários ativos mensais | 1000 |
+| Tarefas criadas/dia | 2000 |
+| Sessões Pomodoro/dia | 500 |
+| Notas criadas/dia | 300 |
+| NPS | > 50 |
 
 ### 7.2 KPIs Técnicos
 
@@ -329,7 +338,7 @@ Uma feature é considerada pronta quando:
 | Core Web Vitals | Pass | Em progresso |
 | Error Rate | < 0.1% | ✅ |
 | Uptime | > 99.5% | ✅ |
-| Cobertura de Testes | > 60% | Em progresso |
+| Cobertura de Testes | > 70% | Em progresso |
 
 ---
 
@@ -354,7 +363,8 @@ Uma feature é considerada pronta quando:
 | PWA | Progressive Web App |
 | Edge Function | Função serverless |
 | E2E | End-to-End (teste de ponta a ponta) |
+| TipTap | Editor de texto rico baseado em ProseMirror |
 
 ---
 
-*Última atualização: Janeiro 2025*
+*Última atualização: 08 de Janeiro de 2026*
