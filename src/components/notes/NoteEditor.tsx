@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import { HeadingWithId } from "./extensions/HeadingWithIdExtension";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Color from "@tiptap/extension-color";
@@ -94,6 +95,8 @@ export function NoteEditor({
   const lowlight = createLowlight(common);
   const editor = useEditor({
     extensions: [StarterKit.configure({
+      // Disable default heading to use our HeadingWithId extension that preserves IDs
+      heading: false,
       bulletList: {
         HTMLAttributes: {
           class: 'list-disc pl-6 my-2'
@@ -112,7 +115,12 @@ export function NoteEditor({
         }
       },
       codeBlock: false // Disable default code block to use lowlight version
-    }), Underline, Link.configure({
+    }), 
+    // Custom heading extension that preserves 'id' attributes for TOC
+    HeadingWithId.configure({
+      levels: [1, 2, 3, 4, 5, 6],
+    }),
+    Underline, Link.configure({
       openOnClick: false,
       autolink: false,
       linkOnPaste: true
@@ -386,7 +394,27 @@ export function NoteEditor({
           
           const targetId = href.slice(1); // Remove o #
           const editorElement = editor.view.dom;
-          const targetElement = editorElement.querySelector(`[id="${targetId}"]`);
+          
+          // Busca primária: por ID exato
+          let targetElement = editorElement.querySelector(`[id="${targetId}"]`);
+          
+          // Fallback: buscar por data-id (caso TipTap tenha transformado)
+          if (!targetElement) {
+            targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+          }
+          
+          // Fallback 2: buscar heading com texto similar ao ID
+          if (!targetElement) {
+            const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ');
+            headings.forEach((heading) => {
+              const headingText = heading.textContent?.toLowerCase().trim() || '';
+              // Verifica se o ID corresponde ao texto do heading (ex: "secao-1" match "1. Título")
+              if (headingText.includes(normalizedTargetId) || normalizedTargetId.includes(headingText.split(' ').slice(0, 3).join(' '))) {
+                targetElement = heading;
+              }
+            });
+          }
           
           if (targetElement) {
             targetElement.scrollIntoView({ 
@@ -397,20 +425,24 @@ export function NoteEditor({
             // Flash highlight visual para indicar onde está
             targetElement.classList.add('toc-target-highlight');
             setTimeout(() => {
-              targetElement.classList.remove('toc-target-highlight');
+              targetElement?.classList.remove('toc-target-highlight');
             }, 2000);
           } else {
-            toast.error("Seção não encontrada");
+            console.warn(`[TOC] Section not found: #${targetId}`);
+            toast.error("Seção não encontrada. Tente regenerar o índice.");
           }
+          
+          return; // Não propagar o evento
         }
       }
     };
 
     const editorDom = editor.view.dom;
-    editorDom.addEventListener('click', handleClick);
+    // Usar capture: true para interceptar antes do handler padrão do TipTap
+    editorDom.addEventListener('click', handleClick, { capture: true });
     
     return () => {
-      editorDom.removeEventListener('click', handleClick);
+      editorDom.removeEventListener('click', handleClick, { capture: true });
     };
   }, [editor]);
 

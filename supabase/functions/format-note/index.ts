@@ -106,8 +106,9 @@ IMPORTANTE: Retorne APENAS HTML válido, sem explicações ou comentários`
     };
 
     let systemPrompt = defaultPrompts[action] || defaultPrompts.improve;
+    let aiModel = "google/gemini-2.5-flash"; // Default model
 
-    // Get custom prompt from user settings if authenticated
+    // Get custom prompt and AI model from user settings if authenticated
     const authHeader = req.headers.get('Authorization');
     if (authHeader) {
       try {
@@ -127,6 +128,13 @@ IMPORTANTE: Retorne APENAS HTML válido, sem explicações ou comentários`
             .eq('user_id', user.id)
             .single();
           
+          // Get custom AI model if set
+          if (settings?.settings?.ai?.model) {
+            aiModel = settings.settings.ai.model;
+            console.log(`[format-note] Using custom AI model: ${aiModel}`);
+          }
+          
+          // Map action to prompt key (e.g., "improve" -> "formatImprove", "generateToc" -> "formatGenerateToc")
           const promptKey = `format${action.charAt(0).toUpperCase() + action.slice(1)}`;
           if (settings?.settings?.aiPrompts?.[promptKey]) {
             systemPrompt = settings.settings.aiPrompts[promptKey];
@@ -138,7 +146,7 @@ IMPORTANTE: Retorne APENAS HTML válido, sem explicações ou comentários`
       }
     }
 
-    console.log(`[format-note] Processing action: ${action}`);
+    console.log(`[format-note] Processing action: ${action} with model: ${aiModel}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -147,7 +155,7 @@ IMPORTANTE: Retorne APENAS HTML válido, sem explicações ou comentários`
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiModel,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Texto para processar:\n\n${content}` }
