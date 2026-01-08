@@ -23,7 +23,7 @@ import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/data/useColumns";
-import { getAllPrompts } from "@/lib/defaultAIPrompts";
+import { getAllPrompts, AI_MODELS } from "@/lib/defaultAIPrompts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sidebar } from "@/components/Sidebar";
 import {
@@ -1503,9 +1503,38 @@ export default function Config() {
 
           {/* Aba IA & Prompts */}
           <TabsContent value="ai-prompts" className="space-y-4">
+            {/* Card do Modelo de IA */}
             <Card>
               <CardHeader>
-                <CardTitle>🤖 IA & Prompts</CardTitle>
+                <CardTitle>🧠 Modelo de IA</CardTitle>
+                <CardDescription>Escolha qual modelo de IA usar para processar suas notas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select 
+                  value={settings.ai?.model || 'google/gemini-2.5-flash'} 
+                  onValueChange={(value) => updateSettings({ ai: { ...settings.ai, model: value } })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AI_MODELS.map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        <div className="flex flex-col items-start py-1">
+                          <span className="font-medium">{model.label}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            {/* Card de Prompts */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🤖 Prompts Personalizados</CardTitle>
                 <CardDescription>Personalize os prompts usados pela IA para melhorar suas notas</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

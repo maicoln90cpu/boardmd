@@ -70,6 +70,10 @@ export interface AppSettings {
       low: { background: string; text: string };
     };
   };
+  // Configurações de IA
+  ai?: {
+    model: string;
+  };
   aiPrompts?: Record<string, string>;
   notificationTemplates?: NotificationTemplate[];
   // Filtros de data do calendário persistidos

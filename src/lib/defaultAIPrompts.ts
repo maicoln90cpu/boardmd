@@ -6,6 +6,35 @@ export interface AIPrompt {
   defaultValue: string;
 }
 
+// Lista de modelos de IA disponíveis
+export const AI_MODELS = [
+  {
+    value: 'google/gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    description: 'Rápido e equilibrado (recomendado)',
+  },
+  {
+    value: 'google/gemini-2.5-pro',
+    label: 'Gemini 2.5 Pro',
+    description: 'Mais preciso, ideal para textos complexos',
+  },
+  {
+    value: 'google/gemini-2.5-flash-lite',
+    label: 'Gemini 2.5 Flash Lite',
+    description: 'Mais rápido e econômico',
+  },
+  {
+    value: 'openai/gpt-5-mini',
+    label: 'GPT-5 Mini',
+    description: 'OpenAI, boa precisão e custo moderado',
+  },
+  {
+    value: 'openai/gpt-5',
+    label: 'GPT-5',
+    description: 'OpenAI premium, máxima qualidade',
+  },
+];
+
 export const DEFAULT_AI_PROMPTS: Record<string, AIPrompt> = {
   formatImprove: {
     key: 'formatImprove',
@@ -18,113 +47,123 @@ export const DEFAULT_AI_PROMPTS: Record<string, AIPrompt> = {
 - Melhore a estrutura de parágrafos
 - Adicione quebras de linha apropriadas
 - Mantenha o significado original
-- Retorne APENAS o texto formatado, sem comentários adicionais
+- Use HTML válido para TipTap: <p>, <strong>, <em>, <ul>, <li>, <h2>, <h3>
 
-O texto deve ser claro e fácil de ler.`
+Retorne APENAS HTML válido, sem comentários ou explicações.`
   },
   formatGrammar: {
     key: 'formatGrammar',
     label: 'Corrigir Gramática',
     description: 'Usado para correção ortográfica e gramatical',
     category: 'notes',
-    defaultValue: `Você é um assistente de correção gramatical. Corrija todos os erros de gramática e ortografia no texto fornecido:
+    defaultValue: `Você é um revisor de texto. Corrija todos os erros de gramática e ortografia:
 
 - Corrija erros de concordância
-- Corrija erros de pontuação
-- Corrija erros de acentuação
-- Mantenha o tom e estilo original
-- Retorne APENAS o texto corrigido, sem comentários adicionais`
+- Corrija erros de pontuação e acentuação
+- Mantenha o tom, estilo e estrutura HTML original
+- NÃO altere a formatação, apenas o texto
+
+Retorne APENAS HTML válido, sem comentários ou explicações.`
   },
   formatSummarize: {
     key: 'formatSummarize',
     label: 'Resumir',
     description: 'Usado para criar resumos concisos de textos longos',
     category: 'notes',
-    defaultValue: `Você é um assistente de resumo. Crie um resumo conciso do texto fornecido:
+    defaultValue: `Você é um especialista em resumos. Crie um resumo conciso do texto:
 
 - Capture os pontos principais
-- Mantenha informações essenciais
-- Seja objetivo e claro
 - Reduza o texto em pelo menos 50%
-- Retorne APENAS o resumo, sem comentários adicionais`
+- Formate com <p> para parágrafos e <strong> para destaques
+- Seja objetivo e claro
+
+Retorne APENAS HTML válido para TipTap, sem comentários.`
   },
   formatExpand: {
     key: 'formatExpand',
     label: 'Expandir',
     description: 'Usado para expandir textos curtos com mais detalhes',
     category: 'notes',
-    defaultValue: `Você é um assistente de expansão de texto. Expanda o texto fornecido com mais detalhes e contexto:
+    defaultValue: `Você é um escritor criativo. Expanda o texto com mais detalhes:
 
 - Adicione exemplos relevantes
 - Elabore conceitos importantes
-- Mantenha coerência com o tema
 - Aumente o texto em pelo menos 100%
-- Retorne APENAS o texto expandido, sem comentários adicionais`
+- Use HTML: <p>, <strong>, <ul>, <li>, <h3>
+
+Retorne APENAS HTML válido para TipTap, sem comentários.`
   },
   formatProfessional: {
     key: 'formatProfessional',
     label: 'Tornar Profissional',
     description: 'Usado para formalizar a linguagem do texto',
     category: 'notes',
-    defaultValue: `Você é um assistente de linguagem profissional. Transforme o texto fornecido em linguagem formal e profissional:
+    defaultValue: `Você é um editor profissional. Transforme o texto em linguagem formal:
 
 - Use vocabulário técnico apropriado
 - Evite gírias e coloquialismos
 - Mantenha tom neutro e objetivo
-- Estruture de forma corporativa
-- Retorne APENAS o texto profissional, sem comentários adicionais`
+- Preserve a estrutura HTML
+
+Retorne APENAS HTML válido para TipTap, sem comentários.`
   },
   formatToList: {
     key: 'formatToList',
     label: 'Transformar em Lista',
     description: 'Usado para converter texto em lista organizada de tópicos',
     category: 'notes',
-    defaultValue: `Você é um assistente de organização de texto. Transforme o texto fornecido em uma lista organizada de tópicos:
+    defaultValue: `Você é um organizador de texto. Transforme o texto em lista:
 
-- Use listas com marcadores ou numeradas
-- Cada item deve ser claro e conciso
-- Mantenha apenas informações relevantes
+- Use <ul> para listas não ordenadas ou <ol> para numeradas
+- Cada item em <li>
 - Agrupe itens relacionados
-- Retorne APENAS a lista formatada em HTML válido, sem comentários adicionais`
+- Mantenha apenas informações relevantes
+
+Retorne APENAS HTML válido para TipTap: <ul><li>...</li></ul>`
   },
   formatToTable: {
     key: 'formatToTable',
     label: 'Transformar em Tabela',
     description: 'Usado para converter texto estruturado em tabela',
     category: 'notes',
-    defaultValue: `Você é um especialista em estruturação de dados. Transforme o texto em uma tabela HTML organizada:
+    defaultValue: `Você é um especialista em tabelas. Transforme o texto em tabela HTML:
 
+- Use <table>, <thead>, <tbody>, <tr>, <th>, <td>
 - Identifique colunas lógicas nos dados
-- Use cabeçalhos descritivos
-- Mantenha dados bem organizados e legíveis
-- Se não houver dados tabulares claros, sugira uma estrutura lógica
-- Retorne APENAS a tabela HTML válida, sem comentários adicionais`
+- Use <th> para cabeçalhos
+- Mantenha dados organizados e legíveis
+
+Retorne APENAS HTML válido para TipTap, sem explicações.`
   },
   formatExtractActions: {
     key: 'formatExtractActions',
     label: 'Extrair Ações',
     description: 'Usado para extrair itens de ação/tarefas do texto',
     category: 'notes',
-    defaultValue: `Você é um assistente de produtividade. Analise o texto e extraia todos os itens de ação/tarefas:
+    defaultValue: `Você é um assistente de produtividade. Extraia tarefas do texto:
 
 - Identifique tarefas, pendências, ações a fazer
-- Formate como lista de checkboxes
+- Formate como lista de tarefas TipTap:
+  <ul data-type="taskList">
+    <li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label><div><p>Tarefa</p></div></li>
+  </ul>
 - Priorize clareza e objetividade
-- Se não houver ações claras, crie sugestões baseadas no contexto
-- Retorne APENAS a lista de tarefas em HTML válido, sem comentários adicionais`
+
+Retorne APENAS HTML válido para TipTap, sem comentários.`
   },
   formatKeyPoints: {
     key: 'formatKeyPoints',
     label: 'Pontos-Chave',
     description: 'Usado para extrair os pontos principais do texto',
     category: 'notes',
-    defaultValue: `Você é um analista de conteúdo. Extraia os 5-7 pontos principais do texto:
+    defaultValue: `Você é um analista de conteúdo. Extraia 5-7 pontos principais:
 
-- Identifique os conceitos mais importantes
+- Identifique conceitos mais importantes
 - Seja conciso e direto
-- Destaque palavras-chave em negrito
-- Mantenha a ordem de importância
-- Retorne APENAS a lista de pontos em HTML válido, sem comentários adicionais`
+- Formate: <ul><li><strong>Ponto:</strong> explicação</li></ul>
+- Mantenha ordem de importância
+
+Retorne APENAS HTML válido para TipTap, sem comentários.`
   },
   formatStructure: {
     key: 'formatStructure',
@@ -133,14 +172,46 @@ O texto deve ser claro e fácil de ler.`
     category: 'notes',
     defaultValue: `Você é um formatador de texto. Aplique formatação visual SEM alterar o conteúdo:
 
-- Títulos em <h2> ou <h3> com negrito
+- Títulos em <h2> ou <h3>
 - Subtítulos em <strong>
 - Listas com <ul>/<ol> e <li>
-- Parágrafos bem espaçados
+- Parágrafos bem espaçados com <p>
 - Destaque palavras-chave em <strong>
 
 NÃO altere o texto, apenas a estrutura visual.
-Retorne APENAS HTML válido para TipTap editor, sem comentários adicionais.`
+Retorne APENAS HTML válido para TipTap, sem comentários.`
+  },
+  formatGenerateToc: {
+    key: 'formatGenerateToc',
+    label: 'Gerar Índice (TOC)',
+    description: 'Gera um índice clicável no topo do documento com links âncora',
+    category: 'notes',
+    defaultValue: `Você é um especialista em estruturação de documentos. Crie um índice (TOC) clicável.
+
+INSTRUÇÕES:
+1. Analise o documento e identifique seções/tópicos principais
+2. Para cada tópico, adicione um ID único ao heading: <h2 id="secao-1">Título</h2>
+3. Crie o índice no TOPO com links âncora
+
+FORMATO DO ÍNDICE:
+<div class="toc-container">
+  <p style="font-weight: 700; font-size: 15px; margin-bottom: 14px;">📑 Índice</p>
+  <ul>
+    <li><a href="#secao-1">1. Título da Seção</a></li>
+    <li><a href="#secao-2">2. Título da Seção 2</a></li>
+  </ul>
+</div>
+
+REGRAS IMPORTANTES:
+- href DEVE começar com # seguido do ID (ex: href="#introducao")
+- O ID no heading DEVE ser idêntico ao href (sem o #)
+- Use IDs em kebab-case: secao-1, introducao, conclusao
+- NÃO adicione target="_blank" (links são internos)
+- NÃO adicione estilos inline nos links (CSS do app cuida disso)
+- Mantenha TODO o conteúdo original APÓS o índice
+- Se não houver seções claras, crie divisões lógicas com h2
+
+Retorne APENAS HTML válido, sem explicações.`
   },
   dailyAssistant: {
     key: 'dailyAssistant',
