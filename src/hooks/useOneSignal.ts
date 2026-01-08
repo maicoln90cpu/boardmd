@@ -51,20 +51,26 @@ export function useOneSignal() {
     try {
       setIsLoading(true);
       
-      // 1. Primeiro, vincular o usuário Supabase ANTES de solicitar permissão
+      // 1. Vincular usuário ANTES de solicitar permissão
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         console.log('[useOneSignal] Linking user:', user.id);
         await oneSignalUtils.setExternalUserId(user.id);
       }
       
-      // 2. Solicitar permissão (o opt-in acontece após permissão)
-      await oneSignalUtils.requestPermission();
+      // 2. Solicitar permissão E fazer opt-in
+      const permissionGranted = await oneSignalUtils.requestPermission();
       
-      // 3. Aguardar um pouco para a inscrição propagar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!permissionGranted) {
+        console.warn('[useOneSignal] Permission not granted');
+        setPermission(Notification.permission);
+        return false;
+      }
       
-      // 4. Adicionar tags após inscrição
+      // 3. Aguardar propagação
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 4. Adicionar tags
       if (user) {
         await oneSignalUtils.addTags({
           app_version: '1.1',
@@ -74,6 +80,7 @@ export function useOneSignal() {
         console.log('[useOneSignal] Tags added for user:', user.id);
       }
       
+      // 5. Verificar inscrição final
       const subscribed = await oneSignalUtils.isSubscribed();
       setIsSubscribed(subscribed);
       setPermission(Notification.permission);
