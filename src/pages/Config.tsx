@@ -904,6 +904,80 @@ export default function Config() {
                   />
                 </div>
 
+                {/* Colunas Excluídas da Automação */}
+                {settings.kanban.autoMoveToCurrentWeek && (
+                  <div className="ml-4 pl-4 border-l-2 border-muted space-y-3">
+                    <div className="space-y-0.5">
+                      <Label>Colunas Excluídas da Automação</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Tarefas nestas colunas não serão movidas automaticamente
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      {(settings.kanban.excludeFromWeeklyAutomation || []).map((colName, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-muted text-sm font-medium"
+                        >
+                          <span>{colName}</span>
+                          <button
+                            onClick={() => {
+                              const newList = (settings.kanban.excludeFromWeeklyAutomation || []).filter((_, i) => i !== index);
+                              updateSettings({ kanban: { ...settings.kanban, excludeFromWeeklyAutomation: newList } });
+                            }}
+                            className="ml-1 hover:text-destructive transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nome da coluna..."
+                        id="new-exclude-column"
+                        className="flex-1"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const input = e.currentTarget;
+                            const value = input.value.trim().toLowerCase();
+                            if (value && !(settings.kanban.excludeFromWeeklyAutomation || []).includes(value)) {
+                              updateSettings({ 
+                                kanban: { 
+                                  ...settings.kanban, 
+                                  excludeFromWeeklyAutomation: [...(settings.kanban.excludeFromWeeklyAutomation || []), value] 
+                                } 
+                              });
+                              input.value = '';
+                            }
+                          }
+                        }}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const input = document.getElementById('new-exclude-column') as HTMLInputElement;
+                          const value = input?.value.trim().toLowerCase();
+                          if (value && !(settings.kanban.excludeFromWeeklyAutomation || []).includes(value)) {
+                            updateSettings({ 
+                              kanban: { 
+                                ...settings.kanban, 
+                                excludeFromWeeklyAutomation: [...(settings.kanban.excludeFromWeeklyAutomation || []), value] 
+                              } 
+                            });
+                            input.value = '';
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <Separator />
 
                 <div className="space-y-2">

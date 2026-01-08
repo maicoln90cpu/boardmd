@@ -9,11 +9,12 @@ import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, FileText, Plus, Sparkles } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
@@ -39,7 +40,6 @@ export default function Notes() {
       if (noteExists) {
         setSelectedNoteId(noteIdFromUrl);
         setEditingNoteId(noteIdFromUrl);
-        // Limpar o param para não reselecionar em futuras navegações
         setSearchParams({}, { replace: true });
       }
     }
@@ -57,7 +57,6 @@ export default function Notes() {
   const sortedNotebooks = useMemo(() => {
     let sorted = [...notebooks];
     
-    // Filtrar por tag se selecionada
     if (selectedTagId) {
       sorted = sorted.filter((n) => n.tags?.some((t) => t.id === selectedTagId));
     }
@@ -70,7 +69,6 @@ export default function Notes() {
         sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case 'tag':
-        // Ordenar por primeira tag (alfabeticamente), notebooks sem tag vão para o final
         sorted.sort((a, b) => {
           const aTag = a.tags?.[0]?.name || '\uffff';
           const bTag = b.tags?.[0]?.name || '\uffff';
@@ -88,7 +86,6 @@ export default function Notes() {
   const filteredAndSortedNotes = useMemo(() => {
     let filtered = notes;
 
-    // Busca por título e conteúdo
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = notes.filter(
@@ -98,7 +95,6 @@ export default function Notes() {
       );
     }
 
-    // Ordenação
     let sorted = [...filtered];
     switch (sortBy) {
       case 'alphabetical':
@@ -112,21 +108,19 @@ export default function Notes() {
         sorted.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
     }
 
-    // Notas fixadas sempre no topo
     const pinned = sorted.filter(n => n.is_pinned);
     const unpinned = sorted.filter(n => !n.is_pinned);
     
     return [...pinned, ...unpinned];
   }, [notes, searchTerm, sortBy]);
 
-  // Filtrar notas pelo caderno selecionado (para layout 3 colunas)
-  // null = todas as notas, "loose" = notas soltas, string = caderno específico
+  // Filtrar notas pelo caderno selecionado
   const notesForSelectedNotebook = useMemo(() => {
     if (selectedNotebookId === null) {
-      return filteredAndSortedNotes; // Todas as notas
+      return filteredAndSortedNotes;
     }
     if (selectedNotebookId === "loose") {
-      return filteredAndSortedNotes.filter(n => !n.notebook_id); // Apenas notas soltas
+      return filteredAndSortedNotes.filter(n => !n.notebook_id);
     }
     return filteredAndSortedNotes.filter(n => n.notebook_id === selectedNotebookId);
   }, [filteredAndSortedNotes, selectedNotebookId]);
@@ -147,31 +141,26 @@ export default function Notes() {
   };
 
   const handleSelectNote = (noteId: string) => {
-    // Se há uma nota sendo editada, dispara evento para salvá-la antes de trocar
     if (selectedNoteId && selectedNoteId !== noteId) {
       window.dispatchEvent(new CustomEvent('save-current-note'));
     }
     setSelectedNoteId(noteId);
-    setEditingNoteId(noteId); // Marca nota sendo editada para merge inteligente
+    setEditingNoteId(noteId);
   };
 
-  // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
   useEffect(() => {
     return () => {
       if (selectedNoteId) {
-        // Dispara evento para salvar a nota atual antes de sair da página
         window.dispatchEvent(new CustomEvent('save-current-note'));
       }
     };
   }, [selectedNoteId]);
 
   const handleDeleteNote = async (noteId: string) => {
-    // Se a nota excluída estiver selecionada, limpar seleção
     if (selectedNoteId === noteId) {
       setSelectedNoteId(null);
-      setEditingNoteId(null); // Limpar nota em edição
+      setEditingNoteId(null);
     }
-    
     await deleteNote(noteId);
   };
 
@@ -197,24 +186,40 @@ export default function Notes() {
 
   if (loadingNotebooks || loadingNotes) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-muted-foreground">Carregando anotações...</p>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="flex flex-col items-center gap-4">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5"
+          >
+            <FileText className="h-8 w-8 text-primary" />
+          </motion.div>
+          <p className="text-muted-foreground font-medium">Carregando anotações...</p>
+        </div>
       </div>
     );
   }
 
-  // Se for mobile, usar layout mobile otimizado
+  // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <div className="p-4 border-b flex items-center justify-between bg-card">
-          <h2 className="text-xl font-bold">📝 Anotações</h2>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
+              <FileText className="h-5 w-5 text-primary" />
+            </div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+              Anotações
+            </h2>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setTrashOpen(true)}
             title="Lixeira"
-            className="min-h-[44px] min-w-[44px]"
+            className="min-h-[44px] min-w-[44px] hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -248,8 +253,7 @@ export default function Notes() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Sidebar Global */}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 flex">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
@@ -261,66 +265,101 @@ export default function Notes() {
       <main className="flex-1 flex h-screen overflow-hidden">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           {/* Coluna 1 - Cadernos */}
-          <div className="w-56 border-r flex flex-col bg-card shadow-sm">
-            <div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-card to-muted/30">
-              <h2 className="text-lg font-bold">📚 Cadernos</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setTrashOpen(true)}
-                title="Lixeira"
-                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+          <div className="w-60 border-r flex flex-col bg-gradient-to-b from-card via-card to-muted/5 shadow-sm">
+            <div className="p-4 border-b bg-gradient-to-r from-card to-muted/20 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                    Cadernos
+                  </h2>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTrashOpen(true)}
+                  title="Lixeira"
+                  className="hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2">
-              {/* Opção "Todas as Notas" */}
-              <button
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              {/* Todas as Notas - Premium button */}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => setSelectedNotebookId(null)}
-                className={`w-full text-left p-2 rounded-md mb-1 transition-all duration-200 ${
+                className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
                   selectedNotebookId === null 
-                    ? "bg-primary/10 text-primary font-medium shadow-sm" 
-                    : "hover:bg-muted hover:shadow-sm"
+                    ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
+                    : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
                 }`}
               >
-                📋 Todas as Notas ({notes.length})
-              </button>
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg transition-colors ${
+                    selectedNotebookId === null ? "bg-primary/20" : "bg-muted"
+                  }`}>
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <span className="font-medium text-sm">Todas as Notas</span>
+                  <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                    {notes.length}
+                  </span>
+                </div>
+              </motion.button>
               
-              {/* Opção "Notas Soltas" */}
-              <button
+              {/* Notas Soltas - Premium button */}
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={() => setSelectedNotebookId("loose")}
-                className={`w-full text-left p-2 rounded-md mb-2 transition-all duration-200 ${
+                className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
                   selectedNotebookId === "loose" 
-                    ? "bg-primary/10 text-primary font-medium shadow-sm" 
-                    : "hover:bg-muted hover:shadow-sm"
+                    ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
+                    : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
                 }`}
               >
-                📄 Notas Soltas ({notes.filter(n => !n.notebook_id).length})
-              </button>
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg transition-colors ${
+                    selectedNotebookId === "loose" ? "bg-primary/20" : "bg-muted"
+                  }`}>
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <span className="font-medium text-sm">Notas Soltas</span>
+                  <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                    {notes.filter(n => !n.notebook_id).length}
+                  </span>
+                </div>
+              </motion.button>
 
-              <NotebooksList
-                notebooks={sortedNotebooks}
-                notes={filteredAndSortedNotes}
-                selectedNoteId={selectedNoteId}
-                onSelectNote={handleSelectNote}
-                onAddNote={handleAddNote}
-                onDeleteNote={handleDeleteNote}
-                sortBy={notebookSortBy}
-                onSortChange={setNotebookSortBy}
-                selectedNotebookId={selectedNotebookId}
-                onSelectNotebook={setSelectedNotebookId}
-                selectedTagId={selectedTagId}
-                onSelectTag={setSelectedTagId}
-              />
+              <div className="pt-2">
+                <NotebooksList
+                  notebooks={sortedNotebooks}
+                  notes={filteredAndSortedNotes}
+                  selectedNoteId={selectedNoteId}
+                  onSelectNote={handleSelectNote}
+                  onAddNote={handleAddNote}
+                  onDeleteNote={handleDeleteNote}
+                  sortBy={notebookSortBy}
+                  onSortChange={setNotebookSortBy}
+                  selectedNotebookId={selectedNotebookId}
+                  onSelectNotebook={setSelectedNotebookId}
+                  selectedTagId={selectedTagId}
+                  onSelectTag={setSelectedTagId}
+                />
+              </div>
             </div>
           </div>
 
           {/* Coluna 2 - Lista de Notas */}
-          <div className="w-64 border-r flex flex-col bg-gradient-to-b from-card/80 to-muted/20 shadow-inner">
-            <div className="p-3 border-b bg-card/50 backdrop-blur-sm">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+          <div className="w-72 border-r flex flex-col bg-gradient-to-b from-card/80 via-muted/10 to-muted/20 shadow-inner">
+            <div className="sticky top-0 z-10 p-4 border-b bg-card/80 backdrop-blur-md">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
                 {selectedNotebookId === null
                   ? "Todas as Notas"
                   : selectedNotebookId === "loose"
@@ -336,7 +375,7 @@ export default function Notes() {
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-3">
               <NotesList
                 notes={notesForSelectedNotebook}
                 selectedNoteId={selectedNoteId}
@@ -351,34 +390,64 @@ export default function Notes() {
         </DndContext>
 
         {/* Coluna 3 - Editor */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {selectedNote ? (
-            <NoteEditor 
-              key={selectedNote.id} 
-              note={selectedNote}
-              notebooks={notebooks}
-              onUpdate={handleUpdateNote}
-              onTogglePin={togglePin}
-              onMoveToNotebook={moveNoteToNotebook}
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-center p-8">
-              <div>
-                <div className="text-6xl mb-4">📝</div>
-                <h3 className="text-xl font-semibold mb-2">Nenhuma nota selecionada</h3>
-                <p className="text-muted-foreground mb-4">
-                  Selecione uma nota existente ou crie uma nova para começar
-                </p>
-                <Button onClick={() => handleAddNote(selectedNotebookId)}>
-                  Criar Nova Nota
-                </Button>
-              </div>
-            </div>
-          )}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-background to-muted/5">
+          <AnimatePresence mode="wait">
+            {selectedNote ? (
+              <motion.div
+                key={selectedNote.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex-1 flex flex-col"
+              >
+                <NoteEditor 
+                  note={selectedNote}
+                  notebooks={notebooks}
+                  onUpdate={handleUpdateNote}
+                  onTogglePin={togglePin}
+                  onMoveToNotebook={moveNoteToNotebook}
+                />
+              </motion.div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex-1 flex items-center justify-center text-center p-8"
+              >
+                <div className="max-w-md">
+                  {/* Animated illustration */}
+                  <motion.div 
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="mb-6"
+                  >
+                    <div className="inline-flex p-6 rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 shadow-lg shadow-primary/10">
+                      <FileText className="h-16 w-16 text-primary/60" />
+                    </div>
+                  </motion.div>
+                  
+                  <h3 className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                    Selecione uma nota
+                  </h3>
+                  <p className="text-muted-foreground mb-6">
+                    Escolha uma nota existente ou crie uma nova para começar a escrever
+                  </p>
+                  
+                  <Button 
+                    onClick={() => handleAddNote(selectedNotebookId)}
+                    className="rounded-full px-6 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-200"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Nova Nota
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
 
-      {/* Dialog da lixeira */}
       <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
     </div>
   );

@@ -58,7 +58,8 @@ function Index() {
   useWeeklyAutomation({
     tasks: state.allTasks,
     columns: state.columns,
-    autoMoveEnabled: state.settings.kanban.autoMoveToCurrentWeek
+    autoMoveEnabled: state.settings.kanban.autoMoveToCurrentWeek,
+    excludeColumnNames: state.settings.kanban.excludeFromWeeklyAutomation || ['recorrente', 'recorrentes', 'arquivado']
   });
 
   // Task reset hook

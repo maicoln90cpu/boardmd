@@ -14,14 +14,14 @@ interface UseWeeklyAutomationProps {
   tasks: Task[];
   columns: Column[];
   autoMoveEnabled: boolean;
-  excludeColumnNames?: string[]; // Nomes de colunas a excluir da automação
+  excludeColumnNames: string[]; // Nomes de colunas a excluir da automação
 }
 
 export function useWeeklyAutomation({
   tasks,
   columns,
   autoMoveEnabled,
-  excludeColumnNames = ["recorrente", "recorrentes"] // Padrão: excluir recorrente
+  excludeColumnNames
 }: UseWeeklyAutomationProps) {
   const { toast } = useToast();
 
