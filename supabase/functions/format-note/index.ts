@@ -82,27 +82,27 @@ Retorne APENAS HTML válido para TipTap editor, sem explicações.`,
 INSTRUÇÕES:
 1. Analise o documento e identifique os principais tópicos/seções
 2. Para cada tópico encontrado, adicione um ID único ao heading: <h2 id="secao-exemplo">Título</h2>
-3. No TOPO do documento, crie um bloco de navegação com links âncora:
+3. No TOPO do documento, crie um bloco de navegação com links âncora
 
-FORMATO DO ÍNDICE:
-<div class="toc-container" style="background: linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted)/0.5) 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; border: 1px solid hsl(var(--border));">
-  <p style="font-weight: 600; font-size: 14px; margin-bottom: 12px; color: hsl(var(--foreground));">📑 Índice</p>
-  <ul style="list-style: none; padding: 0; margin: 0;">
-    <li style="margin-bottom: 6px;"><a href="#secao-1" style="color: hsl(var(--primary)); text-decoration: none; font-size: 14px;">1. Título da Seção</a></li>
-    <li style="margin-bottom: 6px;"><a href="#secao-2" style="color: hsl(var(--primary)); text-decoration: none; font-size: 14px;">2. Título da Seção 2</a></li>
+FORMATO DO ÍNDICE (usar exatamente esta estrutura):
+<div class="toc-container">
+  <p style="font-weight: 700; font-size: 15px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">📑 Índice</p>
+  <ul>
+    <li><a href="#secao-1">1. Título da Seção</a></li>
+    <li><a href="#secao-2">2. Título da Seção 2</a></li>
   </ul>
 </div>
 
-4. Se o documento não tiver seções claras, crie divisões lógicas com títulos apropriados
-5. Numere os itens do índice sequencialmente
-6. Mantenha todo o conteúdo original após o índice
-7. Use IDs em kebab-case (secao-1, introducao, conclusao, etc.)
+REGRAS IMPORTANTES:
+- O href DEVE começar com # seguido do ID (ex: href="#introducao")
+- O ID no heading DEVE ser idêntico ao usado no href (sem o #)
+- Use IDs simples em kebab-case: secao-1, introducao, conclusao
+- NÃO adicione target="_blank" (os links são internos)
+- NÃO adicione estilos inline nos links (o CSS do app cuida disso)
+- Mantenha TODO o conteúdo original APÓS o bloco do índice
+- Se não houver seções claras, crie divisões lógicas com h2
 
-IMPORTANTE:
-- O índice DEVE estar no início do documento
-- Cada item do índice DEVE ter um link funcional (href="#id")
-- Cada seção referenciada DEVE ter o id correspondente
-- Retorne APENAS HTML válido, sem explicações`
+IMPORTANTE: Retorne APENAS HTML válido, sem explicações ou comentários`
     };
 
     let systemPrompt = defaultPrompts[action] || defaultPrompts.improve;
