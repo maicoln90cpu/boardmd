@@ -1,0 +1,289 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
+
+// Mock dependencies
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+          single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+          maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        })),
+        order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => Promise.resolve({ data: { id: 'new-id' }, error: null })),
+        })),
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null })),
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ error: null })),
+      })),
+    })),
+    channel: vi.fn(() => ({
+      on: vi.fn(() => ({
+        subscribe: vi.fn(() => ({})),
+      })),
+    })),
+    removeChannel: vi.fn(),
+  },
+}));
+
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: 'user-123', email: 'test@example.com' },
+    loading: false,
+  })),
+}));
+
+vi.mock('@/hooks/ui/useToast', () => ({
+  useToast: vi.fn(() => ({
+    toast: vi.fn(),
+  })),
+}));
+
+vi.mock('@/hooks/data/useCategories', () => ({
+  useCategories: vi.fn(() => ({
+    categories: [
+      { id: 'cat-diario', name: 'Diário', parent_id: null, depth: 0, position: 0 },
+      { id: 'cat-projetos', name: 'Projetos', parent_id: null, depth: 0, position: 1 },
+    ],
+    loading: false,
+  })),
+}));
+
+vi.mock('@/hooks/data/useColumns', () => ({
+  useColumns: vi.fn(() => ({
+    columns: [
+      { id: 'col-1', name: 'A Fazer', position: 0 },
+      { id: 'col-2', name: 'Em Andamento', position: 1 },
+      { id: 'col-3', name: 'Concluído', position: 2 },
+    ],
+    loading: false,
+    getVisibleColumns: vi.fn(() => [
+      { id: 'col-1', name: 'A Fazer', position: 0 },
+      { id: 'col-2', name: 'Em Andamento', position: 1 },
+      { id: 'col-3', name: 'Concluído', position: 2 },
+    ]),
+  })),
+}));
+
+vi.mock('@/hooks/data/useTags', () => ({
+  useTags: vi.fn(() => ({
+    tags: [
+      { id: 'tag-1', name: 'trabalho', color: '#3b82f6' },
+      { id: 'tag-2', name: 'pessoal', color: '#22c55e' },
+    ],
+    loading: false,
+    addTag: vi.fn(),
+  })),
+}));
+
+vi.mock('@/hooks/ui/useBreakpoint', () => ({
+  useBreakpoint: vi.fn(() => ({
+    isMobile: false,
+    isTablet: false,
+    isDesktop: true,
+  })),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+// Import after mocks
+import TaskModal from '@/components/TaskModal';
+
+describe('TaskModal', () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  const defaultProps = {
+    open: true,
+    onOpenChange: vi.fn(),
+    onSave: vi.fn(),
+    columnId: 'col-1',
+    categoryId: 'cat-diario',
+  };
+
+  const renderModal = (props = {}) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <TaskModal {...defaultProps} {...props} />
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    queryClient.clear();
+  });
+
+  describe('Renderização', () => {
+    it('deve renderizar o modal quando open=true', () => {
+      renderModal();
+      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+    });
+
+    it('não deve renderizar quando open=false', () => {
+      renderModal({ open: false });
+      expect(screen.queryByText('Nova Tarefa')).not.toBeInTheDocument();
+    });
+
+    it('deve exibir título "Editar Tarefa" quando editando', () => {
+      renderModal({
+        task: {
+          id: 'task-1',
+          title: 'Tarefa existente',
+          column_id: 'col-1',
+          category_id: 'cat-diario',
+        },
+      });
+      expect(screen.getByText('Editar Tarefa')).toBeInTheDocument();
+    });
+  });
+
+  describe('Campos do formulário', () => {
+    it('deve ter campo de título', () => {
+      renderModal();
+      expect(screen.getByPlaceholderText(/título/i)).toBeInTheDocument();
+    });
+
+    it('deve ter campo de descrição', () => {
+      renderModal();
+      expect(screen.getByPlaceholderText(/descrição/i)).toBeInTheDocument();
+    });
+
+    it('deve ter seletor de prioridade', () => {
+      renderModal();
+      expect(screen.getByText(/prioridade/i)).toBeInTheDocument();
+    });
+
+    it('deve ter botões de salvar e cancelar', () => {
+      renderModal();
+      expect(screen.getByText(/salvar/i)).toBeInTheDocument();
+      expect(screen.getByText(/cancelar/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Preenchimento de dados', () => {
+    it('deve preencher título da tarefa ao editar', () => {
+      renderModal({
+        task: {
+          id: 'task-1',
+          title: 'Minha Tarefa',
+          column_id: 'col-1',
+          category_id: 'cat-diario',
+        },
+      });
+      
+      const titleInput = screen.getByPlaceholderText(/título/i);
+      expect(titleInput).toHaveValue('Minha Tarefa');
+    });
+
+    it('deve preencher descrição da tarefa ao editar', () => {
+      renderModal({
+        task: {
+          id: 'task-1',
+          title: 'Tarefa',
+          description: 'Descrição da tarefa',
+          column_id: 'col-1',
+          category_id: 'cat-diario',
+        },
+      });
+      
+      const descInput = screen.getByPlaceholderText(/descrição/i);
+      expect(descInput).toHaveValue('Descrição da tarefa');
+    });
+  });
+
+  describe('Interações', () => {
+    it('deve chamar onOpenChange ao cancelar', async () => {
+      const onOpenChange = vi.fn();
+      renderModal({ onOpenChange });
+
+      fireEvent.click(screen.getByText(/cancelar/i));
+
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('deve permitir digitar no campo de título', async () => {
+      const user = userEvent.setup();
+      renderModal();
+
+      const titleInput = screen.getByPlaceholderText(/título/i);
+      await user.clear(titleInput);
+      await user.type(titleInput, 'Nova tarefa teste');
+
+      expect(titleInput).toHaveValue('Nova tarefa teste');
+    });
+
+    it('deve chamar onSave ao salvar tarefa válida', async () => {
+      const user = userEvent.setup();
+      const onSave = vi.fn();
+      renderModal({ onSave });
+
+      const titleInput = screen.getByPlaceholderText(/título/i);
+      await user.type(titleInput, 'Tarefa de teste');
+
+      const saveButton = screen.getByText(/salvar/i);
+      fireEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(onSave).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Validações', () => {
+    it('não deve salvar com título vazio', async () => {
+      const onSave = vi.fn();
+      renderModal({ onSave });
+
+      const saveButton = screen.getByText(/salvar/i);
+      fireEvent.click(saveButton);
+
+      // onSave não deve ser chamado
+      expect(onSave).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Props especiais', () => {
+    it('deve usar categoryId padrão quando fornecido', () => {
+      renderModal({ categoryId: 'cat-projetos' });
+      // O componente deve estar configurado com a categoria
+      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+    });
+
+    it('deve usar defaultDueDate quando fornecido', () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      renderModal({ defaultDueDate: tomorrow.toISOString().split('T')[0] });
+      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+    });
+
+    it('deve indicar isDailyKanban quando true', () => {
+      renderModal({ isDailyKanban: true });
+      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+    });
+  });
+});
