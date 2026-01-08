@@ -1,3 +1,9 @@
+/**
+ * Hook para gerenciar notificações push via OneSignal
+ * Para notificações VAPID legadas, o sistema foi removido.
+ * Use useOneSignal.ts para o novo sistema de push.
+ */
+
 import { useState, useEffect } from "react";
 import { pushNotifications } from "@/lib/push/pushNotifications";
 import { useToast } from "@/hooks/ui/useToast";
@@ -10,43 +16,24 @@ import {
   formatNotificationTemplate,
   getTemplateById 
 } from "@/lib/defaultNotificationTemplates";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
+import { useOneSignal } from "@/hooks/useOneSignal";
 
 export function usePushNotifications(tasks: Task[]) {
-  const [isSupported, setIsSupported] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = useOneSignal();
   const { toast } = useToast();
   const { settings } = useSettings();
 
-  useEffect(() => {
-    setIsSupported(pushNotifications.isSupported());
-    setPermission(pushNotifications.getPermissionStatus());
-    checkSubscription();
-  }, []);
-
-  const checkSubscription = async () => {
-    if (!("serviceWorker" in navigator)) return;
-    
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error("Erro ao verificar subscription:", error);
-    }
-  };
-
   const requestPermission = async () => {
     try {
-      const result = await pushNotifications.requestPermission();
-      setPermission(result);
+      const result = await subscribe();
 
-      if (result === "granted") {
-        await subscribe();
+      if (result) {
         toast({
           title: "✓ Notificações ativadas",
           description: "Você receberá alertas de tarefas vencidas",
         });
+        scheduleTaskNotifications();
       } else {
         toast({
           title: "Permissão negada",
@@ -58,35 +45,6 @@ export function usePushNotifications(tasks: Task[]) {
       toast({
         title: "Erro",
         description: "Não foi possível solicitar permissão",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const subscribe = async () => {
-    try {
-      const subscription = await pushNotifications.subscribe();
-      if (subscription) {
-        setIsSubscribed(true);
-        scheduleTaskNotifications();
-      }
-    } catch (error) {
-      console.error("Erro ao registrar push:", error);
-    }
-  };
-
-  const unsubscribe = async () => {
-    try {
-      await pushNotifications.unsubscribe();
-      setIsSubscribed(false);
-      toast({
-        title: "Notificações desativadas",
-        description: "Você não receberá mais alertas push",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível cancelar as notificações",
         variant: "destructive",
       });
     }
@@ -131,8 +89,8 @@ export function usePushNotifications(tasks: Task[]) {
       const warningThreshold = configuredHours * 60;
       const earlyThreshold = warningThreshold * 2;
 
-      // Enviar notificações via Edge Function para maior confiabilidade
-      const sendPushViaEdgeFunction = async (templateId: string, variables: Record<string, string>) => {
+      // Enviar notificações via OneSignal
+      const sendPushNotification = async (templateId: string, variables: Record<string, string>) => {
         const template = getTemplateById(userTemplates, templateId);
         if (!template) return;
 
@@ -140,42 +98,23 @@ export function usePushNotifications(tasks: Task[]) {
 
         if (user && isSubscribed) {
           try {
-            // iOS-specific: Show immediate toast feedback
-            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-            if (isIOS) {
-              toast({
-                title: "📲 Notificação agendada",
-                description: `${formatted.title} - ${formatted.body}`,
-              });
-            }
-
-            await pushNotifications.sendPushNotification({
+            await oneSignalNotifier.send({
               user_id: user.id,
               title: formatted.title,
               body: formatted.body,
-              data: { taskId: task.id },
-              url: `/`,
               notification_type: templateId,
+              url: '/',
+              data: { taskId: task.id },
             });
           } catch (error) {
             console.error('Error sending push notification:', error);
-            // Fallback 1: Local notification
+            // Fallback: Local notification
             pushNotifications.scheduleLocalNotification(
               formatted.title, 
               formatted.body, 
               0, 
               `task-${task.id}`
             );
-            
-            // Fallback 2: Schedule local reminder for iOS
-            if (task.due_date) {
-              pushNotifications.scheduleLocalReminder(
-                formatted.title,
-                formatted.body,
-                new Date(task.due_date),
-                task.id
-              );
-            }
           }
         } else {
           // Usar notificação local se não estiver inscrito
@@ -185,37 +124,22 @@ export function usePushNotifications(tasks: Task[]) {
             0, 
             `task-${task.id}`
           );
-          
-          // iOS fallback: Schedule local reminders
-          if (task.due_date) {
-            pushNotifications.scheduleLocalReminder(
-              formatted.title,
-              formatted.body,
-              new Date(task.due_date),
-              task.id
-            );
-          }
         }
       };
 
       const hours = Math.floor(minutesUntilDue / 60);
-      const timeRemaining = hours > 1 
-        ? `${hours} horas` 
-        : minutesUntilDue > 1 
-          ? `${minutesUntilDue} minutos`
-          : "menos de 1 minuto";
 
       // Agendar notificações baseadas nos thresholds usando templates
       if (isPast(dueDate)) {
         // Notificação imediata para tarefas atrasadas
-        sendPushViaEdgeFunction('due_overdue', { 
+        sendPushNotification('due_overdue', { 
           taskTitle: task.title 
         });
       } else if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
         // Notificação urgente (1 hora antes)
         const delay = Math.max(0, (minutesUntilDue - 60) * 60 * 1000);
         setTimeout(() => {
-          sendPushViaEdgeFunction('due_urgent', { 
+          sendPushNotification('due_urgent', { 
             taskTitle: task.title,
             timeRemaining: "menos de 1 hora"
           });
@@ -224,7 +148,7 @@ export function usePushNotifications(tasks: Task[]) {
         // Notificação de aviso (horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - warningThreshold) * 60 * 1000);
         setTimeout(() => {
-          sendPushViaEdgeFunction('due_warning', { 
+          sendPushNotification('due_warning', { 
             taskTitle: task.title,
             timeRemaining: `${hours} hora${hours > 1 ? 's' : ''}`
           });
@@ -233,7 +157,7 @@ export function usePushNotifications(tasks: Task[]) {
         // Notificação antecipada (dobro das horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - earlyThreshold) * 60 * 1000);
         setTimeout(() => {
-          sendPushViaEdgeFunction('due_early', { 
+          sendPushNotification('due_early', { 
             taskTitle: task.title,
             timeRemaining: `${hours} horas`
           });

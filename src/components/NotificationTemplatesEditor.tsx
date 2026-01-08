@@ -79,16 +79,29 @@ export function NotificationTemplatesEditor() {
 
     const formatted = formatNotificationTemplate(selectedTemplate, testVariables);
 
-    // Try to send via push notification system for real device testing
+    // Try to send via OneSignal notification system
     try {
-      const { pushNotifications } = await import("@/lib/push/pushNotifications");
-      await pushNotifications.sendPushNotification({
-        title: formatted.title,
-        body: formatted.body,
-        data: { test: true, template: selectedTemplate.id },
-        notification_type: `test_${selectedTemplate.id}`,
-      });
-      toast.success("Notificação de teste enviada para todos os dispositivos!");
+      const { oneSignalNotifier } = await import("@/lib/notifications/oneSignalNotifier");
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const success = await oneSignalNotifier.send({
+          user_id: user.id,
+          title: formatted.title,
+          body: formatted.body,
+          notification_type: `test_${selectedTemplate.id}`,
+          url: '/',
+        });
+        
+        if (success) {
+          toast.success("Notificação de teste enviada!");
+        } else {
+          throw new Error("Failed to send");
+        }
+      } else {
+        throw new Error("User not logged in");
+      }
     } catch (error) {
       // Fallback to local notification
       if ("Notification" in window && Notification.permission === "granted") {
@@ -97,7 +110,7 @@ export function NotificationTemplatesEditor() {
           icon: "/pwa-icon.png",
           badge: "/favicon.png",
         });
-        toast.success("Notificação de teste enviada!");
+        toast.success("Notificação de teste enviada (local)!");
       } else {
         toast.info(formatted.title, {
           description: formatted.body,

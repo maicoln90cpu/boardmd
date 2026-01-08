@@ -44,23 +44,34 @@ export function useOneSignal() {
     try {
       setIsLoading(true);
       
-      // Solicitar permissão
-      await oneSignalUtils.requestPermission();
-      
-      // Vincular ao usuário Supabase
+      // 1. Primeiro, vincular o usuário Supabase ANTES de solicitar permissão
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        console.log('[useOneSignal] Linking user:', user.id);
         await oneSignalUtils.setExternalUserId(user.id);
+      }
+      
+      // 2. Solicitar permissão (o opt-in acontece após permissão)
+      await oneSignalUtils.requestPermission();
+      
+      // 3. Aguardar um pouco para a inscrição propagar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 4. Adicionar tags após inscrição
+      if (user) {
         await oneSignalUtils.addTags({
           app_version: '1.1',
           platform: 'web',
+          user_id: user.id,
         });
+        console.log('[useOneSignal] Tags added for user:', user.id);
       }
       
       const subscribed = await oneSignalUtils.isSubscribed();
       setIsSubscribed(subscribed);
       setPermission(oneSignalUtils.getPermissionStatus());
       
+      console.log('[useOneSignal] Subscribe complete. Subscribed:', subscribed);
       return subscribed;
     } catch (error) {
       console.error('[useOneSignal] Subscribe error:', error);

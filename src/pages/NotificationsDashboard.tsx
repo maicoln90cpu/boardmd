@@ -1,10 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Bell } from "lucide-react";
-import { PushNotificationsSettings } from "@/components/PushNotificationsSettings";
-import { PushNotificationDiagnostics } from "@/components/PushNotificationDiagnostics";
-import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
-import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
+import { Bell, Settings, History, MessageSquare } from "lucide-react";
 import { OneSignalSettings } from "@/components/OneSignalSettings";
+import { NotificationPreferences } from "@/components/notifications/NotificationPreferences";
+import { NotificationHistory } from "@/components/notifications/NotificationHistory";
+import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -31,37 +30,48 @@ export default function NotificationsDashboard() {
               <h1 className="text-3xl font-bold">Central de Notificações</h1>
             </div>
             <p className="text-muted-foreground">
-              Configure, monitore e diagnostique o sistema de notificações push
+              Configure e monitore o sistema de notificações push
             </p>
           </div>
 
-          <Tabs defaultValue="onesignal" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-              <TabsTrigger value="onesignal">OneSignal</TabsTrigger>
-              <TabsTrigger value="settings">VAPID (Legado)</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-              <TabsTrigger value="monitor">Monitor</TabsTrigger>
-              <TabsTrigger value="diagnostics">Diagnóstico</TabsTrigger>
+          <Tabs defaultValue="config" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+              <TabsTrigger value="config" className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Ativar Push</span>
+                <span className="sm:hidden">Push</span>
+              </TabsTrigger>
+              <TabsTrigger value="preferences" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Preferências</span>
+                <span className="sm:hidden">Config</span>
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Templates</span>
+                <span className="sm:hidden">Msgs</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Histórico</span>
+                <span className="sm:hidden">Log</span>
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="onesignal" className="space-y-4">
+            <TabsContent value="config" className="space-y-4">
               <OneSignalSettings />
             </TabsContent>
 
-            <TabsContent value="settings" className="space-y-4">
-              <PushNotificationsSettings />
+            <TabsContent value="preferences" className="space-y-4">
+              <NotificationPreferences />
             </TabsContent>
 
             <TabsContent value="templates" className="space-y-4">
               <NotificationTemplatesEditor />
             </TabsContent>
 
-            <TabsContent value="monitor" className="space-y-4">
-              <PushNotificationMonitor />
-            </TabsContent>
-
-            <TabsContent value="diagnostics" className="space-y-4">
-              <PushNotificationDiagnostics />
+            <TabsContent value="history" className="space-y-4">
+              <NotificationHistory />
             </TabsContent>
           </Tabs>
         </div>

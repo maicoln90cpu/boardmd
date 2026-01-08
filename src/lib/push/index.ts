@@ -1,1 +1,9 @@
-export { pushNotifications, type PushSubscription } from "./pushNotifications";
+export { 
+  pushNotifications, 
+  scheduleLocalNotification,
+  scheduleLocalReminder,
+  isNotificationSupported,
+  getPermissionStatus,
+  getDeviceName,
+  requestNotificationPermission,
+} from "./pushNotifications";
