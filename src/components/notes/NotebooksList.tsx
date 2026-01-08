@@ -323,15 +323,15 @@ function NotebookHeader({
   return (
     <motion.div 
       ref={setNodeRef}
-      whileHover={{ y: -2, transition: { duration: 0.15 } }}
+      whileHover={{ y: -1, transition: { duration: 0.1 } }}
       className={`
-        relative flex flex-col gap-1 group rounded-xl overflow-hidden
-        transition-all duration-200 cursor-pointer
-        border
-        ${isOver ? "ring-2 ring-primary shadow-lg border-primary/30" : "border-transparent"}
+        relative group rounded-lg overflow-hidden
+        transition-all duration-150 cursor-pointer
+        border px-2.5 py-1.5
+        ${isOver ? "ring-2 ring-primary border-primary/30" : "border-transparent"}
         ${isSelected 
-          ? "bg-primary/10 shadow-lg border-primary/20" 
-          : "hover:bg-accent/60 hover:shadow-md hover:border-border/30"
+          ? "bg-primary/10 border-primary/20" 
+          : "hover:bg-accent/50"
         }
       `} 
       onClick={handleClick}
@@ -339,114 +339,102 @@ function NotebookHeader({
       {/* Color bar on top */}
       {primaryTagColor && (
         <div 
-          className="h-1 w-full"
-          style={{ 
-            background: `linear-gradient(90deg, ${primaryTagColor}, ${primaryTagColor}60)` 
-          }}
+          className="absolute top-0 left-0 right-0 h-0.5"
+          style={{ background: primaryTagColor }}
         />
       )}
 
-      <div className={`px-3 py-2.5 ${!primaryTagColor ? 'pt-2.5' : ''}`}>
-        {/* Row 1: Notebook name */}
-        <div className="flex items-center gap-2">
-          {!onSelect && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0 shrink-0 hover:bg-accent" 
-              onClick={e => {
-                e.stopPropagation();
-                onToggle();
-              }}
-            >
-              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </Button>
-          )}
+      {/* Single row: all content inline */}
+      <div className="flex items-center gap-1.5">
+        {/* Expand icon */}
+        {!onSelect && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-5 w-5 p-0 shrink-0 hover:bg-accent" 
+            onClick={e => {
+              e.stopPropagation();
+              onToggle();
+            }}
+          >
+            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </Button>
+        )}
 
-          <div className={`p-1.5 rounded-lg transition-colors ${
-            isSelected ? "bg-primary/20" : "bg-muted/50"
-          }`}>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </div>
+        {/* Notebook icon */}
+        <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
 
-          {editingId === notebook.id ? (
-            <Input 
-              value={editingName} 
-              onChange={e => onEditChange(e.target.value)} 
-              className="h-7 px-2 py-0 text-sm flex-1" 
-              autoFocus 
-              onKeyDown={e => {
-                if (e.key === "Enter") onEditSave();
-                if (e.key === "Escape") onEditCancel();
-              }} 
-              onBlur={onEditSave} 
-              onClick={e => e.stopPropagation()} 
-            />
-          ) : (
-            <span className={`flex-1 text-sm font-medium truncate ${isSelected ? 'text-primary' : ''}`}>
-              {notebook.name}
-            </span>
-          )}
-
-          <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full shrink-0">
-            {count}
+        {/* Notebook name - editable or display */}
+        {editingId === notebook.id ? (
+          <Input 
+            value={editingName} 
+            onChange={e => onEditChange(e.target.value)} 
+            className="h-6 px-1.5 py-0 text-sm flex-1 min-w-0" 
+            autoFocus 
+            onKeyDown={e => {
+              if (e.key === "Enter") onEditSave();
+              if (e.key === "Escape") onEditCancel();
+            }} 
+            onBlur={onEditSave} 
+            onClick={e => e.stopPropagation()} 
+          />
+        ) : (
+          <span className={`flex-1 text-sm font-medium truncate min-w-0 ${isSelected ? 'text-primary' : ''}`}>
+            {notebook.name}
           </span>
+        )}
+
+        {/* Note count */}
+        <span className="text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded shrink-0">
+          {count}
+        </span>
+
+        {/* Action icons - show on hover */}
+        <div 
+          className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+          onClick={e => e.stopPropagation()}
+        >
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-5 w-5 p-0 hover:bg-accent" 
+            onClick={onEditStart}
+          >
+            <Pencil className="h-2.5 w-2.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-5 w-5 p-0 text-destructive hover:bg-destructive/10" 
+            onClick={onDelete}
+          >
+            <Trash2 className="h-2.5 w-2.5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-5 w-5 p-0 hover:bg-accent" 
+            onClick={onAddNote}
+          >
+            <Plus className="h-2.5 w-2.5" />
+          </Button>
         </div>
-        
-        {/* Row 2: Actions and tags */}
-        <div onClick={e => e.stopPropagation()} className="flex flex-wrap items-center gap-1.5 mt-2">
-          {/* Action icons */}
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0 hover:bg-accent rounded-lg" 
-              onClick={e => {
-                e.stopPropagation();
-                onEditStart();
-              }}
-            >
-              <Pencil className="h-3 w-3" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-lg" 
-              onClick={e => {
-                e.stopPropagation();
-                onDelete();
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 w-6 p-0 hover:bg-accent rounded-lg" 
-              onClick={e => {
-                e.stopPropagation();
-                onAddNote();
-              }}
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-          </div>
-          
-          {/* Separator */}
-          {(notebook.tags && notebook.tags.length > 0 || onAddTag) && (
-            <span className="text-muted-foreground/30 mx-0.5">|</span>
-          )}
-          
-          {/* Tags with gradient */}
-          {notebook.tags?.map(tag => (
+      </div>
+
+      {/* Tags row - only if tags exist */}
+      {notebook.tags && notebook.tags.length > 0 && (
+        <div 
+          className="flex flex-wrap items-center gap-1 mt-1 ml-5"
+          onClick={e => e.stopPropagation()}
+        >
+          {notebook.tags.map(tag => (
             <Badge 
               key={tag.id} 
               variant="secondary" 
-              className="h-5 text-[10px] px-2 flex items-center gap-0.5 border-0 shadow-sm transition-transform hover:scale-105 rounded-full" 
+              className="h-4 text-[9px] px-1.5 flex items-center gap-0.5 border-0 rounded-sm" 
               style={{
-                background: `linear-gradient(135deg, ${tag.color}25, ${tag.color}40)`,
+                background: `${tag.color}20`,
                 color: tag.color,
-                boxShadow: `0 1px 3px ${tag.color}20`
               }}
             >
               {tag.name}
@@ -472,7 +460,22 @@ function NotebookHeader({
             />
           )}
         </div>
-      </div>
+      )}
+      
+      {/* Tag picker when no tags */}
+      {(!notebook.tags || notebook.tags.length === 0) && onAddTag && (
+        <div 
+          className="mt-1 ml-5 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={e => e.stopPropagation()}
+        >
+          <NotebookTagPicker 
+            tags={[]} 
+            availableTags={allTags || []} 
+            onAddTag={onAddTag} 
+            onRemoveTag={onRemoveTag || (() => {})} 
+          />
+        </div>
+      )}
     </motion.div>
   );
 }

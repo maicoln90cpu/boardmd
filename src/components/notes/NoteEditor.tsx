@@ -511,18 +511,36 @@ export function NoteEditor({
     return newTask as unknown as Task;
   }, [refetchTasks]);
 
-  return <div className="flex flex-col min-h-[100dvh] transition-colors" style={{
-    backgroundColor: color || undefined
-  }}>
+  return (
+    <div 
+      className="flex flex-col h-full transition-colors" 
+      style={{ backgroundColor: color || undefined }}
+    >
       {/* Título e ações */}
       <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
         <div className="flex items-start gap-2">
-          <Input placeholder="Título da anotação..." value={title} onChange={e => setTitle(e.target.value)} className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent" />
+          <Input 
+            placeholder="Título da anotação..." 
+            value={title} 
+            onChange={e => setTitle(e.target.value)} 
+            className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent" 
+          />
           <div className="flex gap-2">
-            <Button variant={note.is_pinned ? "default" : "outline"} size="icon" onClick={() => onTogglePin(note.id)} className="h-10 w-10 shrink-0">
+            <Button 
+              variant={note.is_pinned ? "default" : "outline"} 
+              size="icon" 
+              onClick={() => onTogglePin(note.id)} 
+              className="h-10 w-10 shrink-0"
+            >
               <Pin className={`h-4 w-4 ${note.is_pinned ? "fill-current" : ""}`} />
             </Button>
-            <Button variant="outline" size="icon" onClick={handleShare} className="h-10 w-10 shrink-0" title="Compartilhar nota">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleShare} 
+              className="h-10 w-10 shrink-0" 
+              title="Compartilhar nota"
+            >
               <Share2 className="h-4 w-4" />
             </Button>
             <ColorPicker currentColor={color} onColorChange={handleColorChange} />
@@ -530,18 +548,23 @@ export function NoteEditor({
         </div>
 
         {/* Indicador de salvamento */}
-        {showSavedIndicator && <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+        {showSavedIndicator && (
+          <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 text-primary" />
             <span>Nota salva</span>
-          </div>}
+          </div>
+        )}
 
         {/* Mover para caderno */}
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-muted-foreground" />
-          <Select value={note.notebook_id || "none"} onValueChange={value => {
-          const notebookId = value === "none" ? null : value;
-          onMoveToNotebook(note.id, notebookId);
-        }}>
+          <Select 
+            value={note.notebook_id || "none"} 
+            onValueChange={value => {
+              const notebookId = value === "none" ? null : value;
+              onMoveToNotebook(note.id, notebookId);
+            }}
+          >
             <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
               <SelectValue placeholder="Selecione um caderno..." />
             </SelectTrigger>
@@ -549,9 +572,11 @@ export function NoteEditor({
               <SelectItem value="none">
                 <span className="text-muted-foreground">Nenhum caderno</span>
               </SelectItem>
-              {notebooks.map(notebook => <SelectItem key={notebook.id} value={notebook.id}>
+              {notebooks.map(notebook => (
+                <SelectItem key={notebook.id} value={notebook.id}>
                   {notebook.name}
-                </SelectItem>)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -559,7 +584,10 @@ export function NoteEditor({
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
           <Link2 className="h-4 w-4 text-muted-foreground" />
-          <Select value={linkedTaskId || "none"} onValueChange={value => setLinkedTaskId(value === "none" ? null : value)}>
+          <Select 
+            value={linkedTaskId || "none"} 
+            onValueChange={value => setLinkedTaskId(value === "none" ? null : value)}
+          >
             <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
               <SelectValue placeholder="Vincular a uma tarefa..." />
             </SelectTrigger>
@@ -567,42 +595,47 @@ export function NoteEditor({
               <SelectItem value="none">
                 <span className="text-muted-foreground">Nenhuma tarefa vinculada</span>
               </SelectItem>
-              {tasks.map(task => <SelectItem key={task.id} value={task.id}>
+              {tasks.map(task => (
+                <SelectItem key={task.id} value={task.id}>
                   {task.title}
-                </SelectItem>)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Editor de conteúdo */}
-      <div className="flex-1 flex flex-col min-h-0 my-0 py-0">
+      {/* Editor de conteúdo - área com scroll */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <RichTextToolbar 
           editor={editor} 
           tasks={tasks}
           onInsertTaskBlock={handleInsertTaskBlock}
           onCreateTask={handleCreateTask}
         />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-6 my-0 mb-[50px]">
-          <EditorContent editor={editor} className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[calc(100vh-320px)] [&_.ProseMirror]:outline-none" />
-        </div>
-        
-        {/* Word/Character counter */}
-        <div className="px-4 sm:px-6 py-2 border-t bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <span className="font-medium">{wordCount.toLocaleString()}</span>
-            {wordCount === 1 ? "palavra" : "palavras"}
-          </span>
-          <span className="w-px h-3 bg-border" />
-          <span className="flex items-center gap-1.5">
-            <span className="font-medium">{charCount.toLocaleString()}</span>
-            {charCount === 1 ? "caractere" : "caracteres"}
-          </span>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <EditorContent 
+            editor={editor} 
+            className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:outline-none" 
+          />
         </div>
       </div>
 
+      {/* Footer: Word/Character counter */}
+      <div className="flex-shrink-0 px-4 sm:px-6 py-2 border-t bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="font-medium">{wordCount.toLocaleString()}</span>
+          {wordCount === 1 ? "palavra" : "palavras"}
+        </span>
+        <span className="w-px h-3 bg-border" />
+        <span className="flex items-center gap-1.5">
+          <span className="font-medium">{charCount.toLocaleString()}</span>
+          {charCount === 1 ? "caractere" : "caracteres"}
+        </span>
+      </div>
+
       {/* Botões de ação */}
-      <div className="sticky bottom-0 left-0 right-0 p-4 sm:p-6 border-t gap-2 bg-card backdrop-blur supports-[backdrop-filter]:bg-card/95 shadow-lg z-10 px-0 my-[30px] items-center justify-start py-0 pt-0 pb-[50px] flex flex-row">
+      <div className="flex-shrink-0 p-4 sm:p-6 border-t gap-2 bg-card/95 backdrop-blur shadow-lg flex flex-row">
         <Button onClick={handleSave} className="flex-1 min-h-[48px]">
           <Check className="w-4 h-4 mr-2" />
           Salvar
@@ -624,5 +657,6 @@ export function NoteEditor({
         onSelectTask={handleInsertTaskBlock}
         onCreateTask={handleCreateTask}
       />
-    </div>;
+    </div>
+  );
 }
