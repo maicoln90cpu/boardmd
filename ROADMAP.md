@@ -1,31 +1,48 @@
 # Roadmap 2025-2026 - TaskFlow
 
+## 📚 Documentação Relacionada
+
+- [README.md](./README.md) - Setup e visão geral
+- [PRD.md](./PRD.md) - Requisitos do produto
+- [PENDENCIAS.md](./PENDENCIAS.md) - Changelog e pendências
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Estrutura técnica
+
+---
+
 ## Visão Estratégica
 
 Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e intuitiva do mercado brasileiro, combinando gestão de tarefas, notas e foco em uma única plataforma.
 
 ---
 
-## Q1 2025 (Janeiro - Março)
+## Q1 2025 (Janeiro - Março) 🔄 EM ANDAMENTO
 
-### 🎯 Tema: Estabilidade e Polimento
+### 🎯 Tema: Estabilidade, Testes e Polimento
 
 #### Objetivos
-1. **Eliminar bugs e melhorar performance**
-2. **Polir a experiência mobile**
-3. **Adicionar features mais pedidas**
+1. **Implementar testes automatizados** ✅
+2. **Eliminar bugs e melhorar performance**
+3. **Polir a experiência mobile** ✅
+4. **Adicionar features mais pedidas**
 
 #### Entregas Principais
 
-| Feature | Descrição | Prioridade |
-|---------|-----------|------------|
-| Importação Avançada | Preview, merge, validação robusta | Alta |
-| Anexos em Tarefas | Upload de imagens e documentos | Alta |
-| Busca Global v2 | Busca em notas, filtros, histórico | Alta |
-| Tour Guiado | Onboarding para novos usuários | Média |
-| Estimativas de Tempo | Tempo estimado por tarefa | Média |
+| Feature | Descrição | Prioridade | Status |
+|---------|-----------|------------|--------|
+| Testes Unitários | Hooks e componentes críticos | Alta | ✅ Concluído |
+| Testes E2E | Fluxos principais com Playwright | Alta | ✅ Concluído |
+| CI/CD | GitHub Actions para testes | Alta | ✅ Concluído |
+| Filtros Mobile | Sheet de projetos no mobile | Alta | ✅ Concluído |
+| Documentação | Atualização completa dos docs | Média | ✅ Concluído |
+| Importação Avançada | Preview, merge, validação robusta | Alta | 🔄 Pendente |
+| Anexos em Tarefas | Upload de imagens e documentos | Alta | 🔄 Pendente |
+| Busca Global v2 | Busca em notas, filtros, histórico | Alta | 🔄 Pendente |
+| Tour Guiado | Onboarding para novos usuários | Média | 🔄 Pendente |
 
 #### Métricas de Sucesso
+- [x] Testes automatizados implementados
+- [x] Cobertura de testes para hooks críticos
+- [x] CI/CD configurado
 - [ ] Zero bugs críticos
 - [ ] Tempo de carregamento < 2s
 - [ ] Score Lighthouse > 90
@@ -190,5 +207,5 @@ ICE = (Impact + Confidence + Ease) / 3
 
 ---
 
-*Última atualização: 19/12/2024*
-*Próxima revisão: Janeiro 2025*
+*Última atualização: Janeiro 2025*  
+*Próxima revisão: Fevereiro 2025*

@@ -2,9 +2,18 @@
 
 ## TaskFlow - Sistema de Gestão de Tarefas e Produtividade
 
-**Versão**: 1.0  
-**Data**: 19/12/2024  
-**Status**: Em Desenvolvimento Ativo
+**Versão**: 1.1  
+**Data**: Janeiro 2025  
+**Status**: Em Produção
+
+---
+
+## 📚 Documentação Relacionada
+
+- [README.md](./README.md) - Setup e visão geral
+- [ROADMAP.md](./ROADMAP.md) - Planejamento futuro
+- [PENDENCIAS.md](./PENDENCIAS.md) - Changelog e pendências
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Estrutura técnica
 
 ---
 
@@ -120,6 +129,7 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 | RF-002.10 | Favoritos | Média | ✅ Implementado |
 | RF-002.11 | Ações em lote | Média | ✅ Implementado |
 | RF-002.12 | Presets de filtros | Baixa | ✅ Implementado |
+| RF-002.13 | Filtros mobile (Sheet) | Média | ✅ Implementado |
 
 ### 3.3 Calendário (RF-003)
 
@@ -180,6 +190,15 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 | RF-007.7 | Exportação PNG/PDF | Média | ✅ Implementado |
 | RF-007.8 | Configurações sincronizadas | Média | ✅ Implementado |
 
+### 3.8 Testes (RF-008) - NOVO
+
+| ID | Requisito | Prioridade | Status |
+|----|-----------|------------|--------|
+| RF-008.1 | Testes unitários (hooks) | Alta | ✅ Implementado |
+| RF-008.2 | Testes de componentes | Alta | ✅ Implementado |
+| RF-008.3 | Testes E2E | Alta | ✅ Implementado |
+| RF-008.4 | CI/CD workflow | Média | ✅ Implementado |
+
 ---
 
 ## 4. Requisitos Não-Funcionais
@@ -215,6 +234,15 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 |----|-----------|------|
 | RNF-011 | Uptime | > 99.5% |
 | RNF-012 | Modo offline funcional | ✅ |
+
+### 4.5 Qualidade de Código
+
+| ID | Requisito | Status |
+|----|-----------|--------|
+| RNF-013 | Testes unitários para hooks críticos | ✅ |
+| RNF-014 | Testes de componentes | ✅ |
+| RNF-015 | Testes E2E para fluxos principais | ✅ |
+| RNF-016 | CI/CD automatizado | ✅ |
 
 ---
 
@@ -254,7 +282,7 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 Uma feature é considerada pronta quando:
 
 1. ✅ Código implementado e funcionando
-2. ✅ Testes manuais realizados
+2. ✅ Testes automatizados passando
 3. ✅ Funciona em mobile e desktop
 4. ✅ Funciona em tema dark e light
 5. ✅ Sem erros no console
@@ -264,20 +292,20 @@ Uma feature é considerada pronta quando:
 ### 6.2 Critérios por Feature
 
 #### Kanban - Criar Tarefa
-- [ ] Usuário pode abrir modal de criação
-- [ ] Campos: título, descrição, prioridade, tags, data
-- [ ] Validação de campos obrigatórios
-- [ ] Tarefa aparece na coluna correta
-- [ ] Toast de confirmação exibido
-- [ ] Funciona offline (sync posterior)
+- [x] Usuário pode abrir modal de criação
+- [x] Campos: título, descrição, prioridade, tags, data
+- [x] Validação de campos obrigatórios
+- [x] Tarefa aparece na coluna correta
+- [x] Toast de confirmação exibido
+- [x] Funciona offline (sync posterior)
 
 #### Notas - Criar Nota
-- [ ] Usuário pode criar nova nota
-- [ ] Editor de texto rico funcional
-- [ ] Salvamento automático
-- [ ] Pode associar a caderno
-- [ ] Pode adicionar tags
-- [ ] Pode definir cor
+- [x] Usuário pode criar nova nota
+- [x] Editor de texto rico funcional
+- [x] Salvamento automático
+- [x] Pode associar a caderno
+- [x] Pode adicionar tags
+- [x] Pode definir cor
 
 ---
 
@@ -295,12 +323,13 @@ Uma feature é considerada pronta quando:
 
 ### 7.2 KPIs Técnicos
 
-| Métrica | Meta |
-|---------|------|
-| Lighthouse Score | > 90 |
-| Core Web Vitals | Pass |
-| Error Rate | < 0.1% |
-| Uptime | > 99.5% |
+| Métrica | Meta | Status |
+|---------|------|--------|
+| Lighthouse Score | > 90 | Em progresso |
+| Core Web Vitals | Pass | Em progresso |
+| Error Rate | < 0.1% | ✅ |
+| Uptime | > 99.5% | ✅ |
+| Cobertura de Testes | > 60% | Em progresso |
 
 ---
 
@@ -311,7 +340,7 @@ Uma feature é considerada pronta quando:
 | Performance degradada | Média | Alto | Virtualização, cache |
 | Perda de dados | Baixa | Crítico | RLS, backups, offline sync |
 | Baixa adoção | Média | Alto | UX polido, onboarding |
-| Complexidade crescente | Alta | Médio | Refatoração contínua |
+| Complexidade crescente | Alta | Médio | Refatoração contínua, testes |
 
 ---
 
@@ -324,7 +353,8 @@ Uma feature é considerada pronta quando:
 | RLS | Row Level Security - segurança por linha |
 | PWA | Progressive Web App |
 | Edge Function | Função serverless |
+| E2E | End-to-End (teste de ponta a ponta) |
 
 ---
 
-*Última atualização: 19/12/2024*
+*Última atualização: Janeiro 2025*

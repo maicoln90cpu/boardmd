@@ -2,10 +2,27 @@
 
 Este documento descreve a estrutura de diretórios, convenções de nomenclatura, padrões de código, otimizações de performance e guia de contribuição do projeto.
 
+## 📚 Documentação Relacionada
+
+- [README.md](./README.md) - Setup e visão geral
+- [PRD.md](./PRD.md) - Requisitos do produto
+- [ROADMAP.md](./ROADMAP.md) - Planejamento futuro
+- [PENDENCIAS.md](./PENDENCIAS.md) - Changelog e pendências
+
+---
+
 ## 📁 Estrutura de Diretórios
 
 ```
 src/
+├── __tests__/           # Testes automatizados
+│   ├── components/      # Testes de componentes React
+│   ├── hooks/           # Testes de custom hooks
+│   ├── lib/             # Testes de funções utilitárias
+│   ├── contexts/        # Testes de contextos
+│   ├── setup.ts         # Configuração global de testes
+│   └── README.md        # Documentação de testes
+│
 ├── components/           # Componentes React reutilizáveis
 │   ├── ui/              # Componentes base (shadcn/ui)
 │   ├── kanban/          # Componentes específicos do Kanban
@@ -75,6 +92,13 @@ src/
         ├── client.ts    # Cliente Supabase (auto-gerado)
         └── types.ts     # Tipos do banco (auto-gerado)
 
+e2e/                     # Testes E2E com Playwright
+├── auth.spec.ts         # Testes de autenticação
+├── tasks.spec.ts        # Testes de tarefas
+├── kanban.spec.ts       # Testes do Kanban
+├── notes.spec.ts        # Testes de notas
+└── pomodoro.spec.ts     # Testes do Pomodoro
+
 supabase/
 ├── functions/           # Edge Functions
 │   ├── send-push/
@@ -82,7 +106,129 @@ supabase/
 │   ├── productivity-insights/
 │   └── [outras funções]
 └── config.toml          # Configuração Supabase (auto-gerado)
+
+.github/
+└── workflows/
+    └── test.yml         # CI/CD para testes
 ```
+
+---
+
+## 🧪 Testes Automatizados
+
+### Estrutura de Testes
+
+```
+src/__tests__/
+├── components/           # Testes de componentes React
+│   ├── Auth.test.tsx
+│   ├── TaskCard.test.tsx
+│   ├── TaskModal.test.tsx
+│   └── KanbanBoard.test.tsx
+├── hooks/                # Testes de custom hooks
+│   ├── useTasks.test.ts
+│   ├── useCategories.test.ts
+│   ├── useColumns.test.ts
+│   ├── useSettings.test.ts
+│   ├── useNotes.test.ts
+│   ├── usePomodoro.test.ts
+│   └── useRateLimiter.test.ts
+├── lib/                  # Testes de utilitários
+│   ├── dateUtils.test.ts
+│   ├── taskFilters.test.ts
+│   └── validations.test.ts
+├── contexts/             # Testes de contextos
+│   └── AuthContext.test.tsx
+└── setup.ts              # Configuração global
+
+e2e/                      # Testes E2E com Playwright
+├── auth.spec.ts          # Login, registro, recuperação
+├── tasks.spec.ts         # CRUD de tarefas
+├── kanban.spec.ts        # Drag and drop, filtros
+├── notes.spec.ts         # Notas e cadernos
+└── pomodoro.spec.ts      # Timer e sessões
+```
+
+### Comandos de Teste
+
+```bash
+# Testes Unitários (Vitest)
+npm run test              # Watch mode
+npm run test:run          # Single run
+npm run test:coverage     # Com cobertura
+
+# Testes E2E (Playwright)
+npm run test:e2e          # Headless
+npm run test:e2e:ui       # UI interativa
+```
+
+### Padrões de Teste
+
+```typescript
+// ✅ Estrutura recomendada para testes de hooks
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+
+describe('useHookName', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('deve retornar estado inicial', () => {
+    const { result } = renderHook(() => useHookName(), { wrapper });
+    expect(result.current.loading).toBe(true);
+  });
+
+  it('deve buscar dados corretamente', async () => {
+    const { result } = renderHook(() => useHookName(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+    expect(result.current.data).toHaveLength(2);
+  });
+});
+
+// ✅ Estrutura recomendada para testes de componentes
+import { render } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+describe('ComponentName', () => {
+  const renderComponent = (props = {}) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <ComponentName {...defaultProps} {...props} />
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  };
+
+  it('deve renderizar corretamente', () => {
+    const { getByText } = renderComponent();
+    expect(getByText('Expected Text')).toBeInTheDocument();
+  });
+
+  it('deve responder a interações', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const { getByRole } = renderComponent({ onClick });
+    
+    await user.click(getByRole('button'));
+    expect(onClick).toHaveBeenCalled();
+  });
+});
+```
+
+### CI/CD
+
+O workflow `.github/workflows/test.yml` executa:
+1. **unit-tests**: Testes unitários com Vitest
+2. **e2e-tests**: Testes E2E com Playwright (após unit-tests)
+
+Triggers: `push` e `pull_request` para branches `main` e `develop`.
+
+---
 
 ## 🏷️ Convenções de Nomenclatura
 
@@ -97,6 +243,7 @@ supabase/
 | Páginas | PascalCase | `Dashboard.tsx`, `Notes.tsx` |
 | Tipos | PascalCase | `Task`, `Column`, `AppSettings` |
 | Edge Functions | kebab-case | `send-push`, `daily-assistant` |
+| Testes | mesmo nome + `.test.ts(x)` | `useTasks.test.ts` |
 
 ### Código
 
@@ -120,6 +267,8 @@ export type SortOption = "date" | "priority" | "name";
 // ✅ Variáveis/funções locais: camelCase
 const selectedTasks = tasks.filter(...);
 ```
+
+---
 
 ## 📦 Padrões de Importação
 
@@ -158,6 +307,8 @@ import { RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 | `@/contexts/` | `src/contexts/` |
 | `@/types` | `src/types/index.ts` |
 
+---
+
 ## 🎨 Padrões de Estilo
 
 ### Tailwind CSS
@@ -184,6 +335,8 @@ import { RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 - Use componentes de `@/components/ui/` sempre que possível
 - Estenda via `variants` em vez de sobrescrever estilos
 - Mantenha consistência com o design system existente
+
+---
 
 ## 🔧 Padrões de Código
 
@@ -271,6 +424,8 @@ prodLogger.error("Critical error:", error);
 prodLogger.warn("Important warning:", message);
 ```
 
+---
+
 ## ⚡ Otimizações de Performance
 
 ### Code Splitting
@@ -294,12 +449,6 @@ import Index from "@/pages/Index";  // Página inicial
 import Landing from "@/pages/Landing";  // Landing page
 ```
 
-Loading skeletons específicos são usados durante o carregamento:
-- `StatsLoadingSkeleton` - Dashboard
-- `NotesLoadingSkeleton` - Notes
-- `CalendarLoadingSkeleton` - Calendar
-- `PomodoroLoadingSkeleton` - Pomodoro
-
 ### Virtualização de Listas
 
 Para listas com mais de 50 itens, utilizamos `@tanstack/react-virtual`:
@@ -316,27 +465,14 @@ const getEstimatedItemSize = (densityMode: string) => {
     default: return 120;
   }
 };
-
-// Listas menores usam animações normais
-// Listas maiores usam virtualização
-if (tasks.length <= VIRTUALIZATION_THRESHOLD) {
-  return <AnimatePresence>...</AnimatePresence>;
-}
-
-return <VirtualizedList>...</VirtualizedList>;
 ```
 
 ### Memoização
-
-Padrões de memoização aplicados nos componentes do Kanban:
 
 ```typescript
 // ✅ Componentes memoizados com React.memo
 export const KanbanDesktopView = memo(function KanbanDesktopView(props) { ... });
 export const DroppableColumn = memo(function DroppableColumn(props) { ... });
-export const KanbanColumnHeader = memo(function KanbanColumnHeader(props) { ... });
-export const MobileKanbanView = memo(function MobileKanbanView(props) { ... });
-export const VirtualizedTaskList = memo(function VirtualizedTaskList(props) { ... });
 
 // ✅ Handlers memoizados com useCallback
 const handleSaveTask = useCallback(async (taskData) => {
@@ -348,22 +484,9 @@ const activeTask = useMemo(
   () => activeId ? tasks.find((t) => t.id === activeId) : null,
   [activeId, tasks]
 );
-
-// ✅ Estilos baseados em props memoizados
-const headerStyles = useMemo(() => ({
-  padding: densityMode === "ultra-compact" ? "px-2 py-1" : "px-3 py-2",
-}), [densityMode]);
 ```
 
-### Estratégias de Otimização
-
-| Técnica | Quando Usar | Componentes Aplicados |
-|---------|-------------|----------------------|
-| `React.memo` | Componentes que recebem as mesmas props frequentemente | TaskCard, DroppableColumn, KanbanColumnHeader |
-| `useMemo` | Cálculos custosos derivados de estado | Filtros, ordenação, estilos dinâmicos |
-| `useCallback` | Handlers passados como props para componentes memoizados | onEdit, onDelete, onMoveTask |
-| `React.lazy` | Páginas e modais pesados | TaskModal, Dashboard, Notes |
-| Virtualização | Listas com >50 itens | VirtualizedTaskList |
+---
 
 ## 🗄️ Padrões de Banco de Dados
 
@@ -396,26 +519,7 @@ ON public.example FOR SELECT
 USING (auth.uid() = user_id);
 ```
 
-## 🧪 Testes Manuais
-
-### Checklist Pré-Deploy
-
-- [ ] Criar/editar/deletar tarefas
-- [ ] Drag and drop no Kanban
-- [ ] Filtros e busca funcionando
-- [ ] Navegação entre páginas
-- [ ] Responsividade (mobile/desktop)
-- [ ] Toast notifications aparecem
-- [ ] Offline sync funciona
-- [ ] Autenticação (login/logout)
-
-### Checklist de Performance
-
-- [ ] Carregamento inicial < 3s
-- [ ] Navegação entre páginas suave
-- [ ] Scroll em listas longas sem travamentos
-- [ ] Drag and drop responsivo
-- [ ] Modais abrem rapidamente
+---
 
 ## 📝 Guia de Contribuição
 
@@ -430,7 +534,7 @@ USING (auth.uid() = user_id);
 1. Coloque na pasta apropriada (`components/`, subpasta se aplicável)
 2. Use TypeScript com interfaces explícitas para props
 3. Exporte componentes com `export function` (não `export default`)
-4. Documente props complexas com comentários JSDoc
+4. **Adicione testes** em `src/__tests__/components/`
 5. **Considere memoização** se o componente será renderizado frequentemente
 
 ### Criando Novos Hooks
@@ -439,13 +543,14 @@ USING (auth.uid() = user_id);
 2. Prefixe com `use`
 3. Retorne objeto com nomes consistentes
 4. Adicione re-export no `index.ts` da pasta
-5. **Use useCallback/useMemo** para valores que serão passados a componentes filhos
+5. **Adicione testes** em `src/__tests__/hooks/`
 
 ### Adicionando Utilitários
 
 1. Coloque em `lib/` ou subpasta apropriada
 2. Exporte funções puras quando possível
 3. Adicione tipagem explícita para parâmetros e retorno
+4. **Adicione testes** em `src/__tests__/lib/`
 
 ### Commits
 
@@ -457,7 +562,10 @@ refactor: reorganiza estrutura de hooks
 docs: atualiza ARCHITECTURE.md
 style: ajusta espaçamento do TaskCard
 perf: adiciona virtualização para listas longas
+test: adiciona testes para useTasks hook
 ```
+
+---
 
 ## 🔗 Links Úteis
 
@@ -467,3 +575,5 @@ perf: adiciona virtualização para listas longas
 - [Supabase Docs](https://supabase.com/docs)
 - [React Query](https://tanstack.com/query/latest)
 - [TanStack Virtual](https://tanstack.com/virtual/latest)
+- [Vitest](https://vitest.dev/)
+- [Playwright](https://playwright.dev/)
