@@ -8,12 +8,9 @@ export const initOneSignal = async (): Promise<boolean> => {
     return true;
   }
 
-  const appId = import.meta.env.VITE_ONESIGNAL_APP_ID;
-  
-  if (!appId) {
-    console.warn('[OneSignal] App ID not configured');
-    return false;
-  }
+  // App ID é público e seguro de expor no frontend
+  // A REST API Key continua protegida na Edge Function
+  const appId = '36035405-9aa5-4e4f-b6cf-237d873bcd47';
 
   try {
     await OneSignal.init({
