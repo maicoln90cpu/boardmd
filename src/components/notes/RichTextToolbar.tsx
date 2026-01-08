@@ -31,6 +31,7 @@ import {
   LayoutList,
   Type,
   ClipboardList,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -651,7 +652,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<span class="priority-badge priority-high">🔴 Alta</span> ').run();
+              editor.chain().focus().insertPriorityBadge('high').run();
             }}
           >
             <span className="mr-2 w-3 h-3 rounded-full bg-red-500"></span>
@@ -659,11 +660,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              editor
-                .chain()
-                .focus()
-                .insertContent('<span class="priority-badge priority-medium">🟡 Média</span> ')
-                .run();
+              editor.chain().focus().insertPriorityBadge('medium').run();
             }}
           >
             <span className="mr-2 w-3 h-3 rounded-full bg-yellow-500"></span>
@@ -671,7 +668,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              editor.chain().focus().insertContent('<span class="priority-badge priority-low">🟢 Baixa</span> ').run();
+              editor.chain().focus().insertPriorityBadge('low').run();
             }}
           >
             <span className="mr-2 w-3 h-3 rounded-full bg-green-500"></span>
@@ -758,6 +755,10 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
             Extrair pontos-chave
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => formatWithAI("generateToc")}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            Gerar índice (TOC)
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => formatWithAI("structure")}>
             <Type className="mr-2 h-4 w-4" />
             Melhorar formatação
