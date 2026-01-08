@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
-// Helper para aguardar condição
-const waitForCondition = async (callback: () => boolean, timeout = 1000) => {
-  const start = Date.now();
-  while (!callback() && Date.now() - start < timeout) {
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
-};
 import React from 'react';
+
+// Helper para aguardar condição assíncrona
+const waitForAsync = async (callback: () => void, timeout = 2000) => {
+  const start = Date.now();
+  let lastError: Error | null = null;
+  while (Date.now() - start < timeout) {
+    try {
+      callback();
+      return;
+    } catch (e) {
+      lastError = e as Error;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
+  if (lastError) throw lastError;
+};
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -256,7 +264,7 @@ describe('TaskModal', () => {
       const saveButton = getByText(/salvar/i);
       saveButton.click();
 
-      await waitFor(() => {
+      await waitForAsync(() => {
         expect(onSave).toHaveBeenCalled();
       });
     });
