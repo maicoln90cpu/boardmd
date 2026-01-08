@@ -21,7 +21,10 @@ import {
   TaskCardUltraCompact,
   TaskCardHoverContent,
   TaskCardCompleteDialog,
+  TaskCardSkeleton,
 } from "@/components/task-card";
+import { useSavingTasks } from "@/contexts/SavingTasksContext";
+import { AnimatePresence } from "framer-motion";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -140,6 +143,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const cardRef = React.useRef<HTMLDivElement>(null);
+  const { isTaskSaving } = useSavingTasks();
+  const isSaving = isTaskSaving(task.id);
 
   // Drag & drop styles
   const style = {
@@ -295,7 +300,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             >
               <Card
                 className={cn(
-                  "w-full cursor-grab active:cursor-grabbing transition-all duration-200 overflow-hidden",
+                  "w-full cursor-grab active:cursor-grabbing transition-all duration-200 overflow-hidden relative",
                   "bg-card hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20",
                   isUltraCompact && "p-0",
                   densityMode === "compact" && "p-0",
@@ -314,6 +319,10 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   }
                 }}
               >
+                {/* Skeleton overlay while saving */}
+                <AnimatePresence>
+                  <TaskCardSkeleton visible={isSaving} />
+                </AnimatePresence>
                 {/* Colored tag bars */}
                 {visibleTags.length > 0 && (
                   <div className="flex w-full h-1.5">
