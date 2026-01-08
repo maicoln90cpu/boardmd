@@ -201,7 +201,7 @@ export function useCategories() {
       const { data, error } = await supabase
         .from("categories")
         .insert([categoryData as any])
-        .select('id')
+        .select()
         .single();
 
       if (error) {
@@ -212,6 +212,16 @@ export function useCategories() {
         });
         toast({ title: "Erro - salvo offline", variant: "destructive" });
         return null;
+      }
+
+      // ATUALIZAÇÃO OTIMISTA: Adicionar imediatamente ao estado local
+      if (data) {
+        setCategories(prev => [...prev, {
+          ...data,
+          parent_id: data.parent_id || null,
+          depth: data.depth || 0,
+          children: [] as Category[]
+        }]);
       }
 
       return data?.id || null;
@@ -239,6 +249,10 @@ export function useCategories() {
       return;
     }
 
+    // ATUALIZAÇÃO OTIMISTA: Remover imediatamente do estado
+    const previousCategories = [...categories];
+    setCategories(prev => prev.filter(c => c.id !== id));
+
     if (!isOnline) {
       offlineSync.queueOperation({
         type: 'category',
@@ -252,6 +266,8 @@ export function useCategories() {
     const { error } = await supabase.from("categories").delete().eq("id", id);
 
     if (error) {
+      // ROLLBACK: Reverter em caso de erro
+      setCategories(previousCategories);
       offlineSync.queueOperation({
         type: 'category',
         action: 'delete',
@@ -286,6 +302,14 @@ export function useCategories() {
   };
 
   const reorderCategories = async (reorderedCategories: Category[]) => {
+    // ATUALIZAÇÃO OTIMISTA: Atualizar estado ANTES da requisição
+    const previousCategories = [...categories];
+    const updatedCategories = reorderedCategories.map((cat, index) => ({
+      ...cat,
+      position: index
+    }));
+    setCategories(updatedCategories);
+
     try {
       // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = reorderedCategories.map((category, index) => ({
@@ -308,9 +332,9 @@ export function useCategories() {
       if (errors.length > 0) {
         throw errors[0].error;
       }
-
-      setCategories(reorderedCategories);
     } catch (error) {
+      // ROLLBACK: Reverter para estado anterior em caso de erro
+      setCategories(previousCategories);
       toast({ title: "Erro ao reordenar categorias", variant: "destructive" });
     }
   };
