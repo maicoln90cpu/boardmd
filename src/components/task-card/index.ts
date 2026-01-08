@@ -5,3 +5,4 @@ export { TaskCardTags } from "./TaskCardTags";
 export { TaskCardUltraCompact } from "./TaskCardUltraCompact";
 export { TaskCardHoverContent } from "./TaskCardHoverContent";
 export { TaskCardCompleteDialog } from "./TaskCardCompleteDialog";
+export { TaskCardSkeleton } from "./TaskCardSkeleton";

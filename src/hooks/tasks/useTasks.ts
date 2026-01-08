@@ -7,6 +7,11 @@ import { z } from "zod";
 import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
+// Helper to dispatch saving state events
+const dispatchSavingEvent = (taskId: string, isSaving: boolean) => {
+  window.dispatchEvent(new CustomEvent('task-saving', { detail: { taskId, isSaving } }));
+};
+
 // Interface para recurrence_rule compatível com Json do Supabase
 export interface TaskRecurrenceRule {
   frequency?: 'daily' | 'weekly' | 'monthly';
@@ -191,8 +196,10 @@ export function useTasks(categoryId: string | null | "all") {
       };
       
       setTasks(prev => [...prev, tempTask]);
+      dispatchSavingEvent(tempId, true);
 
       if (!isOnline) {
+        dispatchSavingEvent(tempId, false);
         offlineSync.queueOperation({
           type: 'task',
           action: 'create',
@@ -210,6 +217,7 @@ export function useTasks(categoryId: string | null | "all") {
 
       if (error) {
         // ROLLBACK: Remover tarefa temporária
+        dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.filter(t => t.id !== tempId));
         offlineSync.queueOperation({
           type: 'task',
@@ -226,6 +234,7 @@ export function useTasks(categoryId: string | null | "all") {
 
       // Substituir temp pelo real
       if (data) {
+        dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.map(t => 
           t.id === tempId ? { ...data as unknown as Task } : t
         ));
@@ -262,8 +271,10 @@ export function useTasks(categoryId: string | null | "all") {
       setTasks(prev => prev.map(t => 
         t.id === id ? { ...t, ...updates, updated_at: new Date().toISOString() } : t
       ));
+      dispatchSavingEvent(id, true);
 
       if (!isOnline) {
+        dispatchSavingEvent(id, false);
         offlineSync.queueOperation({
           type: 'task',
           action: 'update',
@@ -280,6 +291,8 @@ export function useTasks(categoryId: string | null | "all") {
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
+
+      dispatchSavingEvent(id, false);
 
       if (error) {
         // ROLLBACK
@@ -325,8 +338,10 @@ export function useTasks(categoryId: string | null | "all") {
     // ATUALIZAÇÃO OTIMISTA
     const previousTasks = [...tasks];
     setTasks(prev => prev.filter(t => t.id !== id));
+    dispatchSavingEvent(id, true);
 
     if (!isOnline) {
+      dispatchSavingEvent(id, false);
       offlineSync.queueOperation({
         type: 'task',
         action: 'delete',
@@ -337,6 +352,7 @@ export function useTasks(categoryId: string | null | "all") {
     }
 
     const { error } = await supabase.from("tasks").delete().eq("id", id);
+    dispatchSavingEvent(id, false);
 
     if (error) {
       // ROLLBACK
@@ -423,12 +439,15 @@ export function useTasks(categoryId: string | null | "all") {
     setTasks(prev => prev.map(t => 
       t.id === taskId ? { ...t, is_favorite: !t.is_favorite } : t
     ));
+    dispatchSavingEvent(taskId, true);
 
     try {
       const { error } = await supabase
         .from("tasks")
         .update({ is_favorite: !previousValue })
         .eq("id", taskId);
+
+      dispatchSavingEvent(taskId, false);
 
       if (error) throw error;
 
@@ -437,6 +456,7 @@ export function useTasks(categoryId: string | null | "all") {
       });
     } catch (error) {
       // ROLLBACK
+      dispatchSavingEvent(taskId, false);
       setTasks(prev => prev.map(t => 
         t.id === taskId ? { ...t, is_favorite: previousValue } : t
       ));
@@ -479,6 +499,7 @@ export function useTasks(categoryId: string | null | "all") {
       } as Task;
       
       setTasks(prev => [...prev, tempTask]);
+      dispatchSavingEvent(tempId, true);
 
       const { data, error } = await supabase
         .from("tasks")
@@ -488,6 +509,7 @@ export function useTasks(categoryId: string | null | "all") {
 
       if (error) {
         // ROLLBACK
+        dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.filter(t => t.id !== tempId));
         toast({
           title: "Erro ao duplicar tarefa",
@@ -499,6 +521,7 @@ export function useTasks(categoryId: string | null | "all") {
 
       // Substituir temp pelo real
       if (data) {
+        dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.map(t => 
           t.id === tempId ? { ...data as unknown as Task } : t
         ));

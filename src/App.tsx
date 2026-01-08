@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { UndoProvider } from "@/hooks/useUndoStack";
 import { BulkSelectionProvider } from "@/hooks/useBulkSelection";
 import { SwipeProvider } from "@/contexts/SwipeContext";
+import { SavingTasksProvider } from "@/contexts/SavingTasksContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
@@ -157,10 +158,12 @@ const App = () => (
           <UndoProvider>
             <BulkSelectionProvider>
               <SwipeProvider>
-                <Toaster />
-                <Sonner />
-                <OnlineStatusIndicator />
-                <AppContent />
+                <SavingTasksProvider>
+                  <Toaster />
+                  <Sonner />
+                  <OnlineStatusIndicator />
+                  <AppContent />
+                </SavingTasksProvider>
               </SwipeProvider>
             </BulkSelectionProvider>
           </UndoProvider>
