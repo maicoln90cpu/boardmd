@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal, ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -301,6 +302,55 @@ export function Sidebar({
     active: location.pathname === "/config",
     onClick: () => navigate("/config")
   }];
+  // Skeleton da sidebar enquanto carrega
+  if (isLoading) {
+    return (
+      <>
+        {/* Desktop Sidebar Skeleton */}
+        <div className="hidden md:flex flex-col h-screen w-[60px] bg-card border-r border-border p-3 gap-4">
+          {/* Logo skeleton */}
+          <div className="flex items-center gap-2 py-2">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+          </div>
+          
+          {/* Menu items skeleton */}
+          <div className="flex flex-col gap-2 mt-4">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-8 rounded-md" />
+            ))}
+          </div>
+          
+          <div className="h-px bg-border my-2" />
+          
+          {/* Secondary items skeleton */}
+          <div className="flex flex-col gap-2">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-8 rounded-md" />
+            ))}
+          </div>
+          
+          {/* Logout skeleton */}
+          <div className="mt-auto">
+            <div className="h-px bg-border mb-2" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+        </div>
+
+        {/* Mobile bottom navigation skeleton */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
+          <div className="grid grid-cols-5 gap-0.5 p-2 px-0">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1 min-h-[60px] py-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-3 w-10 rounded" />
+              </div>
+            ))}
+          </div>
+        </nav>
+      </>
+    );
+  }
+
   return <>
       {/* Desktop Sidebar with hover animation */}
       <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned}>
