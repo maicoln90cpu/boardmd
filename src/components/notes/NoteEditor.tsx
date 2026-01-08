@@ -368,6 +368,52 @@ export function NoteEditor({
     return () => window.removeEventListener('save-current-note', handleSaveEvent);
   }, []);
 
+  // Handler para cliques em links âncora do TOC (scroll interno)
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const link = target.closest('a');
+      
+      if (link) {
+        const href = link.getAttribute('href');
+        
+        // Se é um link âncora interno (começa com #)
+        if (href && href.startsWith('#')) {
+          event.preventDefault();
+          event.stopPropagation();
+          
+          const targetId = href.slice(1); // Remove o #
+          const editorElement = editor.view.dom;
+          const targetElement = editorElement.querySelector(`[id="${targetId}"]`);
+          
+          if (targetElement) {
+            targetElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+            
+            // Flash highlight visual para indicar onde está
+            targetElement.classList.add('toc-target-highlight');
+            setTimeout(() => {
+              targetElement.classList.remove('toc-target-highlight');
+            }, 2000);
+          } else {
+            toast.error("Seção não encontrada");
+          }
+        }
+      }
+    };
+
+    const editorDom = editor.view.dom;
+    editorDom.addEventListener('click', handleClick);
+    
+    return () => {
+      editorDom.removeEventListener('click', handleClick);
+    };
+  }, [editor]);
+
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
   useEffect(() => {
     return () => {
