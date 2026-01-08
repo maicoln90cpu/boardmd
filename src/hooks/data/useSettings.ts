@@ -52,7 +52,10 @@ export interface AppSettings {
     language: 'pt-BR' | 'en' | 'es';
     sidebarPinned: boolean;
     sidebarExpandedWhenPinned: boolean;
+    autoDataIntegrityMonitor: boolean;
   };
+  // Colunas ocultas no kanban (sincronizar entre dispositivos)
+  hiddenColumns: string[];
   mobile: {
     dailyGridColumns: 1 | 2;
     projectsGridColumns: 1 | 2;
@@ -114,7 +117,9 @@ const defaultSettings: AppSettings = {
     language: 'pt-BR',
     sidebarPinned: false,
     sidebarExpandedWhenPinned: true,
+    autoDataIntegrityMonitor: false,
   },
+  hiddenColumns: [],
   mobile: {
     dailyGridColumns: 2,
     projectsGridColumns: 2,

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/data/useCategories";
