@@ -207,10 +207,13 @@ export function Sidebar({
   onCategorySelect,
   selectedCategoryId
 }: SidebarProps) {
-  const [open, setOpen] = useState(false);
-  const { settings } = useSettings();
+  const { settings, isLoading } = useSettings();
   const isPinned = settings.interface.sidebarPinned;
   const isExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
+  
+  // Iniciar expandido por padrão para evitar flash visual
+  const [open, setOpen] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
   const { categories } = useCategories();
@@ -229,12 +232,24 @@ export function Sidebar({
     return acc;
   }, {} as Record<string, number>);
 
-  // Keep sidebar state based on pin settings
+  // Aplicar configuração do usuário SOMENTE após carregar
   useEffect(() => {
-    if (isPinned) {
+    if (!isLoading && !hasInitialized) {
+      if (isPinned) {
+        setOpen(isExpandedWhenPinned);
+      } else {
+        setOpen(false); // Se não está fixado, começa colapsado (hover abre)
+      }
+      setHasInitialized(true);
+    }
+  }, [isLoading, isPinned, isExpandedWhenPinned, hasInitialized]);
+  
+  // Reagir a mudanças nas configurações após inicialização
+  useEffect(() => {
+    if (hasInitialized && isPinned) {
       setOpen(isExpandedWhenPinned);
     }
-  }, [isPinned, isExpandedWhenPinned]);
+  }, [isPinned, isExpandedWhenPinned, hasInitialized]);
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
     if (mode) {
