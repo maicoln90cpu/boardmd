@@ -26,6 +26,15 @@ export const initOneSignal = async (): Promise<boolean> => {
     console.log('[OneSignal] Initialized successfully');
     return true;
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Se o SDK já foi inicializado, tratamos como sucesso
+    if (errorMessage.includes('already initialized')) {
+      isInitialized = true;
+      console.log('[OneSignal] SDK was already initialized, treating as success');
+      return true;
+    }
+    
     console.error('[OneSignal] Init error:', error);
     return false;
   }

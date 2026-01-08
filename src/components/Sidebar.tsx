@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar as AnimatedSidebar, SidebarBody, SidebarLink, SidebarDivider, useSidebar } from "@/components/ui/animated-sidebar";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useCategories, Category } from "@/hooks/data/useCategories";
 import { CategoryTree } from "@/components/sidebar/CategoryTree";
 import { useTasks } from "@/hooks/tasks/useTasks";
@@ -208,8 +208,9 @@ export function Sidebar({
   selectedCategoryId
 }: SidebarProps) {
   const [open, setOpen] = useState(false);
-  const [isPinned] = useLocalStorage("sidebar-pinned", false);
-  const [isExpandedWhenPinned] = useLocalStorage("sidebar-expanded-when-pinned", true);
+  const { settings } = useSettings();
+  const isPinned = settings.interface.sidebarPinned;
+  const isExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
   const { categories } = useCategories();
