@@ -15,42 +15,77 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 
 ---
 
-## Q1 2025 (Janeiro - Março) 🔄 EM ANDAMENTO
+## Q1 2025 (Janeiro - Março) ✅ CONCLUÍDO
 
 ### 🎯 Tema: Estabilidade, Testes e Polimento
 
 #### Objetivos
 1. **Implementar testes automatizados** ✅
-2. **Eliminar bugs e melhorar performance**
+2. **Eliminar bugs e melhorar performance** ✅
 3. **Polir a experiência mobile** ✅
-4. **Adicionar features mais pedidas**
+4. **Adicionar features mais pedidas** ✅
 
-#### Entregas Principais
+#### Entregas Realizadas
 
-| Feature | Descrição | Prioridade | Status |
-|---------|-----------|------------|--------|
-| Testes Unitários | Hooks e componentes críticos | Alta | ✅ Concluído |
-| Testes E2E | Fluxos principais com Playwright | Alta | ✅ Concluído |
-| CI/CD | GitHub Actions para testes | Alta | ✅ Concluído |
-| Filtros Mobile | Sheet de projetos no mobile | Alta | ✅ Concluído |
-| Documentação | Atualização completa dos docs | Média | ✅ Concluído |
-| Importação Avançada | Preview, merge, validação robusta | Alta | 🔄 Pendente |
-| Anexos em Tarefas | Upload de imagens e documentos | Alta | 🔄 Pendente |
-| Busca Global v2 | Busca em notas, filtros, histórico | Alta | 🔄 Pendente |
-| Tour Guiado | Onboarding para novos usuários | Média | 🔄 Pendente |
-
-#### Métricas de Sucesso
-- [x] Testes automatizados implementados
-- [x] Cobertura de testes para hooks críticos
-- [x] CI/CD configurado
-- [ ] Zero bugs críticos
-- [ ] Tempo de carregamento < 2s
-- [ ] Score Lighthouse > 90
-- [ ] NPS > 40
+| Feature | Descrição | Status |
+|---------|-----------|--------|
+| Testes Unitários | Hooks e componentes críticos | ✅ Concluído |
+| Testes E2E | Fluxos principais com Playwright | ✅ Concluído |
+| CI/CD | GitHub Actions para testes | ✅ Concluído |
+| Filtros Mobile | Sheet de projetos no mobile | ✅ Concluído |
+| Documentação | Atualização completa dos docs | ✅ Concluído |
 
 ---
 
-## Q2 2025 (Abril - Junho)
+## Q2-Q4 2025 ✅ CONCLUÍDO
+
+### 🎯 Tema: Expansão de Features
+
+#### Entregas Realizadas
+
+| Feature | Descrição | Status |
+|---------|-----------|--------|
+| Auto-fill Categoria | Modal preenche categoria selecionada | ✅ Concluído |
+| Grid View Notas | Visualização em grid nas notas | ✅ Concluído |
+| Preview em Hover | Conteúdo aparece ao passar mouse | ✅ Concluído |
+| Contador Palavras | Palavras/caracteres no editor | ✅ Concluído |
+| Layout Compacto | Cadernos mais minimalistas | ✅ Concluído |
+| Vinculação Nota-Tarefa | Sincronização bidirecional | ✅ Concluído |
+
+---
+
+## Q1 2026 (Janeiro - Março) 🔄 EM ANDAMENTO
+
+### 🎯 Tema: Integrações e Melhorias UX
+
+#### Objetivos
+1. **Anexos em tarefas**
+2. **Busca global aprimorada**
+3. **Melhorias no sistema de notas**
+4. **Performance e otimizações**
+
+#### Entregas Planejadas
+
+| Feature | Descrição | Prioridade | Status |
+|---------|-----------|------------|--------|
+| Anexos em Tarefas | Upload de imagens e documentos | Alta | 🔄 Pendente |
+| Busca Global v2 | Busca em notas, filtros, histórico | Alta | 🔄 Pendente |
+| Ícones para Cadernos | Ícones personalizados por caderno | Média | 🔄 Pendente |
+| Destaque na Busca | Highlight de termos encontrados | Média | 🔄 Pendente |
+| Importação Avançada | Preview, merge, validação robusta | Alta | 🔄 Pendente |
+| Tour Guiado | Onboarding para novos usuários | Média | 🔄 Pendente |
+
+#### Métricas de Sucesso
+- [ ] Anexos funcionais em tarefas
+- [ ] Busca global incluindo notas
+- [ ] Zero bugs críticos
+- [ ] Tempo de carregamento < 2s
+- [ ] Score Lighthouse > 90
+- [ ] NPS > 50
+
+---
+
+## Q2 2026 (Abril - Junho)
 
 ### 🎯 Tema: Integrações e Automações
 
@@ -76,7 +111,7 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 
 ---
 
-## Q3 2025 (Julho - Setembro)
+## Q3 2026 (Julho - Setembro)
 
 ### 🎯 Tema: Colaboração
 
@@ -103,7 +138,7 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 
 ---
 
-## Q4 2025 (Outubro - Dezembro)
+## Q4 2026 (Outubro - Dezembro)
 
 ### 🎯 Tema: Inteligência e Insights
 
@@ -130,9 +165,9 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 
 ---
 
-## 2026 - Visão de Longo Prazo
+## 2027 - Visão de Longo Prazo
 
-### Q1 2026: Plataforma
+### Q1 2027: Plataforma
 
 | Iniciativa | Descrição |
 |------------|-----------|
@@ -141,7 +176,7 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 | Browser Extension | Captura rápida de tarefas |
 | Widgets | Widgets para iOS/Android |
 
-### Q2 2026: Monetização
+### Q2 2027: Monetização
 
 | Iniciativa | Descrição |
 |------------|-----------|
@@ -150,7 +185,7 @@ Transformar o TaskFlow na ferramenta de produtividade pessoal mais completa e in
 | Plano Enterprise | Para empresas |
 | Marketplace | Templates e integrações da comunidade |
 
-### Q3-Q4 2026: Escala
+### Q3-Q4 2027: Escala
 
 | Iniciativa | Descrição |
 |------------|-----------|
@@ -207,5 +242,5 @@ ICE = (Impact + Confidence + Ease) / 3
 
 ---
 
-*Última atualização: Janeiro 2025*  
-*Próxima revisão: Fevereiro 2025*
+*Última atualização: 08 de Janeiro de 2026*  
+*Próxima revisão: Fevereiro 2026*

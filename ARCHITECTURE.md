@@ -1,4 +1,4 @@
-# Arquitetura do Projeto
+# Arquitetura do Projeto - TaskFlow
 
 Este documento descreve a estrutura de diretórios, convenções de nomenclatura, padrões de código, otimizações de performance e guia de contribuição do projeto.
 
@@ -16,100 +16,199 @@ Este documento descreve a estrutura de diretórios, convenções de nomenclatura
 ```
 src/
 ├── __tests__/           # Testes automatizados
-│   ├── components/      # Testes de componentes React
-│   ├── hooks/           # Testes de custom hooks
-│   ├── lib/             # Testes de funções utilitárias
-│   ├── contexts/        # Testes de contextos
+│   ├── components/      # Testes de componentes React (4)
+│   │   ├── Auth.test.tsx
+│   │   ├── TaskCard.test.tsx
+│   │   ├── TaskModal.test.tsx
+│   │   └── KanbanBoard.test.tsx
+│   ├── hooks/           # Testes de custom hooks (7)
+│   │   ├── useTasks.test.ts
+│   │   ├── useCategories.test.ts
+│   │   ├── useColumns.test.ts
+│   │   ├── useSettings.test.ts
+│   │   ├── useNotes.test.ts
+│   │   ├── usePomodoro.test.ts
+│   │   └── useRateLimiter.test.ts
+│   ├── lib/             # Testes de funções utilitárias (3)
+│   │   ├── dateUtils.test.ts
+│   │   ├── taskFilters.test.ts
+│   │   └── validations.test.ts
+│   ├── contexts/        # Testes de contextos (1)
+│   │   └── AuthContext.test.tsx
 │   ├── setup.ts         # Configuração global de testes
 │   └── README.md        # Documentação de testes
 │
-├── components/           # Componentes React reutilizáveis
-│   ├── ui/              # Componentes base (shadcn/ui)
-│   ├── kanban/          # Componentes específicos do Kanban
-│   ├── notes/           # Componentes do módulo de Notas
-│   ├── dashboard/       # Componentes do Dashboard
+├── components/           # Componentes React (~90)
+│   ├── ui/              # Componentes base shadcn (50+)
+│   ├── kanban/          # Componentes do Kanban (15)
+│   │   ├── BulkActionsBar.tsx
+│   │   ├── ColumnColorPicker.tsx
+│   │   ├── ColumnManager.tsx
+│   │   ├── DailyKanbanView.tsx
+│   │   ├── DeleteTaskDialog.tsx
+│   │   ├── DroppableColumn.tsx
+│   │   ├── FilterPresetsManager.tsx
+│   │   ├── KanbanColumnHeader.tsx
+│   │   ├── KanbanDesktopView.tsx
+│   │   ├── KanbanFiltersBar.tsx
+│   │   ├── MobileKanbanView.tsx
+│   │   ├── ProjectsKanbanView.tsx
+│   │   ├── RecurrenceEditor.tsx
+│   │   ├── SubtasksEditor.tsx
+│   │   ├── SwipeableTaskCard.tsx
+│   │   └── VirtualizedTaskList.tsx
+│   ├── notes/           # Componentes de Notas (12)
+│   │   ├── ColorPicker.tsx
+│   │   ├── MobileNotesLayout.tsx
+│   │   ├── NotebooksList.tsx
+│   │   ├── NotebookTagPicker.tsx
+│   │   ├── NoteEditor.tsx
+│   │   ├── NotesList.tsx
+│   │   ├── NotesSearch.tsx
+│   │   ├── RichTextToolbar.tsx
+│   │   ├── TaskSelectorModal.tsx
+│   │   ├── TrashDialog.tsx
+│   │   └── extensions/
+│   │       ├── TaskBlockComponent.tsx
+│   │       └── TaskBlockExtension.ts
+│   ├── dashboard/       # Componentes do Dashboard (7)
+│   │   ├── GamificationPanel.tsx
+│   │   ├── PerformanceMetrics.tsx
+│   │   ├── ProductivityChart.tsx
+│   │   ├── ProductivityInsights.tsx
+│   │   ├── PushNotificationMonitor.tsx
+│   │   ├── SystemHealthMonitor.tsx
+│   │   └── WeeklyProgress.tsx
+│   ├── task-card/       # Subcomponentes do TaskCard (8)
+│   │   ├── TaskCardActions.tsx
+│   │   ├── TaskCardBadges.tsx
+│   │   ├── TaskCardCompleteDialog.tsx
+│   │   ├── TaskCardHeader.tsx
+│   │   ├── TaskCardHoverContent.tsx
+│   │   ├── TaskCardSkeleton.tsx
+│   │   ├── TaskCardTags.tsx
+│   │   ├── TaskCardUltraCompact.tsx
+│   │   └── index.ts
+│   ├── calendar/        # Componentes do Calendário
+│   │   └── CalendarColorLegend.tsx
+│   ├── notifications/   # Componentes de Notificações
+│   │   ├── NotificationHistory.tsx
+│   │   └── NotificationPreferences.tsx
 │   ├── sidebar/         # Componentes da Sidebar
-│   ├── task-card/       # Subcomponentes do TaskCard
+│   │   └── CategoryTree.tsx
 │   ├── templates/       # Componentes de templates
-│   └── calendar/        # Componentes do Calendário
+│   │   ├── TemplateCard.tsx
+│   │   └── TemplateSelector.tsx
+│   └── [componentes raiz]
 │
-├── hooks/               # Custom React Hooks
-│   ├── tasks/           # Hooks relacionados a tarefas
+├── hooks/               # Custom React Hooks (35)
+│   ├── tasks/           # Hooks de tarefas
 │   │   ├── useTasks.ts
 │   │   ├── useTaskFiltering.ts
 │   │   ├── useTaskSorting.ts
 │   │   ├── useTaskHistory.ts
-│   │   └── useTaskReset.ts
+│   │   ├── useTaskReset.ts
+│   │   └── index.ts
 │   ├── ui/              # Hooks de interface
 │   │   ├── useToast.ts
 │   │   ├── useMobile.tsx
 │   │   ├── useMediaQuery.ts
-│   │   └── useBreakpoint.ts
+│   │   ├── useBreakpoint.ts
+│   │   └── index.ts
 │   ├── data/            # Hooks de dados/estado
 │   │   ├── useSettings.ts
 │   │   ├── useCategories.ts
 │   │   ├── useColumns.ts
-│   │   └── useTags.ts
-│   └── [outros hooks]   # Hooks não agrupados
+│   │   ├── useTags.ts
+│   │   └── index.ts
+│   └── [35 hooks totais]
 │
 ├── lib/                 # Utilitários e funções helper
 │   ├── sync/            # Sincronização offline/background
 │   │   ├── offlineSync.ts
-│   │   └── backgroundSync.ts
+│   │   ├── backgroundSync.ts
+│   │   └── index.ts
 │   ├── push/            # Notificações push
-│   │   └── pushNotifications.ts
+│   │   ├── pushNotifications.ts
+│   │   ├── oneSignalProvider.ts
+│   │   └── index.ts
 │   ├── export/          # Exportação (PNG, PDF)
-│   │   └── exportVisual.ts
+│   │   ├── exportVisual.ts
+│   │   └── index.ts
 │   ├── pwa/             # PWA utilities
-│   │   └── pwaUpdater.ts
-│   ├── dateUtils.ts     # Funções de data
-│   ├── taskFilters.ts   # Filtros centralizados de tarefas
+│   │   ├── pwaUpdater.ts
+│   │   └── index.ts
+│   ├── notifications/   # Templates de notificação
+│   │   └── oneSignalNotifier.ts
+│   ├── dateUtils.ts
+│   ├── taskFilters.ts
 │   ├── recurrenceUtils.ts
 │   ├── validations.ts
-│   ├── utils.ts         # Utilitários gerais (cn, etc)
-│   └── logger.ts        # Sistema de logging
+│   ├── utils.ts
+│   ├── logger.ts
+│   ├── importValidation.ts
+│   ├── defaultAIPrompts.ts
+│   └── defaultNotificationTemplates.ts
 │
-├── pages/               # Páginas/Rotas da aplicação
-│   ├── Index.tsx        # Página principal (Kanban)
+├── pages/               # Páginas/Rotas (11)
+│   ├── Index.tsx        # Kanban principal
 │   ├── Dashboard.tsx
 │   ├── Notes.tsx
 │   ├── Calendar.tsx
 │   ├── Config.tsx
 │   ├── Settings.tsx
 │   ├── Pomodoro.tsx
-│   └── NotificationsDashboard.tsx
+│   ├── NotificationsDashboard.tsx
+│   ├── Landing.tsx
+│   ├── ForgotPassword.tsx
+│   ├── ResetPassword.tsx
+│   └── NotFound.tsx
 │
-├── contexts/            # React Contexts
+├── contexts/            # React Contexts (4)
 │   ├── AuthContext.tsx
 │   ├── ThemeContext.tsx
-│   └── SwipeContext.tsx
+│   ├── SwipeContext.tsx
+│   └── SavingTasksContext.tsx
 │
 ├── types/               # TypeScript types/interfaces
 │   └── index.ts
 │
 └── integrations/        # Integrações externas
     └── supabase/
-        ├── client.ts    # Cliente Supabase (auto-gerado)
-        └── types.ts     # Tipos do banco (auto-gerado)
+        ├── client.ts    # (auto-gerado)
+        └── types.ts     # (auto-gerado)
 
-e2e/                     # Testes E2E com Playwright
-├── auth.spec.ts         # Testes de autenticação
-├── tasks.spec.ts        # Testes de tarefas
-├── kanban.spec.ts       # Testes do Kanban
-├── notes.spec.ts        # Testes de notas
-└── pomodoro.spec.ts     # Testes do Pomodoro
+e2e/                     # Testes E2E com Playwright (5)
+├── auth.spec.ts
+├── tasks.spec.ts
+├── kanban.spec.ts
+├── notes.spec.ts
+└── pomodoro.spec.ts
 
 supabase/
-├── functions/           # Edge Functions
-│   ├── send-push/
+├── functions/           # Edge Functions (9)
+│   ├── cleanup-old-logs/
 │   ├── daily-assistant/
+│   ├── delete-account/
+│   ├── format-note/
+│   ├── health-check/
 │   ├── productivity-insights/
-│   └── [outras funções]
-└── config.toml          # Configuração Supabase (auto-gerado)
+│   ├── reset-daily-stats/
+│   ├── reset-recurring-tasks/
+│   └── send-onesignal/
+├── migrations/          # Migrações SQL
+└── config.toml          # (auto-gerado)
 
 .github/
 └── workflows/
     └── test.yml         # CI/CD para testes
+
+public/
+├── manifest.json        # PWA manifest
+├── sw-push.js          # Service worker push
+├── OneSignalSDKWorker.js
+├── offline.html
+└── pwa-icon.png
 ```
 
 ---
@@ -121,24 +220,24 @@ supabase/
 ```
 src/__tests__/
 ├── components/           # Testes de componentes React
-│   ├── Auth.test.tsx
-│   ├── TaskCard.test.tsx
-│   ├── TaskModal.test.tsx
-│   └── KanbanBoard.test.tsx
+│   ├── Auth.test.tsx          # Login, registro, validações
+│   ├── TaskCard.test.tsx      # Renderização, interações
+│   ├── TaskModal.test.tsx     # Criação, edição de tarefas
+│   └── KanbanBoard.test.tsx   # Board, colunas, drag & drop
 ├── hooks/                # Testes de custom hooks
-│   ├── useTasks.test.ts
-│   ├── useCategories.test.ts
-│   ├── useColumns.test.ts
-│   ├── useSettings.test.ts
-│   ├── useNotes.test.ts
-│   ├── usePomodoro.test.ts
-│   └── useRateLimiter.test.ts
+│   ├── useTasks.test.ts       # CRUD, filtros, ordenação
+│   ├── useCategories.test.ts  # Categorias/projetos
+│   ├── useColumns.test.ts     # Colunas do Kanban
+│   ├── useSettings.test.ts    # Configurações do usuário
+│   ├── useNotes.test.ts       # Notas e cadernos
+│   ├── usePomodoro.test.ts    # Timer e sessões
+│   └── useRateLimiter.test.ts # Rate limiting
 ├── lib/                  # Testes de utilitários
-│   ├── dateUtils.test.ts
-│   ├── taskFilters.test.ts
-│   └── validations.test.ts
+│   ├── dateUtils.test.ts      # Formatação de datas
+│   ├── taskFilters.test.ts    # Filtros centralizados
+│   └── validations.test.ts    # Validações de input
 ├── contexts/             # Testes de contextos
-│   └── AuthContext.test.tsx
+│   └── AuthContext.test.tsx   # Autenticação
 └── setup.ts              # Configuração global
 
 e2e/                      # Testes E2E com Playwright
@@ -242,7 +341,7 @@ Triggers: `push` e `pull_request` para branches `main` e `develop`.
 | Contextos | PascalCase com sufixo `Context` | `AuthContext.tsx` |
 | Páginas | PascalCase | `Dashboard.tsx`, `Notes.tsx` |
 | Tipos | PascalCase | `Task`, `Column`, `AppSettings` |
-| Edge Functions | kebab-case | `send-push`, `daily-assistant` |
+| Edge Functions | kebab-case | `send-onesignal`, `daily-assistant` |
 | Testes | mesmo nome + `.test.ts(x)` | `useTasks.test.ts` |
 
 ### Código
@@ -276,8 +375,9 @@ const selectedTasks = tasks.filter(...);
 
 ```typescript
 // 1. React e bibliotecas externas
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { format } from "date-fns";
+import { motion } from "framer-motion";
 
 // 2. Componentes UI
 import { Button } from "@/components/ui/button";
@@ -287,11 +387,14 @@ import { Card } from "@/components/ui/card";
 import { useTasks } from "@/hooks/tasks/useTasks";
 import { useToast } from "@/hooks/ui/useToast";
 
-// 4. Utilitários e tipos
+// 4. Contextos
+import { useAuth } from "@/contexts/AuthContext";
+
+// 5. Utilitários e tipos
 import { cn } from "@/lib/utils";
 import { Task } from "@/types";
 
-// 5. Constantes e assets
+// 6. Constantes e assets
 import { RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 ```
 
@@ -328,6 +431,9 @@ import { RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
   isActive && "active-class",
   variant === "compact" && "compact-class"
 )}>
+
+// ✅ Use tokens de gradiente
+<div className="bg-gradient-to-br from-primary/20 to-primary/5">
 ```
 
 ### Componentes UI (shadcn/ui)
@@ -430,7 +536,7 @@ prodLogger.warn("Important warning:", message);
 
 ### Code Splitting
 
-O projeto utiliza `React.lazy()` para carregamento sob demanda das páginas:
+O projeto utiliza `React.lazy()` para carregamento sob demanda:
 
 ```typescript
 // ✅ Páginas lazy-loaded
@@ -457,7 +563,6 @@ Para listas com mais de 50 itens, utilizamos `@tanstack/react-virtual`:
 // src/components/kanban/VirtualizedTaskList.tsx
 const VIRTUALIZATION_THRESHOLD = 50;
 
-// Altura estimada baseada no modo de densidade
 const getEstimatedItemSize = (densityMode: string) => {
   switch (densityMode) {
     case "ultra-compact": return 40;
@@ -470,16 +575,16 @@ const getEstimatedItemSize = (densityMode: string) => {
 ### Memoização
 
 ```typescript
-// ✅ Componentes memoizados com React.memo
+// ✅ Componentes memoizados
 export const KanbanDesktopView = memo(function KanbanDesktopView(props) { ... });
 export const DroppableColumn = memo(function DroppableColumn(props) { ... });
 
-// ✅ Handlers memoizados com useCallback
+// ✅ Handlers memoizados
 const handleSaveTask = useCallback(async (taskData) => {
   // ...
 }, [dependencies]);
 
-// ✅ Valores derivados memoizados com useMemo
+// ✅ Valores derivados memoizados
 const activeTask = useMemo(
   () => activeId ? tasks.find((t) => t.id === activeId) : null,
   [activeId, tasks]
@@ -501,7 +606,6 @@ const activeTask = useMemo(
 
 ```sql
 -- ✅ Padrão de migração
--- Criar tabela
 CREATE TABLE public.example (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL,
@@ -517,7 +621,42 @@ ALTER TABLE public.example ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own data" 
 ON public.example FOR SELECT 
 USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own data" 
+ON public.example FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own data" 
+ON public.example FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own data" 
+ON public.example FOR DELETE 
+USING (auth.uid() = user_id);
 ```
+
+### Tabelas do Projeto (16+)
+
+| Tabela | Descrição |
+|--------|-----------|
+| `tasks` | Tarefas do Kanban |
+| `columns` | Colunas do Kanban |
+| `categories` | Categorias/projetos |
+| `notes` | Notas |
+| `notebooks` | Cadernos de notas |
+| `tags` | Tags |
+| `pomodoro_sessions` | Sessões Pomodoro |
+| `pomodoro_templates` | Templates de Pomodoro |
+| `user_stats` | Estatísticas/gamificação |
+| `user_settings` | Configurações |
+| `profiles` | Perfis de usuário |
+| `activity_log` | Log de atividades |
+| `audit_logs` | Logs de auditoria |
+| `task_history` | Histórico de tarefas |
+| `push_subscriptions` | Subscriptions push |
+| `push_logs` | Logs de push |
+| `trash` | Lixeira (soft delete) |
+| `project_templates` | Templates de projetos |
 
 ---
 
@@ -555,7 +694,7 @@ USING (auth.uid() = user_id);
 ### Commits
 
 ```bash
-# ✅ Formato recomendado
+# ✅ Formato recomendado (Conventional Commits)
 feat: adiciona filtro por data de vencimento
 fix: corrige bug no drag and drop mobile
 refactor: reorganiza estrutura de hooks
@@ -563,6 +702,7 @@ docs: atualiza ARCHITECTURE.md
 style: ajusta espaçamento do TaskCard
 perf: adiciona virtualização para listas longas
 test: adiciona testes para useTasks hook
+chore: atualiza dependências
 ```
 
 ---
@@ -573,7 +713,14 @@ test: adiciona testes para useTasks hook
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 - [Supabase Docs](https://supabase.com/docs)
-- [React Query](https://tanstack.com/query/latest)
+- [TanStack Query](https://tanstack.com/query/latest)
 - [TanStack Virtual](https://tanstack.com/virtual/latest)
+- [TipTap Editor](https://tiptap.dev/)
+- [Framer Motion](https://www.framer.com/motion/)
 - [Vitest](https://vitest.dev/)
 - [Playwright](https://playwright.dev/)
+- [date-fns](https://date-fns.org/)
+
+---
+
+*Última atualização: 08 de Janeiro de 2026*
