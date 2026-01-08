@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.send-push]
 verify_jwt = false
 
+[functions.send-onesignal]
+verify_jwt = false
+
 [functions.reset-daily-stats]
 verify_jwt = false
 

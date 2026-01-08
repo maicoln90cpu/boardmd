@@ -4,6 +4,7 @@ import { PushNotificationsSettings } from "@/components/PushNotificationsSetting
 import { PushNotificationDiagnostics } from "@/components/PushNotificationDiagnostics";
 import { PushNotificationMonitor } from "@/components/dashboard/PushNotificationMonitor";
 import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
+import { OneSignalSettings } from "@/components/OneSignalSettings";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -34,13 +35,18 @@ export default function NotificationsDashboard() {
             </p>
           </div>
 
-          <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
-              <TabsTrigger value="settings">Configurações</TabsTrigger>
+          <Tabs defaultValue="onesignal" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+              <TabsTrigger value="onesignal">OneSignal</TabsTrigger>
+              <TabsTrigger value="settings">VAPID (Legado)</TabsTrigger>
               <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="monitor">Monitor</TabsTrigger>
               <TabsTrigger value="diagnostics">Diagnóstico</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="onesignal" className="space-y-4">
+              <OneSignalSettings />
+            </TabsContent>
 
             <TabsContent value="settings" className="space-y-4">
               <PushNotificationsSettings />
