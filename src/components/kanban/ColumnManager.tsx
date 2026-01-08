@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -114,9 +115,14 @@ function SortableColumnItem({
   };
 
   return (
-    <div
+    <motion.div
       ref={setNodeRef}
       style={style}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      layout
       className="flex flex-col gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
     >
       <div className="flex items-center justify-between">
@@ -221,7 +227,7 @@ function SortableColumnItem({
           <span className="text-muted-foreground">Kanban Projetos</span>
         </label>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -368,30 +374,32 @@ export function ColumnManager({
                 items={orderedColumns.map((c) => c.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="space-y-2">
-                  {orderedColumns.map((column, index) => {
-                    const taskCount = getTaskCount(column.id);
-                    const visible = isVisible(column.id);
-                    const isOriginal = index < 3;
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <div className="space-y-2">
+                    {orderedColumns.map((column, index) => {
+                      const taskCount = getTaskCount(column.id);
+                      const visible = isVisible(column.id);
+                      const isOriginal = index < 3;
 
-                    return (
-                      <SortableColumnItem
-                        key={column.id}
-                        column={column}
-                        index={index}
-                        visible={visible}
-                        taskCount={taskCount}
-                        isOriginal={isOriginal}
-                        onToggleVisibility={() => onToggleVisibility(column.id)}
-                        onDelete={() => setDeleteTarget(column.id)}
-                        onRename={(newName) => onRenameColumn(column.id, newName)}
-                        onToggleKanbanVisibility={(kanbanType, visible) => 
-                          onToggleKanbanVisibility(column.id, kanbanType, visible)
-                        }
-                      />
-                    );
-                  })}
-                </div>
+                      return (
+                        <SortableColumnItem
+                          key={column.id}
+                          column={column}
+                          index={index}
+                          visible={visible}
+                          taskCount={taskCount}
+                          isOriginal={isOriginal}
+                          onToggleVisibility={() => onToggleVisibility(column.id)}
+                          onDelete={() => setDeleteTarget(column.id)}
+                          onRename={(newName) => onRenameColumn(column.id, newName)}
+                          onToggleKanbanVisibility={(kanbanType, visible) => 
+                            onToggleKanbanVisibility(column.id, kanbanType, visible)
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                </AnimatePresence>
               </SortableContext>
             </DndContext>
           </ScrollArea>
