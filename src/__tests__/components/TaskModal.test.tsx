@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+// Helper para aguardar condição
+const waitForCondition = async (callback: () => boolean, timeout = 1000) => {
+  const start = Date.now();
+  while (!callback() && Date.now() - start < timeout) {
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+};
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -104,7 +112,7 @@ vi.mock('sonner', () => ({
 }));
 
 // Import after mocks
-import TaskModal from '@/components/TaskModal';
+import { TaskModal } from '@/components/TaskModal';
 
 describe('TaskModal', () => {
   const queryClient = new QueryClient({
@@ -139,17 +147,17 @@ describe('TaskModal', () => {
 
   describe('Renderização', () => {
     it('deve renderizar o modal quando open=true', () => {
-      renderModal();
-      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+      const { getByText } = renderModal();
+      expect(getByText('Nova Tarefa')).toBeInTheDocument();
     });
 
     it('não deve renderizar quando open=false', () => {
-      renderModal({ open: false });
-      expect(screen.queryByText('Nova Tarefa')).not.toBeInTheDocument();
+      const { queryByText } = renderModal({ open: false });
+      expect(queryByText('Nova Tarefa')).not.toBeInTheDocument();
     });
 
     it('deve exibir título "Editar Tarefa" quando editando', () => {
-      renderModal({
+      const { getByText } = renderModal({
         task: {
           id: 'task-1',
           title: 'Tarefa existente',
@@ -157,36 +165,36 @@ describe('TaskModal', () => {
           category_id: 'cat-diario',
         },
       });
-      expect(screen.getByText('Editar Tarefa')).toBeInTheDocument();
+      expect(getByText('Editar Tarefa')).toBeInTheDocument();
     });
   });
 
   describe('Campos do formulário', () => {
     it('deve ter campo de título', () => {
-      renderModal();
-      expect(screen.getByPlaceholderText(/título/i)).toBeInTheDocument();
+      const { getByPlaceholderText } = renderModal();
+      expect(getByPlaceholderText(/título/i)).toBeInTheDocument();
     });
 
     it('deve ter campo de descrição', () => {
-      renderModal();
-      expect(screen.getByPlaceholderText(/descrição/i)).toBeInTheDocument();
+      const { getByPlaceholderText } = renderModal();
+      expect(getByPlaceholderText(/descrição/i)).toBeInTheDocument();
     });
 
     it('deve ter seletor de prioridade', () => {
-      renderModal();
-      expect(screen.getByText(/prioridade/i)).toBeInTheDocument();
+      const { getByText } = renderModal();
+      expect(getByText(/prioridade/i)).toBeInTheDocument();
     });
 
     it('deve ter botões de salvar e cancelar', () => {
-      renderModal();
-      expect(screen.getByText(/salvar/i)).toBeInTheDocument();
-      expect(screen.getByText(/cancelar/i)).toBeInTheDocument();
+      const { getByText } = renderModal();
+      expect(getByText(/salvar/i)).toBeInTheDocument();
+      expect(getByText(/cancelar/i)).toBeInTheDocument();
     });
   });
 
   describe('Preenchimento de dados', () => {
     it('deve preencher título da tarefa ao editar', () => {
-      renderModal({
+      const { getByPlaceholderText } = renderModal({
         task: {
           id: 'task-1',
           title: 'Minha Tarefa',
@@ -195,12 +203,12 @@ describe('TaskModal', () => {
         },
       });
       
-      const titleInput = screen.getByPlaceholderText(/título/i);
+      const titleInput = getByPlaceholderText(/título/i);
       expect(titleInput).toHaveValue('Minha Tarefa');
     });
 
     it('deve preencher descrição da tarefa ao editar', () => {
-      renderModal({
+      const { getByPlaceholderText } = renderModal({
         task: {
           id: 'task-1',
           title: 'Tarefa',
@@ -210,7 +218,7 @@ describe('TaskModal', () => {
         },
       });
       
-      const descInput = screen.getByPlaceholderText(/descrição/i);
+      const descInput = getByPlaceholderText(/descrição/i);
       expect(descInput).toHaveValue('Descrição da tarefa');
     });
   });
@@ -218,18 +226,19 @@ describe('TaskModal', () => {
   describe('Interações', () => {
     it('deve chamar onOpenChange ao cancelar', async () => {
       const onOpenChange = vi.fn();
-      renderModal({ onOpenChange });
+      const { getByText } = renderModal({ onOpenChange });
 
-      fireEvent.click(screen.getByText(/cancelar/i));
+      const cancelButton = getByText(/cancelar/i);
+      cancelButton.click();
 
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
 
     it('deve permitir digitar no campo de título', async () => {
       const user = userEvent.setup();
-      renderModal();
+      const { getByPlaceholderText } = renderModal();
 
-      const titleInput = screen.getByPlaceholderText(/título/i);
+      const titleInput = getByPlaceholderText(/título/i);
       await user.clear(titleInput);
       await user.type(titleInput, 'Nova tarefa teste');
 
@@ -239,13 +248,13 @@ describe('TaskModal', () => {
     it('deve chamar onSave ao salvar tarefa válida', async () => {
       const user = userEvent.setup();
       const onSave = vi.fn();
-      renderModal({ onSave });
+      const { getByPlaceholderText, getByText } = renderModal({ onSave });
 
-      const titleInput = screen.getByPlaceholderText(/título/i);
+      const titleInput = getByPlaceholderText(/título/i);
       await user.type(titleInput, 'Tarefa de teste');
 
-      const saveButton = screen.getByText(/salvar/i);
-      fireEvent.click(saveButton);
+      const saveButton = getByText(/salvar/i);
+      saveButton.click();
 
       await waitFor(() => {
         expect(onSave).toHaveBeenCalled();
@@ -256,10 +265,10 @@ describe('TaskModal', () => {
   describe('Validações', () => {
     it('não deve salvar com título vazio', async () => {
       const onSave = vi.fn();
-      renderModal({ onSave });
+      const { getByText } = renderModal({ onSave });
 
-      const saveButton = screen.getByText(/salvar/i);
-      fireEvent.click(saveButton);
+      const saveButton = getByText(/salvar/i);
+      saveButton.click();
 
       // onSave não deve ser chamado
       expect(onSave).not.toHaveBeenCalled();
@@ -268,22 +277,22 @@ describe('TaskModal', () => {
 
   describe('Props especiais', () => {
     it('deve usar categoryId padrão quando fornecido', () => {
-      renderModal({ categoryId: 'cat-projetos' });
+      const { getByText } = renderModal({ categoryId: 'cat-projetos' });
       // O componente deve estar configurado com a categoria
-      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+      expect(getByText('Nova Tarefa')).toBeInTheDocument();
     });
 
     it('deve usar defaultDueDate quando fornecido', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       
-      renderModal({ defaultDueDate: tomorrow.toISOString().split('T')[0] });
-      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+      const { getByText } = renderModal({ defaultDueDate: tomorrow.toISOString().split('T')[0] });
+      expect(getByText('Nova Tarefa')).toBeInTheDocument();
     });
 
     it('deve indicar isDailyKanban quando true', () => {
-      renderModal({ isDailyKanban: true });
-      expect(screen.getByText('Nova Tarefa')).toBeInTheDocument();
+      const { getByText } = renderModal({ isDailyKanban: true });
+      expect(getByText('Nova Tarefa')).toBeInTheDocument();
     });
   });
 });
