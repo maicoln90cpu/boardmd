@@ -49,10 +49,21 @@ export const oneSignalUtils = {
     return initPromise !== null;
   },
 
-  // Solicitar permissão de notificação
+  // Solicitar permissão de notificação E fazer opt-in
   async requestPermission(): Promise<boolean> {
     try {
-      await OneSignal.Slidedown.promptPush();
+      // 1. Solicitar permissão nativa do navegador
+      const permission = await Notification.requestPermission();
+      
+      if (permission !== 'granted') {
+        console.warn('[OneSignal] Permission denied by user');
+        return false;
+      }
+      
+      // 2. Fazer opt-in no OneSignal (CRÍTICO!)
+      await OneSignal.User.PushSubscription.optIn();
+      console.log('[OneSignal] Permission granted and opted in');
+      
       return true;
     } catch (error) {
       console.error('[OneSignal] Permission request error:', error);
