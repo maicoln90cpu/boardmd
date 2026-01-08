@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSettings } from "@/hooks/data/useSettings";
 import { logger } from "@/lib/logger";
 
 interface IntegrityIssue {
@@ -32,10 +32,16 @@ interface IntegrityReport {
 
 export function DataIntegrityMonitor() {
   const [loading, setLoading] = useState(false);
-  const [autoMonitor, setAutoMonitor] = useLocalStorage<boolean>("data-integrity-auto-monitor", false);
+  const { settings, updateSettings, saveSettings } = useSettings();
+  const autoMonitor = settings.interface.autoDataIntegrityMonitor;
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [report, setReport] = useState<IntegrityReport | null>(null);
   const [fixing, setFixing] = useState(false);
+
+  const handleAutoMonitorChange = async (value: boolean) => {
+    updateSettings({ interface: { ...settings.interface, autoDataIntegrityMonitor: value } });
+    await saveSettings();
+  };
 
   const runIntegrityCheck = useCallback(async () => {
     setLoading(true);
@@ -296,7 +302,7 @@ export function DataIntegrityMonitor() {
                 <Switch 
                   id="auto-monitor" 
                   checked={autoMonitor} 
-                  onCheckedChange={setAutoMonitor} 
+                  onCheckedChange={handleAutoMonitorChange} 
                 />
                 <Label htmlFor="auto-monitor" className="text-sm">Auto (5min)</Label>
               </div>

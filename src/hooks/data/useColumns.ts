@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { columnSchema } from "@/lib/validations";
 import { z } from "zod";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useSettings } from "@/hooks/data/useSettings";
 
 export interface Column {
   id: string;
@@ -23,7 +23,16 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [hiddenColumns, setHiddenColumns] = useLocalStorage<string[]>("kanban-hidden-columns", []);
+  const { settings, updateSettings, saveSettings } = useSettings();
+  
+  // Colunas ocultas agora vêm do settings (banco de dados)
+  const hiddenColumns = settings.hiddenColumns || [];
+  
+  const setHiddenColumns = useCallback(async (updater: string[] | ((prev: string[]) => string[])) => {
+    const newValue = typeof updater === 'function' ? updater(hiddenColumns) : updater;
+    updateSettings({ hiddenColumns: newValue });
+    await saveSettings();
+  }, [hiddenColumns, updateSettings, saveSettings]);
 
   useEffect(() => {
     fetchColumns();
@@ -185,17 +194,14 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     }
   };
 
-  const toggleColumnVisibility = (columnId: string) => {
-    setHiddenColumns((prev) => {
-      if (prev.includes(columnId)) {
-        return prev.filter((id) => id !== columnId);
-      } else {
-        return [...prev, columnId];
-      }
-    });
-  };
+  const toggleColumnVisibility = useCallback(async (columnId: string) => {
+    const newHidden = hiddenColumns.includes(columnId)
+      ? hiddenColumns.filter((id) => id !== columnId)
+      : [...hiddenColumns, columnId];
+    await setHiddenColumns(newHidden);
+  }, [hiddenColumns, setHiddenColumns]);
 
-  const getVisibleColumns = (kanbanType?: 'daily' | 'projects') => {
+  const getVisibleColumns = useCallback((kanbanType?: 'daily' | 'projects') => {
     let filtered = columns.filter((col) => !hiddenColumns.includes(col.id));
     
     // Filtrar baseado no tipo de kanban se especificado
@@ -206,9 +212,9 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     }
     
     return filtered;
-  };
+  }, [columns, hiddenColumns]);
 
-  const resetToDefaultView = () => {
+  const resetToDefaultView = useCallback(async () => {
     if (columns.length < 3) {
       toast({
         title: "Não é possível resetar",
@@ -220,16 +226,15 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     
     // Pegar primeiras 3 colunas por position
     const sortedColumns = [...columns].sort((a, b) => a.position - b.position);
-    const defaultColumns = sortedColumns.slice(0, 3).map((c) => c.id);
     const columnsToHide = sortedColumns.slice(3).map((c) => c.id);
     
-    setHiddenColumns(columnsToHide);
+    await setHiddenColumns(columnsToHide);
     
     toast({ 
       title: "Visão resetada", 
       description: `Mostrando apenas as 3 primeiras colunas: ${sortedColumns.slice(0, 3).map(c => c.name).join(", ")}` 
     });
-  };
+  }, [columns, setHiddenColumns, toast]);
 
   const renameColumn = async (columnId: string, newName: string) => {
     try {
