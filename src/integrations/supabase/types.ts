@@ -176,6 +176,7 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean
+          linked_task_id: string | null
           notebook_id: string | null
           title: string
           updated_at: string
@@ -187,6 +188,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          linked_task_id?: string | null
           notebook_id?: string | null
           title?: string
           updated_at?: string
@@ -198,12 +200,20 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          linked_task_id?: string | null
           notebook_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notes_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notes_notebook_id_fkey"
             columns: ["notebook_id"]
@@ -495,6 +505,7 @@ export type Database = {
           id: string
           is_completed: boolean | null
           is_favorite: boolean
+          linked_note_id: string | null
           mirror_task_id: string | null
           position: number
           priority: string | null
@@ -514,6 +525,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           is_favorite?: boolean
+          linked_note_id?: string | null
           mirror_task_id?: string | null
           position?: number
           priority?: string | null
@@ -533,6 +545,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           is_favorite?: boolean
+          linked_note_id?: string | null
           mirror_task_id?: string | null
           position?: number
           priority?: string | null
@@ -556,6 +569,13 @@ export type Database = {
             columns: ["column_id"]
             isOneToOne: false
             referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_linked_note_id_fkey"
+            columns: ["linked_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
             referencedColumns: ["id"]
           },
           {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -23,6 +23,7 @@ import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RecurrenceRule } from "@/lib/recurrenceUtils";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface TaskModalProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const { categories } = useCategories();
   const { columns: allColumns } = useColumns();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
   const [title, setTitle] = useState("");
@@ -54,6 +56,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
   const [selectedKanbanType, setSelectedKanbanType] = useState<"daily" | "projects">("projects");
   const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
+  const [linkedNotes, setLinkedNotes] = useState<Array<{ id: string; title: string }>>([]);
   const { toast } = useToast();
 
   // Encontrar a categoria "Diário" para determinar tipo de Kanban
@@ -86,6 +89,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       }
       
       setTags(task.tags || []);
+      
+      // Buscar notas vinculadas à tarefa
+      const fetchLinkedNotes = async () => {
+        const { data } = await supabase
+          .from("notes")
+          .select("id, title")
+          .eq("linked_task_id", task.id);
+        setLinkedNotes(data || []);
+      };
+      fetchLinkedNotes();
     } else {
       setTitle("");
       setDescription("");
@@ -93,6 +106,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
       setSubtasks([]);
       setRecurrence(null);
       setSelectedColumn(columnId);
+      setLinkedNotes([]);
       
       // Determinar tipo de Kanban baseado no viewMode ou categoryId
       if (isDailyKanban || (dailyCategory && categoryId === dailyCategory.id)) {
@@ -674,6 +688,33 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
             
             <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
+            
+            {/* Notas vinculadas (apenas para tarefas existentes) */}
+            {task && linkedNotes.length > 0 && (
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Notas Vinculadas
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {linkedNotes.map((noteItem) => (
+                    <Button
+                      key={noteItem.id}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-8"
+                      onClick={() => {
+                        onOpenChange(false);
+                        navigate(`/notes?note=${noteItem.id}`);
+                      }}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      {noteItem.title || "Sem título"}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
 

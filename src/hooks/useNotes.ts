@@ -17,6 +17,7 @@ export interface Note {
   updated_at: string;
   is_pinned: boolean;
   color: string | null;
+  linked_task_id: string | null;
 }
 
 export function useNotes() {
