@@ -516,6 +516,9 @@ export function NoteEditor({
           .update({ linked_note_id: note.id } as any)
           .eq("id", newTaskId);
       }
+      
+      // Disparar evento para atualizar TaskCards imediatamente
+      window.dispatchEvent(new CustomEvent('task-updated'));
     }
     
     hasUnsavedChanges.current = false;
