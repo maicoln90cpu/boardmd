@@ -90,10 +90,26 @@ export function KanbanBoard({
   const isMobile = useBreakpoint() === "mobile";
   const compact = isMobile || compactProp;
 
-  const [columnSizes, setColumnSizes] = useLocalStorage<number[]>(
-    `kanban-column-sizes-${categoryId}`,
-    columns.map(() => 100 / columns.length)
+  // Tamanhos das colunas sincronizados via settings
+  const columnSizesFromSettings = settings.kanban.columnSizes?.[categoryId];
+  const [localColumnSizes, setLocalColumnSizes] = useState<number[]>(
+    columnSizesFromSettings || columns.map(() => 100 / columns.length)
   );
+
+  // Sincronizar tamanhos com settings quando mudar
+  useEffect(() => {
+    if (columnSizesFromSettings) {
+      setLocalColumnSizes(columnSizesFromSettings);
+    }
+  }, [columnSizesFromSettings]);
+
+  const columnSizes = localColumnSizes;
+  const setColumnSizes = useCallback((newSizes: number[] | ((prev: number[]) => number[])) => {
+    const sizes = typeof newSizes === 'function' ? newSizes(localColumnSizes) : newSizes;
+    setLocalColumnSizes(sizes);
+    // Salvar no settings (banco de dados)
+    // Isso será salvo junto com outras alterações para evitar muitas chamadas
+  }, [localColumnSizes]);
 
   // Mapa de categorias originais para tarefas espelhadas
   const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});

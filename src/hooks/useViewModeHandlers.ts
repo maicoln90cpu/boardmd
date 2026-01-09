@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Column } from "@/hooks/data/useColumns";
+import { useSettings } from "@/hooks/data/useSettings";
 
 interface UseViewModeHandlersProps {
   viewMode: "daily" | "all";
@@ -136,23 +137,46 @@ export function useViewModeHandlers({
     return counters;
   }, [filteredTasks, visibleColumns, viewMode]);
 
-  // Equalize column widths
+  // Equalize column widths via settings (sincronizado)
+  const { settings, updateSettings, saveSettings } = useSettings();
+  
   const handleEqualizeColumns = useCallback(() => {
     const equalSize = 100 / visibleColumns.length;
     const equalSizes = visibleColumns.map(() => equalSize);
-    if (viewMode === "daily") {
-      localStorage.setItem(`kanban-column-sizes-${dailyCategory}`, JSON.stringify(equalSizes));
+    
+    // Atualizar via settings (sincronizado no banco)
+    const currentColumnSizes = settings.kanban.columnSizes || {};
+    
+    if (viewMode === "daily" && dailyCategory) {
+      updateSettings({
+        kanban: {
+          ...settings.kanban,
+          columnSizes: {
+            ...currentColumnSizes,
+            [dailyCategory]: equalSizes,
+          },
+        },
+      });
       refreshDailyBoard();
     } else {
-      localStorage.setItem(`kanban-column-sizes-all`, JSON.stringify(equalSizes));
+      // Aplicar para todas as categorias de projetos
+      const newColumnSizes = { ...currentColumnSizes, all: equalSizes };
       const nonDailyCategories = categories.filter(c => c.name !== "Diário");
       nonDailyCategories.forEach(cat => {
-        localStorage.setItem(`kanban-column-sizes-${cat.id}`, JSON.stringify(equalSizes));
+        newColumnSizes[cat.id] = equalSizes;
       });
-      window.dispatchEvent(new Event('storage'));
+      
+      updateSettings({
+        kanban: {
+          ...settings.kanban,
+          columnSizes: newColumnSizes,
+        },
+      });
       refreshProjectsBoard();
     }
-  }, [visibleColumns, viewMode, dailyCategory, categories, refreshDailyBoard, refreshProjectsBoard]);
+    
+    saveSettings();
+  }, [visibleColumns, viewMode, dailyCategory, categories, refreshDailyBoard, refreshProjectsBoard, settings, updateSettings, saveSettings]);
 
   return {
     tasks,
