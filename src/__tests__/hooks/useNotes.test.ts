@@ -81,6 +81,7 @@ describe('useNotes', () => {
       updated_at: new Date().toISOString(),
       is_pinned: true,
       color: '#ffeb3b',
+      linked_task_id: null,
     },
     {
       id: 'note-2',
@@ -92,6 +93,7 @@ describe('useNotes', () => {
       updated_at: new Date().toISOString(),
       is_pinned: false,
       color: null,
+      linked_task_id: null,
     },
   ];
 

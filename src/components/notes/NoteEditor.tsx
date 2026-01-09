@@ -56,8 +56,9 @@ export function NoteEditor({
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
-  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(note.linked_task_id || null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const linkedTaskIdRef = useRef(linkedTaskId);
 
   // Word and character counter
   const wordCount = useMemo(() => {
@@ -308,27 +309,29 @@ export function NoteEditor({
   useEffect(() => {
     setTitle(note.title);
     setColor(note.color || null);
+    setLinkedTaskId(note.linked_task_id || null);
     if (editor && note.content !== editor.getHTML()) {
       editor.commands.setContent(note.content || "");
     }
     currentNoteRef.current = note;
     hasUnsavedChanges.current = false;
-  }, [note.id, note.title, note.content, note.color, editor]);
+  }, [note.id, note.title, note.content, note.color, note.linked_task_id, editor]);
 
   // Sincronizar refs com states atuais
   useEffect(() => {
     titleRef.current = title;
     contentRef.current = content;
     colorRef.current = color;
+    linkedTaskIdRef.current = linkedTaskId;
     onUpdateRef.current = onUpdate;
-  }, [title, content, color, onUpdate]);
+  }, [title, content, color, linkedTaskId, onUpdate]);
 
   // Rastrear mudanças para auto-save
   useEffect(() => {
-    if (title !== note.title || content !== note.content || color !== note.color) {
+    if (title !== note.title || content !== note.content || color !== note.color || linkedTaskId !== note.linked_task_id) {
       hasUnsavedChanges.current = true;
     }
-  }, [title, content, color, note.title, note.content, note.color]);
+  }, [title, content, color, linkedTaskId, note.title, note.content, note.color, note.linked_task_id]);
 
   // Função de auto-save (silenciosa) - usa refs para garantir valores mais recentes
   const autoSave = () => {
@@ -336,11 +339,13 @@ export function NoteEditor({
     const currentTitle = titleRef.current;
     const currentContent = contentRef.current;
     const currentColor = colorRef.current;
+    const currentLinkedTaskId = linkedTaskIdRef.current;
     if (!currentTitle.trim() && !currentContent.trim()) return;
     onUpdateRef.current(currentNoteRef.current.id, {
       title: currentTitle.trim() || "Sem título",
       content: currentContent.trim(),
-      color: currentColor
+      color: currentColor,
+      linked_task_id: currentLinkedTaskId
     });
     hasUnsavedChanges.current = false;
   };
@@ -377,73 +382,63 @@ export function NoteEditor({
   }, []);
 
   // Handler para cliques em links âncora do TOC (scroll interno)
-  useEffect(() => {
-    if (!editor) return;
-
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const link = target.closest('a');
+  const handleEditorClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const link = target.closest('a');
+    
+    if (!link || !editor) return;
+    
+    const href = link.getAttribute('href');
+    
+    // Se é um link âncora interno (começa com #)
+    if (href && href.startsWith('#')) {
+      e.preventDefault();
+      e.stopPropagation();
       
-      if (link) {
-        const href = link.getAttribute('href');
+      const targetId = href.slice(1); // Remove o #
+      const editorElement = editor.view.dom;
+      
+      // Busca primária: por ID exato
+      let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+      
+      // Fallback: buscar por data-id (caso TipTap tenha transformado)
+      if (!targetElement) {
+        targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+      }
+      
+      // Fallback 2: buscar heading com texto similar ao ID
+      if (!targetElement) {
+        const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
         
-        // Se é um link âncora interno (começa com #)
-        if (href && href.startsWith('#')) {
-          event.preventDefault();
-          event.stopPropagation();
-          
-          const targetId = href.slice(1); // Remove o #
-          const editorElement = editor.view.dom;
-          
-          // Busca primária: por ID exato
-          let targetElement = editorElement.querySelector(`[id="${targetId}"]`);
-          
-          // Fallback: buscar por data-id (caso TipTap tenha transformado)
-          if (!targetElement) {
-            targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+        for (const heading of headings) {
+          const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
+          // Match se o texto do heading contiver as palavras do ID ou vice-versa
+          if (headingText.includes(normalizedTargetId) || 
+              normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
+            targetElement = heading;
+            break;
           }
-          
-          // Fallback 2: buscar heading com texto similar ao ID
-          if (!targetElement) {
-            const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
-            const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ');
-            headings.forEach((heading) => {
-              const headingText = heading.textContent?.toLowerCase().trim() || '';
-              // Verifica se o ID corresponde ao texto do heading (ex: "secao-1" match "1. Título")
-              if (headingText.includes(normalizedTargetId) || normalizedTargetId.includes(headingText.split(' ').slice(0, 3).join(' '))) {
-                targetElement = heading;
-              }
-            });
-          }
-          
-          if (targetElement) {
-            targetElement.scrollIntoView({ 
-              behavior: 'smooth', 
-              block: 'start' 
-            });
-            
-            // Flash highlight visual para indicar onde está
-            targetElement.classList.add('toc-target-highlight');
-            setTimeout(() => {
-              targetElement?.classList.remove('toc-target-highlight');
-            }, 2000);
-          } else {
-            console.warn(`[TOC] Section not found: #${targetId}`);
-            toast.error("Seção não encontrada. Tente regenerar o índice.");
-          }
-          
-          return; // Não propagar o evento
         }
       }
-    };
-
-    const editorDom = editor.view.dom;
-    // Usar capture: true para interceptar antes do handler padrão do TipTap
-    editorDom.addEventListener('click', handleClick, { capture: true });
-    
-    return () => {
-      editorDom.removeEventListener('click', handleClick, { capture: true });
-    };
+      
+      if (targetElement) {
+        // Scroll suave para a seção
+        targetElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        
+        // Flash highlight visual para indicar onde está
+        targetElement.classList.add('toc-target-highlight');
+        setTimeout(() => {
+          targetElement?.classList.remove('toc-target-highlight');
+        }, 2000);
+      } else {
+        console.warn(`[TOC] Section not found: #${targetId}`);
+        toast.error("Seção não encontrada. Tente regenerar o índice.");
+      }
+    }
   }, [editor]);
 
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
@@ -453,11 +448,13 @@ export function NoteEditor({
         const currentTitle = titleRef.current;
         const currentContent = contentRef.current;
         const currentColor = colorRef.current;
+        const currentLinkedTaskId = linkedTaskIdRef.current;
         if (!currentTitle.trim() && !currentContent.trim()) return;
         onUpdateRef.current(currentNoteRef.current.id, {
           title: currentTitle.trim() || "Sem título",
           content: currentContent.trim(),
-          color: currentColor
+          color: currentColor,
+          linked_task_id: currentLinkedTaskId
         });
       }
     };
@@ -482,16 +479,28 @@ export function NoteEditor({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [title, content, color]);
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() && !content.trim()) {
       toast.error("Adicione um título ou conteúdo");
       return;
     }
+    
+    // Atualizar a nota com o linked_task_id
     onUpdate(note.id, {
       title: title.trim() || "Sem título",
       content: content.trim(),
-      color
+      color,
+      linked_task_id: linkedTaskId
     });
+    
+    // Se vinculou uma tarefa, atualizar a tarefa com o linked_note_id
+    if (linkedTaskId) {
+      await supabase
+        .from("tasks")
+        .update({ linked_note_id: note.id } as any)
+        .eq("id", linkedTaskId);
+    }
+    
     hasUnsavedChanges.current = false;
     toast.success("Nota salva!");
     setShowSavedIndicator(true);
@@ -692,7 +701,7 @@ export function NoteEditor({
           onInsertTaskBlock={handleInsertTaskBlock}
           onCreateTask={handleCreateTask}
         />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" onClickCapture={handleEditorClick}>
           <EditorContent 
             editor={editor} 
             className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:outline-none" 
