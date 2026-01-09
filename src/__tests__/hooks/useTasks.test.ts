@@ -109,6 +109,7 @@ describe('useTasks', () => {
       subtasks: null,
       recurrence_rule: null,
       mirror_task_id: null,
+      linked_note_id: null,
     },
     {
       id: 'task-2',
@@ -128,6 +129,7 @@ describe('useTasks', () => {
       subtasks: null,
       recurrence_rule: null,
       mirror_task_id: null,
+      linked_note_id: null,
     },
   ];
 
