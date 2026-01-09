@@ -682,7 +682,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      fix_note_task_integrity: {
+        Args: never
+        Returns: {
+          fixed_notes: number
+          fixed_tasks: number
+          issues_found: string[]
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
