@@ -384,6 +384,50 @@ export function NoteEditor({
     return () => window.removeEventListener('save-current-note', handleSaveEvent);
   }, []);
 
+  // Handler para hash na URL ao montar (ex: /notes#ferramentas)
+  useEffect(() => {
+    if (!editor) return;
+    
+    const hash = window.location.hash;
+    if (hash) {
+      // Remover o hash da URL sem navegar
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      
+      const targetId = hash.slice(1);
+      const editorElement = editor.view.dom;
+      
+      // Aguardar o editor renderizar
+      setTimeout(() => {
+        let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+        
+        if (!targetElement) {
+          targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+        }
+        
+        // Fallback: buscar heading por texto
+        if (!targetElement) {
+          const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
+          
+          for (const heading of headings) {
+            const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
+            if (headingText.includes(normalizedTargetId) || 
+                normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
+              targetElement = heading;
+              break;
+            }
+          }
+        }
+        
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          targetElement.classList.add('toc-target-highlight');
+          setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
+        }
+      }, 200);
+    }
+  }, [editor, note.id]);
+
   // Handler para cliques em links âncora do TOC (scroll interno)
   const handleEditorClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -398,13 +442,13 @@ export function NoteEditor({
       e.preventDefault();
       e.stopPropagation();
       
-      const targetId = href.slice(1); // Remove o #
+      const targetId = href.slice(1);
       const editorElement = editor.view.dom;
       
       // Busca primária: por ID exato
       let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
       
-      // Fallback: buscar por data-id (caso TipTap tenha transformado)
+      // Fallback: buscar por data-id
       if (!targetElement) {
         targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
       }
@@ -416,7 +460,6 @@ export function NoteEditor({
         
         for (const heading of headings) {
           const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
-          // Match se o texto do heading contiver as palavras do ID ou vice-versa
           if (headingText.includes(normalizedTargetId) || 
               normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
             targetElement = heading;
@@ -426,21 +469,21 @@ export function NoteEditor({
       }
       
       if (targetElement) {
-        // Scroll suave para a seção
-        targetElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
-        
-        // Flash highlight visual para indicar onde está
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         targetElement.classList.add('toc-target-highlight');
-        setTimeout(() => {
-          targetElement?.classList.remove('toc-target-highlight');
-        }, 2000);
+        setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
       } else {
         console.warn(`[TOC] Section not found: #${targetId}`);
         toast.error("Seção não encontrada. Tente regenerar o índice.");
       }
+      
+      return;
+    }
+    
+    // Links externos - abrir em nova aba
+    if (href && !href.startsWith('#')) {
+      e.preventDefault();
+      window.open(href, '_blank', 'noopener,noreferrer');
     }
   }, [editor]);
 

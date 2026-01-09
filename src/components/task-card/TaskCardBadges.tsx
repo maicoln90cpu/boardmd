@@ -237,7 +237,7 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
           onClick={(e) => {
             e.stopPropagation();
             if (linkedNoteId) {
-              navigate(`/notes?note=${linkedNoteId}`);
+              navigate(`/notes?noteId=${linkedNoteId}`);
             }
           }}
         >

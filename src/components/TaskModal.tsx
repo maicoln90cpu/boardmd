@@ -705,7 +705,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                         className="text-xs h-8"
                         onClick={() => {
                           onOpenChange(false);
-                          navigate(`/notes?note=${noteItem.id}`);
+                          navigate(`/notes?noteId=${noteItem.id}`);
                         }}
                       >
                         <FileText className="h-3 w-3 mr-1" />
