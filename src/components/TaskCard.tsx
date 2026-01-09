@@ -390,6 +390,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         showCategoryBadge={showCategoryBadge}
                         hasRecurrence={!!task.recurrence_rule}
                         hasLinkedNote={!!task.linked_note_id}
+                        linkedNoteId={task.linked_note_id}
                         densityMode={densityMode}
                         urgency={urgency}
                       />
