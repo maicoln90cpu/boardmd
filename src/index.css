@@ -590,6 +590,27 @@ All colors MUST be HSL.
   font-size: 1.25rem;
 }
 
+/* ===== Links gerais no editor ===== */
+.ProseMirror a:not(.toc-container a) {
+  color: hsl(220 90% 56%);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ProseMirror a:not(.toc-container a):hover {
+  color: hsl(220 90% 45%);
+  text-decoration: underline;
+}
+
+.dark .ProseMirror a:not(.toc-container a) {
+  color: hsl(220 90% 70%);
+}
+
+.dark .ProseMirror a:not(.toc-container a):hover {
+  color: hsl(220 90% 80%);
+}
+
 /* ===== TOC (Table of Contents) Styles ===== */
 .ProseMirror .toc-container {
   background: linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 100%);
@@ -605,6 +626,18 @@ All colors MUST be HSL.
   border-color: hsl(var(--border));
 }
 
+/* TOC header */
+.ProseMirror .toc-container > p:first-child {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 14px;
+  color: hsl(var(--foreground));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* TOC links - estilo azul clicável */
 .ProseMirror .toc-container a {
   color: hsl(220 90% 56%) !important;
   text-decoration: none !important;
@@ -614,6 +647,7 @@ All colors MUST be HSL.
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  position: relative;
 }
 
 .dark .ProseMirror .toc-container a {
@@ -622,15 +656,27 @@ All colors MUST be HSL.
 
 .ProseMirror .toc-container a:hover {
   text-decoration: underline !important;
-  opacity: 0.85;
+  color: hsl(220 90% 45%) !important;
+  transform: translateX(4px);
+}
+
+.dark .ProseMirror .toc-container a:hover {
+  color: hsl(220 90% 80%) !important;
 }
 
 .ProseMirror .toc-container a::before {
   content: "→";
   color: hsl(var(--muted-foreground));
   font-size: 12px;
+  transition: transform 0.2s ease;
 }
 
+.ProseMirror .toc-container a:hover::before {
+  transform: translateX(2px);
+  color: hsl(220 90% 56%);
+}
+
+/* TOC lists - reset base */
 .ProseMirror .toc-container ul {
   list-style: none !important;
   padding: 0 !important;
@@ -640,6 +686,55 @@ All colors MUST be HSL.
 .ProseMirror .toc-container li {
   margin-bottom: 8px !important;
   padding-left: 0 !important;
+  transition: all 0.15s ease;
+}
+
+/* TOC nested lists - indentação por nível */
+.ProseMirror .toc-container ul ul {
+  margin-left: 16px !important;
+  margin-top: 6px !important;
+  padding-left: 12px !important;
+  border-left: 2px solid hsl(var(--border));
+}
+
+.ProseMirror .toc-container ul ul ul {
+  margin-left: 12px !important;
+  border-left-color: hsl(var(--muted-foreground) / 0.3);
+}
+
+/* Cores diferentes por nível de profundidade */
+.ProseMirror .toc-container > ul > li > a {
+  font-size: 14px;
+  font-weight: 600 !important;
+}
+
+.ProseMirror .toc-container > ul > li > ul > li > a {
+  font-size: 13px;
+  font-weight: 500 !important;
+  opacity: 0.9;
+}
+
+.ProseMirror .toc-container > ul > li > ul > li > ul > li > a {
+  font-size: 12px;
+  font-weight: 400 !important;
+  opacity: 0.8;
+}
+
+/* Classes de nível para TOC gerado com data-level */
+.ProseMirror .toc-container li[data-level="1"] {
+  margin-left: 0;
+}
+
+.ProseMirror .toc-container li[data-level="2"] {
+  margin-left: 16px;
+  padding-left: 12px;
+  border-left: 2px solid hsl(var(--border));
+}
+
+.ProseMirror .toc-container li[data-level="3"] {
+  margin-left: 32px;
+  padding-left: 12px;
+  border-left: 2px solid hsl(var(--muted-foreground) / 0.3);
 }
 
 /* Animação de highlight quando clica no índice */

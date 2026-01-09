@@ -39,6 +39,8 @@ export interface AppSettings {
     autoMoveToCurrentWeek: boolean;
     // Colunas excluídas da automação Semana Atual
     excludeFromWeeklyAutomation: string[];
+    // Tamanhos das colunas por categoria (sincronizado)
+    columnSizes?: Record<string, number[]>;
   };
   productivity: {
     dailyGoal: number;
@@ -78,6 +80,15 @@ export interface AppSettings {
   notificationTemplates?: NotificationTemplate[];
   // Filtros de data do calendário persistidos
   calendarDueDateFilter?: string;
+  // Filtros do Kanban sincronizados (migrados de localStorage)
+  filters?: {
+    search: string;
+    priority: string;
+    tag: string;
+    dailyPriority: string;
+    dailyTag: string;
+    dailySearch: string;
+  };
 }
 
 const defaultSettings: AppSettings = {
@@ -110,6 +121,7 @@ const defaultSettings: AppSettings = {
     autoMoveToCurrentWeek: false,
     defaultView: 'daily',
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
+    columnSizes: {},
   },
   productivity: {
     dailyGoal: 5,
@@ -140,6 +152,14 @@ const defaultSettings: AppSettings = {
     },
   },
   calendarDueDateFilter: 'all',
+  filters: {
+    search: '',
+    priority: 'all',
+    tag: 'all',
+    dailyPriority: 'all',
+    dailyTag: 'all',
+    dailySearch: '',
+  },
 };
 
 export function useSettings() {
@@ -180,6 +200,11 @@ export function useSettings() {
         ...defaultSettings.customization?.priorityColors,
         ...(loaded.customization?.priorityColors || {}),
       },
+    },
+    // Deep merge filters
+    filters: {
+      ...defaultSettings.filters,
+      ...(loaded.filters || {}),
     },
   });
 
@@ -270,6 +295,11 @@ export function useSettings() {
           ...prev.customization?.priorityColors,
           ...(newSettings.customization?.priorityColors || {}),
         },
+      },
+      // Deep merge filters
+      filters: {
+        ...prev.filters,
+        ...(newSettings.filters || {}),
       },
     }));
     setIsDirty(true);

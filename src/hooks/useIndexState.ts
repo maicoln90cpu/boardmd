@@ -1,11 +1,10 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCategories } from "@/hooks/data/useCategories";
 import { useColumns } from "@/hooks/data/useColumns";
 import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { useNotes } from "@/hooks/useNotes";
 import { useNotebooks } from "@/hooks/useNotebooks";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useCategoryFilters } from "@/hooks/useCategoryFilters";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +55,7 @@ export function useIndexState() {
   const { notes } = useNotes();
   const { notebooks } = useNotebooks();
   
-  // Settings
+  // Settings (inclui filtros sincronizados)
   const { settings, updateSettings, saveSettings } = useSettings();
 
   // Category filters
@@ -72,17 +71,58 @@ export function useIndexState() {
     clearCategoryFilters,
   } = useCategoryFilters(categories);
 
-  // Local storage filters
-  const [searchTerm, setSearchTerm] = useLocalStorage<string>("filter-search", "");
-  const [priorityFilter, setPriorityFilter] = useLocalStorage<string>("filter-priority", "all");
-  const [tagFilter, setTagFilter] = useLocalStorage<string>("filter-tag", "all");
-  const [dailyPriorityFilter, setDailyPriorityFilter] = useLocalStorage<string>("daily-priority-filter", "all");
-  const [dailyTagFilter, setDailyTagFilter] = useLocalStorage<string>("daily-tag-filter", "all");
+  // Filtros sincronizados via settings (migrados de localStorage)
+  const searchTerm = settings.filters?.search ?? "";
+  const priorityFilter = settings.filters?.priority ?? "all";
+  const tagFilter = settings.filters?.tag ?? "all";
+  const dailyPriorityFilter = settings.filters?.dailyPriority ?? "all";
+  const dailyTagFilter = settings.filters?.dailyTag ?? "all";
+  const dailySearchTerm = settings.filters?.dailySearch ?? "";
   
-  // Local storage for date filters (immediate sync)
-  const [dailyDueDateFilter, setDailyDueDateFilter] = useLocalStorage<string>("daily-duedate-filter", "all");
-  const [projectsDueDateFilter, setProjectsDueDateFilter] = useLocalStorage<string>("projects-duedate-filter", "all");
-  const [dailySearchTerm, setDailySearchTerm] = useLocalStorage<string>("daily-search", "");
+  // Date filters from settings.kanban
+  const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
+  const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
+
+  // Setters que atualizam settings e salvam no banco
+  const setSearchTerm = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, search: value } });
+    // Debounce save para não sobrecarregar
+  }, [updateSettings, settings.filters]);
+
+  const setPriorityFilter = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, priority: value } });
+    saveSettings();
+  }, [updateSettings, settings.filters, saveSettings]);
+
+  const setTagFilter = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, tag: value } });
+    saveSettings();
+  }, [updateSettings, settings.filters, saveSettings]);
+
+  const setDailyPriorityFilter = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, dailyPriority: value } });
+    saveSettings();
+  }, [updateSettings, settings.filters, saveSettings]);
+
+  const setDailyTagFilter = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, dailyTag: value } });
+    saveSettings();
+  }, [updateSettings, settings.filters, saveSettings]);
+
+  const setDailySearchTerm = useCallback((value: string) => {
+    updateSettings({ filters: { ...settings.filters, dailySearch: value } });
+    // Debounce save para não sobrecarregar
+  }, [updateSettings, settings.filters]);
+
+  const setDailyDueDateFilter = useCallback((value: string) => {
+    updateSettings({ kanban: { ...settings.kanban, dailyDueDateFilter: value } });
+    saveSettings();
+  }, [updateSettings, settings.kanban, saveSettings]);
+
+  const setProjectsDueDateFilter = useCallback((value: string) => {
+    updateSettings({ kanban: { ...settings.kanban, projectsDueDateFilter: value } });
+    saveSettings();
+  }, [updateSettings, settings.kanban, saveSettings]);
 
   // Tasks
   const {

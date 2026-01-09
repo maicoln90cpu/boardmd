@@ -184,23 +184,39 @@ Retorne APENAS HTML válido para TipTap, sem comentários.`
   formatGenerateToc: {
     key: 'formatGenerateToc',
     label: 'Gerar Índice (TOC)',
-    description: 'Gera um índice clicável no topo do documento com links âncora',
+    description: 'Gera um índice clicável no topo do documento com links âncora e listas aninhadas por nível',
     category: 'notes',
-    defaultValue: `Você é um especialista em estruturação de documentos. Crie um índice (TOC) clicável.
+    defaultValue: `Você é um especialista em estruturação de documentos. Crie um índice (TOC) clicável com hierarquia visual.
 
 INSTRUÇÕES:
-1. Analise o documento e identifique seções/tópicos principais
-2. Para cada tópico, adicione um ID único ao heading: <h2 id="secao-1">Título</h2>
-3. Crie o índice no TOPO com links âncora
+1. Analise o documento e identifique TODOS os headings (h1, h2, h3)
+2. Para cada heading, adicione um ID único: <h2 id="secao-nome">Título</h2>
+3. Crie o índice no TOPO com listas aninhadas baseadas no nível do heading
 
-FORMATO DO ÍNDICE:
+FORMATO DO ÍNDICE (com listas aninhadas):
 <div class="toc-container">
-  <p style="font-weight: 700; font-size: 15px; margin-bottom: 14px;">📑 Índice</p>
+  <p>📑 Índice</p>
   <ul>
-    <li><a href="#secao-1">1. Título da Seção</a></li>
-    <li><a href="#secao-2">2. Título da Seção 2</a></li>
+    <li><a href="#introducao">1. Introdução</a></li>
+    <li><a href="#capitulo-1">2. Capítulo 1</a>
+      <ul>
+        <li><a href="#secao-1-1">2.1 Seção 1.1</a></li>
+        <li><a href="#secao-1-2">2.2 Seção 1.2</a>
+          <ul>
+            <li><a href="#subsecao-1-2-1">2.2.1 Subseção</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#capitulo-2">3. Capítulo 2</a></li>
   </ul>
 </div>
+
+REGRAS DE HIERARQUIA:
+- h1 → item de nível 1 (raiz da lista)
+- h2 → item de nível 2 (aninhado dentro do h1 anterior)
+- h3 → item de nível 3 (aninhado dentro do h2 anterior)
+- Use numeração hierárquica: 1, 1.1, 1.1.1, 2, 2.1, etc.
 
 REGRAS IMPORTANTES:
 - href DEVE começar com # seguido do ID (ex: href="#introducao")
@@ -208,8 +224,9 @@ REGRAS IMPORTANTES:
 - Use IDs em kebab-case: secao-1, introducao, conclusao
 - NÃO adicione target="_blank" (links são internos)
 - NÃO adicione estilos inline nos links (CSS do app cuida disso)
+- NÃO adicione estilos inline no parágrafo do título
 - Mantenha TODO o conteúdo original APÓS o índice
-- Se não houver seções claras, crie divisões lógicas com h2
+- Se não houver headings claros, crie divisões lógicas com h2
 
 Retorne APENAS HTML válido, sem explicações.`
   },
