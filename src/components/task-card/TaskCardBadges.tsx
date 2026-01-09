@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
+import { useNavigate } from "react-router-dom";
 
 // Premium category color palette
 const categoryColorPalette = [
@@ -65,6 +66,7 @@ interface TaskCardBadgesProps {
   showCategoryBadge: boolean;
   hasRecurrence: boolean;
   hasLinkedNote?: boolean;
+  linkedNoteId?: string | null;
   densityMode: "comfortable" | "compact" | "ultra-compact";
   urgency: "overdue" | "urgent" | "warning" | "normal";
 }
@@ -81,9 +83,11 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
   showCategoryBadge,
   hasRecurrence,
   hasLinkedNote = false,
+  linkedNoteId,
   densityMode,
   urgency,
 }) => {
+  const navigate = useNavigate();
   const isOverdue = urgency === "overdue";
   const isUrgent = urgency === "urgent";
   const isWarning = urgency === "warning";
@@ -225,11 +229,17 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
         <Badge
           variant="outline"
           className={cn(
-            "flex items-center gap-1 bg-primary/10 text-primary border-primary/20",
+            "flex items-center gap-1 bg-primary/10 text-primary border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors",
             densityMode === "compact" && "text-[10px] px-1.5 py-0",
             densityMode === "comfortable" && "text-xs px-2 py-0.5",
           )}
-          title="Nota vinculada"
+          title="Clique para ver nota vinculada"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (linkedNoteId) {
+              navigate(`/notes?note=${linkedNoteId}`);
+            }
+          }}
         >
           <FileText className={cn(
             densityMode === "compact" && "h-2.5 w-2.5",

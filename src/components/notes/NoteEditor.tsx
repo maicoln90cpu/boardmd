@@ -488,20 +488,34 @@ export function NoteEditor({
       return;
     }
     
+    const previousTaskId = note.linked_task_id;
+    const newTaskId = linkedTaskId;
+    
     // Atualizar a nota com o linked_task_id
     onUpdate(note.id, {
       title: title.trim() || "Sem título",
       content: content.trim(),
       color,
-      linked_task_id: linkedTaskId
+      linked_task_id: newTaskId
     });
     
-    // Se vinculou uma tarefa, atualizar a tarefa com o linked_note_id
-    if (linkedTaskId) {
-      await supabase
-        .from("tasks")
-        .update({ linked_note_id: note.id } as any)
-        .eq("id", linkedTaskId);
+    // Se a tarefa vinculada MUDOU, atualizar ambas
+    if (previousTaskId !== newTaskId) {
+      // Limpar linked_note_id da tarefa ANTERIOR
+      if (previousTaskId) {
+        await supabase
+          .from("tasks")
+          .update({ linked_note_id: null } as any)
+          .eq("id", previousTaskId);
+      }
+      
+      // Setar linked_note_id na tarefa NOVA
+      if (newTaskId) {
+        await supabase
+          .from("tasks")
+          .update({ linked_note_id: note.id } as any)
+          .eq("id", newTaskId);
+      }
     }
     
     hasUnsavedChanges.current = false;

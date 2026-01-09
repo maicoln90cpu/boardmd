@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Clock, FileText } from "lucide-react";
+import { CalendarIcon, Clock, FileText, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -698,19 +698,51 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {linkedNotes.map((noteItem) => (
-                    <Button
-                      key={noteItem.id}
-                      variant="outline"
-                      size="sm"
-                      className="text-xs h-8"
-                      onClick={() => {
-                        onOpenChange(false);
-                        navigate(`/notes?note=${noteItem.id}`);
-                      }}
-                    >
-                      <FileText className="h-3 w-3 mr-1" />
-                      {noteItem.title || "Sem título"}
-                    </Button>
+                    <div key={noteItem.id} className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => {
+                          onOpenChange(false);
+                          navigate(`/notes?note=${noteItem.id}`);
+                        }}
+                      >
+                        <FileText className="h-3 w-3 mr-1" />
+                        {noteItem.title || "Sem título"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        title="Desvincular nota"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          // Limpar linked_task_id na nota
+                          await supabase
+                            .from("notes")
+                            .update({ linked_task_id: null })
+                            .eq("id", noteItem.id);
+                          
+                          // Limpar linked_note_id na tarefa (se for a última nota)
+                          if (linkedNotes.length === 1) {
+                            await supabase
+                              .from("tasks")
+                              .update({ linked_note_id: null })
+                              .eq("id", task.id);
+                          }
+                          
+                          // Atualizar lista local
+                          setLinkedNotes(prev => prev.filter(n => n.id !== noteItem.id));
+                          toast({
+                            title: "Nota desvinculada",
+                            description: "A nota foi desvinculada desta tarefa."
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
