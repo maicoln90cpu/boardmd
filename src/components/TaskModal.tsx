@@ -734,6 +734,10 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                           
                           // Atualizar lista local
                           setLinkedNotes(prev => prev.filter(n => n.id !== noteItem.id));
+                          
+                          // Disparar evento para atualizar TaskCards
+                          window.dispatchEvent(new CustomEvent('task-updated'));
+                          
                           toast({
                             title: "Nota desvinculada",
                             description: "A nota foi desvinculada desta tarefa."
