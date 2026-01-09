@@ -440,43 +440,61 @@ export function NoteEditor({
       const target = e.target as HTMLElement;
       const link = target.closest('a');
       
-      if (!link) return;
+      console.log('[TOC Debug] Click event captured', { target: target.tagName, link: link?.tagName, href: link?.getAttribute('href') });
+      
+      if (!link) {
+        console.log('[TOC Debug] No link found, returning');
+        return;
+      }
       
       const href = link.getAttribute('href');
-      if (!href) return;
+      if (!href) {
+        console.log('[TOC Debug] No href attribute, returning');
+        return;
+      }
+      
+      console.log('[TOC Debug] Processing link:', href);
       
       // Link âncora interno (começa com #)
       if (href.startsWith('#')) {
+        console.log('[TOC Debug] Internal anchor detected, preventing default');
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
         
         const targetId = href.slice(1);
+        console.log('[TOC Debug] Looking for element with id:', targetId);
         
         // Busca primária: por ID exato
         let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+        console.log('[TOC Debug] Found by ID:', !!targetElement);
         
         // Fallback: buscar por data-id
         if (!targetElement) {
           targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+          console.log('[TOC Debug] Found by data-id:', !!targetElement);
         }
         
         // Fallback 2: buscar heading com texto similar ao ID
         if (!targetElement) {
           const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          console.log('[TOC Debug] Searching in', headings.length, 'headings');
           const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
           
           for (const heading of headings) {
             const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
+            console.log('[TOC Debug] Comparing:', { normalizedTargetId, headingText });
             if (headingText.includes(normalizedTargetId) || 
                 normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
               targetElement = heading;
+              console.log('[TOC Debug] Found by text match!');
               break;
             }
           }
         }
         
         if (targetElement) {
+          console.log('[TOC Debug] Scrolling to element');
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
           targetElement.classList.add('toc-target-highlight');
           setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
@@ -489,6 +507,7 @@ export function NoteEditor({
       }
       
       // Links externos - abrir em nova aba
+      console.log('[TOC Debug] External link, opening in new tab');
       e.preventDefault();
       e.stopPropagation();
       window.open(href, '_blank', 'noopener,noreferrer');
