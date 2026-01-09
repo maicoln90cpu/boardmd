@@ -37,6 +37,7 @@ export interface Task {
   subtasks: Array<{ id: string; title: string; completed: boolean }> | null;
   recurrence_rule: TaskRecurrenceRule | null;
   mirror_task_id: string | null;
+  linked_note_id: string | null;
 }
 
 export function useTasks(categoryId: string | null | "all") {
@@ -193,6 +194,7 @@ export function useTasks(categoryId: string | null | "all") {
         subtasks: task.subtasks || null,
         recurrence_rule: task.recurrence_rule || null,
         mirror_task_id: task.mirror_task_id || null,
+        linked_note_id: task.linked_note_id || null,
       };
       
       setTasks(prev => [...prev, tempTask]);

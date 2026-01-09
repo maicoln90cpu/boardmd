@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, AlertCircle } from "lucide-react";
+import { Calendar, Clock, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
 
@@ -64,6 +64,7 @@ interface TaskCardBadgesProps {
   hideBadges: boolean;
   showCategoryBadge: boolean;
   hasRecurrence: boolean;
+  hasLinkedNote?: boolean;
   densityMode: "comfortable" | "compact" | "ultra-compact";
   urgency: "overdue" | "urgent" | "warning" | "normal";
 }
@@ -79,6 +80,7 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
   hideBadges,
   showCategoryBadge,
   hasRecurrence,
+  hasLinkedNote = false,
   densityMode,
   urgency,
 }) => {
@@ -215,6 +217,25 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
           )}
         >
           ✓ {subtasksCompleted}/{subtasksCount}
+        </Badge>
+      )}
+
+      {/* Linked note badge */}
+      {!hideBadges && hasLinkedNote && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "flex items-center gap-1 bg-primary/10 text-primary border-primary/20",
+            densityMode === "compact" && "text-[10px] px-1.5 py-0",
+            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+          )}
+          title="Nota vinculada"
+        >
+          <FileText className={cn(
+            densityMode === "compact" && "h-2.5 w-2.5",
+            densityMode === "comfortable" && "h-3 w-3",
+          )} />
+          Nota
         </Badge>
       )}
     </div>

@@ -3,8 +3,10 @@ import { Notebook } from "@/hooks/useNotebooks";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen } from "lucide-react";
+import { Check, X, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -58,6 +60,7 @@ export function NoteEditor({
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(note.linked_task_id || null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const [taskSearchOpen, setTaskSearchOpen] = useState(false);
   const linkedTaskIdRef = useRef(linkedTaskId);
 
   // Word and character counter
@@ -672,24 +675,58 @@ export function NoteEditor({
         {/* Vincular a tarefa */}
         <div className="flex items-center gap-2">
           <Link2 className="h-4 w-4 text-muted-foreground" />
-          <Select 
-            value={linkedTaskId || "none"} 
-            onValueChange={value => setLinkedTaskId(value === "none" ? null : value)}
-          >
-            <SelectTrigger className="w-full sm:w-[300px] h-9 text-sm">
-              <SelectValue placeholder="Vincular a uma tarefa..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">
-                <span className="text-muted-foreground">Nenhuma tarefa vinculada</span>
-              </SelectItem>
-              {tasks.map(task => (
-                <SelectItem key={task.id} value={task.id}>
-                  {task.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={taskSearchOpen} onOpenChange={setTaskSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={taskSearchOpen}
+                className="w-full sm:w-[300px] h-9 justify-between text-sm font-normal"
+              >
+                {linkedTaskId
+                  ? tasks.find(t => t.id === linkedTaskId)?.title || "Tarefa selecionada"
+                  : "Vincular a uma tarefa..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Buscar tarefa..." />
+                <CommandList>
+                  <CommandEmpty>Nenhuma tarefa encontrada.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="none"
+                      onSelect={() => {
+                        setLinkedTaskId(null);
+                        setTaskSearchOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${!linkedTaskId ? "opacity-100" : "opacity-0"}`}
+                      />
+                      <span className="text-muted-foreground">Nenhuma tarefa vinculada</span>
+                    </CommandItem>
+                    {tasks.map(task => (
+                      <CommandItem
+                        key={task.id}
+                        value={task.title}
+                        onSelect={() => {
+                          setLinkedTaskId(task.id);
+                          setTaskSearchOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${linkedTaskId === task.id ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {task.title}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

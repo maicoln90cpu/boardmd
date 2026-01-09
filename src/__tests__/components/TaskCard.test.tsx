@@ -75,6 +75,7 @@ describe('TaskCard Component', () => {
     ],
     recurrence_rule: null,
     mirror_task_id: null,
+    linked_note_id: null,
     categories: { name: 'Projeto A' },
   };
 

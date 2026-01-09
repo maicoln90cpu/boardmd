@@ -78,6 +78,7 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevTask.due_date !== nextTask.due_date) return false;
   if (prevTask.column_id !== nextTask.column_id) return false;
   if (prevTask.mirror_task_id !== nextTask.mirror_task_id) return false;
+  if (prevTask.linked_note_id !== nextTask.linked_note_id) return false;
   if (prevTask.originalCategory !== nextTask.originalCategory) return false;
   if (prevTask.categories?.name !== nextTask.categories?.name) return false;
 
@@ -388,6 +389,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         hideBadges={hideBadges}
                         showCategoryBadge={showCategoryBadge}
                         hasRecurrence={!!task.recurrence_rule}
+                        hasLinkedNote={!!task.linked_note_id}
                         densityMode={densityMode}
                         urgency={urgency}
                       />

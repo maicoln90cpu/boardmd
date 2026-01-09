@@ -31,6 +31,7 @@ interface Task {
   subtasks: any;
   recurrence_rule: any;
   mirror_task_id: string | null;
+  linked_note_id: string | null;
   is_completed: boolean | null;
 }
 
