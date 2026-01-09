@@ -428,63 +428,78 @@ export function NoteEditor({
     }
   }, [editor, note.id]);
 
-  // Handler para cliques em links âncora do TOC (scroll interno)
-  const handleEditorClick = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    const link = target.closest('a');
+  // Handler para cliques em links - scroll interno para âncoras, nova aba para externos
+  // Usamos useEffect para adicionar listener diretamente no DOM do editor
+  // Isso garante captura antes do TipTap processar o evento
+  useEffect(() => {
+    if (!editor) return;
     
-    if (!link || !editor) return;
+    const editorElement = editor.view.dom;
     
-    const href = link.getAttribute('href');
-    
-    // Se é um link âncora interno (começa com #)
-    if (href && href.startsWith('#')) {
-      e.preventDefault();
-      e.stopPropagation();
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
       
-      const targetId = href.slice(1);
-      const editorElement = editor.view.dom;
+      if (!link) return;
       
-      // Busca primária: por ID exato
-      let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+      const href = link.getAttribute('href');
+      if (!href) return;
       
-      // Fallback: buscar por data-id
-      if (!targetElement) {
-        targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
-      }
-      
-      // Fallback 2: buscar heading com texto similar ao ID
-      if (!targetElement) {
-        const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
+      // Link âncora interno (começa com #)
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         
-        for (const heading of headings) {
-          const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
-          if (headingText.includes(normalizedTargetId) || 
-              normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
-            targetElement = heading;
-            break;
+        const targetId = href.slice(1);
+        
+        // Busca primária: por ID exato
+        let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+        
+        // Fallback: buscar por data-id
+        if (!targetElement) {
+          targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+        }
+        
+        // Fallback 2: buscar heading com texto similar ao ID
+        if (!targetElement) {
+          const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+          const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
+          
+          for (const heading of headings) {
+            const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
+            if (headingText.includes(normalizedTargetId) || 
+                normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
+              targetElement = heading;
+              break;
+            }
           }
         }
+        
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          targetElement.classList.add('toc-target-highlight');
+          setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
+        } else {
+          console.warn(`[TOC] Section not found: #${targetId}`);
+          toast.error("Seção não encontrada. Tente regenerar o índice.");
+        }
+        
+        return;
       }
       
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        targetElement.classList.add('toc-target-highlight');
-        setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
-      } else {
-        console.warn(`[TOC] Section not found: #${targetId}`);
-        toast.error("Seção não encontrada. Tente regenerar o índice.");
-      }
-      
-      return;
-    }
-    
-    // Links externos - abrir em nova aba
-    if (href && !href.startsWith('#')) {
+      // Links externos - abrir em nova aba
       e.preventDefault();
+      e.stopPropagation();
       window.open(href, '_blank', 'noopener,noreferrer');
-    }
+    };
+    
+    // Adicionar listener com capture para interceptar antes de qualquer outro handler
+    editorElement.addEventListener('click', handleLinkClick, { capture: true });
+    
+    return () => {
+      editorElement.removeEventListener('click', handleLinkClick, { capture: true });
+    };
   }, [editor]);
 
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
@@ -781,7 +796,7 @@ export function NoteEditor({
           onInsertTaskBlock={handleInsertTaskBlock}
           onCreateTask={handleCreateTask}
         />
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6" onClickCapture={handleEditorClick}>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <EditorContent 
             editor={editor} 
             className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror]:outline-none" 
