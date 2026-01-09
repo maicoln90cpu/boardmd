@@ -482,7 +482,7 @@ export function NoteEditor({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [title, content, color]);
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!title.trim() && !content.trim()) {
       toast.error("Adicione um título ou conteúdo");
       return;
@@ -491,7 +491,7 @@ export function NoteEditor({
     const previousTaskId = note.linked_task_id;
     const newTaskId = linkedTaskId;
     
-    // Atualizar a nota com o linked_task_id
+    // Atualizar a nota - o trigger do banco sincroniza automaticamente linked_note_id nas tasks
     onUpdate(note.id, {
       title: title.trim() || "Sem título",
       content: content.trim(),
@@ -499,25 +499,8 @@ export function NoteEditor({
       linked_task_id: newTaskId
     });
     
-    // Se a tarefa vinculada MUDOU, atualizar ambas
+    // Disparar evento para atualizar UI se a tarefa vinculada mudou
     if (previousTaskId !== newTaskId) {
-      // Limpar linked_note_id da tarefa ANTERIOR
-      if (previousTaskId) {
-        await supabase
-          .from("tasks")
-          .update({ linked_note_id: null } as any)
-          .eq("id", previousTaskId);
-      }
-      
-      // Setar linked_note_id na tarefa NOVA
-      if (newTaskId) {
-        await supabase
-          .from("tasks")
-          .update({ linked_note_id: note.id } as any)
-          .eq("id", newTaskId);
-      }
-      
-      // Disparar evento para atualizar TaskCards imediatamente
       window.dispatchEvent(new CustomEvent('task-updated'));
     }
     

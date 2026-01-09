@@ -718,24 +718,14 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                         title="Desvincular nota"
                         onClick={async (e) => {
                           e.stopPropagation();
-                          // Limpar linked_task_id na nota
+                          // Limpar linked_task_id na nota - o trigger do banco sincroniza linked_note_id automaticamente
                           await supabase
                             .from("notes")
                             .update({ linked_task_id: null })
                             .eq("id", noteItem.id);
                           
-                          // Limpar linked_note_id na tarefa (se for a última nota)
-                          if (linkedNotes.length === 1) {
-                            await supabase
-                              .from("tasks")
-                              .update({ linked_note_id: null })
-                              .eq("id", task.id);
-                          }
-                          
-                          // Atualizar lista local
+                          // Atualizar lista local e disparar evento para atualizar UI
                           setLinkedNotes(prev => prev.filter(n => n.id !== noteItem.id));
-                          
-                          // Disparar evento para atualizar TaskCards
                           window.dispatchEvent(new CustomEvent('task-updated'));
                           
                           toast({
