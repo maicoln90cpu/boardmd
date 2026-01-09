@@ -233,6 +233,65 @@ export function NoteEditor({
         }
         return false;
       },
+      // Interceptar cliques em links antes do TipTap processar
+      handleClick(view, pos, event) {
+        const target = event.target as HTMLElement;
+        const link = target.closest('a');
+        
+        if (!link) return false;
+        
+        const href = link.getAttribute('href');
+        if (!href) return false;
+        
+        console.log('[TOC handleClick] Intercepted link click:', href, 'target attr:', link.getAttribute('target'));
+        
+        // Link âncora interno (começa com #)
+        if (href.startsWith('#')) {
+          event.preventDefault();
+          event.stopPropagation();
+          
+          const targetId = href.slice(1);
+          const editorElement = view.dom;
+          
+          // Busca por ID, data-id, ou texto do heading
+          let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
+          
+          if (!targetElement) {
+            targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
+          }
+          
+          if (!targetElement) {
+            const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
+            
+            for (const heading of headings) {
+              const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
+              if (headingText.includes(normalizedTargetId) || 
+                  normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
+                targetElement = heading;
+                break;
+              }
+            }
+          }
+          
+          if (targetElement) {
+            console.log('[TOC handleClick] Scrolling to element');
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            targetElement.classList.add('toc-target-highlight');
+            setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
+          } else {
+            console.warn('[TOC handleClick] Section not found:', targetId);
+          }
+          
+          return true; // Indica que o evento foi tratado
+        }
+        
+        // Links externos - abrir em nova aba
+        event.preventDefault();
+        event.stopPropagation();
+        window.open(href, '_blank', 'noopener,noreferrer');
+        return true;
+      },
       // Allow all HTML attributes
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none'
@@ -428,98 +487,7 @@ export function NoteEditor({
     }
   }, [editor, note.id]);
 
-  // Handler para cliques em links - scroll interno para âncoras, nova aba para externos
-  // Usamos useEffect para adicionar listener diretamente no DOM do editor
-  // Isso garante captura antes do TipTap processar o evento
-  useEffect(() => {
-    if (!editor) return;
-    
-    const editorElement = editor.view.dom;
-    
-    const handleLinkClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest('a');
-      
-      console.log('[TOC Debug] Click event captured', { target: target.tagName, link: link?.tagName, href: link?.getAttribute('href') });
-      
-      if (!link) {
-        console.log('[TOC Debug] No link found, returning');
-        return;
-      }
-      
-      const href = link.getAttribute('href');
-      if (!href) {
-        console.log('[TOC Debug] No href attribute, returning');
-        return;
-      }
-      
-      console.log('[TOC Debug] Processing link:', href);
-      
-      // Link âncora interno (começa com #)
-      if (href.startsWith('#')) {
-        console.log('[TOC Debug] Internal anchor detected, preventing default');
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        const targetId = href.slice(1);
-        console.log('[TOC Debug] Looking for element with id:', targetId);
-        
-        // Busca primária: por ID exato
-        let targetElement: Element | null = editorElement.querySelector(`[id="${targetId}"]`);
-        console.log('[TOC Debug] Found by ID:', !!targetElement);
-        
-        // Fallback: buscar por data-id
-        if (!targetElement) {
-          targetElement = editorElement.querySelector(`[data-id="${targetId}"]`);
-          console.log('[TOC Debug] Found by data-id:', !!targetElement);
-        }
-        
-        // Fallback 2: buscar heading com texto similar ao ID
-        if (!targetElement) {
-          const headings = editorElement.querySelectorAll('h1, h2, h3, h4, h5, h6');
-          console.log('[TOC Debug] Searching in', headings.length, 'headings');
-          const normalizedTargetId = targetId.toLowerCase().replace(/-/g, ' ').replace(/[^a-z0-9\s]/g, '');
-          
-          for (const heading of headings) {
-            const headingText = heading.textContent?.toLowerCase().trim().replace(/[^a-z0-9\s]/g, '') || '';
-            console.log('[TOC Debug] Comparing:', { normalizedTargetId, headingText });
-            if (headingText.includes(normalizedTargetId) || 
-                normalizedTargetId.split(' ').some(word => word.length > 2 && headingText.includes(word))) {
-              targetElement = heading;
-              console.log('[TOC Debug] Found by text match!');
-              break;
-            }
-          }
-        }
-        
-        if (targetElement) {
-          console.log('[TOC Debug] Scrolling to element');
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          targetElement.classList.add('toc-target-highlight');
-          setTimeout(() => targetElement?.classList.remove('toc-target-highlight'), 2000);
-        } else {
-          console.warn(`[TOC] Section not found: #${targetId}`);
-          toast.error("Seção não encontrada. Tente regenerar o índice.");
-        }
-        
-        return;
-      }
-      
-      // Links externos - abrir em nova aba
-      console.log('[TOC Debug] External link, opening in new tab');
-      e.preventDefault();
-      e.stopPropagation();
-      window.open(href, '_blank', 'noopener,noreferrer');
-    };
-    
-    // Adicionar listener com capture para interceptar antes de qualquer outro handler
-    editorElement.addEventListener('click', handleLinkClick, { capture: true });
-    
-    return () => {
-      editorElement.removeEventListener('click', handleLinkClick, { capture: true });
-    };
-  }, [editor]);
+  // NOTA: Handler de cliques em links agora está no editorProps.handleClick acima
 
   // Auto-save ao navegar para outra página (cleanup quando componente desmonta)
   useEffect(() => {
