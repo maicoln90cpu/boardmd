@@ -11,7 +11,7 @@ import { Sidebar as AnimatedSidebar, SidebarBody, SidebarLink, SidebarDivider, u
 import { useSettings } from "@/hooks/data/useSettings";
 import { useCategories, Category } from "@/hooks/data/useCategories";
 import { CategoryTree } from "@/components/sidebar/CategoryTree";
-import { useTasks } from "@/hooks/tasks/useTasks";
+import { useTaskCounts } from "@/hooks/data/useTaskCounts";
 
 interface SidebarProps {
   onExport: () => void;
@@ -218,21 +218,12 @@ export function Sidebar({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
   const { categories } = useCategories();
-  const { tasks } = useTasks("all");
+  const { counts: taskCountByCategory, totalCount: totalTaskCount } = useTaskCounts();
   const navigate = useNavigate();
   const location = useLocation();
 
   // Filter categories for projects (exclude "Diário")
   const projectCategories = categories.filter(c => c.name !== "Diário");
-
-  // Calculate task count by category
-  const taskCountByCategory = tasks.reduce((acc, task) => {
-    if (task.category_id) {
-      acc[task.category_id] = (acc[task.category_id] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
   // Aplicar configuração do usuário SOMENTE após carregar
   useEffect(() => {
     if (!isLoading && !hasInitialized) {
@@ -404,7 +395,7 @@ export function Sidebar({
                   <Layers className="h-5 w-5 shrink-0" />
                   <span className="flex-1 text-left">Todos os Projetos</span>
                   <Badge variant="secondary" className="ml-auto">
-                    {tasks.length}
+                    {totalTaskCount}
                   </Badge>
                 </Button>
 

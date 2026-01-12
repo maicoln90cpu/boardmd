@@ -10,6 +10,7 @@ import { useCategoryFilters } from "@/hooks/useCategoryFilters";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useDebounceCallback } from "@/hooks/useDebounceCallback";
 
 export function useIndexState() {
   const { toast } = useToast();
@@ -83,46 +84,51 @@ export function useIndexState() {
   const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
   const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
 
-  // Setters que atualizam settings e salvam no banco
+  // Debounced save para evitar múltiplas gravações
+  const debouncedSave = useDebounceCallback(() => {
+    saveSettings();
+  }, 500);
+
+  // Setters que atualizam settings localmente e salvam com debounce
   const setSearchTerm = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, search: value } });
-    // Debounce save para não sobrecarregar
-  }, [updateSettings, settings.filters]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setPriorityFilter = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, priority: value } });
-    saveSettings();
-  }, [updateSettings, settings.filters, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setTagFilter = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, tag: value } });
-    saveSettings();
-  }, [updateSettings, settings.filters, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setDailyPriorityFilter = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, dailyPriority: value } });
-    saveSettings();
-  }, [updateSettings, settings.filters, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setDailyTagFilter = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, dailyTag: value } });
-    saveSettings();
-  }, [updateSettings, settings.filters, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setDailySearchTerm = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, dailySearch: value } });
-    // Debounce save para não sobrecarregar
-  }, [updateSettings, settings.filters]);
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
 
   const setDailyDueDateFilter = useCallback((value: string) => {
     updateSettings({ kanban: { ...settings.kanban, dailyDueDateFilter: value } });
-    saveSettings();
-  }, [updateSettings, settings.kanban, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.kanban, debouncedSave]);
 
   const setProjectsDueDateFilter = useCallback((value: string) => {
     updateSettings({ kanban: { ...settings.kanban, projectsDueDateFilter: value } });
-    saveSettings();
-  }, [updateSettings, settings.kanban, saveSettings]);
+    debouncedSave();
+  }, [updateSettings, settings.kanban, debouncedSave]);
 
   // Tasks
   const {
