@@ -117,9 +117,8 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
           const isDropTarget = activeId && overId === column.id;
           
           return (
-            <>
+            <div key={column.id} className="contents">
               <ResizablePanel
-                key={column.id}
                 defaultSize={columnSizes[columnIndex] || 100 / columns.length}
                 minSize={15}
               >
@@ -184,9 +183,9 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                 </div>
               </ResizablePanel>
               {columnIndex < columns.length - 1 && (
-                <ResizableHandle withHandle />
+                <ResizableHandle key={`handle-${column.id}`} withHandle />
               )}
-            </>
+            </div>
           );
         })}
       </ResizablePanelGroup>
