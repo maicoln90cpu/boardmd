@@ -103,42 +103,39 @@ export function useTasks(categoryId: string | null | "all") {
   };
 
   const subscribeToTasks = () => {
-    // Para categoryId="all", precisamos monitorar todas as categorias exceto "Diário"
-    // Não podemos usar filtro direto na subscription, então monitoramos tudo
+    // OTIMIZAÇÃO: Uma única subscription com event: "*" e update incremental
     const channel = supabase
       .channel(`tasks-${categoryId}`)
-      // OTIMIZAÇÃO: Filtrar eventos específicos em vez de "*"
       .on(
-        "postgres_changes", 
-        { 
-          event: "INSERT", 
-          schema: "public", 
-          table: "tasks"
-        }, 
-        () => {
-          fetchTasks();
-        }
-      )
-      .on(
-        "postgres_changes", 
-        { 
-          event: "UPDATE", 
-          schema: "public", 
-          table: "tasks"
-        }, 
-        () => {
-          fetchTasks();
-        }
-      )
-      .on(
-        "postgres_changes", 
-        { 
-          event: "DELETE", 
-          schema: "public", 
-          table: "tasks"
-        }, 
-        () => {
-          fetchTasks();
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+        },
+        (payload) => {
+          // Update incremental baseado no tipo de evento
+          if (payload.eventType === "INSERT") {
+            const newTask = payload.new as Task;
+            // Verificar se a tarefa pertence à categoria correta
+            if (categoryId === "all" || newTask.category_id === categoryId) {
+              setTasks((prev) => {
+                // Evitar duplicatas
+                if (prev.some(t => t.id === newTask.id)) return prev;
+                return [...prev, newTask];
+              });
+            }
+          } else if (payload.eventType === "UPDATE") {
+            const updatedTask = payload.new as Task;
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === updatedTask.id ? { ...t, ...updatedTask } : t
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            const deletedId = (payload.old as { id: string }).id;
+            setTasks((prev) => prev.filter((t) => t.id !== deletedId));
+          }
         }
       )
       .subscribe();
@@ -401,9 +398,11 @@ export function useTasks(categoryId: string | null | "all") {
       }
     });
 
-    // OTIMIZAÇÃO: Batch update com .in() em vez de Promise.all de updates individuais
+    // OTIMIZAÇÃO: Batch update com .in() para todas as propriedades
     const taskIds = tasksToReset.map(t => t.id);
-    const { error } = await supabase
+    
+    // Atualizar todas as tarefas de uma vez (coluna, data e status)
+    const { error: updateError } = await supabase
       .from("tasks")
       .update({ 
         column_id: firstColumnId,
@@ -412,22 +411,48 @@ export function useTasks(categoryId: string | null | "all") {
       })
       .in("id", taskIds);
     
-    if (error) {
-      if (import.meta.env.DEV) console.error("Erro ao resetar tarefas:", error);
+    if (updateError) {
+      if (import.meta.env.DEV) console.error("Erro ao resetar tarefas:", updateError);
       toast({ title: "Erro ao resetar tarefas", variant: "destructive" });
       return;
     }
     
-    // Atualizar posições sequencialmente (necessário para ordem)
-    for (let i = 0; i < tasksToReset.length; i++) {
-      await supabase
-        .from("tasks")
-        .update({ position: i })
-        .eq("id", tasksToReset[i].id);
+    // OTIMIZAÇÃO: Atualizar posições em batch usando Promise.all com chunks
+    // Em vez de N queries sequenciais, fazemos em paralelo
+    const BATCH_SIZE = 10;
+    const positionUpdates = tasksToReset.map((task, index) => ({
+      id: task.id,
+      position: index
+    }));
+    
+    // Processar em chunks para não sobrecarregar
+    for (let i = 0; i < positionUpdates.length; i += BATCH_SIZE) {
+      const chunk = positionUpdates.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        chunk.map(({ id, position }) =>
+          supabase.from("tasks").update({ position }).eq("id", id)
+        )
+      );
     }
     
+    // Update otimista local
+    setTasks(prev => 
+      prev.map(t => {
+        if (taskIds.includes(t.id)) {
+          const newPosition = positionUpdates.find(p => p.id === t.id)?.position ?? t.position;
+          return {
+            ...t,
+            column_id: firstColumnId,
+            due_date: todayISO,
+            is_completed: false,
+            position: newPosition
+          };
+        }
+        return t;
+      })
+    );
+    
     toast({ title: `${tasksToReset.length} tarefa(s) resetada(s)!` });
-    fetchTasks();
   };
 
   const toggleFavorite = async (taskId: string) => {
