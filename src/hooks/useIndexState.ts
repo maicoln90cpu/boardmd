@@ -1,261 +1,100 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { useCategories } from "@/hooks/data/useCategories";
-import { useColumns } from "@/hooks/data/useColumns";
-import { useTasks, Task } from "@/hooks/tasks/useTasks";
-import { useNotes } from "@/hooks/useNotes";
-import { useNotebooks } from "@/hooks/useNotebooks";
-import { useSettings } from "@/hooks/data/useSettings";
-import { useCategoryFilters } from "@/hooks/useCategoryFilters";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
-import { useActivityLog } from "@/hooks/useActivityLog";
-import { useDebounceCallback } from "@/hooks/useDebounceCallback";
+import { useCallback } from "react";
+import { Task } from "@/hooks/tasks/useTasks";
+import { useIndexFilters } from "@/hooks/index/useIndexFilters";
+import { useIndexViewState } from "@/hooks/index/useIndexViewState";
+import { useIndexData } from "@/hooks/index/useIndexData";
 
 export function useIndexState() {
-  const { toast } = useToast();
-  const { addActivity } = useActivityLog();
-  const [searchParams] = useSearchParams();
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  
-  // Board keys for force refresh
-  const [dailyBoardKey, setDailyBoardKey] = useState(0);
-  const [projectsBoardKey, setProjectsBoardKey] = useState(0);
-  
-  // View mode and modals
-  const [viewMode, setViewMode] = useState<"daily" | "all">("daily");
-  const [showStats, setShowStats] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showColumnManager, setShowColumnManager] = useState(false);
-  const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
-  const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
-
-  // Data hooks
-  const {
-    categories,
-    loading: loadingCategories,
-    addCategory
-  } = useCategories();
-  
-  const {
-    columns,
-    loading: loadingColumns,
-    hiddenColumns,
-    toggleColumnVisibility,
-    getVisibleColumns,
-    resetToDefaultView,
-    deleteColumn,
-    renameColumn,
-    reorderColumns,
-    addColumn,
-    toggleColumnKanbanVisibility
-  } = useColumns();
-  
-  const { notes } = useNotes();
-  const { notebooks } = useNotebooks();
-  
-  // Settings (inclui filtros sincronizados)
-  const { settings, updateSettings, saveSettings } = useSettings();
-
-  // Category filters
-  const {
-    selectedCategory,
-    dailyCategory,
-    categoryFilter,
-    categoryFilterInitialized,
-    selectedCategoryFilterMobile,
-    setSelectedCategory,
-    setCategoryFilter,
-    setSelectedCategoryFilterMobile,
-    clearCategoryFilters,
-  } = useCategoryFilters(categories);
-
-  // Filtros sincronizados via settings (migrados de localStorage)
-  const searchTerm = settings.filters?.search ?? "";
-  const priorityFilter = settings.filters?.priority ?? "all";
-  const tagFilter = settings.filters?.tag ?? "all";
-  const dailyPriorityFilter = settings.filters?.dailyPriority ?? "all";
-  const dailyTagFilter = settings.filters?.dailyTag ?? "all";
-  const dailySearchTerm = settings.filters?.dailySearch ?? "";
-  
-  // Date filters from settings.kanban
-  const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
-  const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
-
-  // Debounced save para evitar múltiplas gravações
-  const debouncedSave = useDebounceCallback(() => {
-    saveSettings();
-  }, 500);
-
-  // Setters que atualizam settings localmente e salvam com debounce
-  const setSearchTerm = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, search: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setPriorityFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, priority: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setTagFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, tag: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setDailyPriorityFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, dailyPriority: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setDailyTagFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, dailyTag: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setDailySearchTerm = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, dailySearch: value } });
-    debouncedSave();
-  }, [updateSettings, settings.filters, debouncedSave]);
-
-  const setDailyDueDateFilter = useCallback((value: string) => {
-    updateSettings({ kanban: { ...settings.kanban, dailyDueDateFilter: value } });
-    debouncedSave();
-  }, [updateSettings, settings.kanban, debouncedSave]);
-
-  const setProjectsDueDateFilter = useCallback((value: string) => {
-    updateSettings({ kanban: { ...settings.kanban, projectsDueDateFilter: value } });
-    debouncedSave();
-  }, [updateSettings, settings.kanban, debouncedSave]);
-
-  // Tasks
-  const {
-    tasks: allTasks,
-    resetAllTasksToFirstColumn: resetDailyTasks,
-    updateTask: updateDailyTask,
-    addTask
-  } = useTasks("all");
+  // Modular hooks
+  const viewState = useIndexViewState();
+  const data = useIndexData();
+  const filters = useIndexFilters(data.categories);
 
   // Derived values from settings
-  const simplifiedMode = settings.kanban.simplifiedMode;
-  const dailySortOption = settings.kanban.dailySortOption;
-  const dailySortOrder = settings.kanban.dailySortOrder;
-  const densityMode = settings.defaultDensity;
-  const showFavoritesPanel = settings.kanban.showFavoritesPanel;
-  const hideBadgesMobile = settings.mobile.hideBadges;
-  const dailyGridColumnsMobile = settings.mobile.dailyGridColumns;
-  const projectsGridColumnsMobile = settings.mobile.projectsGridColumns;
-  const projectsSortOption = settings.kanban.projectsSortOption;
-  const projectsSortOrder = settings.kanban.projectsSortOrder;
+  const simplifiedMode = filters.settings.kanban.simplifiedMode;
+  const dailySortOption = filters.settings.kanban.dailySortOption;
+  const dailySortOrder = filters.settings.kanban.dailySortOrder;
+  const densityMode = filters.settings.defaultDensity;
+  const showFavoritesPanel = filters.settings.kanban.showFavoritesPanel;
+  const hideBadgesMobile = filters.settings.mobile.hideBadges;
+  const dailyGridColumnsMobile = filters.settings.mobile.dailyGridColumns;
+  const projectsGridColumnsMobile = filters.settings.mobile.projectsGridColumns;
+  const projectsSortOption = filters.settings.kanban.projectsSortOption;
+  const projectsSortOrder = filters.settings.kanban.projectsSortOrder;
 
-  // Refresh board functions
-  const refreshDailyBoard = useCallback(() => setDailyBoardKey(k => k + 1), []);
-  const refreshProjectsBoard = useCallback(() => setProjectsBoardKey(k => k + 1), []);
-  const refreshAllBoards = useCallback(() => {
-    setDailyBoardKey(k => k + 1);
-    setProjectsBoardKey(k => k + 1);
-  }, []);
-
-  // Task reordering
+  // Wrapped handlers that need viewState setters
   const handleReorderDailyTasks = useCallback(async (reorderedTasks: Array<{ id: string; position: number }>) => {
-    if (!updateDailyTask) return;
-    try {
-      for (const { id, position } of reorderedTasks) {
-        await supabase
-          .from("tasks")
-          .update({ position, updated_at: new Date().toISOString() })
-          .eq("id", id);
-      }
-      window.dispatchEvent(new CustomEvent('task-updated'));
-      refreshDailyBoard();
-      addActivity("ai_organize", "Tarefas organizadas com IA");
-    } catch (error) {
-      if (import.meta.env.DEV) console.error("Error reordering tasks:", error);
-      toast({
-        title: "Erro ao reordenar tarefas",
-        variant: "destructive"
-      });
-    }
-  }, [updateDailyTask, addActivity, toast, refreshDailyBoard]);
+    await data.handleReorderDailyTasks(reorderedTasks, viewState.refreshDailyBoard);
+  }, [data.handleReorderDailyTasks, viewState.refreshDailyBoard]);
 
-  // Task select for history
   const handleTaskSelect = useCallback((task: Task) => {
-    setSelectedTaskForHistory(task.id);
-    setShowHistory(true);
-  }, []);
+    data.handleTaskSelect(task, viewState.setSelectedTaskForHistory, viewState.setShowHistory);
+  }, [data.handleTaskSelect, viewState.setSelectedTaskForHistory, viewState.setShowHistory]);
 
-  // Clear filters
+  // Clear filters with display mode reset
   const handleClearFilters = useCallback(() => {
-    setSearchTerm("");
-    setPriorityFilter("all");
-    setTagFilter("all");
-    clearCategoryFilters();
-    setDisplayMode("by_category");
-    // Clear date filters as well
-    setDailyDueDateFilter("all");
-    setProjectsDueDateFilter("all");
-  }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters, setDailyDueDateFilter, setProjectsDueDateFilter]);
+    filters.handleClearFilters();
+    viewState.setDisplayMode("by_category");
+  }, [filters.handleClearFilters, viewState.setDisplayMode]);
 
   return {
     // Refs
-    searchInputRef,
+    searchInputRef: viewState.searchInputRef,
     
     // Loading states
-    loadingCategories,
-    loadingColumns,
+    loadingCategories: data.loadingCategories,
+    loadingColumns: data.loadingColumns,
     
     // Board keys
-    dailyBoardKey,
-    projectsBoardKey,
-    refreshDailyBoard,
-    refreshProjectsBoard,
-    refreshAllBoards,
+    dailyBoardKey: viewState.dailyBoardKey,
+    projectsBoardKey: viewState.projectsBoardKey,
+    refreshDailyBoard: viewState.refreshDailyBoard,
+    refreshProjectsBoard: viewState.refreshProjectsBoard,
+    refreshAllBoards: viewState.refreshAllBoards,
     
     // View state
-    viewMode,
-    setViewMode,
-    displayMode,
-    setDisplayMode,
+    viewMode: viewState.viewMode,
+    setViewMode: viewState.setViewMode,
+    displayMode: viewState.displayMode,
+    setDisplayMode: viewState.setDisplayMode,
     
     // Modals
-    showStats,
-    setShowStats,
-    showHistory,
-    setShowHistory,
-    showTemplates,
-    setShowTemplates,
-    showColumnManager,
-    setShowColumnManager,
-    showQuickTaskModal,
-    setShowQuickTaskModal,
-    selectedTaskForHistory,
+    showStats: viewState.showStats,
+    setShowStats: viewState.setShowStats,
+    showHistory: viewState.showHistory,
+    setShowHistory: viewState.setShowHistory,
+    showTemplates: viewState.showTemplates,
+    setShowTemplates: viewState.setShowTemplates,
+    showColumnManager: viewState.showColumnManager,
+    setShowColumnManager: viewState.setShowColumnManager,
+    showQuickTaskModal: viewState.showQuickTaskModal,
+    setShowQuickTaskModal: viewState.setShowQuickTaskModal,
+    selectedTaskForHistory: viewState.selectedTaskForHistory,
     
     // Data
-    categories,
-    columns,
-    notes,
-    notebooks,
-    allTasks,
-    addTask,
-    addCategory,
+    categories: data.categories,
+    columns: data.columns,
+    notes: data.notes,
+    notebooks: data.notebooks,
+    allTasks: data.allTasks,
+    addTask: data.addTask,
+    addCategory: data.addCategory,
     
     // Column operations
-    hiddenColumns,
-    toggleColumnVisibility,
-    getVisibleColumns,
-    resetToDefaultView,
-    deleteColumn,
-    renameColumn,
-    reorderColumns,
-    addColumn,
-    toggleColumnKanbanVisibility,
+    hiddenColumns: data.hiddenColumns,
+    toggleColumnVisibility: data.toggleColumnVisibility,
+    getVisibleColumns: data.getVisibleColumns,
+    resetToDefaultView: data.resetToDefaultView,
+    deleteColumn: data.deleteColumn,
+    renameColumn: data.renameColumn,
+    reorderColumns: data.reorderColumns,
+    addColumn: data.addColumn,
+    toggleColumnKanbanVisibility: data.toggleColumnKanbanVisibility,
     
     // Settings
-    settings,
-    updateSettings,
-    saveSettings,
+    settings: filters.settings,
+    updateSettings: filters.updateSettings,
+    saveSettings: filters.saveSettings,
     simplifiedMode,
     dailySortOption,
     dailySortOrder,
@@ -266,40 +105,40 @@ export function useIndexState() {
     projectsGridColumnsMobile,
     projectsSortOption,
     projectsSortOrder,
-    dailyDueDateFilter,
-    projectsDueDateFilter,
+    dailyDueDateFilter: filters.dailyDueDateFilter,
+    projectsDueDateFilter: filters.projectsDueDateFilter,
     
     // Category filters
-    selectedCategory,
-    dailyCategory,
-    categoryFilter,
-    categoryFilterInitialized,
-    selectedCategoryFilterMobile,
-    setSelectedCategory,
-    setCategoryFilter,
-    setSelectedCategoryFilterMobile,
-    clearCategoryFilters,
+    selectedCategory: filters.selectedCategory,
+    dailyCategory: filters.dailyCategory,
+    categoryFilter: filters.categoryFilter,
+    categoryFilterInitialized: filters.categoryFilterInitialized,
+    selectedCategoryFilterMobile: filters.selectedCategoryFilterMobile,
+    setSelectedCategory: filters.setSelectedCategory,
+    setCategoryFilter: filters.setCategoryFilter,
+    setSelectedCategoryFilterMobile: filters.setSelectedCategoryFilterMobile,
+    clearCategoryFilters: filters.clearCategoryFilters,
     
     // Search and filters
-    searchTerm,
-    setSearchTerm,
-    priorityFilter,
-    setPriorityFilter,
-    tagFilter,
-    setTagFilter,
-    dailyPriorityFilter,
-    setDailyPriorityFilter,
-    dailyTagFilter,
-    setDailyTagFilter,
-    dailySearchTerm,
-    setDailySearchTerm,
+    searchTerm: filters.searchTerm,
+    setSearchTerm: filters.setSearchTerm,
+    priorityFilter: filters.priorityFilter,
+    setPriorityFilter: filters.setPriorityFilter,
+    tagFilter: filters.tagFilter,
+    setTagFilter: filters.setTagFilter,
+    dailyPriorityFilter: filters.dailyPriorityFilter,
+    setDailyPriorityFilter: filters.setDailyPriorityFilter,
+    dailyTagFilter: filters.dailyTagFilter,
+    setDailyTagFilter: filters.setDailyTagFilter,
+    dailySearchTerm: filters.dailySearchTerm,
+    setDailySearchTerm: filters.setDailySearchTerm,
     
-    // Date filters (local storage for immediate sync)
-    setDailyDueDateFilter,
-    setProjectsDueDateFilter,
+    // Date filters
+    setDailyDueDateFilter: filters.setDailyDueDateFilter,
+    setProjectsDueDateFilter: filters.setProjectsDueDateFilter,
     
     // Task reset
-    resetDailyTasks,
+    resetDailyTasks: data.resetDailyTasks,
     
     // Handlers
     handleReorderDailyTasks,
