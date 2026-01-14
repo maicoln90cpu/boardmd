@@ -8,6 +8,7 @@ import { signUpSchema, signInSchema } from "@/lib/validations";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -56,9 +57,7 @@ export function Auth() {
         navigate("/", { replace: true });
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error(error);
-      }
+      logger.error("Auth error:", error);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/lib/logger";
 
 export interface ActivityLogEntry {
   id: string;
@@ -90,7 +91,7 @@ export function useActivityLog() {
     });
 
     if (error) {
-      console.error("Error adding activity log:", error);
+      logger.error("Error adding activity log:", error);
     }
   }, [user]);
 

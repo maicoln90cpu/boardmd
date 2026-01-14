@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Editor } from "@tiptap/react";
+import { logger } from "@/lib/logger";
 
 interface TaskBlockNode {
   taskId: string;
@@ -42,7 +43,7 @@ export function useNoteTaskSync(editor: Editor | null) {
         .eq("user_id", user.id);
 
       if (error) {
-        console.error("Erro ao atualizar tarefa:", error);
+        logger.error("Erro ao atualizar tarefa:", error);
         toast.error("Erro ao sincronizar tarefa");
         return false;
       }
@@ -57,7 +58,7 @@ export function useNoteTaskSync(editor: Editor | null) {
 
       return true;
     } catch (err) {
-      console.error("Erro na sincronização:", err);
+      logger.error("Erro na sincronização:", err);
       return false;
     }
   }, [user]);

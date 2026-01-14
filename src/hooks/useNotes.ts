@@ -192,9 +192,7 @@ export function useNotes() {
         throw error;
       }
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error updating note:", error);
-      }
+      logger.error("Error updating note:", error);
       toast({
         title: "Erro ao atualizar nota - salvo offline",
         variant: "destructive",

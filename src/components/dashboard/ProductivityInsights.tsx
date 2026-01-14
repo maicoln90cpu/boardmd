@@ -8,6 +8,7 @@ import type { UserStats } from "@/hooks/useUserStats";
 import type { Task } from "@/hooks/tasks/useTasks";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { logger } from "@/lib/logger";
 interface ProductivityInsightsProps {
   stats: UserStats | null | undefined;
   tasks: Task[];
@@ -89,7 +90,7 @@ export function ProductivityInsights({
         description: "Seus insights de produtividade foram gerados!"
       });
     } catch (error) {
-      console.error("Error analyzing productivity:", error);
+      logger.error("Error analyzing productivity:", error);
       toast({
         title: "Erro na análise",
         description: "Não foi possível gerar os insights. Tente novamente.",

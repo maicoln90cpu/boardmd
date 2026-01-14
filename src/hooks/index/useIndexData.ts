@@ -7,6 +7,7 @@ import { useNotebooks } from "@/hooks/useNotebooks";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function useIndexData() {
   const { toast } = useToast();
@@ -61,7 +62,7 @@ export function useIndexData() {
       refreshDailyBoard();
       addActivity("ai_organize", "Tarefas organizadas com IA");
     } catch (error) {
-      if (import.meta.env.DEV) console.error("Error reordering tasks:", error);
+      logger.error("Error reordering tasks:", error);
       toast({
         title: "Erro ao reordenar tarefas",
         variant: "destructive"
