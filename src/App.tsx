@@ -16,6 +16,7 @@ import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
+import { useGoalTaskIntegration } from "@/hooks/useGoalTaskIntegration";
 import { syncManager } from "@/lib/sync";
 import {
   KanbanLoadingSkeleton,
@@ -47,6 +48,7 @@ const queryClient = new QueryClient();
 
 function AppContent() {
   useForegroundPushHandler();
+  useGoalTaskIntegration(); // Integração metas + tarefas
 
   // Initialize offline sync manager
   useEffect(() => {

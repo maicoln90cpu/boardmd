@@ -144,6 +144,7 @@ export type Database = {
       }
       goals: {
         Row: {
+          auto_increment: boolean
           created_at: string
           current: number
           end_date: string
@@ -157,6 +158,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_increment?: boolean
           created_at?: string
           current?: number
           end_date: string
@@ -170,6 +172,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_increment?: boolean
           created_at?: string
           current?: number
           end_date?: string
