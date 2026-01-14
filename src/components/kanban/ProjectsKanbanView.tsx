@@ -1,9 +1,8 @@
-import { memo, useRef } from "react";
+import { memo, useRef, lazy, Suspense } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardStats } from "@/components/DashboardStats";
-import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Columns3, Equal } from "lucide-react";
@@ -12,6 +11,10 @@ import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Note } from "@/hooks/useNotes";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load ColumnManager - componente pesado com muitas dependências
+const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
 
 interface TaskCounters {
   total: number;

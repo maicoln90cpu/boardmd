@@ -1,14 +1,17 @@
-import { memo } from "react";
+import { memo, lazy, Suspense } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { FavoritesSection } from "@/components/FavoritesSection";
 import { TemplateSelector } from "@/components/templates/TemplateSelector";
-import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, FileText, Columns3, Equal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load ColumnManager - componente pesado com muitas dependências
+const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
 
 interface DailyKanbanViewProps {
   // Dados
