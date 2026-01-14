@@ -5,7 +5,7 @@ import { TaskCard } from "../TaskCard";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw } from "lucide-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
+import { getColumnTopBarClass, getColumnBackgroundClass } from "@/lib/columnStyles";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";

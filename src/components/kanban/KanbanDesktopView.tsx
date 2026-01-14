@@ -5,7 +5,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { DroppableColumn } from "./DroppableColumn";
 import { KanbanColumnHeader } from "./KanbanColumnHeader";
 import { VirtualizedTaskList } from "./VirtualizedTaskList";
-import { getColumnBackgroundClass } from "./ColumnColorPicker";
+import { getColumnBackgroundClass } from "@/lib/columnStyles";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 

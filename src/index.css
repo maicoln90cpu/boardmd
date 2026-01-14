@@ -254,6 +254,47 @@
   }
 }
 
+/* ===== Density Mode Utility Classes ===== */
+@layer components {
+  .density-comfortable {
+    @apply p-3 gap-2;
+  }
+  
+  .density-compact {
+    @apply p-2 gap-1.5;
+  }
+  
+  .density-ultra-compact {
+    @apply p-1 gap-1;
+  }
+  
+  /* Card variants for density */
+  .density-card-comfortable {
+    @apply p-3 gap-2 text-sm;
+  }
+  
+  .density-card-compact {
+    @apply p-2 gap-1 text-xs;
+  }
+  
+  .density-card-ultra-compact {
+    @apply p-1 gap-0.5 text-xs;
+  }
+  
+  /* Header variants for density */
+  .density-header-comfortable {
+    @apply p-3 text-lg;
+  }
+  
+  .density-header-compact {
+    @apply p-2 text-sm;
+  }
+  
+  .density-header-ultra-compact {
+    @apply p-1.5 text-xs;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
