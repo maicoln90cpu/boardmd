@@ -10,6 +10,8 @@ import { DashboardStats } from "@/components/DashboardStats";
 import { ProductivityInsights } from "@/components/dashboard/ProductivityInsights";
 import { SystemHealthMonitor } from "@/components/dashboard/SystemHealthMonitor";
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
+import { DailyHeroCard } from "@/components/dashboard/DailyHeroCard";
+import { ReportExportButton } from "@/components/dashboard/ReportExportButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -55,29 +57,38 @@ export default function Dashboard() {
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header com botão de voltar */}
-        <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 py-3 border-b bg-background">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-1 sm:gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
-          >
-            <Home className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-xs sm:text-sm">Voltar</span>
-          </button>
-          <h2 className="text-base sm:text-lg font-semibold truncate">📊 Dashboard</h2>
+        <div className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 py-3 border-b bg-background">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1 sm:gap-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm">Voltar</span>
+            </button>
+            <h2 className="text-base sm:text-lg font-semibold truncate">📊 Dashboard</h2>
+          </div>
+          <ReportExportButton tasks={tasks} categories={categories} stats={stats} />
         </div>
 
         <div className="flex-1 overflow-auto pb-[140px] md:pb-0">
-          {/* Hero Section */}
-          <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background p-8 border-b">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex items-center gap-3 mb-4">
-                <Trophy className="h-8 w-8 text-primary" />
-                <h1 className="text-3xl font-bold">Seu Progresso</h1>
-              </div>
-              <p className="text-muted-foreground text-lg">
-                Continue assim! Você está no nível {level} 🎯
-              </p>
-            </div>
+          {/* Hero Card - Resumo Diário */}
+          <div className="p-6 max-w-7xl mx-auto">
+            <DailyHeroCard 
+              stats={stats} 
+              dashboardStats={{
+                total: tasks.length,
+                completed: tasks.filter(t => t.is_completed).length,
+                pending: tasks.filter(t => !t.is_completed).length,
+                overdue: tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && !t.is_completed).length,
+                due_today: tasks.filter(t => t.due_date && new Date(t.due_date).toDateString() === new Date().toDateString() && !t.is_completed).length,
+                due_this_week: tasks.filter(t => t.due_date && new Date(t.due_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && !t.is_completed).length,
+                completed_today: tasks.filter(t => t.is_completed && t.updated_at && new Date(t.updated_at).toDateString() === new Date().toDateString()).length,
+                completed_this_week: tasks.filter(t => t.is_completed && t.updated_at && new Date(t.updated_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length,
+                high_priority: tasks.filter(t => t.priority === 'high' && !t.is_completed).length,
+                favorites: tasks.filter(t => t.is_favorite).length,
+              }}
+            />
           </div>
 
           {/* Stats Overview */}

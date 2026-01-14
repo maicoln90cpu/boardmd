@@ -2,7 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { UserStats } from "@/hooks/useUserStats";
-import { Trophy, Flame, Star, Award } from "lucide-react";
+import { useAchievements, rarityColors, rarityNames, allBadges } from "@/hooks/useAchievements";
+import { Trophy, Flame, Star, Award, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface GamificationPanelProps {
   stats: UserStats | null | undefined;
@@ -13,14 +20,22 @@ export function GamificationPanel({ stats, progress }: GamificationPanelProps) {
   const level = stats?.level || 1;
   const currentPoints = stats?.total_points || 0;
   const pointsInLevel = currentPoints % 100;
-  const nextLevelPoints = level * 100;
 
-  // Badges baseados em conquistas
-  const badges = [];
-  if ((stats?.best_streak || 0) >= 7) badges.push({ icon: "🔥", name: "Semana de Fogo", color: "orange" });
-  if ((stats?.total_points || 0) >= 500) badges.push({ icon: "⭐", name: "Estrela Ascendente", color: "yellow" });
-  if ((stats?.tasks_completed_week || 0) >= 35) badges.push({ icon: "💪", name: "Produtivo", color: "blue" });
-  if (level >= 10) badges.push({ icon: "👑", name: "Mestre", color: "purple" });
+  // Converter stats para o formato do hook
+  const badgeStats = stats ? {
+    level: stats.level || 1,
+    totalPoints: stats.total_points || 0,
+    currentStreak: stats.current_streak || 0,
+    bestStreak: stats.best_streak || 0,
+    tasksCompletedToday: stats.tasks_completed_today || 0,
+    tasksCompletedWeek: stats.tasks_completed_week || 0,
+    totalTasksCompleted: 0, // Não temos essa info direta
+  } : null;
+
+  const { getUnlockedBadges, getNextBadges } = useAchievements(badgeStats);
+
+  const unlockedBadges = getUnlockedBadges();
+  const nextBadges = getNextBadges();
 
   return (
     <Card className="bg-gradient-to-br from-primary/5 to-background">
@@ -75,41 +90,70 @@ export function GamificationPanel({ stats, progress }: GamificationPanelProps) {
           </div>
         </div>
 
-        {/* Badges */}
-        {badges.length > 0 && (
+        {/* Badges Desbloqueados */}
+        {unlockedBadges.length > 0 && (
           <div className="space-y-3">
             <h4 className="font-medium text-sm flex items-center gap-2">
               <Trophy className="h-4 w-4" />
-              Conquistas Desbloqueadas
+              Conquistas ({unlockedBadges.length}/{allBadges.length})
             </h4>
-            <div className="flex flex-wrap gap-2">
-              {badges.map((badge, index) => (
-                <Badge 
-                  key={index} 
-                  variant="secondary"
-                  className="text-sm px-3 py-1"
-                >
-                  <span className="mr-1">{badge.icon}</span>
-                  {badge.name}
-                </Badge>
+            <div className="grid grid-cols-4 gap-2">
+              {unlockedBadges.slice(0, 8).map((badge) => (
+                <HoverCard key={badge.id}>
+                  <HoverCardTrigger asChild>
+                    <button
+                      className={cn(
+                        "aspect-square flex items-center justify-center rounded-lg border-2 text-2xl transition-transform hover:scale-110",
+                        rarityColors[badge.rarity]
+                      )}
+                    >
+                      {badge.icon}
+                    </button>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-64">
+                    <div className="flex items-start gap-3">
+                      <span className="text-3xl">{badge.icon}</span>
+                      <div>
+                        <h4 className="font-bold">{badge.name}</h4>
+                        <p className="text-sm text-muted-foreground">{badge.description}</p>
+                        <Badge 
+                          variant="secondary" 
+                          className={cn("mt-2 text-xs", rarityColors[badge.rarity])}
+                        >
+                          {rarityNames[badge.rarity]}
+                        </Badge>
+                      </div>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               ))}
+              
+              {/* Show more indicator */}
+              {unlockedBadges.length > 8 && (
+                <div className="aspect-square flex items-center justify-center rounded-lg border-2 border-dashed text-muted-foreground text-sm font-medium">
+                  +{unlockedBadges.length - 8}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Next Achievements */}
+        {/* Próximas Conquistas */}
         <div className="p-3 bg-muted rounded-lg">
-          <p className="text-xs text-muted-foreground mb-2">Próximas conquistas:</p>
-          <div className="space-y-1 text-xs">
-            {(stats?.best_streak || 0) < 7 && (
-              <div>🔥 Semana de Fogo (7 dias seguidos)</div>
-            )}
-            {(stats?.total_points || 0) < 500 && (
-              <div>⭐ Estrela Ascendente (500 pontos)</div>
-            )}
-            {level < 10 && (
-              <div>👑 Mestre (Nível 10)</div>
-            )}
+          <p className="text-xs text-muted-foreground mb-3 font-medium">
+            Próximas conquistas:
+          </p>
+          <div className="space-y-2">
+            {nextBadges.map((badge) => (
+              <div
+                key={badge.id}
+                className="flex items-center gap-2 text-sm p-2 rounded bg-background/50"
+              >
+                <span className="text-lg opacity-50">{badge.icon}</span>
+                <span className="flex-1 text-muted-foreground">{badge.name}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+            ))}
           </div>
         </div>
       </CardContent>

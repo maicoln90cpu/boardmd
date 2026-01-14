@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ColorThemeProvider } from "@/contexts/ColorThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UndoProvider } from "@/hooks/useUndoStack";
 import { BulkSelectionProvider } from "@/hooks/useBulkSelection";
@@ -13,6 +14,7 @@ import { SavingTasksProvider } from "@/contexts/SavingTasksContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import {
   KanbanLoadingSkeleton,
@@ -155,18 +157,21 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <ThemeProvider>
-          <UndoProvider>
-            <BulkSelectionProvider>
-              <SwipeProvider>
-                <SavingTasksProvider>
-                  <Toaster />
-                  <Sonner />
-                  <OnlineStatusIndicator />
-                  <AppContent />
-                </SavingTasksProvider>
-              </SwipeProvider>
-            </BulkSelectionProvider>
-          </UndoProvider>
+          <ColorThemeProvider>
+            <UndoProvider>
+              <BulkSelectionProvider>
+                <SwipeProvider>
+                  <SavingTasksProvider>
+                    <Toaster />
+                    <Sonner />
+                    <OnlineStatusIndicator />
+                    <KeyboardShortcutsModal />
+                    <AppContent />
+                  </SavingTasksProvider>
+                </SwipeProvider>
+              </BulkSelectionProvider>
+            </UndoProvider>
+          </ColorThemeProvider>
         </ThemeProvider>
       </TooltipProvider>
     </AuthProvider>
