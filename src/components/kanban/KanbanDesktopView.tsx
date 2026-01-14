@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Column } from "@/hooks/data/useColumns";
 import { Task } from "@/hooks/tasks/useTasks";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -7,6 +7,7 @@ import { KanbanColumnHeader } from "./KanbanColumnHeader";
 import { VirtualizedTaskList } from "./VirtualizedTaskList";
 import { getColumnBackgroundClass } from "./ColumnColorPicker";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
 
 interface KanbanDesktopViewProps {
   columns: Column[];
@@ -75,8 +76,8 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
   originalCategoriesMap,
   completedColumnId,
 }: KanbanDesktopViewProps) {
-  // Estilos baseados no modo de densidade
-  const getStyles = () => {
+  // Estilos baseados no modo de densidade - memoizado
+  const styles = useMemo(() => {
     switch (densityMode) {
       case "ultra-compact":
         return {
@@ -100,9 +101,8 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
           minHeight: compact ? "min-h-[120px]" : "min-h-[200px]",
         };
     }
-  };
-  
-  const styles = getStyles();
+  }, [densityMode, compact]);
+
   const isDragging = !!activeId;
 
   return (
@@ -115,21 +115,21 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
         {columns.map((column, columnIndex) => {
           const columnTasks = getTasksForColumn(column.id);
           const isDropTarget = activeId && overId === column.id;
-          
+
           return (
             <div key={column.id} className="contents">
               <ResizablePanel
                 defaultSize={columnSizes[columnIndex] || 100 / columns.length}
                 minSize={15}
               >
-                <div 
-                  className={`flex flex-col ${styles.gap} h-full transition-all duration-200 ${
-                    isDropTarget 
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg scale-[1.01]" 
-                      : isDragging 
-                        ? "opacity-75" 
-                        : ""
-                  }`}
+                <div
+                  className={cn(
+                    "flex flex-col h-full transition-all duration-200",
+                    styles.gap,
+                    isDropTarget &&
+                      "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg scale-[1.01]",
+                    isDragging && !isDropTarget && "opacity-75"
+                  )}
                 >
                   <KanbanColumnHeader
                     column={column}
@@ -139,7 +139,9 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                     onAddTask={onAddTask}
                     onUncheckRecurrentTasks={onUncheckRecurrentTasks}
                     onColorChange={(color) => onColorChange(column.id, color)}
-                    onToggleSelectionMode={() => isSelectionMode ? onExitSelectionMode() : onEnterSelectionMode()}
+                    onToggleSelectionMode={() =>
+                      isSelectionMode ? onExitSelectionMode() : onEnterSelectionMode()
+                    }
                   />
 
                   <SortableContext
@@ -147,12 +149,17 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                     strategy={verticalListSortingStrategy}
                     id={column.id}
                   >
-                    <DroppableColumn 
+                    <DroppableColumn
                       id={column.id}
                       isActive={isDragging}
-                      className={`flex flex-col ${styles.cardGap} ${styles.minHeight} ${styles.padding} rounded-b-lg border border-t-0 ${getColumnBackgroundClass(column.color)} ${
-                        isDropTarget ? "!bg-primary/10 border-primary/30" : ""
-                      }`}
+                      className={cn(
+                        "flex flex-col rounded-b-lg border border-t-0",
+                        styles.cardGap,
+                        styles.minHeight,
+                        styles.padding,
+                        getColumnBackgroundClass(column.color),
+                        isDropTarget && "!bg-primary/10 border-primary/30"
+                      )}
                     >
                       <VirtualizedTaskList
                         tasks={columnTasks}

@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NotebookTagPicker, NotebookTagFilter } from "./NotebookTagPicker";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface NotebooksListProps {
   notebooks: Notebook[];
@@ -205,9 +206,10 @@ export function NotebooksList({
                       <motion.div 
                         key={note.id}
                         whileHover={{ x: 2 }}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer group transition-all duration-200 hover:shadow-sm ${
+                        className={cn(
+                          "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer group transition-all duration-200 hover:shadow-sm",
                           selectedNoteId === note.id ? "bg-accent shadow-sm" : "hover:bg-accent/50"
-                        }`} 
+                        )}
                         onClick={() => onSelectNote(note.id)}
                       >
                         <FileText className="h-3 w-3 text-muted-foreground" />
@@ -324,16 +326,12 @@ function NotebookHeader({
     <motion.div 
       ref={setNodeRef}
       whileHover={{ y: -1, transition: { duration: 0.1 } }}
-      className={`
-        relative group rounded-lg overflow-hidden
-        transition-all duration-150 cursor-pointer
-        border px-2.5 py-1.5
-        ${isOver ? "ring-2 ring-primary border-primary/30" : "border-transparent"}
-        ${isSelected 
-          ? "bg-primary/10 border-primary/20" 
-          : "hover:bg-accent/50"
-        }
-      `} 
+      className={cn(
+        "relative group rounded-lg overflow-hidden transition-all duration-150 cursor-pointer border px-2.5 py-1.5",
+        isOver && "ring-2 ring-primary border-primary/30",
+        !isOver && "border-transparent",
+        isSelected ? "bg-primary/10 border-primary/20" : "hover:bg-accent/50"
+      )}
       onClick={handleClick}
     >
       {/* Color bar on top */}
@@ -379,7 +377,7 @@ function NotebookHeader({
             onClick={e => e.stopPropagation()} 
           />
         ) : (
-          <span className={`flex-1 text-sm font-medium truncate min-w-0 ${isSelected ? 'text-primary' : ''}`}>
+          <span className={cn("flex-1 text-sm font-medium truncate min-w-0", isSelected && "text-primary")}>
             {notebook.name}
           </span>
         )}
