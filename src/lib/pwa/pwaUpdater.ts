@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { logger, prodLogger } from '@/lib/logger';
 
 export class PWAUpdater {
   private static registration: ServiceWorkerRegistration | null = null;
@@ -6,7 +7,7 @@ export class PWAUpdater {
 
   static async initialize() {
     if (!('serviceWorker' in navigator)) {
-      console.log('Service Worker not supported');
+      logger.log('Service Worker not supported');
       return;
     }
 
@@ -44,7 +45,7 @@ export class PWAUpdater {
       });
 
     } catch (error) {
-      console.error('SW registration failed:', error);
+      prodLogger.error('SW registration failed:', error);
     }
   }
 
@@ -80,9 +81,9 @@ export class PWAUpdater {
     if (this.registration) {
       try {
         await this.registration.update();
-        console.log('Checked for updates');
+        logger.log('Checked for updates');
       } catch (error) {
-        console.error('Update check failed:', error);
+        prodLogger.error('Update check failed:', error);
       }
     }
   }

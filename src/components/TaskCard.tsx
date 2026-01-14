@@ -64,11 +64,38 @@ interface TaskCardProps {
   onMoveToCompleted?: (taskId: string, columnId: string) => void;
 }
 
-// Custom comparison function for React.memo
+// Shallow comparison helper for objects
+const shallowEqualRecurrence = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (a == null || b == null) return a === b;
+  if (typeof a !== 'object' || typeof b !== 'object') return a === b;
+  
+  const aObj = a as Record<string, unknown>;
+  const bObj = b as Record<string, unknown>;
+  const keysA = Object.keys(aObj);
+  const keysB = Object.keys(bObj);
+  
+  if (keysA.length !== keysB.length) return false;
+  
+  for (const key of keysA) {
+    if (aObj[key] !== bObj[key]) return false;
+  }
+  return true;
+};
+
+// Custom comparison function for React.memo - optimized without JSON.stringify
 const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): boolean => {
   const prevTask = prevProps.task;
   const nextTask = nextProps.task;
 
+  // Fast path: same reference
+  if (prevTask === nextTask && 
+      prevProps.isSelected === nextProps.isSelected &&
+      prevProps.isSelectionMode === nextProps.isSelectionMode) {
+    return true;
+  }
+
+  // Compare task primitives
   if (prevTask.id !== nextTask.id) return false;
   if (prevTask.title !== nextTask.title) return false;
   if (prevTask.description !== nextTask.description) return false;
@@ -82,20 +109,30 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevTask.originalCategory !== nextTask.originalCategory) return false;
   if (prevTask.categories?.name !== nextTask.categories?.name) return false;
 
+  // Compare subtasks efficiently
   const prevSubtasks = prevTask.subtasks || [];
   const nextSubtasks = nextTask.subtasks || [];
   if (prevSubtasks.length !== nextSubtasks.length) return false;
   for (let i = 0; i < prevSubtasks.length; i++) {
     if (prevSubtasks[i].completed !== nextSubtasks[i].completed) return false;
+    if (prevSubtasks[i].id !== nextSubtasks[i].id) return false;
   }
 
-  const prevTags = prevTask.tags || [];
-  const nextTags = nextTask.tags || [];
-  if (prevTags.length !== nextTags.length) return false;
-  if (prevTags.join(",") !== nextTags.join(",")) return false;
+  // Compare tags - reference check first, then length, then contents
+  const prevTags = prevTask.tags;
+  const nextTags = nextTask.tags;
+  if (prevTags !== nextTags) {
+    if (!prevTags || !nextTags) return false;
+    if (prevTags.length !== nextTags.length) return false;
+    for (let i = 0; i < prevTags.length; i++) {
+      if (prevTags[i] !== nextTags[i]) return false;
+    }
+  }
 
-  if (JSON.stringify(prevTask.recurrence_rule) !== JSON.stringify(nextTask.recurrence_rule)) return false;
+  // Compare recurrence with shallow comparison instead of JSON.stringify
+  if (!shallowEqualRecurrence(prevTask.recurrence_rule, nextTask.recurrence_rule)) return false;
 
+  // Compare other props
   if (prevProps.compact !== nextProps.compact) return false;
   if (prevProps.isDailyKanban !== nextProps.isDailyKanban) return false;
   if (prevProps.showCategoryBadge !== nextProps.showCategoryBadge) return false;
@@ -105,8 +142,24 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevProps.canMoveRight !== nextProps.canMoveRight) return false;
   if (prevProps.isSelected !== nextProps.isSelected) return false;
   if (prevProps.isSelectionMode !== nextProps.isSelectionMode) return false;
+  if (prevProps.isDraggable !== nextProps.isDraggable) return false;
+  if (prevProps.columnName !== nextProps.columnName) return false;
+  if (prevProps.completedColumnId !== nextProps.completedColumnId) return false;
 
-  if (JSON.stringify(prevProps.priorityColors) !== JSON.stringify(nextProps.priorityColors)) return false;
+  // Compare priorityColors with shallow comparison instead of JSON.stringify
+  if (prevProps.priorityColors !== nextProps.priorityColors) {
+    if (!prevProps.priorityColors || !nextProps.priorityColors) return false;
+    const pColors = prevProps.priorityColors;
+    const nColors = nextProps.priorityColors;
+    if (pColors.high.background !== nColors.high.background ||
+        pColors.high.text !== nColors.high.text ||
+        pColors.medium.background !== nColors.medium.background ||
+        pColors.medium.text !== nColors.medium.text ||
+        pColors.low.background !== nColors.low.background ||
+        pColors.low.text !== nColors.low.text) {
+      return false;
+    }
+  }
 
   return true;
 };

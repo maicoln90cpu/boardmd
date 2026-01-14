@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
+import { logger, prodLogger } from "@/lib/logger";
 
 interface Column {
   id: string;
@@ -43,7 +44,7 @@ export function useTaskReset({
       .not("recurrence_rule", "is", null);
     
     if (fetchError) {
-      if (import.meta.env.DEV) console.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
+      logger.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
       toast({
         title: "Erro ao buscar tarefas",
         description: fetchError.message,
@@ -57,7 +58,7 @@ export function useTaskReset({
       task => !task.tags?.includes("espelho-diário") && task.is_completed === true
     ) || [];
     
-    if (import.meta.env.DEV) console.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
+    logger.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
     
     if (tasksToReset.length === 0) {
       toast({
@@ -96,7 +97,7 @@ export function useTaskReset({
         .in("id", taskIds);
       
       if (error) {
-        if (import.meta.env.DEV) console.error("[RESET] Erro batch update:", error);
+        logger.error("[RESET] Erro batch update:", error);
       } else {
         successCount += taskIds.length;
       }

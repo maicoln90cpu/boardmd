@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger, prodLogger } from "@/lib/logger";
 
 export interface NotificationPayload {
   user_id: string;
@@ -20,14 +21,14 @@ export const oneSignalNotifier = {
       });
 
       if (error) {
-        console.error('[oneSignalNotifier] Error sending notification:', error);
+        prodLogger.error('[oneSignalNotifier] Error sending notification:', error);
         return false;
       }
 
-      console.log('[oneSignalNotifier] Notification sent:', data);
+      logger.log('[oneSignalNotifier] Notification sent:', data);
       return true;
     } catch (error) {
-      console.error('[oneSignalNotifier] Exception:', error);
+      prodLogger.error('[oneSignalNotifier] Exception:', error);
       return false;
     }
   },
