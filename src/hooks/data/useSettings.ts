@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
 import { getDefaultPrompt } from "@/lib/defaultAIPrompts";
-import { logger } from "@/lib/logger";
+import { logger, prodLogger } from "@/lib/logger";
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
@@ -162,14 +162,26 @@ const defaultSettings: AppSettings = {
   },
 };
 
+// Batching configuration
+const BATCH_DEBOUNCE_MS = 500; // Wait 500ms before saving
+const BATCH_MAX_WAIT_MS = 2000; // Force save after 2 seconds max
+
 export function useSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<AppSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Batching state
+  const pendingChangesRef = useRef<Partial<AppSettings>>({});
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxWaitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSaveRef = useRef<number>(Date.now());
+  const isMountedRef = useRef(true);
 
   // Deep merge helper for settings
-  const deepMergeSettings = (loaded: Partial<AppSettings>): AppSettings => ({
+  const deepMergeSettings = useCallback((loaded: Partial<AppSettings>): AppSettings => ({
     ...defaultSettings,
     ...loaded,
     notifications: {
@@ -192,7 +204,6 @@ export function useSettings() {
       ...defaultSettings.mobile,
       ...(loaded.mobile || {}),
     },
-    // BUG 1 FIX: Deep merge customization.priorityColors
     customization: {
       ...defaultSettings.customization,
       ...(loaded.customization || {}),
@@ -201,12 +212,161 @@ export function useSettings() {
         ...(loaded.customization?.priorityColors || {}),
       },
     },
-    // Deep merge filters
     filters: {
       ...defaultSettings.filters,
       ...(loaded.filters || {}),
     },
-  });
+  }), []);
+
+  // Deep merge two partial settings objects
+  const deepMergePartial = useCallback((target: Partial<AppSettings>, source: Partial<AppSettings>): Partial<AppSettings> => {
+    const result = { ...target };
+    
+    for (const key of Object.keys(source) as (keyof AppSettings)[]) {
+      const sourceValue = source[key];
+      const targetValue = result[key];
+      
+      if (sourceValue !== undefined && typeof sourceValue === 'object' && sourceValue !== null && !Array.isArray(sourceValue)) {
+        (result as any)[key] = {
+          ...(typeof targetValue === 'object' && targetValue !== null ? targetValue : {}),
+          ...sourceValue,
+        };
+      } else if (sourceValue !== undefined) {
+        (result as any)[key] = sourceValue;
+      }
+    }
+    
+    return result;
+  }, []);
+
+  // Flush pending changes to database
+  const flushPendingChanges = useCallback(async () => {
+    if (!user || Object.keys(pendingChangesRef.current).length === 0) return;
+    if (!isMountedRef.current) return;
+
+    // Clear timers
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (maxWaitTimerRef.current) {
+      clearTimeout(maxWaitTimerRef.current);
+      maxWaitTimerRef.current = null;
+    }
+
+    // Capture and clear pending changes
+    const changesToSave = pendingChangesRef.current;
+    pendingChangesRef.current = {};
+
+    setIsSaving(true);
+    logger.log('[useSettings] Flushing batched changes:', Object.keys(changesToSave));
+
+    try {
+      // Get current settings from state
+      const currentSettings = settings;
+      
+      // Merge pending changes into current settings
+      const mergedSettings = {
+        ...currentSettings,
+        ...changesToSave,
+        notifications: {
+          ...currentSettings.notifications,
+          ...(changesToSave.notifications || {}),
+        },
+        kanban: {
+          ...currentSettings.kanban,
+          ...(changesToSave.kanban || {}),
+        },
+        productivity: {
+          ...currentSettings.productivity,
+          ...(changesToSave.productivity || {}),
+        },
+        interface: {
+          ...currentSettings.interface,
+          ...(changesToSave.interface || {}),
+        },
+        mobile: {
+          ...currentSettings.mobile,
+          ...(changesToSave.mobile || {}),
+        },
+        customization: {
+          ...currentSettings.customization,
+          ...(changesToSave.customization || {}),
+          priorityColors: {
+            ...currentSettings.customization?.priorityColors,
+            ...(changesToSave.customization?.priorityColors || {}),
+          },
+        },
+        filters: {
+          ...currentSettings.filters,
+          ...(changesToSave.filters || {}),
+        },
+      };
+
+      // Upsert to database
+      const { error } = await supabase
+        .from("user_settings")
+        .upsert(
+          { user_id: user.id, settings: mergedSettings as any },
+          { onConflict: 'user_id' }
+        );
+
+      if (error) throw error;
+
+      lastSaveRef.current = Date.now();
+      if (isMountedRef.current) {
+        setIsDirty(false);
+      }
+      logger.log('[useSettings] Batch save successful');
+    } catch (error) {
+      prodLogger.error('[useSettings] Batch save error:', error);
+      // Re-queue failed changes
+      pendingChangesRef.current = deepMergePartial(changesToSave, pendingChangesRef.current);
+    } finally {
+      if (isMountedRef.current) {
+        setIsSaving(false);
+      }
+    }
+  }, [user, settings, deepMergePartial]);
+
+  // Schedule a batched save
+  const scheduleBatchSave = useCallback(() => {
+    // Clear existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new debounce timer
+    debounceTimerRef.current = setTimeout(() => {
+      flushPendingChanges();
+    }, BATCH_DEBOUNCE_MS);
+
+    // Set max wait timer if not already set
+    if (!maxWaitTimerRef.current) {
+      maxWaitTimerRef.current = setTimeout(() => {
+        flushPendingChanges();
+      }, BATCH_MAX_WAIT_MS);
+    }
+  }, [flushPendingChanges]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      // Flush any pending changes before unmount
+      if (Object.keys(pendingChangesRef.current).length > 0) {
+        flushPendingChanges();
+      }
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (maxWaitTimerRef.current) {
+        clearTimeout(maxWaitTimerRef.current);
+      }
+    };
+  }, [flushPendingChanges]);
 
   // Load settings from database + Realtime sync
   useEffect(() => {
@@ -253,6 +413,8 @@ export function useSettings() {
             const loadedSettings = payload.new.settings as Partial<AppSettings>;
             setSettings(deepMergeSettings(loadedSettings));
             setIsDirty(false);
+            // Clear pending changes since we got fresh data
+            pendingChangesRef.current = {};
           }
         }
       )
@@ -261,9 +423,11 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, deepMergeSettings]);
 
-  const updateSettings = (newSettings: Partial<AppSettings>) => {
+  // Batched update function - queues changes and schedules save
+  const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
+    // Update local state immediately (optimistic update)
     setSettings((prev) => ({
       ...prev,
       ...newSettings,
@@ -287,7 +451,6 @@ export function useSettings() {
         ...prev.mobile,
         ...(newSettings.mobile || {}),
       },
-      // BUG 1 FIX: Deep merge customization.priorityColors
       customization: {
         ...prev.customization,
         ...(newSettings.customization || {}),
@@ -296,18 +459,28 @@ export function useSettings() {
           ...(newSettings.customization?.priorityColors || {}),
         },
       },
-      // Deep merge filters
       filters: {
         ...prev.filters,
         ...(newSettings.filters || {}),
       },
     }));
+    
+    // Queue changes for batched save
+    pendingChangesRef.current = deepMergePartial(pendingChangesRef.current, newSettings);
     setIsDirty(true);
-  };
+    
+    // Schedule batched save
+    scheduleBatchSave();
+  }, [deepMergePartial, scheduleBatchSave]);
 
-  const saveSettings = async () => {
+  // Immediate save (bypass batching) - for critical saves
+  const saveSettings = useCallback(async () => {
     if (!user) return;
 
+    // Flush any pending changes first
+    await flushPendingChanges();
+
+    // Then do immediate save
     const { data: existingSettings } = await supabase
       .from("user_settings")
       .select("id")
@@ -330,39 +503,35 @@ export function useSettings() {
     }
 
     setIsDirty(false);
-  };
+  }, [user, settings, flushPendingChanges]);
 
-  const resetSettings = () => {
+  const resetSettings = useCallback(() => {
     setSettings(defaultSettings);
+    pendingChangesRef.current = defaultSettings;
     setIsDirty(true);
-  };
+    scheduleBatchSave();
+  }, [scheduleBatchSave]);
 
-  const getAIPrompt = (key: string): string => {
+  const getAIPrompt = useCallback((key: string): string => {
     return settings?.aiPrompts?.[key] || '';
-  };
+  }, [settings?.aiPrompts]);
 
-  const updateAIPrompt = (key: string, value: string) => {
-    setSettings((prev) => ({
-      ...prev,
+  const updateAIPrompt = useCallback((key: string, value: string) => {
+    updateSettings({
       aiPrompts: {
-        ...(prev.aiPrompts || {}),
+        ...(settings.aiPrompts || {}),
         [key]: value,
       },
-    }));
-    setIsDirty(true);
-  };
+    });
+  }, [settings.aiPrompts, updateSettings]);
 
-  const resetAIPrompt = (key: string) => {
+  const resetAIPrompt = useCallback((key: string) => {
     updateAIPrompt(key, getDefaultPrompt(key));
-  };
+  }, [updateAIPrompt]);
 
-  const resetAllAIPrompts = () => {
-    setSettings((prev) => ({
-      ...prev,
-      aiPrompts: undefined,
-    }));
-    setIsDirty(true);
-  };
+  const resetAllAIPrompts = useCallback(() => {
+    updateSettings({ aiPrompts: undefined });
+  }, [updateSettings]);
 
   return {
     settings,
@@ -371,9 +540,12 @@ export function useSettings() {
     resetSettings,
     isLoading,
     isDirty,
+    isSaving,
     getAIPrompt,
     updateAIPrompt,
     resetAIPrompt,
     resetAllAIPrompts,
+    // Expose flush for manual trigger if needed
+    flushPendingChanges,
   };
 }
