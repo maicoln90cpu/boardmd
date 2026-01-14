@@ -2,7 +2,8 @@ import { memo, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, CheckSquare } from "lucide-react";
 import { Column } from "@/hooks/data/useColumns";
-import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
+import { ColumnColorPicker } from "./ColumnColorPicker";
+import { getColumnTopBarClass, getColumnBackgroundClass } from "@/lib/columnStyles";
 import { cn } from "@/lib/utils";
 
 interface KanbanColumnHeaderProps {
