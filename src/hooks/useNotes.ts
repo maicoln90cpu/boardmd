@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/ui/useToast";
 import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { toast as sonnerToast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface Note {
   id: string;
@@ -48,9 +49,7 @@ export function useNotes() {
       if (error) throw error;
       setNotes(data || []);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error fetching notes:", error);
-      }
+      logger.error("Error fetching notes:", error);
       toast({
         title: "Erro ao carregar notas",
         variant: "destructive",
@@ -149,9 +148,7 @@ export function useNotes() {
       toast({ title: "Nota criada com sucesso!" });
       return data;
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error adding note:", error);
-      }
+      logger.error("Error adding note:", error);
       toast({
         title: "Erro ao criar nota - salvo offline",
         variant: "destructive",
@@ -247,9 +244,7 @@ export function useNotes() {
 
       toast({ title: "Nota movida para lixeira" });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error deleting note:", error);
-      }
+      logger.error("Error deleting note:", error);
       offlineSync.queueOperation({
         type: 'note',
         action: 'delete',
@@ -286,9 +281,7 @@ export function useNotes() {
         title: notebookId ? "Nota movida para caderno" : "Nota removida do caderno",
       });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error moving note:", error);
-      }
+      logger.error("Error moving note:", error);
       toast({
         title: "Erro ao mover nota",
         variant: "destructive",
@@ -323,9 +316,7 @@ export function useNotes() {
         title: newPinnedState ? "Nota fixada" : "Nota desfixada",
       });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error toggling pin:", error);
-      }
+      logger.error("Error toggling pin:", error);
       toast({
         title: "Erro ao fixar nota",
         variant: "destructive",

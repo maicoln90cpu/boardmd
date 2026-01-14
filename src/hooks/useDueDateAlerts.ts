@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/ui/useToast";
 import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/hooks/data/useSettings";
+import { logger } from "@/lib/logger";
 
 // Request browser notification permission on first call
 let permissionRequested = false;
@@ -68,7 +69,7 @@ function saveNotifiedSet(set: Set<string>) {
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
   } catch (error) {
-    console.error("Failed to save notification state:", error);
+    logger.error("Failed to save notification state:", error);
   }
 }
 

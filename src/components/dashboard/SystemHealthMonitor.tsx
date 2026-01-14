@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RefreshCw, CheckCircle, AlertTriangle, XCircle, Activity, Clock, Server } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface ModuleStatus {
   name: string;
@@ -62,7 +63,7 @@ export function SystemHealthMonitor() {
       const { data, error } = await supabase.functions.invoke("health-check");
       
       if (error) {
-        console.error("Health check error:", error);
+        logger.error("Health check error:", error);
         toast.error("Erro ao verificar saúde do sistema");
         return;
       }
@@ -70,7 +71,7 @@ export function SystemHealthMonitor() {
       setHealth(data as HealthCheckResponse);
       setLastChecked(new Date());
     } catch (error) {
-      console.error("Health check failed:", error);
+      logger.error("Health check failed:", error);
       toast.error("Falha ao conectar com o servidor");
     } finally {
       setLoading(false);

@@ -6,6 +6,7 @@ import { taskSchema } from "@/lib/validations";
 import { z } from "zod";
 import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { logger } from "@/lib/logger";
 
 // Helper to dispatch saving state events
 const dispatchSavingEvent = (taskId: string, isSaving: boolean) => {
@@ -412,7 +413,7 @@ export function useTasks(categoryId: string | null | "all") {
       .in("id", taskIds);
     
     if (updateError) {
-      if (import.meta.env.DEV) console.error("Erro ao resetar tarefas:", updateError);
+      logger.error("Erro ao resetar tarefas:", updateError);
       toast({ title: "Erro ao resetar tarefas", variant: "destructive" });
       return;
     }
@@ -487,9 +488,7 @@ export function useTasks(categoryId: string | null | "all") {
       setTasks(prev => prev.map(t => 
         t.id === taskId ? { ...t, is_favorite: previousValue } : t
       ));
-      if (import.meta.env.DEV) {
-        console.error("Error toggling favorite:", error);
-      }
+      logger.error("Error toggling favorite:", error);
       toast({
         title: "Erro ao atualizar favorito",
         variant: "destructive",

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/lib/logger";
 
 /**
  * Hook otimizado para contagem de tarefas por categoria
@@ -28,7 +29,7 @@ export function useTaskCounts() {
         .eq("user_id", user.id);
 
       if (error) {
-        console.error("Erro ao buscar contagem de tarefas:", error);
+        logger.error("Erro ao buscar contagem de tarefas:", error);
         return;
       }
 
@@ -43,7 +44,7 @@ export function useTaskCounts() {
       setCounts(countMap);
       setTotalCount(data?.length || 0);
     } catch (err) {
-      console.error("Erro ao processar contagem:", err);
+      logger.error("Erro ao processar contagem:", err);
     } finally {
       setLoading(false);
     }

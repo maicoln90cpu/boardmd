@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Task } from "@/hooks/tasks/useTasks";
 import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
+import { logger } from "@/lib/logger";
 import {
   Dialog,
   DialogContent,
@@ -78,7 +79,7 @@ export function DailySortControls({
         } else {
           toast.error("Erro ao organizar tarefas");
         }
-        console.error("Organize error:", error);
+        logger.error("Organize error:", error);
         return;
       }
 
@@ -87,7 +88,7 @@ export function DailySortControls({
         setShowPreview(true);
       }
     } catch (error) {
-      console.error("Organize error:", error);
+      logger.error("Organize error:", error);
       toast.error("Erro ao organizar tarefas");
     } finally {
       setIsOrganizing(false);

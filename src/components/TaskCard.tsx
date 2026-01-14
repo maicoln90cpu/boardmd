@@ -11,6 +11,7 @@ import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
+import { logger } from "@/lib/logger";
 
 // Import subcomponents
 import {
@@ -298,9 +299,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         new CustomEvent("task-updated", { detail: { taskId: task.id } })
       );
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Erro ao atualizar tarefa:", error);
-      }
+      logger.error("Erro ao atualizar tarefa:", error);
       setIsLocalCompleted(!checked);
       toast({
         title: "Erro ao atualizar tarefa",
