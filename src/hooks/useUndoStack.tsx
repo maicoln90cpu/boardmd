@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, createContext, useContext, Re
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { Button } from "@/components/ui/button";
+import { logger } from "@/lib/logger";
 
 /**
  * Sistema de Undo Global
@@ -178,7 +179,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
 
       return true;
     } catch (error) {
-      console.error("Erro ao desfazer ação:", error);
+      logger.error("Erro ao desfazer ação:", error);
       toast({
         title: "Erro ao desfazer",
         description: "Não foi possível reverter a ação",

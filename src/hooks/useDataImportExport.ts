@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { validateImportFile, prepareMergeData, ValidationResult, MergeResult } from "@/lib/importValidation";
 import { Task } from "@/hooks/tasks/useTasks";
+import { logger } from "@/lib/logger";
 
 interface Category {
   id: string;
@@ -95,9 +96,7 @@ export function useDataImportExport({
         // Abrir modal de preview
         setShowImportPreview(true);
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error("Import error:", error);
-        }
+        logger.error("Import error:", error);
         toast({
           title: "Erro na importação",
           description: "Não foi possível ler o arquivo",
@@ -204,9 +203,7 @@ export function useDataImportExport({
       window.dispatchEvent(new CustomEvent('task-updated'));
       onBoardRefresh();
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Import confirm error:", error);
-      }
+      logger.error("Import confirm error:", error);
       toast({
         title: "Erro na importação",
         description: "Ocorreu um erro ao importar os dados",

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
 import { TrashItem, TrashNoteData, TrashNotebookData } from "@/types";
+import { logger } from "@/lib/logger";
 
 // Re-exportar tipo para compatibilidade
 export type { TrashItem };
@@ -36,9 +37,7 @@ export function useTrash() {
 
       setTrashItems(mappedItems);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error fetching trash:", error);
-      }
+      logger.error("Error fetching trash:", error);
       toast({
         title: "Erro ao carregar lixeira",
         variant: "destructive",
@@ -90,9 +89,7 @@ export function useTrash() {
       toast({ title: "Item restaurado com sucesso!" });
       fetchTrash();
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error restoring item:", error);
-      }
+      logger.error("Error restoring item:", error);
       toast({
         title: "Erro ao restaurar item",
         variant: "destructive",
@@ -109,9 +106,7 @@ export function useTrash() {
       toast({ title: "Item excluído permanentemente" });
       fetchTrash();
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error permanently deleting item:", error);
-      }
+      logger.error("Error permanently deleting item:", error);
       toast({
         title: "Erro ao excluir item",
         variant: "destructive",
@@ -131,9 +126,7 @@ export function useTrash() {
       toast({ title: "Lixeira esvaziada!" });
       fetchTrash();
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error emptying trash:", error);
-      }
+      logger.error("Error emptying trash:", error);
       toast({
         title: "Erro ao esvaziar lixeira",
         variant: "destructive",
