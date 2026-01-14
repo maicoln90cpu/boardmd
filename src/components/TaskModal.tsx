@@ -15,6 +15,7 @@ import { useCategories } from "@/hooks/data/useCategories";
 import { useColumns } from "@/hooks/data/useColumns";
 import { SubtasksEditor } from "@/components/kanban/SubtasksEditor";
 import { RecurrenceEditor } from "@/components/kanban/RecurrenceEditor";
+import { AISubtasksSuggester } from "@/components/kanban/AISubtasksSuggester";
 import { TagSelector } from "@/components/TagSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
@@ -687,6 +688,16 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
             </div>
 
             <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
+            
+            {/* AI Subtasks Suggester */}
+            {!task && (
+              <AISubtasksSuggester
+                taskTitle={title}
+                taskDescription={description}
+                existingSubtasks={subtasks}
+                onAddSubtasks={setSubtasks}
+              />
+            )}
             
             <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
             
