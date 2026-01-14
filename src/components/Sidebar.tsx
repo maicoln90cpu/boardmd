@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal, ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Calendar, Layers, FileText, BarChart3, Bell, Settings, LogOut, Timer, MoreHorizontal, ChevronDown, ChevronRight, Folder, LucideIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sidebar as AnimatedSidebar, SidebarBody, SidebarLink, SidebarDivider, useSidebar } from "@/components/ui/animated-sidebar";
 import { useSettings } from "@/hooks/data/useSettings";
-import { useCategories, Category } from "@/hooks/data/useCategories";
+import { useCategories } from "@/hooks/data/useCategories";
 import { CategoryTree } from "@/components/sidebar/CategoryTree";
 import { useTaskCounts } from "@/hooks/data/useTaskCounts";
 
@@ -23,24 +23,66 @@ interface SidebarProps {
   selectedCategoryId?: string | null;
 }
 
+// ============================================================================
+// MENU ITEMS - Constante única usada por desktop e mobile
+// ============================================================================
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  path: string;
+  mode?: "daily" | "all";
+}
+
+const PRIMARY_MENU_ITEMS: MenuItem[] = [
+  { icon: Calendar, label: "Diário", path: "/", mode: "daily" },
+  { icon: Layers, label: "Projetos", path: "/", mode: "all" },
+  { icon: FileText, label: "Anotações", path: "/notes" },
+  { icon: BarChart3, label: "Dashboard", path: "/dashboard" },
+];
+
+const SECONDARY_MENU_ITEMS: MenuItem[] = [
+  { icon: Timer, label: "Pomodoro", path: "/pomodoro" },
+  { icon: Calendar, label: "Calendário", path: "/calendar" },
+  { icon: Bell, label: "Notificações", path: "/notifications" },
+  { icon: Settings, label: "Setup", path: "/config" },
+];
+
+// Helper para verificar se item está ativo
+const isMenuItemActive = (
+  item: MenuItem,
+  pathname: string,
+  viewMode: "daily" | "all"
+): boolean => {
+  if (item.path === "/" && item.mode) {
+    return pathname === "/" && viewMode === item.mode;
+  }
+  return pathname === item.path;
+};
+
+// ============================================================================
+// COMPONENTS
+// ============================================================================
+
 // Logo component without pin button
 const Logo = () => {
-  const {
-    open
-  } = useSidebar();
-  return <div className="flex items-center gap-2 py-2">
+  const { open } = useSidebar();
+  return (
+    <div className="flex items-center gap-2 py-2">
       <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
         <span className="text-primary-foreground font-bold text-sm">KB</span>
       </div>
-      <motion.span animate={{
-      display: open ? "inline-block" : "none",
-      opacity: open ? 1 : 0
-    }} transition={{
-      duration: 0.2
-    }} className="font-semibold text-foreground whitespace-pre">
+      <motion.span
+        animate={{
+          display: open ? "inline-block" : "none",
+          opacity: open ? 1 : 0,
+        }}
+        transition={{ duration: 0.2 }}
+        className="font-semibold text-foreground whitespace-pre"
+      >
         Kanban Board
       </motion.span>
-    </div>;
+    </div>
+  );
 };
 
 // Desktop sidebar content
@@ -48,7 +90,7 @@ const SidebarContent = ({
   viewMode,
   onViewChange,
   onCategorySelect,
-  selectedCategoryId
+  selectedCategoryId,
 }: {
   viewMode: "daily" | "all";
   onViewChange: (mode: "daily" | "all") => void;
@@ -58,92 +100,72 @@ const SidebarContent = ({
   const { categories } = useCategories();
   const { open: sidebarOpen } = useSidebar();
   const [showCategories, setShowCategories] = useState(true);
-  const {
-    signOut
-  } = useAuth();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
   const handleLogout = async () => {
     if (confirm("Deseja realmente sair?")) {
       await signOut();
     }
   };
+
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
     if (mode) {
       setTimeout(() => onViewChange(mode), 50);
     }
   };
-  const primaryLinks = [{
-    label: "Diário",
-    href: "/",
-    icon: <Calendar className="h-5 w-5" />,
-    onClick: () => handleNavigation("/", "daily"),
-    active: viewMode === "daily" && location.pathname === "/"
-  }, {
-    label: "Projetos",
-    href: "/",
-    icon: <Layers className="h-5 w-5" />,
-    onClick: () => {
-      onCategorySelect?.(null);
-      handleNavigation("/", "all");
-    },
-    active: viewMode === "all" && location.pathname === "/"
-  }, {
-    label: "Anotações",
-    href: "/notes",
-    icon: <FileText className="h-5 w-5" />,
-    onClick: () => navigate("/notes"),
-    active: location.pathname === "/notes"
-  }, {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: <BarChart3 className="h-5 w-5" />,
-    onClick: () => navigate("/dashboard"),
-    active: location.pathname === "/dashboard"
-  }];
-  const secondaryLinks = [{
-    label: "Pomodoro",
-    href: "/pomodoro",
-    icon: <Timer className="h-5 w-5" />,
-    onClick: () => navigate("/pomodoro"),
-    active: location.pathname === "/pomodoro"
-  }, {
-    label: "Calendário",
-    href: "/calendar",
-    icon: <Calendar className="h-5 w-5" />,
-    onClick: () => navigate("/calendar"),
-    active: location.pathname === "/calendar"
-  }, {
-    label: "Notificações",
-    href: "/notifications",
-    icon: <Bell className="h-5 w-5" />,
-    onClick: () => navigate("/notifications"),
-    active: location.pathname === "/notifications"
-  }, {
-    label: "Setup",
-    href: "/config",
-    icon: <Settings className="h-5 w-5" />,
-    onClick: () => navigate("/config"),
-    active: location.pathname === "/config"
-  }];
+
+  // Gerar links de sidebar a partir da constante unificada
+  const primaryLinks = useMemo(
+    () =>
+      PRIMARY_MENU_ITEMS.map((item) => ({
+        label: item.label,
+        href: item.path,
+        icon: <item.icon className="h-5 w-5" />,
+        onClick: () => {
+          if (item.mode === "all") {
+            onCategorySelect?.(null);
+          }
+          handleNavigation(item.path, item.mode);
+        },
+        active: isMenuItemActive(item, location.pathname, viewMode),
+      })),
+    [location.pathname, viewMode, onCategorySelect]
+  );
+
+  const secondaryLinks = useMemo(
+    () =>
+      SECONDARY_MENU_ITEMS.map((item) => ({
+        label: item.label,
+        href: item.path,
+        icon: <item.icon className="h-5 w-5" />,
+        onClick: () => navigate(item.path),
+        active: location.pathname === item.path,
+      })),
+    [location.pathname, navigate]
+  );
+
   const handleCategorySelect = (categoryId: string) => {
     onCategorySelect?.(categoryId);
-    // Navigate to projects view when selecting a category
     navigate("/");
     setTimeout(() => onViewChange("all"), 50);
   };
 
   // Filter categories for projects (depth 0 or all)
-  const projectCategories = categories.filter(c => c.name !== "Diário");
+  const projectCategories = categories.filter((c) => c.name !== "Diário");
 
-  return <>
+  return (
+    <>
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
         <Logo />
         <div className="mt-6 flex flex-col gap-1">
-          {primaryLinks.map(link => <SidebarLink key={link.label} link={link} active={link.active} />)}
+          {primaryLinks.map((link) => (
+            <SidebarLink key={link.label} link={link} active={link.active} />
+          ))}
         </div>
-        
+
         {/* Hierarchical Categories Section */}
         {projectCategories.length > 0 && (
           <>
@@ -182,23 +204,30 @@ const SidebarContent = ({
             </div>
           </>
         )}
-        
+
         <SidebarDivider />
         <div className="flex flex-col gap-1">
-          {secondaryLinks.map(link => <SidebarLink key={link.label} link={link} active={link.active} />)}
+          {secondaryLinks.map((link) => (
+            <SidebarLink key={link.label} link={link} active={link.active} />
+          ))}
         </div>
       </div>
       <div className="mt-auto">
         <SidebarDivider />
-        <SidebarLink link={{
-        label: "Sair",
-        href: "#",
-        icon: <LogOut className="h-5 w-5" />,
-        onClick: handleLogout
-      }} className="text-destructive hover:bg-destructive/10 hover:text-destructive" />
+        <SidebarLink
+          link={{
+            label: "Sair",
+            href: "#",
+            icon: <LogOut className="h-5 w-5" />,
+            onClick: handleLogout,
+          }}
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        />
       </div>
-    </>;
+    </>
+  );
 };
+
 export function Sidebar({
   onExport,
   onImport,
@@ -206,12 +235,12 @@ export function Sidebar({
   onViewChange,
   viewMode,
   onCategorySelect,
-  selectedCategoryId
+  selectedCategoryId,
 }: SidebarProps) {
   const { settings, isLoading } = useSettings();
   const isPinned = settings.interface.sidebarPinned;
   const isExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
-  
+
   // Iniciar expandido por padrão para evitar flash visual
   const [open, setOpen] = useState(true);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -223,104 +252,75 @@ export function Sidebar({
   const location = useLocation();
 
   // Filter categories for projects (exclude "Diário")
-  const projectCategories = categories.filter(c => c.name !== "Diário");
+  const projectCategories = categories.filter((c) => c.name !== "Diário");
+
   // Aplicar configuração do usuário SOMENTE após carregar
   useEffect(() => {
     if (!isLoading && !hasInitialized) {
       if (isPinned) {
         setOpen(isExpandedWhenPinned);
       } else {
-        setOpen(false); // Se não está fixado, começa colapsado (hover abre)
+        setOpen(false);
       }
       setHasInitialized(true);
     }
   }, [isLoading, isPinned, isExpandedWhenPinned, hasInitialized]);
-  
+
   // Reagir a mudanças nas configurações após inicialização
   useEffect(() => {
     if (hasInitialized && isPinned) {
       setOpen(isExpandedWhenPinned);
     }
   }, [isPinned, isExpandedWhenPinned, hasInitialized]);
+
   const handleNavigation = (path: string, mode?: "daily" | "all") => {
     navigate(path);
     if (mode) {
       setTimeout(() => onViewChange(mode), 50);
     }
   };
-  const primaryMenuItems = [{
-    icon: Calendar,
-    label: "Diário",
-    active: viewMode === "daily" && location.pathname === "/",
-    onClick: () => handleNavigation("/", "daily")
-  }, {
-    icon: Layers,
-    label: "Projetos",
-    active: viewMode === "all" && location.pathname === "/",
-    onClick: () => {
-      onCategorySelect?.(null);
-      handleNavigation("/", "all");
-    }
-  }, {
-    icon: FileText,
-    label: "Anotações",
-    active: location.pathname === "/notes",
-    onClick: () => navigate("/notes")
-  }, {
-    icon: BarChart3,
-    label: "Dashboard",
-    active: location.pathname === "/dashboard",
-    onClick: () => navigate("/dashboard")
-  }];
-  const secondaryMenuItems = [{
-    icon: Timer,
-    label: "Pomodoro",
-    active: location.pathname === "/pomodoro",
-    onClick: () => navigate("/pomodoro")
-  }, {
-    icon: Calendar,
-    label: "Calendário",
-    active: location.pathname === "/calendar",
-    onClick: () => navigate("/calendar")
-  }, {
-    icon: Bell,
-    label: "Notificações",
-    active: location.pathname === "/notifications",
-    onClick: () => navigate("/notifications")
-  }, {
-    icon: Settings,
-    label: "Setup",
-    active: location.pathname === "/config",
-    onClick: () => navigate("/config")
-  }];
+
+  // Memoizar items de menu para mobile (usando constantes unificadas)
+  const mobileMenuItems = useMemo(() => {
+    return {
+      primary: PRIMARY_MENU_ITEMS.map((item) => ({
+        ...item,
+        active: isMenuItemActive(item, location.pathname, viewMode),
+        onClick: () => {
+          if (item.mode === "all") {
+            onCategorySelect?.(null);
+          }
+          handleNavigation(item.path, item.mode);
+        },
+      })),
+      secondary: SECONDARY_MENU_ITEMS.map((item) => ({
+        ...item,
+        active: location.pathname === item.path,
+        onClick: () => navigate(item.path),
+      })),
+    };
+  }, [location.pathname, viewMode, onCategorySelect, navigate]);
+
   // Skeleton da sidebar enquanto carrega
   if (isLoading) {
     return (
       <>
         {/* Desktop Sidebar Skeleton */}
         <div className="hidden md:flex flex-col h-screen w-[60px] bg-card border-r border-border p-3 gap-4">
-          {/* Logo skeleton */}
           <div className="flex items-center gap-2 py-2">
             <Skeleton className="h-8 w-8 rounded-lg" />
           </div>
-          
-          {/* Menu items skeleton */}
           <div className="flex flex-col gap-2 mt-4">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-8 w-8 rounded-md" />
             ))}
           </div>
-          
           <div className="h-px bg-border my-2" />
-          
-          {/* Secondary items skeleton */}
           <div className="flex flex-col gap-2">
             {[...Array(4)].map((_, i) => (
               <Skeleton key={i} className="h-8 w-8 rounded-md" />
             ))}
           </div>
-          
-          {/* Logout skeleton */}
           <div className="mt-auto">
             <div className="h-px bg-border mb-2" />
             <Skeleton className="h-8 w-8 rounded-md" />
@@ -342,11 +342,17 @@ export function Sidebar({
     );
   }
 
-  return <>
+  return (
+    <>
       {/* Desktop Sidebar with hover animation */}
       <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned}>
         <SidebarBody className="justify-between gap-6">
-          <SidebarContent viewMode={viewMode} onViewChange={onViewChange} onCategorySelect={onCategorySelect} selectedCategoryId={selectedCategoryId} />
+          <SidebarContent
+            viewMode={viewMode}
+            onViewChange={onViewChange}
+            onCategorySelect={onCategorySelect}
+            selectedCategoryId={selectedCategoryId}
+          />
         </SidebarBody>
       </AnimatedSidebar>
 
@@ -354,10 +360,10 @@ export function Sidebar({
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
         <div className="grid grid-cols-5 gap-0.5 p-2 px-0">
           {/* Diário */}
-          <Button 
-            variant={viewMode === "daily" && location.pathname === "/" ? "secondary" : "ghost"} 
-            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]" 
-            onClick={() => handleNavigation("/", "daily")}
+          <Button
+            variant={mobileMenuItems.primary[0].active ? "secondary" : "ghost"}
+            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
+            onClick={mobileMenuItems.primary[0].onClick}
           >
             <Calendar className="h-5 w-5 shrink-0" />
             <span className="truncate w-full text-center leading-tight">Diário</span>
@@ -366,8 +372,8 @@ export function Sidebar({
           {/* Projetos - Sheet com lista de categorias */}
           <Sheet open={projectsMenuOpen} onOpenChange={setProjectsMenuOpen}>
             <SheetTrigger asChild>
-              <Button 
-                variant={viewMode === "all" && location.pathname === "/" ? "secondary" : "ghost"} 
+              <Button
+                variant={mobileMenuItems.primary[1].active ? "secondary" : "ghost"}
                 className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px] relative"
               >
                 <Layers className="h-5 w-5 shrink-0" />
@@ -400,7 +406,7 @@ export function Sidebar({
                 </Button>
 
                 {/* Lista de categorias */}
-                {projectCategories.map(category => (
+                {projectCategories.map((category) => (
                   <Button
                     key={category.id}
                     variant={selectedCategoryId === category.id ? "secondary" : "ghost"}
@@ -428,20 +434,20 @@ export function Sidebar({
           </Sheet>
 
           {/* Anotações */}
-          <Button 
-            variant={location.pathname === "/notes" ? "secondary" : "ghost"} 
-            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]" 
-            onClick={() => navigate("/notes")}
+          <Button
+            variant={mobileMenuItems.primary[2].active ? "secondary" : "ghost"}
+            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
+            onClick={mobileMenuItems.primary[2].onClick}
           >
             <FileText className="h-5 w-5 shrink-0" />
             <span className="truncate w-full text-center leading-tight">Anotações</span>
           </Button>
 
           {/* Dashboard */}
-          <Button 
-            variant={location.pathname === "/dashboard" ? "secondary" : "ghost"} 
-            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]" 
-            onClick={() => navigate("/dashboard")}
+          <Button
+            variant={mobileMenuItems.primary[3].active ? "secondary" : "ghost"}
+            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
+            onClick={mobileMenuItems.primary[3].onClick}
           >
             <BarChart3 className="h-5 w-5 shrink-0" />
             <span className="truncate w-full text-center leading-tight">Dashboard</span>
@@ -450,7 +456,10 @@ export function Sidebar({
           {/* Mais opções */}
           <Sheet open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant={secondaryMenuItems.some(item => item.active) ? "secondary" : "ghost"} className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]">
+              <Button
+                variant={mobileMenuItems.secondary.some((item) => item.active) ? "secondary" : "ghost"}
+                className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
+              >
                 <MoreHorizontal className="h-5 w-5 shrink-0" />
                 <span className="truncate w-full text-center leading-tight">Mais</span>
               </Button>
@@ -460,18 +469,18 @@ export function Sidebar({
                 <SheetTitle>Mais opções</SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-2 mt-6">
-                {secondaryMenuItems.map(item => (
-                  <Button 
-                    key={item.label} 
-                    variant={item.active ? "secondary" : "ghost"} 
+                {mobileMenuItems.secondary.map((item) => (
+                  <Button
+                    key={item.label}
+                    variant={item.active ? "secondary" : "ghost"}
+                    className="w-full justify-start gap-3 min-h-[48px] text-base"
                     onClick={() => {
                       item.onClick();
                       setMoreMenuOpen(false);
-                    }} 
-                    className="justify-start gap-3 min-h-[48px] text-base"
+                    }}
                   >
-                    <item.icon className="h-5 w-5" />
-                    {item.label}
+                    <item.icon className="h-5 w-5 shrink-0" />
+                    <span className="flex-1 text-left">{item.label}</span>
                   </Button>
                 ))}
               </nav>
@@ -479,5 +488,6 @@ export function Sidebar({
           </Sheet>
         </div>
       </nav>
-    </>;
+    </>
+  );
 }

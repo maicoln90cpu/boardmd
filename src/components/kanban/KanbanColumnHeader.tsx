@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, CheckSquare } from "lucide-react";
 import { Column } from "@/hooks/data/useColumns";
 import { ColumnColorPicker, getColumnTopBarClass, getColumnBackgroundClass } from "./ColumnColorPicker";
+import { cn } from "@/lib/utils";
 
 interface KanbanColumnHeaderProps {
   column: Column;
@@ -26,7 +27,7 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
   onToggleSelectionMode,
 }: KanbanColumnHeaderProps) {
   const isRecurrentColumn = column.name.toLowerCase() === "recorrente";
-  
+
   // Memoizar estilos baseados no modo de densidade
   const styles = useMemo(() => {
     switch (densityMode) {
@@ -56,21 +57,30 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
 
   // Memoizar handlers
   const handleAddTask = useCallback(() => onAddTask(column.id), [onAddTask, column.id]);
-  const handleUncheck = useCallback(() => onUncheckRecurrentTasks?.(column.id), [onUncheckRecurrentTasks, column.id]);
+  const handleUncheck = useCallback(
+    () => onUncheckRecurrentTasks?.(column.id),
+    [onUncheckRecurrentTasks, column.id]
+  );
 
   return (
-    <div className={`rounded-t-lg overflow-hidden border border-b-0 ${getColumnBackgroundClass(column.color)}`}>
-      <div className={`h-1.5 w-full ${getColumnTopBarClass(column.color)}`} />
-      <div className={`flex items-center justify-between ${styles.headerPadding}`}>
+    <div
+      className={cn(
+        "rounded-t-lg overflow-hidden border border-b-0",
+        getColumnBackgroundClass(column.color)
+      )}
+    >
+      <div className={cn("h-1.5 w-full", getColumnTopBarClass(column.color))} />
+      <div className={cn("flex items-center justify-between", styles.headerPadding)}>
         <div className="flex items-center gap-2 flex-wrap">
-          <h2 className={`${styles.headerText} font-semibold`}>{column.name}</h2>
-          <span className={`inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold ${
-            taskCount === 0 
-              ? "bg-muted text-muted-foreground" 
-              : taskCount > 5 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-accent text-accent-foreground"
-          }`}>
+          <h2 className={cn(styles.headerText, "font-semibold")}>{column.name}</h2>
+          <span
+            className={cn(
+              "inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold",
+              taskCount === 0 && "bg-muted text-muted-foreground",
+              taskCount > 0 && taskCount <= 5 && "bg-accent text-accent-foreground",
+              taskCount > 5 && "bg-primary text-primary-foreground"
+            )}
+          >
             {taskCount}
           </span>
           {isRecurrentColumn && (
@@ -85,7 +95,7 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
             variant={isSelectionMode ? "default" : "ghost"}
             onClick={onToggleSelectionMode}
             title={isSelectionMode ? "Sair do modo seleção" : "Selecionar múltiplas tarefas"}
-            className={isSelectionMode ? "bg-primary text-primary-foreground" : ""}
+            className={cn(isSelectionMode && "bg-primary text-primary-foreground")}
           >
             <CheckSquare className={styles.iconSize} />
           </Button>
@@ -99,16 +109,18 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
               <RotateCcw className={styles.iconSize} />
             </Button>
           )}
-          <ColumnColorPicker
-            currentColor={column.color}
-            onColorChange={onColorChange}
-          />
+          <ColumnColorPicker currentColor={column.color} onColorChange={onColorChange} />
           <Button
             size="sm"
             onClick={handleAddTask}
             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-full group"
           >
-            <Plus className={`${styles.iconSize} transition-transform group-hover:rotate-90 duration-200`} />
+            <Plus
+              className={cn(
+                styles.iconSize,
+                "transition-transform group-hover:rotate-90 duration-200"
+              )}
+            />
           </Button>
         </div>
       </div>

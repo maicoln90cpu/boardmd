@@ -71,26 +71,29 @@ export const TaskCardUltraCompact: React.FC<TaskCardUltraCompactProps> = ({
         <Button
           size="icon"
           variant="ghost"
-          className={`h-4 w-4 p-0 shrink-0 ${task.is_favorite ? "text-yellow-500" : "text-muted-foreground"}`}
+          className={cn(
+            "h-4 w-4 p-0 shrink-0",
+            task.is_favorite ? "text-yellow-500" : "text-muted-foreground"
+          )}
           onClick={(e) => {
             e.stopPropagation();
             onToggleFavorite(task.id);
           }}
         >
-          <Star className={`h-3 w-3 ${task.is_favorite ? "fill-yellow-500" : ""}`} />
+          <Star className={cn("h-3 w-3", task.is_favorite && "fill-yellow-500")} />
         </Button>
       )}
       <span
         className={cn(
           "font-medium truncate flex-1 min-w-0 cursor-pointer text-xs",
-          isCompleted && "line-through opacity-50",
+          isCompleted && "line-through opacity-50"
         )}
         onClick={onEdit}
       >
         {task.title}
       </span>
       {!hideBadges && showCategoryBadge && task.categories?.name && (
-        <Badge 
+        <Badge
           className="text-[9px] px-1 py-0 shrink-0 rounded-full font-medium shadow-sm"
           style={getCategoryBadgeStyle(task.categories.name)}
         >
@@ -98,8 +101,8 @@ export const TaskCardUltraCompact: React.FC<TaskCardUltraCompactProps> = ({
         </Badge>
       )}
       {!hideBadges && task.priority && (
-        <Badge 
-          className="text-[9px] px-1.5 py-0 shrink-0 rounded-full font-semibold tracking-wide shadow-sm" 
+        <Badge
+          className="text-[9px] px-1.5 py-0 shrink-0 rounded-full font-semibold tracking-wide shadow-sm"
           style={getPriorityBadgeStyle(task.priority)}
         >
           {task.priority[0].toUpperCase()}
@@ -107,7 +110,12 @@ export const TaskCardUltraCompact: React.FC<TaskCardUltraCompactProps> = ({
       )}
       {!hideBadges && task.due_date && (
         <span
-          className={`text-[9px] shrink-0 ${isOverdue ? "text-destructive" : isUrgent ? "text-orange-600" : "text-muted-foreground"}`}
+          className={cn(
+            "text-[9px] shrink-0",
+            isOverdue && "text-destructive",
+            !isOverdue && isUrgent && "text-orange-600",
+            !isOverdue && !isUrgent && "text-muted-foreground"
+          )}
         >
           {formatDateShortBR(task.due_date)}
         </span>

@@ -60,101 +60,118 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   priorityColors,
   originalCategoriesMap = {},
   getTagColor,
-  onAddPoints
+  onAddPoints,
 }: MobileKanbanViewProps) {
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
   const { toast } = useToast();
 
   // Memoizar valores calculados
   const currentColumnIndex = useMemo(
-    () => columns.findIndex(col => col.id === activeTab),
+    () => columns.findIndex((col) => col.id === activeTab),
     [columns, activeTab]
   );
   const canMoveLeft = currentColumnIndex > 0;
   const canMoveRight = currentColumnIndex < columns.length - 1;
 
   // Handler memoizado para toggle de completion via swipe
-  const handleSwipeComplete = useCallback(async (task: Task) => {
-    try {
-      const newCompleted = !task.is_completed;
-      const { error } = await supabase
-        .from("tasks")
-        .update({ is_completed: newCompleted })
-        .eq("id", task.id);
-
-      if (error) throw error;
-
-      // Sincronização bidirecional
-      if (task.mirror_task_id) {
-        await supabase
+  const handleSwipeComplete = useCallback(
+    async (task: Task) => {
+      try {
+        const newCompleted = !task.is_completed;
+        const { error } = await supabase
           .from("tasks")
           .update({ is_completed: newCompleted })
-          .eq("id", task.mirror_task_id);
-      }
+          .eq("id", task.id);
 
-      // Buscar tarefas que apontam para esta
-      const { data: reverseMirrors } = await supabase
-        .from("tasks")
-        .select("id")
-        .eq("mirror_task_id", task.id);
+        if (error) throw error;
 
-      if (reverseMirrors && reverseMirrors.length > 0) {
-        await supabase
+        // Sincronização bidirecional
+        if (task.mirror_task_id) {
+          await supabase
+            .from("tasks")
+            .update({ is_completed: newCompleted })
+            .eq("id", task.mirror_task_id);
+        }
+
+        // Buscar tarefas que apontam para esta
+        const { data: reverseMirrors } = await supabase
           .from("tasks")
-          .update({ is_completed: newCompleted })
-          .in("id", reverseMirrors.map((t) => t.id));
-      }
+          .select("id")
+          .eq("mirror_task_id", task.id);
 
-      // Gamificação
-      if (newCompleted && onAddPoints) {
-        onAddPoints();
-      }
+        if (reverseMirrors && reverseMirrors.length > 0) {
+          await supabase
+            .from("tasks")
+            .update({ is_completed: newCompleted })
+            .in(
+              "id",
+              reverseMirrors.map((t) => t.id)
+            );
+        }
 
-      window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
-      
-      toast({
-        title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
-        duration: 1500,
-      });
-    } catch (error) {
-      logger.error("Erro ao atualizar tarefa:", error);
-      toast({
-        title: "Erro ao atualizar tarefa",
-        variant: "destructive",
-      });
-    }
-  }, [onAddPoints, toast]);
+        // Gamificação
+        if (newCompleted && onAddPoints) {
+          onAddPoints();
+        }
+
+        window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
+
+        toast({
+          title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
+          duration: 1500,
+        });
+      } catch (error) {
+        logger.error("Erro ao atualizar tarefa:", error);
+        toast({
+          title: "Erro ao atualizar tarefa",
+          variant: "destructive",
+        });
+      }
+    },
+    [onAddPoints, toast]
+  );
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto p-2">
-              <div className={cn(
-                "grid gap-3",
-                gridColumns === 1 ? "grid-cols-1" : "grid-cols-2"
-              )}>
+        <div
+          className={cn("grid gap-3", gridColumns === 1 ? "grid-cols-1" : "grid-cols-2")}
+        >
           {columns.map((column) => {
             const columnTasks = getTasksForColumn(column.id);
+            const isRecurrent = column.name.toLowerCase() === "recorrente";
+
             return (
-              <div 
-                key={column.id} 
-                className={`flex flex-col rounded-lg border overflow-hidden min-h-[300px] ${getColumnBackgroundClass(column.color)}`}
+              <div
+                key={column.id}
+                className={cn(
+                  "flex flex-col rounded-lg border overflow-hidden min-h-[300px]",
+                  getColumnBackgroundClass(column.color)
+                )}
               >
                 {/* Barra colorida no topo (estilo KanbanFlow) */}
-                <div className={`h-1 w-full ${getColumnTopBarClass(column.color)}`} />
-                
+                <div className={cn("h-1 w-full", getColumnTopBarClass(column.color))} />
+
                 {/* Header da coluna */}
-                <div className={`p-2 border-b sticky top-0 z-10 ${getColumnBackgroundClass(column.color)}`}>
+                <div
+                  className={cn(
+                    "p-2 border-b sticky top-0 z-10",
+                    getColumnBackgroundClass(column.color)
+                  )}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
                       <h4 className="text-xs font-semibold truncate">{column.name}</h4>
-                      <span className="text-[10px] text-muted-foreground">({columnTasks.length})</span>
-                      {column.name.toLowerCase() === "recorrente" && (
+                      <span className="text-[10px] text-muted-foreground">
+                        ({columnTasks.length})
+                      </span>
+                      {isRecurrent && (
                         <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[9px] font-medium whitespace-nowrap">
                           🔄
                         </span>
                       )}
                     </div>
-                    {column.name.toLowerCase() === "recorrente" && (
+                    {isRecurrent && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -167,10 +184,10 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                     )}
                   </div>
                 </div>
-                
+
                 {/* Lista de tasks */}
                 <SortableContext
-                  items={columnTasks.map(t => t.id)}
+                  items={columnTasks.map((t) => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="flex-1 p-1 space-y-1 overflow-y-auto">
@@ -191,13 +208,16 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                               ease: "easeOut",
                             }}
                           >
-                            {column.name.toLowerCase() === "recorrente" ? (
+                            {isRecurrent ? (
                               // Tarefas recorrentes: sem swipe, sem drag
                               <TaskCard
                                 task={{
                                   ...task,
-                                  originalCategory: originalCategoriesMap[task.id] || 
-                                    (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                                  originalCategory:
+                                    originalCategoriesMap[task.id] ||
+                                    (task.mirror_task_id
+                                      ? originalCategoriesMap[task.mirror_task_id]
+                                      : undefined),
                                 }}
                                 onEdit={() => handleEditTask(task)}
                                 onDelete={() => handleDeleteClick(task.id)}
@@ -224,8 +244,11 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                                 <TaskCard
                                   task={{
                                     ...task,
-                                    originalCategory: originalCategoriesMap[task.id] || 
-                                      (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                                    originalCategory:
+                                      originalCategoriesMap[task.id] ||
+                                      (task.mirror_task_id
+                                        ? originalCategoriesMap[task.mirror_task_id]
+                                        : undefined),
                                   }}
                                   onEdit={() => handleEditTask(task)}
                                   onDelete={() => handleDeleteClick(task.id)}
@@ -243,16 +266,15 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                               </SwipeableTaskCard>
                             )}
                           </motion.div>
-
                         ))}
                       </AnimatePresence>
                     )}
                   </div>
                 </SortableContext>
-                
+
                 {/* Botão adicionar tarefa - Premium */}
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="m-1 h-7 text-[10px] bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 rounded-full group"
                   onClick={() => handleAddTask(column.id)}
                 >
