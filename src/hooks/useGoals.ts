@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { addDays, addMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import confetti from "canvas-confetti";
 
 export interface Goal {
   id: string;
@@ -14,6 +15,7 @@ export interface Goal {
   start_date: string;
   end_date: string;
   is_completed: boolean;
+  auto_increment: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +43,7 @@ export function useGoals() {
   });
 
   const activeGoals = goals.filter(g => !g.is_completed && new Date(g.end_date) >= new Date());
+  const completedGoals = goals.filter(g => g.is_completed);
 
   const createGoal = useMutation({
     mutationFn: async (goal: Omit<GoalInsert, "is_completed" | "current">) => {
@@ -115,6 +118,38 @@ export function useGoals() {
     },
   });
 
+  // Incrementar todas as metas com auto_increment ativas
+  const incrementAutoGoals = async () => {
+    const autoGoals = activeGoals.filter(g => g.auto_increment && !g.is_completed);
+    
+    for (const goal of autoGoals) {
+      const newCurrent = goal.current + 1;
+      const isCompleted = newCurrent >= goal.target;
+
+      await supabase
+        .from("goals")
+        .update({ 
+          current: newCurrent,
+          is_completed: isCompleted 
+        })
+        .eq("id", goal.id);
+
+      if (isCompleted) {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#10B981', '#34D399', '#6EE7B7', '#FFD700'],
+        });
+        toast.success(`🎉 Meta "${goal.title}" concluída!`);
+      }
+    }
+
+    if (autoGoals.length > 0) {
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+    }
+  };
+
   const deleteGoal = useMutation({
     mutationFn: async (goalId: string) => {
       const { error } = await supabase
@@ -147,10 +182,12 @@ export function useGoals() {
   return {
     goals,
     activeGoals,
+    completedGoals,
     isLoading,
     createGoal,
     updateGoal,
     incrementGoal,
+    incrementAutoGoals,
     deleteGoal,
     getDefaultDates,
   };
