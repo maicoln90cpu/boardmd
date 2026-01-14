@@ -24,6 +24,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { RecurrenceRule } from "@/lib/recurrenceUtils";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/lib/logger";
 
 interface TaskModalProps {
   open: boolean;
@@ -297,7 +298,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
                   duration: 3000,
                 });
               } else {
-                console.error("[ESPELHAMENTO] Erro ao atualizar espelho:", updateError);
+                logger.error("[ESPELHAMENTO] Erro ao atualizar espelho:", updateError);
               }
 
               onOpenChange(false);
@@ -452,7 +453,7 @@ export function TaskModal({ open, onOpenChange, onSave, task, columnId, isDailyK
           duration: 3000,
         });
       } else {
-        console.error("[SINCRONIZAÇÃO BIDIRECIONAL] Erro ao atualizar original:", updateError);
+        logger.error("[SINCRONIZAÇÃO BIDIRECIONAL] Erro ao atualizar original:", updateError);
       }
     }
 

@@ -18,6 +18,7 @@ import {
 } from "@/lib/defaultNotificationTemplates";
 import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import { useOneSignal } from "@/hooks/useOneSignal";
+import { logger } from "@/lib/logger";
 
 export function usePushNotifications(tasks: Task[]) {
   const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = useOneSignal();
@@ -107,7 +108,7 @@ export function usePushNotifications(tasks: Task[]) {
               data: { taskId: task.id },
             });
           } catch (error) {
-            console.error('Error sending push notification:', error);
+            logger.error('Error sending push notification:', error);
             // Fallback: Local notification
             pushNotifications.scheduleLocalNotification(
               formatted.title, 

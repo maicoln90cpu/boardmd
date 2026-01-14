@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Bell, BellOff, Wifi, WifiOff } from "lucide-react";
 import { pushNotifications } from "@/lib/push/pushNotifications";
+import { logger } from "@/lib/logger";
 
 export function PushStatusIndicator() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -36,7 +37,7 @@ export function PushStatusIndicator() {
         const subscription = await registration.pushManager.getSubscription();
         setIsSubscribed(!!subscription);
       } catch (error) {
-        console.error("Error checking subscription:", error);
+        logger.error("Error checking subscription:", error);
       }
     }
   };

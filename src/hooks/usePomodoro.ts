@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export type PomodoroState = "idle" | "working" | "shortBreak" | "longBreak" | "paused";
 export type SessionType = "work" | "short_break" | "long_break";
@@ -124,7 +125,7 @@ export function usePomodoro() {
       .single();
 
     if (error) {
-      console.error("Error creating session:", error);
+      logger.error("Error creating session:", error);
       toast.error("Erro ao iniciar sessão");
       return;
     }

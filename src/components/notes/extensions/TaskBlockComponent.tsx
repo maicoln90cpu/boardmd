@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function TaskBlockComponent({ node, updateAttributes, selected }: NodeViewProps) {
   const { taskId, title, isCompleted, priority, dueDate } = node.attrs;
@@ -36,7 +37,7 @@ export function TaskBlockComponent({ node, updateAttributes, selected }: NodeVie
         // Reverter em caso de erro
         updateAttributes({ isCompleted: !newCompletedState });
         toast.error("Erro ao sincronizar tarefa");
-        console.error("Erro ao atualizar tarefa:", error);
+        logger.error("Erro ao atualizar tarefa:", error);
       } else {
         toast.success(newCompletedState ? "Tarefa concluída" : "Tarefa reaberta");
         
@@ -47,7 +48,7 @@ export function TaskBlockComponent({ node, updateAttributes, selected }: NodeVie
       // Reverter em caso de erro
       updateAttributes({ isCompleted: !newCompletedState });
       toast.error("Erro ao sincronizar");
-      console.error("Erro na sincronização:", err);
+      logger.error("Erro na sincronização:", err);
     } finally {
       setIsSyncing(false);
     }

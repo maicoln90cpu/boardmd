@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
+import { logger } from "@/lib/logger";
 
 export interface Tag {
   id: string;
@@ -48,7 +49,7 @@ export const useTags = () => {
       if (error) throw error;
       setTags(data || []);
     } catch (error) {
-      console.error("Error fetching tags:", error);
+      logger.error("Error fetching tags:", error);
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export const useTags = () => {
       });
       return data;
     } catch (error) {
-      console.error("Error adding tag:", error);
+      logger.error("Error adding tag:", error);
       toast({
         title: "Erro ao criar tag",
         description: "Não foi possível criar a tag. Tente novamente.",
@@ -130,7 +131,7 @@ export const useTags = () => {
         prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
       );
     } catch (error) {
-      console.error("Error updating tag:", error);
+      logger.error("Error updating tag:", error);
       toast({
         title: "Erro ao atualizar tag",
         description: "Não foi possível atualizar a tag. Tente novamente.",
@@ -157,7 +158,7 @@ export const useTags = () => {
         description: "A tag foi removida com sucesso.",
       });
     } catch (error) {
-      console.error("Error deleting tag:", error);
+      logger.error("Error deleting tag:", error);
       toast({
         title: "Erro ao excluir tag",
         description: "Não foi possível excluir a tag. Tente novamente.",

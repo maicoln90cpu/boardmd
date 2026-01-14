@@ -7,6 +7,7 @@ import { Bell, CheckCircle, XCircle, Clock, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { logger } from "@/lib/logger";
 
 interface PushLog {
   id: string;
@@ -39,7 +40,7 @@ export function NotificationHistory() {
       if (error) throw error;
       setLogs(data || []);
     } catch (error) {
-      console.error('Error loading logs:', error);
+      logger.error('Error loading logs:', error);
     } finally {
       setLoading(false);
     }

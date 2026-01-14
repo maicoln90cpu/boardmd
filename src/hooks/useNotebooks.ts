@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
+import { logger } from "@/lib/logger";
 
 export interface NotebookTag {
   id: string;
@@ -44,9 +45,7 @@ export function useNotebooks() {
       }));
       setNotebooks(notebooksWithTags);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error fetching notebooks:", error);
-      }
+      logger.error("Error fetching notebooks:", error);
       toast({
         title: "Erro ao carregar cadernos",
         variant: "destructive",
@@ -138,9 +137,7 @@ export function useNotebooks() {
 
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error adding notebook:", error);
-      }
+      logger.error("Error adding notebook:", error);
       // Remover notebook temporário em caso de erro
       setNotebooks((prev) => prev.filter((n) => n.id !== tempId));
       toast({
@@ -171,9 +168,7 @@ export function useNotebooks() {
 
       toast({ title: "Caderno atualizado!" });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error updating notebook:", error);
-      }
+      logger.error("Error updating notebook:", error);
       toast({
         title: "Erro ao atualizar caderno",
         variant: "destructive",
@@ -221,9 +216,7 @@ export function useNotebooks() {
 
       toast({ title: "Caderno movido para lixeira" });
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error deleting notebook:", error);
-      }
+      logger.error("Error deleting notebook:", error);
       toast({
         title: "Erro ao excluir caderno",
         variant: "destructive",
@@ -259,9 +252,7 @@ export function useNotebooks() {
       if (error) throw error;
       window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error adding tag:", error);
-      }
+      logger.error("Error adding tag:", error);
       toast({
         title: "Erro ao adicionar tag",
         variant: "destructive",
@@ -294,9 +285,7 @@ export function useNotebooks() {
       if (error) throw error;
       window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error removing tag:", error);
-      }
+      logger.error("Error removing tag:", error);
       toast({
         title: "Erro ao remover tag",
         variant: "destructive",
@@ -328,9 +317,7 @@ export function useNotebooks() {
       if (error) throw error;
       window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Error updating tags:", error);
-      }
+      logger.error("Error updating tags:", error);
       toast({
         title: "Erro ao atualizar tags",
         variant: "destructive",

@@ -3,6 +3,7 @@ import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { Task } from "@/hooks/tasks/useTasks";
+import { logger } from "@/lib/logger";
 
 interface Column {
   id: string;
@@ -71,11 +72,8 @@ export function useWeeklyAutomation({
     
     if (tasksToMove.length === 0) return;
     
-    // Log para debug
-    if (import.meta.env.DEV) {
-      console.log(`[WeeklyAutomation] Movendo ${tasksToMove.length} tarefas para Semana Atual`);
-      console.log(`[WeeklyAutomation] Colunas excluídas:`, excludeColumnNames);
-    }
+    logger.log(`[WeeklyAutomation] Movendo ${tasksToMove.length} tarefas para Semana Atual`);
+    logger.log(`[WeeklyAutomation] Colunas excluídas:`, excludeColumnNames);
     
     // Batch update
     const taskIds = tasksToMove.map(t => t.id);
@@ -85,7 +83,7 @@ export function useWeeklyAutomation({
       .in("id", taskIds);
     
     if (error) {
-      if (import.meta.env.DEV) console.error("Erro ao mover tarefas:", error);
+      logger.error("Erro ao mover tarefas:", error);
       return;
     }
     

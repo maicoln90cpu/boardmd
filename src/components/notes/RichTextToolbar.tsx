@@ -49,6 +49,7 @@ import { toast } from "sonner";
 import { Task } from "@/hooks/tasks/useTasks";
 import { TaskSelectorModal } from "./TaskSelectorModal";
 import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
+import { logger } from "@/lib/logger";
 
 interface RichTextToolbarProps {
   editor: Editor | null;
@@ -160,7 +161,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
         } else {
           toast.error("Erro ao formatar nota");
         }
-        console.error("Format error:", error);
+        logger.error("Format error:", error);
         return;
       }
 
@@ -169,7 +170,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
         toast.success("Nota formatada com sucesso!");
       }
     } catch (error) {
-      console.error("Format error:", error);
+      logger.error("Format error:", error);
       toast.error("Erro ao formatar nota");
     } finally {
       setIsFormattingWithAI(false);

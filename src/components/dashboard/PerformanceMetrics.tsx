@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/lib/logger";
 import { 
   Activity, 
   TrendingUp, 
@@ -151,7 +152,7 @@ export function PerformanceMetrics() {
           });
         }
       } catch (error) {
-        console.error("Error fetching metrics:", error);
+        logger.error("Error fetching metrics:", error);
       } finally {
         setLoading(false);
       }
