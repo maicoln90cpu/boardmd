@@ -13,6 +13,7 @@ import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { DailyHeroCard } from "@/components/dashboard/DailyHeroCard";
 import { ReportExportButton } from "@/components/dashboard/ReportExportButton";
 import { DashboardWidgetContainer, DashboardWidget } from "@/components/dashboard/DashboardWidgetContainer";
+import { GoalsCard } from "@/components/dashboard/GoalsCard";
 import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
@@ -64,6 +65,10 @@ export default function Dashboard() {
         component: (
           <DailyHeroCard stats={stats} dashboardStats={dashboardStats} />
         ),
+      },
+      "goals": {
+        name: "🎯 Metas",
+        component: <GoalsCard />,
       },
       "stats": {
         name: "📈 Estatísticas",
