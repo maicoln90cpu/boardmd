@@ -1,11 +1,12 @@
 import OneSignal from 'react-onesignal';
+import { logger, prodLogger } from '@/lib/logger';
 
 let initPromise: Promise<boolean> | null = null;
 
 export const initOneSignal = async (): Promise<boolean> => {
   // Se já existe uma promessa de inicialização, aguardar ela
   if (initPromise) {
-    console.log('[OneSignal] Returning existing init promise');
+    logger.log('[OneSignal] Returning existing init promise');
     return initPromise;
   }
 
@@ -23,18 +24,18 @@ export const initOneSignal = async (): Promise<boolean> => {
         serviceWorkerPath: '/OneSignalSDKWorker.js',
       });
 
-      console.log('[OneSignal] Initialized successfully');
+      logger.log('[OneSignal] Initialized successfully');
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       // Se o SDK já foi inicializado, tratamos como sucesso
       if (errorMessage.includes('already initialized')) {
-        console.log('[OneSignal] SDK was already initialized (OK)');
+        logger.log('[OneSignal] SDK was already initialized (OK)');
         return true;
       }
 
-      console.error('[OneSignal] Init error:', error);
+      prodLogger.error('[OneSignal] Init error:', error);
       initPromise = null; // Reset para permitir retry
       return false;
     }
@@ -56,17 +57,17 @@ export const oneSignalUtils = {
       const permission = await Notification.requestPermission();
       
       if (permission !== 'granted') {
-        console.warn('[OneSignal] Permission denied by user');
+        logger.warn('[OneSignal] Permission denied by user');
         return false;
       }
       
       // 2. Fazer opt-in no OneSignal (CRÍTICO!)
       await OneSignal.User.PushSubscription.optIn();
-      console.log('[OneSignal] Permission granted and opted in');
+      logger.log('[OneSignal] Permission granted and opted in');
       
       return true;
     } catch (error) {
-      console.error('[OneSignal] Permission request error:', error);
+      prodLogger.error('[OneSignal] Permission request error:', error);
       return false;
     }
   },
@@ -77,7 +78,7 @@ export const oneSignalUtils = {
       const subscription = OneSignal.User.PushSubscription;
       return subscription.optedIn ?? false;
     } catch (error) {
-      console.error('[OneSignal] Subscription check error:', error);
+      prodLogger.error('[OneSignal] Subscription check error:', error);
       return false;
     }
   },
@@ -88,7 +89,7 @@ export const oneSignalUtils = {
       const subscription = OneSignal.User.PushSubscription;
       return subscription.id ?? null;
     } catch (error) {
-      console.error('[OneSignal] Get subscription ID error:', error);
+      prodLogger.error('[OneSignal] Get subscription ID error:', error);
       return null;
     }
   },
@@ -97,9 +98,9 @@ export const oneSignalUtils = {
   async setExternalUserId(userId: string): Promise<void> {
     try {
       await OneSignal.login(userId);
-      console.log('[OneSignal] External user ID set:', userId);
+      logger.log('[OneSignal] External user ID set:', userId);
     } catch (error) {
-      console.error('[OneSignal] Set external user ID error:', error);
+      prodLogger.error('[OneSignal] Set external user ID error:', error);
     }
   },
 
@@ -107,9 +108,9 @@ export const oneSignalUtils = {
   async addTags(tags: Record<string, string>): Promise<void> {
     try {
       await OneSignal.User.addTags(tags);
-      console.log('[OneSignal] Tags added:', tags);
+      logger.log('[OneSignal] Tags added:', tags);
     } catch (error) {
-      console.error('[OneSignal] Add tags error:', error);
+      prodLogger.error('[OneSignal] Add tags error:', error);
     }
   },
 
@@ -117,9 +118,9 @@ export const oneSignalUtils = {
   async removeTags(tagKeys: string[]): Promise<void> {
     try {
       await OneSignal.User.removeTags(tagKeys);
-      console.log('[OneSignal] Tags removed:', tagKeys);
+      logger.log('[OneSignal] Tags removed:', tagKeys);
     } catch (error) {
-      console.error('[OneSignal] Remove tags error:', error);
+      prodLogger.error('[OneSignal] Remove tags error:', error);
     }
   },
 
@@ -127,9 +128,9 @@ export const oneSignalUtils = {
   async unsubscribe(): Promise<void> {
     try {
       await OneSignal.User.PushSubscription.optOut();
-      console.log('[OneSignal] Unsubscribed');
+      logger.log('[OneSignal] Unsubscribed');
     } catch (error) {
-      console.error('[OneSignal] Unsubscribe error:', error);
+      prodLogger.error('[OneSignal] Unsubscribe error:', error);
     }
   },
 
@@ -137,9 +138,9 @@ export const oneSignalUtils = {
   async resubscribe(): Promise<void> {
     try {
       await OneSignal.User.PushSubscription.optIn();
-      console.log('[OneSignal] Resubscribed');
+      logger.log('[OneSignal] Resubscribed');
     } catch (error) {
-      console.error('[OneSignal] Resubscribe error:', error);
+      prodLogger.error('[OneSignal] Resubscribe error:', error);
     }
   },
 
@@ -160,9 +161,9 @@ export const oneSignalUtils = {
   async logout(): Promise<void> {
     try {
       await OneSignal.logout();
-      console.log('[OneSignal] Logged out');
+      logger.log('[OneSignal] Logged out');
     } catch (error) {
-      console.error('[OneSignal] Logout error:', error);
+      prodLogger.error('[OneSignal] Logout error:', error);
     }
   },
 };

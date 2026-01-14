@@ -7,10 +7,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { CheckCircle2, XCircle, Clock, Smartphone, TrendingUp, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { MonitorLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { logger } from "@/lib/logger";
 
 interface PushLog {
   id: string;
@@ -95,7 +96,7 @@ export function PushNotificationMonitor() {
           table: "push_logs",
         },
         (payload) => {
-          if (import.meta.env.DEV) console.log("Realtime update:", payload);
+          logger.log("Realtime update:", payload);
           fetchData(); // Refresh data on any change
         }
       )

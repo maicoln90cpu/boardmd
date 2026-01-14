@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { oneSignalUtils, initOneSignal } from '@/lib/push/oneSignalProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export function useOneSignal() {
   const [isSupported, setIsSupported] = useState(false);
@@ -40,10 +41,10 @@ export function useOneSignal() {
   // Solicitar permissão e inscrever
   const subscribe = useCallback(async () => {
     if (!isInitialized) {
-      console.warn('[useOneSignal] Not initialized, trying to initialize...');
+      logger.warn('[useOneSignal] Not initialized, trying to initialize...');
       const initialized = await initOneSignal();
       if (!initialized) {
-        console.error('[useOneSignal] Failed to initialize');
+        logger.error('[useOneSignal] Failed to initialize');
         return false;
       }
     }
@@ -54,7 +55,7 @@ export function useOneSignal() {
       // 1. Vincular usuário ANTES de solicitar permissão
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        console.log('[useOneSignal] Linking user:', user.id);
+        logger.log('[useOneSignal] Linking user:', user.id);
         await oneSignalUtils.setExternalUserId(user.id);
       }
       
@@ -62,7 +63,7 @@ export function useOneSignal() {
       const permissionGranted = await oneSignalUtils.requestPermission();
       
       if (!permissionGranted) {
-        console.warn('[useOneSignal] Permission not granted');
+        logger.warn('[useOneSignal] Permission not granted');
         setPermission(Notification.permission);
         return false;
       }
@@ -77,7 +78,7 @@ export function useOneSignal() {
           platform: 'web',
           user_id: user.id,
         });
-        console.log('[useOneSignal] Tags added for user:', user.id);
+        logger.log('[useOneSignal] Tags added for user:', user.id);
       }
       
       // 5. Verificar inscrição final
@@ -85,10 +86,10 @@ export function useOneSignal() {
       setIsSubscribed(subscribed);
       setPermission(Notification.permission);
       
-      console.log('[useOneSignal] Subscribe complete. Subscribed:', subscribed);
+      logger.log('[useOneSignal] Subscribe complete. Subscribed:', subscribed);
       return subscribed;
     } catch (error) {
-      console.error('[useOneSignal] Subscribe error:', error);
+      logger.error('[useOneSignal] Subscribe error:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -105,7 +106,7 @@ export function useOneSignal() {
       setIsSubscribed(false);
       return true;
     } catch (error) {
-      console.error('[useOneSignal] Unsubscribe error:', error);
+      logger.error('[useOneSignal] Unsubscribe error:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -117,7 +118,7 @@ export function useOneSignal() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.warn('[useOneSignal] No user for test notification');
+        logger.warn('[useOneSignal] No user for test notification');
         return false;
       }
 
@@ -132,14 +133,14 @@ export function useOneSignal() {
       });
 
       if (error) {
-        console.error('[useOneSignal] Test notification error:', error);
+        logger.error('[useOneSignal] Test notification error:', error);
         return false;
       }
 
-      console.log('[useOneSignal] Test notification sent:', data);
+      logger.log('[useOneSignal] Test notification sent:', data);
       return true;
     } catch (error) {
-      console.error('[useOneSignal] Test notification error:', error);
+      logger.error('[useOneSignal] Test notification error:', error);
       return false;
     }
   }, []);

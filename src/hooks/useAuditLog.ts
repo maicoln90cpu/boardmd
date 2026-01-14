@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logger, prodLogger } from "@/lib/logger";
 
 export type AuditEventType = 
   | 'login'
@@ -19,7 +20,7 @@ export const logAuditEvent = async ({ eventType, metadata = {} }: AuditLogData) 
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.warn('[audit] No user found for audit log');
+      logger.warn('[audit] No user found for audit log');
       return;
     }
 
@@ -40,12 +41,12 @@ export const logAuditEvent = async ({ eventType, metadata = {} }: AuditLogData) 
       });
 
     if (error) {
-      console.error('[audit] Failed to log event:', error);
+      prodLogger.error('[audit] Failed to log event:', error);
     } else {
-      console.log(`[audit] Event logged: ${eventType}`);
+      logger.log(`[audit] Event logged: ${eventType}`);
     }
   } catch (err) {
-    console.error('[audit] Error logging event:', err);
+    prodLogger.error('[audit] Error logging event:', err);
   }
 };
 
