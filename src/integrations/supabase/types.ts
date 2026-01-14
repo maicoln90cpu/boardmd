@@ -690,6 +690,15 @@ export type Database = {
           issues_found: string[]
         }[]
       }
+      get_dashboard_stats: { Args: { p_user_id: string }; Returns: Json }
+      get_productivity_7_days: {
+        Args: { p_user_id: string }
+        Returns: {
+          completed_count: number
+          day: string
+          day_name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
