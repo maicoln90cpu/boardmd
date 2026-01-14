@@ -17,7 +17,7 @@ export function ProductivityChart({ tasks }: ProductivityChartProps) {
     const dayEnd = endOfDay(date);
 
     const completed = tasks.filter((task) => {
-      if (!task.updated_at || !task.column_id?.includes("done")) return false;
+      if (!task.updated_at || task.is_completed !== true) return false;
       const updatedAt = new Date(task.updated_at);
       return updatedAt >= dayStart && updatedAt <= dayEnd;
     }).length;
