@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Plus, Wrench, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ToolsList } from "@/components/tools/ToolsList";
 import { ToolsSearch } from "@/components/tools/ToolsSearch";
@@ -9,6 +10,8 @@ import { useTools, Tool } from "@/hooks/useTools";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Sidebar } from "@/components/Sidebar";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +47,8 @@ export default function Tools() {
 
   const { tools, loading, addTool, updateTool, deleteTool, toggleFavorite } = useTools();
   const { functions } = useToolFunctions();
+  const { toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   // Filter tools based on search and selected functions
   const filteredTools = useMemo(() => {
@@ -139,7 +144,15 @@ export default function Tools() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-screen">
+      <Sidebar
+        onExport={() => {}}
+        onImport={() => {}}
+        onThemeToggle={toggleTheme}
+        onViewChange={(mode) => navigate(`/?view=${mode}`)}
+        viewMode="all"
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex flex-col gap-4 p-4 md:p-6">
@@ -263,6 +276,7 @@ export default function Tools() {
         onOpenChange={setIsSuggestionsOpen}
         onAddTool={handleSaveTool}
       />
+      </div>
     </div>
   );
 }
