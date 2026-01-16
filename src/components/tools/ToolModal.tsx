@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { SecureApiKeyField } from "./SecureApiKeyField";
 import { FunctionSelector } from "./FunctionSelector";
 import { IconSelector } from "./IconSelector";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Tool {
   id: string;
@@ -49,6 +51,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
   const [icon, setIcon] = useState("wrench");
   const [functionIds, setFunctionIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const isEditing = !!tool;
@@ -117,6 +120,41 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!name.trim()) {
+      toast.error("Informe o nome da ferramenta primeiro");
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-tool-description", {
+        body: { name: name.trim(), siteUrl: siteUrl.trim() || null },
+      });
+
+      if (error) {
+        console.error("Error generating description:", error);
+        toast.error("Erro ao gerar descrição");
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.description) {
+        setDescription(data.description);
+        toast.success("Descrição gerada com sucesso!");
+      }
+    } catch (error) {
+      console.error("Error generating description:", error);
+      toast.error("Erro ao gerar descrição");
+    } finally {
+      setGeneratingDescription(false);
     }
   };
 
@@ -191,7 +229,24 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
 
             {/* Description */}
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="description">Descrição</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleGenerateDescription}
+                  disabled={generatingDescription || !name.trim()}
+                  className="text-xs h-7 px-2 gap-1"
+                >
+                  {generatingDescription ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  Gerar com IA
+                </Button>
+              </div>
               <Textarea
                 id="description"
                 value={description}
