@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
-import { Plus, Wrench, Sparkles } from "lucide-react";
+import { Plus, Wrench, Sparkles, Settings2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ToolsList } from "@/components/tools/ToolsList";
 import { ToolsSearch } from "@/components/tools/ToolsSearch";
 import { ToolModal } from "@/components/tools/ToolModal";
 import { ToolSuggestionsModal } from "@/components/tools/ToolSuggestionsModal";
+import { FunctionManagerModal } from "@/components/tools/FunctionManagerModal";
+import { ToolsCostSummary } from "@/components/tools/ToolsCostSummary";
 import { useTools, Tool } from "@/hooks/useTools";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +46,7 @@ export default function Tools() {
   const [toolToEdit, setToolToEdit] = useState<Tool | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [isFunctionManagerOpen, setIsFunctionManagerOpen] = useState(false);
 
   const { tools, loading, addTool, updateTool, deleteTool, toggleFavorite } = useTools();
   const { functions } = useToolFunctions();
@@ -122,6 +125,7 @@ export default function Tools() {
     api_key?: string | null;
     description?: string | null;
     icon?: string | null;
+    monthly_cost?: number | null;
     function_ids?: string[];
   }): Promise<boolean> => {
     try {
@@ -169,6 +173,14 @@ export default function Tools() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={() => setIsFunctionManagerOpen(true)}
+                title="Gerenciar Funções"
+              >
+                <Settings2 className="h-4 w-4" />
+              </Button>
               <Button variant="outline" onClick={() => setIsSuggestionsOpen(true)}>
                 <Sparkles className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Sugestões IA</span>
@@ -228,6 +240,8 @@ export default function Tools() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {/* Cost Summary */}
+        <ToolsCostSummary tools={tools} />
         <ToolsList
           tools={filteredTools.map(t => ({
             ...t,
@@ -275,6 +289,12 @@ export default function Tools() {
         open={isSuggestionsOpen}
         onOpenChange={setIsSuggestionsOpen}
         onAddTool={handleSaveTool}
+      />
+
+      {/* Function Manager Modal */}
+      <FunctionManagerModal
+        open={isFunctionManagerOpen}
+        onOpenChange={setIsFunctionManagerOpen}
       />
       </div>
     </div>

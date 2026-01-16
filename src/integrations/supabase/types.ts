@@ -700,6 +700,7 @@ export type Database = {
           icon: string | null
           id: string
           is_favorite: boolean | null
+          monthly_cost: number | null
           name: string
           site_url: string | null
           updated_at: string | null
@@ -712,6 +713,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_favorite?: boolean | null
+          monthly_cost?: number | null
           name: string
           site_url?: string | null
           updated_at?: string | null
@@ -724,6 +726,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_favorite?: boolean | null
+          monthly_cost?: number | null
           name?: string
           site_url?: string | null
           updated_at?: string | null

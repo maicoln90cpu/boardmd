@@ -26,6 +26,7 @@ interface Tool {
   description: string | null;
   icon: string | null;
   is_favorite: boolean | null;
+  monthly_cost?: number | null;
   function_ids?: string[];
 }
 
@@ -39,6 +40,7 @@ interface ToolModalProps {
     api_key?: string | null;
     description?: string | null;
     icon?: string | null;
+    monthly_cost?: number | null;
     function_ids?: string[];
   }) => Promise<boolean>;
 }
@@ -49,6 +51,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
   const [apiKey, setApiKey] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("wrench");
+  const [monthlyCost, setMonthlyCost] = useState("");
   const [functionIds, setFunctionIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
@@ -65,6 +68,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
         setApiKey(tool.api_key || "");
         setDescription(tool.description || "");
         setIcon(tool.icon || "wrench");
+        setMonthlyCost(tool.monthly_cost?.toString() || "");
         setFunctionIds(tool.function_ids || []);
       } else {
         setName("");
@@ -72,6 +76,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
         setApiKey("");
         setDescription("");
         setIcon("wrench");
+        setMonthlyCost("");
         setFunctionIds([]);
       }
       setErrors({});
@@ -106,12 +111,14 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
 
     setSaving(true);
     try {
+      const parsedCost = monthlyCost.trim() ? parseFloat(monthlyCost.replace(",", ".")) : null;
       const success = await onSave({
         name: name.trim(),
         site_url: siteUrl.trim() || null,
         api_key: apiKey || null,
         description: description.trim() || null,
         icon,
+        monthly_cost: parsedCost && !isNaN(parsedCost) ? parsedCost : null,
         function_ids: functionIds,
       });
 
@@ -224,6 +231,26 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               <p className="text-xs text-muted-foreground">
                 Sua chave é armazenada de forma segura e nunca é exibida por
                 padrão.
+              </p>
+            </div>
+
+            {/* Monthly Cost */}
+            <div className="space-y-2">
+              <Label htmlFor="monthlyCost">Custo Mensal (R$)</Label>
+              <Input
+                id="monthlyCost"
+                type="text"
+                inputMode="decimal"
+                value={monthlyCost}
+                onChange={(e) => {
+                  // Allow only numbers, comma and dot
+                  const value = e.target.value.replace(/[^0-9.,]/g, "");
+                  setMonthlyCost(value);
+                }}
+                placeholder="0,00"
+              />
+              <p className="text-xs text-muted-foreground">
+                Informe o custo mensal para acompanhar seus gastos.
               </p>
             </div>
 

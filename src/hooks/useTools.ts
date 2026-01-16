@@ -12,6 +12,7 @@ export interface Tool {
   description: string | null;
   icon: string | null;
   is_favorite: boolean | null;
+  monthly_cost: number | null;
   user_id: string;
   created_at: string | null;
   updated_at: string | null;
@@ -25,6 +26,7 @@ interface ToolInsert {
   description?: string | null;
   icon?: string | null;
   is_favorite?: boolean;
+  monthly_cost?: number | null;
   function_ids?: string[];
 }
 
@@ -35,6 +37,7 @@ interface ToolUpdate {
   description?: string | null;
   icon?: string | null;
   is_favorite?: boolean;
+  monthly_cost?: number | null;
   function_ids?: string[];
 }
 
@@ -143,6 +146,7 @@ export const useTools = () => {
           description: toolData.description?.trim() || null,
           icon: toolData.icon || "wrench",
           is_favorite: toolData.is_favorite || false,
+          monthly_cost: toolData.monthly_cost ?? null,
         })
         .select()
         .single();
@@ -206,6 +210,7 @@ export const useTools = () => {
             name: toolUpdates.name?.trim(),
             site_url: toolUpdates.site_url?.trim() || null,
             description: toolUpdates.description?.trim() || null,
+            monthly_cost: toolUpdates.monthly_cost ?? undefined,
           })
           .eq("id", id)
           .eq("user_id", user.id);
