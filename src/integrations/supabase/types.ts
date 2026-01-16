@@ -632,6 +632,105 @@ export type Database = {
           },
         ]
       }
+      tool_function_assignments: {
+        Row: {
+          created_at: string | null
+          function_id: string
+          id: string
+          tool_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          function_id: string
+          id?: string
+          tool_id: string
+        }
+        Update: {
+          created_at?: string | null
+          function_id?: string
+          id?: string
+          tool_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_function_assignments_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "tool_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_function_assignments_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tool_functions: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tools: {
+        Row: {
+          api_key: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_favorite: boolean | null
+          name: string
+          site_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name: string
+          site_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name?: string
+          site_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trash: {
         Row: {
           deleted_at: string
