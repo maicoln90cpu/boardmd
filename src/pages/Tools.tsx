@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
-import { Plus, Wrench } from "lucide-react";
+import { Plus, Wrench, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolsList } from "@/components/tools/ToolsList";
 import { ToolsSearch } from "@/components/tools/ToolsSearch";
 import { ToolModal } from "@/components/tools/ToolModal";
+import { ToolSuggestionsModal } from "@/components/tools/ToolSuggestionsModal";
 import { useTools, Tool } from "@/hooks/useTools";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ export default function Tools() {
   const [toolToDelete, setToolToDelete] = useState<ToolWithFunctions | null>(null);
   const [toolToEdit, setToolToEdit] = useState<Tool | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
 
   const { tools, loading, addTool, updateTool, deleteTool, toggleFavorite } = useTools();
   const { functions } = useToolFunctions();
@@ -153,10 +155,16 @@ export default function Tools() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleAddTool}>
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsSuggestionsOpen(true)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Sugestões IA</span>
+              </Button>
+              <Button onClick={handleAddTool}>
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Adicionar</span>
+              </Button>
+            </div>
           </div>
 
           {/* Search and Filters */}
@@ -247,6 +255,13 @@ export default function Tools() {
         onOpenChange={setIsModalOpen}
         tool={toolToEdit}
         onSave={handleSaveTool}
+      />
+
+      {/* Tool Suggestions Modal */}
+      <ToolSuggestionsModal
+        open={isSuggestionsOpen}
+        onOpenChange={setIsSuggestionsOpen}
+        onAddTool={handleSaveTool}
       />
     </div>
   );
