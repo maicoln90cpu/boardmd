@@ -3,7 +3,8 @@ import { Plus, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToolsList } from "@/components/tools/ToolsList";
 import { ToolsSearch } from "@/components/tools/ToolsSearch";
-import { useTools } from "@/hooks/useTools";
+import { ToolModal } from "@/components/tools/ToolModal";
+import { useTools, Tool } from "@/hooks/useTools";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -18,7 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface Tool {
+interface ToolWithFunctions {
   id: string;
   name: string;
   site_url: string | null;
@@ -29,14 +30,17 @@ interface Tool {
   created_at: string | null;
   updated_at: string | null;
   functions?: { id: string; name: string; color: string }[];
+  function_ids?: string[];
 }
 
 export default function Tools() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFunctionIds, setSelectedFunctionIds] = useState<string[]>([]);
-  const [toolToDelete, setToolToDelete] = useState<Tool | null>(null);
+  const [toolToDelete, setToolToDelete] = useState<ToolWithFunctions | null>(null);
+  const [toolToEdit, setToolToEdit] = useState<Tool | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { tools, loading, deleteTool, toggleFavorite } = useTools();
+  const { tools, loading, addTool, updateTool, deleteTool, toggleFavorite } = useTools();
   const { functions } = useToolFunctions();
 
   // Filter tools based on search and selected functions
@@ -71,9 +75,13 @@ export default function Tools() {
     );
   };
 
-  const handleEdit = (tool: Tool) => {
-    // TODO: Implement in Pacote 4
-    toast.info("Edição será implementada no próximo pacote");
+  const handleEdit = (tool: ToolWithFunctions) => {
+    // Find full tool data from tools array
+    const fullTool = tools.find(t => t.id === tool.id);
+    if (fullTool) {
+      setToolToEdit(fullTool);
+      setIsModalOpen(true);
+    }
   };
 
   const handleDelete = async () => {
@@ -97,8 +105,35 @@ export default function Tools() {
   };
 
   const handleAddTool = () => {
-    // TODO: Implement in Pacote 4
-    toast.info("Adição será implementada no próximo pacote");
+    setToolToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTool = async (data: {
+    name: string;
+    site_url?: string | null;
+    api_key?: string | null;
+    description?: string | null;
+    icon?: string | null;
+    function_ids?: string[];
+  }): Promise<boolean> => {
+    try {
+      if (toolToEdit) {
+        // Update existing tool
+        const success = await updateTool(toolToEdit.id, data);
+        if (success) {
+          toast.success("Ferramenta atualizada com sucesso");
+        }
+        return success;
+      } else {
+        // Create new tool
+        const result = await addTool(data);
+        return !!result;
+      }
+    } catch {
+      toast.error("Erro ao salvar ferramenta");
+      return false;
+    }
   };
 
   return (
@@ -205,6 +240,14 @@ export default function Tools() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Tool Modal */}
+      <ToolModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        tool={toolToEdit}
+        onSave={handleSaveTool}
+      />
     </div>
   );
 }
