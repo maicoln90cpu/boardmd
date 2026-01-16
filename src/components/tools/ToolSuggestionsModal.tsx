@@ -11,6 +11,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
@@ -245,12 +251,63 @@ export function ToolSuggestionsModal({
                       </p>
 
                       {suggestion.functions.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {suggestion.functions.map((func, i) => (
-                            <Badge key={i} variant="secondary" className="text-xs">
-                              {func}
-                            </Badge>
-                          ))}
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {(() => {
+                            // Match suggestion functions with user's registered functions
+                            const matchedFunctions = suggestion.functions
+                              .map((fname) =>
+                                functions.find(
+                                  (f) => f.name.toLowerCase() === fname.toLowerCase()
+                                )
+                              )
+                              .filter(Boolean) as { id: string; name: string; color: string | null }[];
+                            
+                            const displayFunctions = matchedFunctions.slice(0, 3);
+                            const remaining = matchedFunctions.length - 3;
+
+                            return (
+                              <>
+                                {displayFunctions.map((func, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant="secondary"
+                                    className="text-xs text-white"
+                                    style={{ backgroundColor: func.color || '#3B82F6' }}
+                                  >
+                                    {func.name}
+                                  </Badge>
+                                ))}
+                                {remaining > 0 && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Badge variant="outline" className="text-xs cursor-help">
+                                          +{remaining}
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{matchedFunctions.slice(3).map((f) => f.name).join(", ")}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                                {/* Show unmatched functions with default styling */}
+                                {suggestion.functions
+                                  .filter(
+                                    (fname) =>
+                                      !functions.some(
+                                        (f) => f.name.toLowerCase() === fname.toLowerCase()
+                                      )
+                                  )
+                                  .slice(0, 2)
+                                  .map((fname, i) => (
+                                    <Badge key={`unmatched-${i}`} variant="secondary" className="text-xs">
+                                      {fname}
+                                    </Badge>
+                                  ))}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
