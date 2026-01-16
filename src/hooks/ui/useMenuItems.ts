@@ -8,6 +8,7 @@ import {
   Bell, 
   Settings, 
   Timer,
+  Wrench,
   LucideIcon 
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ export const PRIMARY_MENU_ITEMS: MenuItem[] = [
 export const SECONDARY_MENU_ITEMS: MenuItem[] = [
   { icon: Timer, label: "Pomodoro", path: "/pomodoro" },
   { icon: Calendar, label: "Calendário", path: "/calendar" },
+  { icon: Wrench, label: "Ferramentas", path: "/tools" },
   { icon: Bell, label: "Notificações", path: "/notifications" },
   { icon: Settings, label: "Setup", path: "/config" },
 ];
