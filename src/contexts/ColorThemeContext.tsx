@@ -1,4 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useSettings } from "@/hooks/data/useSettings";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ColorPalette = "default" | "ocean" | "forest" | "sunset" | "lavender";
 
@@ -65,22 +67,45 @@ export const paletteColors: Record<ColorPalette, string> = {
 };
 
 export function ColorThemeProvider({ children }: { children: React.ReactNode }) {
-  const [colorPalette, setColorPalette] = useState<ColorPalette>(() => {
+  const { user } = useAuth();
+  const { settings, updateSettings, isLoading } = useSettings();
+  
+  // Estado local para paleta (fallback para localStorage quando não logado)
+  const [localPalette, setLocalPalette] = useState<ColorPalette>(() => {
     const stored = localStorage.getItem("color-palette") as ColorPalette;
     return stored || "default";
   });
 
+  // Paleta atual: usa settings se logado, senão localStorage
+  // Nota: colorPalette está em settings.appearance?.colorPalette (a adicionar) ou fallback
+  const colorPalette: ColorPalette = user && !isLoading 
+    ? ((settings as any).colorPalette || localPalette) 
+    : localPalette;
+
+  // Aplicar variáveis CSS
   useEffect(() => {
     const root = window.document.documentElement;
     const palette = palettes[colorPalette];
 
-    // Aplicar variáveis CSS
     Object.entries(palette).forEach(([key, value]) => {
       root.style.setProperty(`--${key}`, value);
     });
 
+    // Também salvar no localStorage como fallback
     localStorage.setItem("color-palette", colorPalette);
   }, [colorPalette]);
+
+  // Setter que atualiza no banco quando logado
+  const setColorPalette = useCallback((newPalette: ColorPalette) => {
+    if (user) {
+      // Salvar no banco via settings
+      updateSettings({ colorPalette: newPalette } as any);
+    } else {
+      // Salvar apenas localmente
+      setLocalPalette(newPalette);
+      localStorage.setItem("color-palette", newPalette);
+    }
+  }, [user, updateSettings]);
 
   return (
     <ColorThemeContext.Provider value={{ colorPalette, setColorPalette }}>

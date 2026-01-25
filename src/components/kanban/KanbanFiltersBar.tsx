@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/ui/useMobile";
@@ -10,15 +9,16 @@ import { CategoryFilter } from "@/components/CategoryFilter";
 import { FilterPresetsManager } from "./FilterPresetsManager";
 import { FilterPreset } from "@/hooks/useFilterPresets";
 import { RecurrenceFilter } from "./RecurrenceFilter";
+import { MultiSelectFilter } from "./MultiSelectFilter";
 
 interface KanbanFiltersBarProps {
-  // Filtros básicos
+  // Filtros básicos - agora aceitam arrays
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  priorityFilter: string;
-  onPriorityChange: (value: string) => void;
-  tagFilter: string;
-  onTagChange: (value: string) => void;
+  priorityFilter: string | string[];
+  onPriorityChange: (value: string | string[]) => void;
+  tagFilter: string | string[];
+  onTagChange: (value: string | string[]) => void;
   availableTags: string[];
   onClearFilters: () => void;
   
@@ -35,9 +35,9 @@ interface KanbanFiltersBarProps {
   onColumnChange?: (value: string[]) => void;
   columns?: Array<{ id: string; name: string; color?: string | null }>;
   
-  // Filtro de data de vencimento
-  dueDateFilter?: string;
-  onDueDateChange?: (value: string) => void;
+  // Filtro de data de vencimento - agora aceita array
+  dueDateFilter?: string | string[];
+  onDueDateChange?: (value: string | string[]) => void;
   
   // Filtro de recorrência
   recurrenceFilter?: "all" | "recurring" | "non-recurring";
@@ -51,6 +51,37 @@ interface KanbanFiltersBarProps {
   showPresets?: boolean;
   sortOption?: string;
 }
+
+// Opções de prioridade
+const priorityOptions = [
+  { value: "high", label: "Alta", icon: "🔴" },
+  { value: "medium", label: "Média", icon: "🟡" },
+  { value: "low", label: "Baixa", icon: "🟢" },
+];
+
+// Opções de data de vencimento
+const dueDateOptions = [
+  { value: "no_date", label: "Sem data", icon: "📭" },
+  { value: "overdue_today", label: "Atrasadas + Hoje", icon: "🔥" },
+  { value: "overdue", label: "Atrasadas", icon: "🔴" },
+  { value: "today", label: "Hoje", icon: "📅" },
+  { value: "next_7_days", label: "Próximos 7 dias", icon: "📆" },
+  { value: "week", label: "Esta semana", icon: "📆" },
+  { value: "month", label: "Este mês", icon: "🗓️" },
+];
+
+// Helper para normalizar valor para array
+const normalizeToArray = (value: string | string[]): string[] => {
+  if (Array.isArray(value)) return value;
+  if (value === "all" || value === "") return [];
+  return [value];
+};
+
+// Helper para verificar se tem filtros ativos
+const hasActiveFilter = (value: string | string[]): boolean => {
+  const arr = normalizeToArray(value);
+  return arr.length > 0 && !arr.includes("all");
+};
 
 export function KanbanFiltersBar({
   searchTerm,
@@ -82,15 +113,20 @@ export function KanbanFiltersBar({
   const isMobile = useIsMobile();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   
+  // Normalizar valores para arrays
+  const priorityValues = normalizeToArray(priorityFilter);
+  const tagValues = normalizeToArray(tagFilter);
+  const dueDateValues = normalizeToArray(dueDateFilter || "all");
+  
   // Contar filtros ativos
   const countActiveFilters = () => {
     let count = 0;
     if (searchTerm) count++;
-    if (priorityFilter !== "all") count++;
-    if (tagFilter !== "all") count++;
+    if (hasActiveFilter(priorityFilter)) count++;
+    if (hasActiveFilter(tagFilter)) count++;
     if (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) count++;
     if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
-    if (dueDateFilter && dueDateFilter !== "all") count++;
+    if (dueDateFilter && hasActiveFilter(dueDateFilter)) count++;
     if (displayMode && displayMode !== "all_tasks") count++;
     if (recurrenceFilter !== "all") count++;
     return count;
@@ -99,7 +135,7 @@ export function KanbanFiltersBar({
   // Contar filtros secundários ativos (excluindo busca, prioridade e data)
   const countSecondaryActiveFilters = () => {
     let count = 0;
-    if (tagFilter !== "all") count++;
+    if (hasActiveFilter(tagFilter)) count++;
     if (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) count++;
     if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
     if (displayMode && displayMode !== "all_tasks") count++;
@@ -126,69 +162,62 @@ export function KanbanFiltersBar({
   // Filtros atuais para salvar em preset
   const currentFilters: FilterPreset["filters"] = {
     searchTerm: searchTerm || undefined,
-    priorityFilter: priorityFilter !== "all" ? priorityFilter : undefined,
-    tagFilter: tagFilter !== "all" ? tagFilter : undefined,
+    priorityFilter: hasActiveFilter(priorityFilter) ? (Array.isArray(priorityFilter) ? priorityFilter.join(",") : priorityFilter) : undefined,
+    tagFilter: hasActiveFilter(tagFilter) ? (Array.isArray(tagFilter) ? tagFilter.join(",") : tagFilter) : undefined,
     categoryFilter: categoryFilter?.length ? categoryFilter : undefined,
     displayMode: displayMode || undefined,
     sortOption: sortOption || undefined,
   };
 
+  // Filtrar a tag "recorrente" da lista para evitar duplicação com RecurrenceFilter
+  const filteredTags = availableTags.filter(tag => tag.toLowerCase() !== "recorrente");
+  
+  // Converter tags para opções do MultiSelectFilter
+  const tagOptions = filteredTags.map(tag => ({
+    value: tag,
+    label: tag,
+  }));
+
   // Filtros primários (sempre visíveis em mobile)
   const renderPrimaryFilters = () => (
     <>
-      {/* Prioridade */}
-      <Select value={priorityFilter} onValueChange={onPriorityChange}>
-        <SelectTrigger className="w-full md:w-[130px] h-10">
-          <SelectValue placeholder="Prioridade" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Todas</SelectItem>
-          <SelectItem value="high">🔴 Alta</SelectItem>
-          <SelectItem value="medium">🟡 Média</SelectItem>
-          <SelectItem value="low">🟢 Baixa</SelectItem>
-        </SelectContent>
-      </Select>
+      {/* Prioridade - Multi-Select */}
+      <MultiSelectFilter
+        options={priorityOptions}
+        selectedValues={priorityValues}
+        onChange={onPriorityChange}
+        placeholder="Prioridade"
+        allLabel="Todas prioridades"
+        className="w-full md:w-[160px]"
+      />
 
-      {/* Data de Vencimento */}
+      {/* Data de Vencimento - Multi-Select */}
       {onDueDateChange && (
-        <Select value={dueDateFilter || "all"} onValueChange={onDueDateChange}>
-          <SelectTrigger className="w-full md:w-[180px] h-10">
-            <SelectValue placeholder="Vencimento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas datas</SelectItem>
-            <SelectItem value="no_date">📭 Sem data</SelectItem>
-            <SelectItem value="overdue_today">🔥 Atrasadas + Hoje</SelectItem>
-            <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
-            <SelectItem value="today">📅 Hoje</SelectItem>
-            <SelectItem value="next_7_days">📆 Próximos 7 dias</SelectItem>
-            <SelectItem value="week">📆 Esta semana</SelectItem>
-            <SelectItem value="month">🗓️ Este mês</SelectItem>
-          </SelectContent>
-        </Select>
+        <MultiSelectFilter
+          options={dueDateOptions}
+          selectedValues={dueDateValues}
+          onChange={onDueDateChange}
+          placeholder="Vencimento"
+          allLabel="Todas datas"
+          className="w-full md:w-[180px]"
+        />
       )}
     </>
   );
 
-  // Filtrar a tag "recorrente" da lista para evitar duplicação com RecurrenceFilter
-  const filteredTags = availableTags.filter(tag => tag.toLowerCase() !== "recorrente");
-
   // Filtros secundários (em sheet no mobile)
   const renderSecondaryFilters = () => (
     <>
-      {/* Tag (excluindo "recorrente" que tem filtro dedicado) */}
+      {/* Tag - Multi-Select */}
       {filteredTags.length > 0 && (
-        <Select value={tagFilter} onValueChange={onTagChange}>
-          <SelectTrigger className="w-full md:w-[130px] h-10">
-            <SelectValue placeholder="Tag" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas</SelectItem>
-            {filteredTags.map((tag) => (
-              <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelectFilter
+          options={tagOptions}
+          selectedValues={tagValues}
+          onChange={onTagChange}
+          placeholder="Tags"
+          allLabel="Todas tags"
+          className="w-full md:w-[160px]"
+        />
       )}
 
       {/* Categoria (apenas Projetos) */}
@@ -202,51 +231,40 @@ export function KanbanFiltersBar({
         />
       )}
 
-      {/* Coluna/Status */}
+      {/* Coluna/Status - Multi-Select */}
       {columns && columns.length > 0 && onColumnChange && (
-        <Select 
-          value={columnFilter?.length === 1 ? columnFilter[0] : "all"} 
-          onValueChange={(value) => {
-            if (value === "all") {
-              onColumnChange([]);
-            } else {
-              onColumnChange([value]);
-            }
-          }}
-        >
-          <SelectTrigger className="w-full md:w-[140px] h-10">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos status</SelectItem>
-            {columns.map((col) => (
-              <SelectItem key={col.id} value={col.id}>
-                <div className="flex items-center gap-2">
-                  {col.color && (
-                    <div 
-                      className="w-2 h-2 rounded-full" 
-                      style={{ backgroundColor: col.color }}
-                    />
-                  )}
-                  {col.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelectFilter
+          options={columns.map(col => ({
+            value: col.id,
+            label: col.name,
+            color: col.color || undefined,
+          }))}
+          selectedValues={columnFilter || []}
+          onChange={onColumnChange}
+          placeholder="Status"
+          allLabel="Todos status"
+          className="w-full md:w-[160px]"
+        />
       )}
 
       {/* Modo de exibição (apenas Projetos) */}
       {displayMode && onDisplayModeChange && (
-        <Select value={displayMode} onValueChange={onDisplayModeChange}>
-          <SelectTrigger className="w-full md:w-[160px] h-10">
-            <SelectValue placeholder="Exibição" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="by_category">📁 Por categoria</SelectItem>
-            <SelectItem value="all_tasks">📋 Todas as tarefas</SelectItem>
-          </SelectContent>
-        </Select>
+        <MultiSelectFilter
+          options={[
+            { value: "by_category", label: "Por categoria", icon: "📁" },
+            { value: "all_tasks", label: "Todas as tarefas", icon: "📋" },
+          ]}
+          selectedValues={[displayMode]}
+          onChange={(values) => {
+            // Modo de exibição é sempre single select
+            if (values.length > 0) {
+              onDisplayModeChange(values[values.length - 1]);
+            }
+          }}
+          placeholder="Exibição"
+          allLabel="Exibição"
+          className="w-full md:w-[180px]"
+        />
       )}
 
       {/* Filtro de recorrência */}

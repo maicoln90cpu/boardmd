@@ -28,9 +28,9 @@ interface KanbanBoardProps {
   categoryId: string;
   compact?: boolean;
   searchTerm?: string;
-  priorityFilter?: string;
-  tagFilter?: string;
-  dueDateFilter?: string;
+  priorityFilter?: string | string[];
+  tagFilter?: string | string[];
+  dueDateFilter?: string | string[];
   sortOption?: string;
   showCategoryBadge?: boolean;
   allowCrossCategoryDrag?: boolean;
@@ -41,6 +41,14 @@ interface KanbanBoardProps {
   categoryFilterInitialized?: boolean;
   selectedCategoryId?: string;
 }
+
+// Helper para normalizar filtro para array
+const normalizeFilter = (filter: string | string[] | undefined): string[] => {
+  if (!filter) return [];
+  if (Array.isArray(filter)) return filter;
+  if (filter === "all" || filter === "") return [];
+  return [filter];
+};
 
 export function KanbanBoard({ 
   columns, 
@@ -174,6 +182,11 @@ export function KanbanBoard({
   }, [selectedTask, updateTask, categoryId, addTask, selectedColumn]);
 
   const getTasksForColumn = useCallback((columnId: string) => {
+    // Normalizar filtros para arrays
+    const priorities = normalizeFilter(priorityFilter);
+    const tags = normalizeFilter(tagFilter);
+    const dueDates = normalizeFilter(dueDateFilter);
+    
     const filtered = tasks.filter((t) => {
       if (t.column_id !== columnId) return false;
       
@@ -181,46 +194,57 @@ export function KanbanBoard({
         return false;
       }
       
-      if (priorityFilter !== "all" && t.priority !== priorityFilter) {
+      // Filtro de prioridade (OR logic)
+      if (priorities.length > 0 && !priorities.includes(t.priority || "medium")) {
         return false;
       }
       
-      if (tagFilter !== "all" && !t.tags?.includes(tagFilter)) {
+      // Filtro de tags (OR logic)
+      if (tags.length > 0 && !t.tags?.some(tag => tags.includes(tag))) {
         return false;
       }
 
-      if (dueDateFilter && dueDateFilter !== "all") {
+      // Filtro de data (OR logic)
+      if (dueDates.length > 0) {
         const today = startOfToday();
         const taskDueDate = t.due_date ? parseISO(t.due_date) : null;
         
-        switch (dueDateFilter) {
-          case "no_date":
-            if (taskDueDate !== null) return false;
-            break;
-          case "overdue":
-            if (!taskDueDate || !isBefore(taskDueDate, today) || t.is_completed) return false;
-            break;
-          case "overdue_today": {
-            if (!taskDueDate) return false;
-            const isOverdue = isBefore(taskDueDate, today) && !t.is_completed;
-            const isToday = taskDueDate.toDateString() === today.toDateString();
-            if (!isOverdue && !isToday) return false;
-            break;
+        const matchesAnyDateFilter = dueDates.some(dateFilter => {
+          switch (dateFilter) {
+            case "no_date":
+              return taskDueDate === null;
+            case "overdue":
+              return taskDueDate && isBefore(taskDueDate, today) && !t.is_completed;
+            case "overdue_today": {
+              if (!taskDueDate) return false;
+              const isOverdue = isBefore(taskDueDate, today) && !t.is_completed;
+              const isToday = taskDueDate.toDateString() === today.toDateString();
+              return isOverdue || isToday;
+            }
+            case "today":
+              return taskDueDate && taskDueDate.toDateString() === today.toDateString();
+            case "next_7_days": {
+              if (!taskDueDate) return false;
+              const next7Days = new Date(today);
+              next7Days.setDate(next7Days.getDate() + 7);
+              return !isBefore(taskDueDate, today) && !isAfter(taskDueDate, next7Days);
+            }
+            case "week": {
+              const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+              const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+              return taskDueDate && !isBefore(taskDueDate, weekStart) && !isAfter(taskDueDate, weekEnd);
+            }
+            case "month": {
+              const monthStart = startOfMonth(today);
+              const monthEnd = endOfMonth(today);
+              return taskDueDate && !isBefore(taskDueDate, monthStart) && !isAfter(taskDueDate, monthEnd);
+            }
+            default:
+              return true;
           }
-          case "today":
-            if (!taskDueDate || taskDueDate.toDateString() !== today.toDateString()) return false;
-            break;
-          case "week":
-            const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-            const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-            if (!taskDueDate || isBefore(taskDueDate, weekStart) || isAfter(taskDueDate, weekEnd)) return false;
-            break;
-          case "month":
-            const monthStart = startOfMonth(today);
-            const monthEnd = endOfMonth(today);
-            if (!taskDueDate || isBefore(taskDueDate, monthStart) || isAfter(taskDueDate, monthEnd)) return false;
-            break;
-        }
+        });
+        
+        if (!matchesAnyDateFilter) return false;
       }
 
       if (settings.kanban.hideCompletedTasks && t.is_completed) {
