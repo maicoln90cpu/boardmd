@@ -5,6 +5,11 @@
  * 
  * Esta função é executada automaticamente às 23:59h (02:59 UTC) via pg_cron.
  * 
+ * NOVA LÓGICA (pós-remoção do Diário):
+ * - Busca TODAS as tarefas com recurrence_rule globalmente
+ * - Não depende mais da coluna "Recorrente"
+ * - Reset aplica apenas em tarefas com is_completed = true
+ * 
  * IMPORTANTE: Esta função contém uma CÓPIA LOCAL de calculateNextRecurrenceDate
  * porque Edge Functions não podem importar de src/. Ao modificar a lógica de
  * recorrência, ATUALIZE TAMBÉM: src/lib/recurrenceUtils.ts
@@ -45,14 +50,11 @@ interface UserSettings {
 
 /**
  * Obtém a data/hora atual no timezone do usuário
- * @param timezone - IANA timezone string (ex: "America/Sao_Paulo")
- * @returns Date object representando "agora" no timezone do usuário
  */
 function getNowInUserTimezone(timezone: string): Date {
   const now = new Date();
   
   try {
-    // Formatar a data atual no timezone do usuário
     const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: timezone,
       year: 'numeric',
@@ -67,15 +69,13 @@ function getNowInUserTimezone(timezone: string): Date {
     const parts = formatter.formatToParts(now);
     const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
     
-    // Criar uma nova data com os componentes no timezone do usuário
     const year = parseInt(getValue('year'));
-    const month = parseInt(getValue('month')) - 1; // JS months are 0-indexed
+    const month = parseInt(getValue('month')) - 1;
     const day = parseInt(getValue('day'));
     const hour = parseInt(getValue('hour'));
     const minute = parseInt(getValue('minute'));
     const second = parseInt(getValue('second'));
     
-    // Retornar como Date local (será usada para cálculo de próxima recorrência)
     return new Date(year, month, day, hour, minute, second);
   } catch (error) {
     console.error(`[reset-recurring-tasks] Erro ao converter timezone ${timezone}, usando UTC:`, error);
@@ -86,35 +86,23 @@ function getNowInUserTimezone(timezone: string): Date {
 /**
  * CÓPIA LOCAL de calculateNextRecurrenceDate
  * @see src/lib/recurrenceUtils.ts para documentação completa
- * 
- * IMPORTANTE: Manter sincronizado com a versão em recurrenceUtils.ts!
- * 
- * @param currentDueDate - Data de vencimento atual
- * @param recurrenceRule - Regra de recorrência
- * @param userTimezone - Timezone do usuário para cálculo correto
  */
 function calculateNextRecurrenceDate(
   currentDueDate: string | null,
   recurrenceRule: RecurrenceRule | null,
   userTimezone: string = "America/Sao_Paulo"
 ): string {
-  // Usar a data atual no timezone do usuário
   const now = getNowInUserTimezone(userTimezone);
-  
-  console.log(`[calculateNextRecurrenceDate] Timezone: ${userTimezone}, Now local: ${now.toISOString()}`);
 
-  // Sem due_date = retorna hoje
   if (!currentDueDate) {
     return now.toISOString();
   }
 
-  // Extrair horário original para preservar
   const baseDate = new Date(currentDueDate);
   const hours = baseDate.getUTCHours();
   const minutes = baseDate.getUTCMinutes();
   const seconds = baseDate.getUTCSeconds();
 
-  // Helper para criar data com horário original
   const createDateWithTime = (date: Date): string => {
     return new Date(
       Date.UTC(
@@ -136,7 +124,6 @@ function calculateNextRecurrenceDate(
   if (recurrenceRule.weekday !== undefined && recurrenceRule.weekday !== null) {
     const targetDay = recurrenceRule.weekday;
     const nextDate = new Date(now);
-
     const currentDay = nextDate.getDay();
     let daysUntilTarget = targetDay - currentDay;
 
@@ -176,14 +163,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log("[reset-recurring-tasks] Iniciando reset automático às 23:59h");
+    console.log("[reset-recurring-tasks] Iniciando reset automático (busca global por recurrence_rule)");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Buscar todas as tarefas recorrentes completadas
+    // Buscar TODAS as tarefas recorrentes completadas (global)
     const { data: tasks, error: fetchError } = await supabase
       .from("tasks")
       .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
@@ -225,27 +211,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[reset-recurring-tasks] Timezones carregados para ${userTimezones.size} usuários`);
-
     let processed = 0;
     let errors = 0;
     const processedMirrors = new Set<string>();
 
     for (const task of tasks as Task[]) {
       try {
-        // Obter timezone do usuário (default: America/Sao_Paulo)
         const userTimezone = userTimezones.get(task.user_id) || "America/Sao_Paulo";
-        
-        // Calcular próxima data de recorrência usando timezone do usuário
         const nextDueDate = calculateNextRecurrenceDate(
           task.due_date,
           task.recurrence_rule,
           userTimezone
         );
 
-        console.log(
-          `[reset-recurring-tasks] Tarefa "${task.title}": ${task.due_date} -> ${nextDueDate}`
-        );
+        console.log(`[reset-recurring-tasks] Tarefa "${task.title}": ${task.due_date} -> ${nextDueDate}`);
 
         // Atualizar tarefa principal
         const { error: updateError } = await supabase
@@ -265,9 +244,9 @@ Deno.serve(async (req) => {
 
         processed++;
 
-        // Atualizar tarefa espelhada se existir
+        // Sincronização de mirrors (manter compatibilidade)
         if (task.mirror_task_id && !processedMirrors.has(task.mirror_task_id)) {
-          const { error: mirrorError } = await supabase
+          await supabase
             .from("tasks")
             .update({
               is_completed: false,
@@ -275,26 +254,20 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", task.mirror_task_id);
-
-          if (mirrorError) {
-            console.error(`[reset-recurring-tasks] Erro ao atualizar mirror ${task.mirror_task_id}:`, mirrorError);
-          } else {
-            processedMirrors.add(task.mirror_task_id);
-            console.log(`[reset-recurring-tasks] Mirror ${task.mirror_task_id} atualizado`);
-          }
+          processedMirrors.add(task.mirror_task_id);
         }
 
-        // Buscar e atualizar tarefas que apontam para esta (link reverso)
+        // Buscar reverse mirrors
         const { data: reverseMirrors } = await supabase
           .from("tasks")
           .select("id")
           .eq("mirror_task_id", task.id)
           .neq("id", task.id);
 
-        if (reverseMirrors && reverseMirrors.length > 0) {
+        if (reverseMirrors) {
           for (const mirror of reverseMirrors) {
             if (!processedMirrors.has(mirror.id)) {
-              const { error: reverseError } = await supabase
+              await supabase
                 .from("tasks")
                 .update({
                   is_completed: false,
@@ -302,11 +275,7 @@ Deno.serve(async (req) => {
                   updated_at: new Date().toISOString(),
                 })
                 .eq("id", mirror.id);
-
-              if (!reverseError) {
-                processedMirrors.add(mirror.id);
-                console.log(`[reset-recurring-tasks] Reverse mirror ${mirror.id} atualizado`);
-              }
+              processedMirrors.add(mirror.id);
             }
           }
         }
@@ -318,7 +287,7 @@ Deno.serve(async (req) => {
 
     const result = {
       success: true,
-      message: `Reset automático concluído`,
+      message: "Reset automático concluído (busca global)",
       processed,
       mirrors: processedMirrors.size,
       errors,
@@ -334,10 +303,7 @@ Deno.serve(async (req) => {
     console.error("[reset-recurring-tasks] Erro geral:", error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMessage,
-      }),
+      JSON.stringify({ success: false, error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
