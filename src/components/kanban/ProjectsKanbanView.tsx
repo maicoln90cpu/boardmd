@@ -281,7 +281,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               </div>
             </div>
 
-            {/* LINHA 2: Botão Colunas + Resetar + Estatísticas */}
+            {/* LINHA 2: Botão Colunas + Equalizar + Resetar + Estatísticas */}
             <div className="px-3 py-2 border-b flex items-center gap-2">
               <Button
                 variant="outline"
@@ -292,18 +292,15 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                 <Columns3 className="h-4 w-4 mr-2" />
                 Colunas
               </Button>
-              {onResetRecurrentTasks && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onResetRecurrentTasks}
-                  className="flex-1 h-10"
-                  title="Resetar tarefas recorrentes concluídas"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Resetar
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onEqualizeColumns}
+                title="Equalizar largura das colunas"
+                className="h-10 w-10"
+              >
+                <Equal className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -314,6 +311,21 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                 Estatísticas
               </Button>
             </div>
+            {/* LINHA 3: Botão Resetar Recorrentes (separado para destaque) */}
+            {onResetRecurrentTasks && (
+              <div className="px-3 py-2 border-b">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onResetRecurrentTasks}
+                  className="w-full h-10"
+                  title="Resetar tarefas recorrentes concluídas"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Resetar Recorrentes
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>
