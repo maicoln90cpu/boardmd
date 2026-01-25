@@ -13,6 +13,7 @@ export interface TaskFilterOptions {
   priorityFilter?: string;
   tagFilter?: string;
   dueDateFilter?: string;
+  recurrenceFilter?: "all" | "recurring" | "non-recurring";
   categoryFilter?: string[];
   categoryFilterInitialized?: boolean;
   excludeCategoryId?: string;
@@ -31,6 +32,7 @@ export function useTaskFiltering(
     priorityFilter = "all",
     tagFilter = "all",
     dueDateFilter = "all",
+    recurrenceFilter = "all",
     categoryFilter = [],
     categoryFilterInitialized = false,
     excludeCategoryId,
@@ -65,7 +67,7 @@ export function useTaskFiltering(
     });
   }, [tasks, excludeCategoryId, categoryFilter, categoryFilterInitialized, selectedCategoryFilterMobile, isMobile, viewMode]);
 
-  // Aplicar filtros de busca, prioridade, tag e data usando funções centralizadas
+  // Aplicar filtros de busca, prioridade, tag, data e recorrência
   const filteredTasks = useMemo(() => {
     let result = categoryFilteredTasks;
 
@@ -89,8 +91,15 @@ export function useTaskFiltering(
       result = filterByDueDate(result, dueDateFilter);
     }
 
+    // Filtro de recorrência
+    if (recurrenceFilter === "recurring") {
+      result = result.filter(task => task.recurrence_rule !== null);
+    } else if (recurrenceFilter === "non-recurring") {
+      result = result.filter(task => task.recurrence_rule === null);
+    }
+
     return result;
-  }, [categoryFilteredTasks, searchTerm, priorityFilter, tagFilter, dueDateFilter]);
+  }, [categoryFilteredTasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, recurrenceFilter]);
 
   // Extrair tags disponíveis das tarefas filtradas
   const availableTags = useMemo(() => {

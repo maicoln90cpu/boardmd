@@ -31,6 +31,9 @@ export function useIndexFilters(categories: Category[]) {
   // Date filters from settings.kanban
   const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
   const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
+  
+  // Recurrence filter from settings.filters
+  const recurrenceFilter = (settings.filters?.recurrence ?? "all") as "all" | "recurring" | "non-recurring";
 
   // Debounced save to avoid multiple writes
   const debouncedSave = useDebounceCallback(() => {
@@ -78,6 +81,11 @@ export function useIndexFilters(categories: Category[]) {
     debouncedSave();
   }, [updateSettings, settings.kanban, debouncedSave]);
 
+  const setRecurrenceFilter = useCallback((value: "all" | "recurring" | "non-recurring") => {
+    updateSettings({ filters: { ...settings.filters, recurrence: value } });
+    debouncedSave();
+  }, [updateSettings, settings.filters, debouncedSave]);
+
   // Clear all filters
   const handleClearFilters = useCallback(() => {
     setSearchTerm("");
@@ -86,7 +94,8 @@ export function useIndexFilters(categories: Category[]) {
     clearCategoryFilters();
     setDailyDueDateFilter("all");
     setProjectsDueDateFilter("all");
-  }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters, setDailyDueDateFilter, setProjectsDueDateFilter]);
+    setRecurrenceFilter("all");
+  }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters, setDailyDueDateFilter, setProjectsDueDateFilter, setRecurrenceFilter]);
 
   return {
     // Settings access
@@ -124,6 +133,10 @@ export function useIndexFilters(categories: Category[]) {
     setDailyDueDateFilter,
     projectsDueDateFilter,
     setProjectsDueDateFilter,
+    
+    // Recurrence filter
+    recurrenceFilter,
+    setRecurrenceFilter,
     
     // Handler
     handleClearFilters,

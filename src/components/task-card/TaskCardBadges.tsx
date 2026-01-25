@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, AlertCircle, FileText } from "lucide-react";
+import { Calendar, Clock, AlertCircle, FileText, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
 import { useNavigate } from "react-router-dom";
@@ -221,6 +221,29 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
           )}
         >
           ✓ {subtasksCompleted}/{subtasksCount}
+        </Badge>
+      )}
+
+      {/* Recurrence badge */}
+      {!hideBadges && hasRecurrence && (
+        <Badge
+          className={cn(
+            "flex items-center gap-1 rounded-full font-medium shadow-sm",
+            densityMode === "compact" && "text-[10px] px-2 py-0.5",
+            densityMode === "comfortable" && "text-xs px-2.5 py-1",
+          )}
+          style={{
+            background: "linear-gradient(135deg, #a855f7 0%, #7c3aed 50%, #6366f1 100%)",
+            color: "#ffffff",
+            boxShadow: "0 2px 8px rgba(168, 85, 247, 0.35)",
+          }}
+          title="Tarefa recorrente"
+        >
+          <Repeat className={cn(
+            densityMode === "compact" && "h-2.5 w-2.5",
+            densityMode === "comfortable" && "h-3 w-3",
+          )} />
+          Recorrente
         </Badge>
       )}
 

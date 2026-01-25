@@ -53,6 +53,7 @@ interface ProjectsKanbanViewProps {
   priorityFilter: string;
   tagFilter: string;
   dueDateFilter: string;
+  recurrenceFilter?: "all" | "recurring" | "non-recurring";
   categoryFilter: string[];
   categoryFilterInitialized: boolean;
   selectedCategory?: string;
@@ -62,6 +63,7 @@ interface ProjectsKanbanViewProps {
   onPriorityChange: (value: string) => void;
   onTagChange: (value: string) => void;
   onDueDateChange: (value: string) => void;
+  onRecurrenceFilterChange?: (value: "all" | "recurring" | "non-recurring") => void;
   onCategoryChange: (value: string[]) => void;
   onDisplayModeChange: (value: string) => void;
   onClearFilters: () => void;
@@ -113,10 +115,12 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   categoryFilter,
   categoryFilterInitialized,
   selectedCategory,
+  recurrenceFilter = "all",
   onSearchChange,
   onPriorityChange,
   onTagChange,
   onDueDateChange,
+  onRecurrenceFilterChange,
   onCategoryChange,
   onDisplayModeChange,
   onClearFilters,
@@ -300,6 +304,8 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         availableTags={availableTags}
         dueDateFilter={dueDateFilter}
         onDueDateChange={onDueDateChange}
+        recurrenceFilter={recurrenceFilter}
+        onRecurrenceFilterChange={onRecurrenceFilterChange}
         onClearFilters={onClearFilters}
         categoryFilter={categoryFilter}
         onCategoryChange={onCategoryChange}

@@ -88,6 +88,7 @@ export interface AppSettings {
     dailyPriority: string;
     dailyTag: string;
     dailySearch: string;
+    recurrence: "all" | "recurring" | "non-recurring";
   };
 }
 
@@ -159,6 +160,7 @@ const defaultSettings: AppSettings = {
     dailyPriority: 'all',
     dailyTag: 'all',
     dailySearch: '',
+    recurrence: 'all',
   },
 };
 
