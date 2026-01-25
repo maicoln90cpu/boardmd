@@ -297,10 +297,5 @@ describe('TaskModal', () => {
       const { getByText } = renderModal({ defaultDueDate: tomorrow.toISOString().split('T')[0] });
       expect(getByText('Nova Tarefa')).toBeInTheDocument();
     });
-
-    it('deve indicar isDailyKanban quando true', () => {
-      const { getByText } = renderModal({ isDailyKanban: true });
-      expect(getByText('Nova Tarefa')).toBeInTheDocument();
-    });
   });
 });

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import React from 'react';
 
 // Helper para aguardar condição assíncrona
 const waitForCondition = async (callback: () => boolean, timeout = 1000) => {
@@ -250,13 +249,13 @@ describe('useColumns', () => {
       expect(visibleColumns.length).toBeGreaterThan(0);
     });
 
-    it('deve filtrar por kanbanType', async () => {
+    it('deve filtrar por kanbanType projects', async () => {
       const { result } = renderHook(() => useColumns());
 
       await waitForCondition(() => result.current.loading === false);
 
-      const dailyColumns = result.current.getVisibleColumns('daily');
-      expect(dailyColumns.every(c => c.show_in_daily !== false)).toBe(true);
+      const projectsColumns = result.current.getVisibleColumns('projects');
+      expect(projectsColumns.every(c => c.show_in_projects !== false)).toBe(true);
     });
   });
 
@@ -271,7 +270,6 @@ describe('useColumns', () => {
       expect(column).toHaveProperty('created_at');
       expect(column).toHaveProperty('color');
       expect(column).toHaveProperty('kanban_type');
-      expect(column).toHaveProperty('show_in_daily');
       expect(column).toHaveProperty('show_in_projects');
     });
   });

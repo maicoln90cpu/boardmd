@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Shield, Database, AlertTriangle, Clock } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Shield, Database, AlertTriangle, Clock, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
@@ -12,10 +12,9 @@ import { useSettings } from "@/hooks/data/useSettings";
 import { logger } from "@/lib/logger";
 
 interface IntegrityIssue {
-  type: 'broken_reference' | 'duplicate' | 'orphan_mirror' | 'missing_mutual';
+  type: 'missing_recurrence_tag' | 'orphan_recurrence_tag' | 'invalid_recurrence_rule' | 'duplicate';
   severity: 'low' | 'medium' | 'high';
   taskId: string;
-  mirrorTaskId?: string;
   taskTitle: string;
   details: string;
   fixable: boolean;
@@ -25,7 +24,7 @@ interface IntegrityReport {
   timestamp: Date;
   totalTasks: number;
   tasksWithRecurrence: number;
-  tasksWithMirrors: number;
+  tasksWithRecurrenceTag: number;
   issues: IntegrityIssue[];
   healthy: boolean;
 }
@@ -50,41 +49,71 @@ export function DataIntegrityMonitor() {
     try {
       const { data: tasks, error } = await supabase
         .from('tasks')
-        .select('id, title, mirror_task_id, recurrence_rule, category_id, is_completed');
+        .select('id, title, recurrence_rule, category_id, is_completed, tags');
 
       if (error) throw error;
 
-      const taskMap = new Map(tasks?.map(t => [t.id, t]) || []);
       const tasksWithRecurrence = tasks?.filter(t => t.recurrence_rule !== null) || [];
-      const tasksWithMirrors = tasks?.filter(t => t.mirror_task_id !== null) || [];
+      const tasksWithRecurrenceTag = tasks?.filter(t => 
+        t.tags?.some((tag: string) => tag.toLowerCase() === 'recorrente')
+      ) || [];
 
-      // Verificar referências quebradas (apontando para tarefa inexistente)
-      for (const task of tasksWithMirrors) {
-        if (task.mirror_task_id && !taskMap.has(task.mirror_task_id)) {
+      // Verificar tarefas com recurrence_rule mas SEM tag "recorrente"
+      for (const task of tasksWithRecurrence) {
+        const hasRecurrenceTag = task.tags?.some((tag: string) => tag.toLowerCase() === 'recorrente');
+        if (!hasRecurrenceTag) {
           issues.push({
-            type: 'broken_reference',
-            severity: 'high',
+            type: 'missing_recurrence_tag',
+            severity: 'medium',
             taskId: task.id,
             taskTitle: task.title,
-            details: `Referência para tarefa inexistente: ${task.mirror_task_id}`,
+            details: 'Tarefa tem regra de recorrência mas não possui a tag "recorrente"',
             fixable: true
           });
         }
       }
 
-      // Verificar referências mútuas quebradas (A aponta para B, mas B não aponta para A)
-      for (const task of tasksWithMirrors) {
-        if (task.mirror_task_id) {
-          const mirrorTask = taskMap.get(task.mirror_task_id);
-          if (mirrorTask && mirrorTask.mirror_task_id !== task.id) {
+      // Verificar tarefas com tag "recorrente" mas SEM recurrence_rule
+      for (const task of tasksWithRecurrenceTag) {
+        if (!task.recurrence_rule) {
+          issues.push({
+            type: 'orphan_recurrence_tag',
+            severity: 'low',
+            taskId: task.id,
+            taskTitle: task.title,
+            details: 'Tarefa tem tag "recorrente" mas não possui regra de recorrência configurada',
+            fixable: true
+          });
+        }
+      }
+
+      // Verificar recurrence_rule malformado
+      for (const task of tasksWithRecurrence) {
+        if (task.recurrence_rule) {
+          try {
+            const rule = typeof task.recurrence_rule === 'string' 
+              ? JSON.parse(task.recurrence_rule) 
+              : task.recurrence_rule;
+            
+            // Validar estrutura básica
+            if (!rule.frequency || !['daily', 'weekly', 'monthly', 'yearly'].includes(rule.frequency)) {
+              issues.push({
+                type: 'invalid_recurrence_rule',
+                severity: 'high',
+                taskId: task.id,
+                taskTitle: task.title,
+                details: `Regra de recorrência inválida: frequency ausente ou inválido`,
+                fixable: false
+              });
+            }
+          } catch {
             issues.push({
-              type: 'missing_mutual',
-              severity: 'medium',
+              type: 'invalid_recurrence_rule',
+              severity: 'high',
               taskId: task.id,
-              mirrorTaskId: task.mirror_task_id,
               taskTitle: task.title,
-              details: `Espelho "${mirrorTask.title}" (${task.mirror_task_id}) não aponta de volta para esta tarefa`,
-              fixable: true
+              details: 'Regra de recorrência com formato JSON inválido',
+              fixable: false
             });
           }
         }
@@ -113,34 +142,11 @@ export function DataIntegrityMonitor() {
         }
       }
 
-      // Verificar tarefas recorrentes órfãs (em projetos sem espelho no Diário)
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('id, name');
-      
-      const diarioCategory = categories?.find(c => c.name.toLowerCase() === 'diário');
-      
-      for (const task of tasksWithRecurrence) {
-        if (diarioCategory && task.category_id !== diarioCategory.id && !task.mirror_task_id) {
-          const hasMirror = tasks?.some(t => t.mirror_task_id === task.id);
-          if (!hasMirror) {
-            issues.push({
-              type: 'orphan_mirror',
-              severity: 'low',
-              taskId: task.id,
-              taskTitle: task.title,
-              details: 'Tarefa recorrente sem espelho no Diário',
-              fixable: false
-            });
-          }
-        }
-      }
-
       const newReport: IntegrityReport = {
         timestamp: new Date(),
         totalTasks: tasks?.length || 0,
         tasksWithRecurrence: tasksWithRecurrence.length,
-        tasksWithMirrors: tasksWithMirrors.length,
+        tasksWithRecurrenceTag: tasksWithRecurrenceTag.length,
         issues,
         healthy: issues.filter(i => i.severity === 'high').length === 0
       };
@@ -181,26 +187,42 @@ export function DataIntegrityMonitor() {
   const fixIssue = async (issue: IntegrityIssue) => {
     setFixing(true);
     try {
-      if (issue.type === 'broken_reference') {
-        // Remover referência para tarefa inexistente
+      if (issue.type === 'missing_recurrence_tag') {
+        // Adicionar tag "recorrente" à tarefa
+        const { data: task } = await supabase
+          .from('tasks')
+          .select('tags')
+          .eq('id', issue.taskId)
+          .single();
+
+        const currentTags = task?.tags || [];
+        const newTags = [...currentTags, 'recorrente'];
+
         const { error } = await supabase
           .from('tasks')
-          .update({ mirror_task_id: null })
+          .update({ tags: newTags })
           .eq('id', issue.taskId);
         
         if (error) throw error;
-        toast.success('Referência quebrada removida');
-      } else if (issue.type === 'missing_mutual') {
-        // Estabelecer referência bidirecional (o espelho deve apontar de volta)
-        if (issue.mirrorTaskId) {
-          const { error } = await supabase
-            .from('tasks')
-            .update({ mirror_task_id: issue.taskId })
-            .eq('id', issue.mirrorTaskId);
-          
-          if (error) throw error;
-          toast.success('Referência bidirecional estabelecida');
-        }
+        toast.success('Tag "recorrente" adicionada');
+      } else if (issue.type === 'orphan_recurrence_tag') {
+        // Remover tag "recorrente" de tarefa sem regra
+        const { data: task } = await supabase
+          .from('tasks')
+          .select('tags')
+          .eq('id', issue.taskId)
+          .single();
+
+        const currentTags = task?.tags || [];
+        const newTags = currentTags.filter((tag: string) => tag.toLowerCase() !== 'recorrente');
+
+        const { error } = await supabase
+          .from('tasks')
+          .update({ tags: newTags })
+          .eq('id', issue.taskId);
+        
+        if (error) throw error;
+        toast.success('Tag "recorrente" removida');
       }
       await runIntegrityCheck();
     } catch (err) {
@@ -220,32 +242,47 @@ export function DataIntegrityMonitor() {
 
     for (const issue of fixableIssues) {
       try {
-        if (issue.type === 'broken_reference') {
+        if (issue.type === 'missing_recurrence_tag') {
+          const { data: task } = await supabase
+            .from('tasks')
+            .select('tags')
+            .eq('id', issue.taskId)
+            .single();
+
+          const currentTags = task?.tags || [];
+          const newTags = [...currentTags, 'recorrente'];
+
           const { error } = await supabase
             .from('tasks')
-            .update({ mirror_task_id: null })
+            .update({ tags: newTags })
             .eq('id', issue.taskId);
           
           if (error) {
-            logger.error('Erro ao corrigir broken_reference:', issue.taskId, error);
+            logger.error('Erro ao corrigir missing_recurrence_tag:', issue.taskId, error);
             failed++;
           } else {
             fixed++;
           }
-        } else if (issue.type === 'missing_mutual') {
-          // Estabelecer referência bidirecional
-          if (issue.mirrorTaskId) {
-            const { error } = await supabase
-              .from('tasks')
-              .update({ mirror_task_id: issue.taskId })
-              .eq('id', issue.mirrorTaskId);
-            
-            if (error) {
-              logger.error('Erro ao corrigir missing_mutual:', issue.taskId, error);
-              failed++;
-            } else {
-              fixed++;
-            }
+        } else if (issue.type === 'orphan_recurrence_tag') {
+          const { data: task } = await supabase
+            .from('tasks')
+            .select('tags')
+            .eq('id', issue.taskId)
+            .single();
+
+          const currentTags = task?.tags || [];
+          const newTags = currentTags.filter((tag: string) => tag.toLowerCase() !== 'recorrente');
+
+          const { error } = await supabase
+            .from('tasks')
+            .update({ tags: newTags })
+            .eq('id', issue.taskId);
+          
+          if (error) {
+            logger.error('Erro ao corrigir orphan_recurrence_tag:', issue.taskId, error);
+            failed++;
+          } else {
+            fixed++;
           }
         }
       } catch (err) {
@@ -275,10 +312,10 @@ export function DataIntegrityMonitor() {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'broken_reference': return 'Referência Quebrada';
+      case 'missing_recurrence_tag': return 'Tag Faltando';
+      case 'orphan_recurrence_tag': return 'Tag Órfã';
+      case 'invalid_recurrence_rule': return 'Regra Inválida';
       case 'duplicate': return 'Possível Duplicata';
-      case 'orphan_mirror': return 'Espelho Órfão';
-      case 'missing_mutual': return 'Ref. Mútua Faltando';
       default: return type;
     }
   };
@@ -350,16 +387,16 @@ export function DataIntegrityMonitor() {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <RefreshCw className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+            <Repeat className="h-5 w-5 mx-auto mb-1 text-purple-500" />
             <div className="text-2xl font-bold">{report?.tasksWithRecurrence || 0}</div>
-            <div className="text-xs text-muted-foreground">Recorrentes</div>
+            <div className="text-xs text-muted-foreground">Com Regra</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <Shield className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-2xl font-bold">{report?.tasksWithMirrors || 0}</div>
-            <div className="text-xs text-muted-foreground">Com Espelhos</div>
+            <RefreshCw className="h-5 w-5 mx-auto mb-1 text-purple-500" />
+            <div className="text-2xl font-bold">{report?.tasksWithRecurrenceTag || 0}</div>
+            <div className="text-xs text-muted-foreground">Com Tag</div>
           </CardContent>
         </Card>
         <Card>
