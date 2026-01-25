@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, X, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Search, X, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +9,7 @@ import { useIsMobile } from "@/hooks/ui/useMobile";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { FilterPresetsManager } from "./FilterPresetsManager";
 import { FilterPreset } from "@/hooks/useFilterPresets";
+import { RecurrenceFilter } from "./RecurrenceFilter";
 
 interface KanbanFiltersBarProps {
   // Filtros básicos
@@ -37,6 +38,10 @@ interface KanbanFiltersBarProps {
   // Filtro de data de vencimento
   dueDateFilter?: string;
   onDueDateChange?: (value: string) => void;
+  
+  // Filtro de recorrência
+  recurrenceFilter?: "all" | "recurring" | "non-recurring";
+  onRecurrenceFilterChange?: (value: "all" | "recurring" | "non-recurring") => void;
   
   // Controles de busca
   searchInputRef?: React.RefObject<HTMLInputElement>;
@@ -67,6 +72,8 @@ export function KanbanFiltersBar({
   columns,
   dueDateFilter,
   onDueDateChange,
+  recurrenceFilter = "all",
+  onRecurrenceFilterChange,
   searchInputRef,
   searchPlaceholder = "Buscar tarefas...",
   showPresets = true,
@@ -85,6 +92,7 @@ export function KanbanFiltersBar({
     if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
     if (dueDateFilter && dueDateFilter !== "all") count++;
     if (displayMode && displayMode !== "all_tasks") count++;
+    if (recurrenceFilter !== "all") count++;
     return count;
   };
   
@@ -95,6 +103,7 @@ export function KanbanFiltersBar({
     if (categoryFilter && categoryFilter.length > 0 && categoryFilter.length < (categories?.length || 0)) count++;
     if (columnFilter && columnFilter.length > 0 && columnFilter.length < (columns?.length || 0)) count++;
     if (displayMode && displayMode !== "all_tasks") count++;
+    if (recurrenceFilter !== "all") count++;
     return count;
   };
   
@@ -234,6 +243,14 @@ export function KanbanFiltersBar({
             <SelectItem value="all_tasks">📋 Todas as tarefas</SelectItem>
           </SelectContent>
         </Select>
+      )}
+
+      {/* Filtro de recorrência */}
+      {onRecurrenceFilterChange && (
+        <RecurrenceFilter 
+          value={recurrenceFilter} 
+          onChange={onRecurrenceFilterChange} 
+        />
       )}
     </>
   );

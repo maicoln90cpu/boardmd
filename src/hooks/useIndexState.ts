@@ -92,6 +92,10 @@ export function useIndexState() {
     projectsSortOrder,
     projectsDueDateFilter: filters.projectsDueDateFilter,
     
+    // Recurrence filter
+    recurrenceFilter: filters.recurrenceFilter,
+    setRecurrenceFilter: filters.setRecurrenceFilter,
+    
     // Category filters
     selectedCategory: filters.selectedCategory,
     categoryFilter: filters.categoryFilter,

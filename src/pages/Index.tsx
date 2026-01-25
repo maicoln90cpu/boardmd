@@ -151,6 +151,7 @@ function Index() {
             priorityFilter={state.priorityFilter}
             tagFilter={state.tagFilter}
             dueDateFilter={state.projectsDueDateFilter}
+            recurrenceFilter={state.recurrenceFilter}
             categoryFilter={state.categoryFilter}
             categoryFilterInitialized={state.categoryFilterInitialized}
             selectedCategory={state.selectedCategory}
@@ -158,6 +159,7 @@ function Index() {
             onPriorityChange={state.setPriorityFilter}
             onTagChange={state.setTagFilter}
             onDueDateChange={state.setProjectsDueDateFilter}
+            onRecurrenceFilterChange={state.setRecurrenceFilter}
             onCategoryChange={state.setCategoryFilter}
             onDisplayModeChange={(value) => state.setDisplayMode(value as "by_category" | "all_tasks")}
             onClearFilters={() => {
