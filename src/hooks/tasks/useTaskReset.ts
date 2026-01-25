@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
 import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
-import { logger, prodLogger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 interface Column {
   id: string;
@@ -17,6 +17,14 @@ interface UseTaskResetProps {
   onBoardRefresh: () => void;
 }
 
+/**
+ * Hook para reset de tarefas recorrentes
+ * 
+ * NOVA LÓGICA (pós-remoção do Diário):
+ * - Busca TODAS tarefas com recurrence_rule globalmente
+ * - Não depende mais da coluna "Recorrente"
+ * - Reset aplica apenas em tarefas com is_completed = true
+ */
 export function useTaskReset({
   columns,
   resetAllTasksToFirstColumn,
@@ -25,26 +33,20 @@ export function useTaskReset({
   const { toast } = useToast();
   const { addActivity } = useActivityLog();
 
+  /**
+   * Reseta TODAS as tarefas recorrentes (com recurrence_rule) que estão completadas.
+   * Busca global - não depende de coluna específica.
+   */
   const handleResetRecurrentTasks = useCallback(async () => {
-    const recurrentColumn = columns.find(col => col.name.toLowerCase() === "recorrente");
-    if (!recurrentColumn) {
-      toast({
-        title: "Coluna não encontrada",
-        description: "Coluna 'Recorrente' não existe",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Query direta ao Supabase para buscar TODAS as tarefas na coluna Recorrente
+    // Buscar TODAS as tarefas recorrentes completadas (global)
     const { data: recurrentTasks, error: fetchError } = await supabase
       .from("tasks")
-      .select("id, title, is_completed, recurrence_rule, tags, due_date")
-      .eq("column_id", recurrentColumn.id)
+      .select("id, title, is_completed, recurrence_rule, due_date")
+      .eq("is_completed", true)
       .not("recurrence_rule", "is", null);
     
     if (fetchError) {
-      logger.error("[DEBUG RESET] Erro ao buscar tarefas:", fetchError);
+      logger.error("[RESET] Erro ao buscar tarefas recorrentes:", fetchError);
       toast({
         title: "Erro ao buscar tarefas",
         description: fetchError.message,
@@ -53,29 +55,24 @@ export function useTaskReset({
       return;
     }
 
-    // Filtrar: só tarefas riscadas (is_completed = true) e sem tag de espelho
-    const tasksToReset = recurrentTasks?.filter(
-      task => !task.tags?.includes("espelho-diário") && task.is_completed === true
-    ) || [];
-    
-    logger.log("[DEBUG RESET] Tarefas recorrentes RISCADAS encontradas:", tasksToReset.length);
-    
-    if (tasksToReset.length === 0) {
+    if (!recurrentTasks || recurrentTasks.length === 0) {
       toast({
         title: "Nenhuma tarefa",
-        description: "Não há tarefas recorrentes riscadas para resetar"
+        description: "Não há tarefas recorrentes completadas para resetar"
       });
       return;
     }
+    
+    logger.log("[RESET] Tarefas recorrentes completadas encontradas:", recurrentTasks.length);
 
     // Limpar checkboxes do localStorage
-    tasksToReset.forEach(task => {
+    recurrentTasks.forEach(task => {
       localStorage.removeItem(`task-completed-${task.id}`);
     });
 
     // Preparar batch updates por data de próxima recorrência
     const updatesByNextDate: Record<string, string[]> = {};
-    tasksToReset.forEach(task => {
+    recurrentTasks.forEach(task => {
       const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
       const dateKey = nextDueDate || 'null';
       if (!updatesByNextDate[dateKey]) {
@@ -103,8 +100,8 @@ export function useTaskReset({
       }
     }
 
-    // Sincronização bidirecional - batch para mirrors
-    const allTaskIds = tasksToReset.map(t => t.id);
+    // Sincronização bidirecional - batch para mirrors (manter compatibilidade)
+    const allTaskIds = recurrentTasks.map(t => t.id);
     const { data: tasksWithMirrors } = await supabase
       .from("tasks")
       .select("id, mirror_task_id")
@@ -134,29 +131,38 @@ export function useTaskReset({
 
     // Disparar evento para forçar refetch
     window.dispatchEvent(new CustomEvent('task-updated'));
-    addActivity("recurrent_reset", "Tarefas recorrentes resetadas");
+    addActivity("recurrent_reset", "Tarefas recorrentes resetadas globalmente");
     toast({
       title: "Tarefas resetadas",
-      description: `${successCount} tarefa(s) recorrente(s) resetada(s) com próxima data calculada`
+      description: `${successCount} tarefa(s) recorrente(s) resetada(s)`
     });
     onBoardRefresh();
-  }, [columns, toast, addActivity, onBoardRefresh]);
+  }, [toast, addActivity, onBoardRefresh]);
 
+  /**
+   * Reseta o Kanban movendo tarefas para a primeira coluna.
+   * Exclui tarefas recorrentes (por recurrence_rule).
+   */
   const handleResetDaily = useCallback(async () => {
     if (!columns.length) return;
-
-    // Identificar coluna "Recorrente" (se existir)
-    const recurrentColumn = columns.find(col => col.name.toLowerCase() === "recorrente");
 
     // Identificar coluna "A Fazer" (destino padrão)
     const targetColumn = columns.find(col => col.name === "A Fazer") || columns[0];
 
-    const excludeIds = recurrentColumn ? [recurrentColumn.id] : [];
-    await resetAllTasksToFirstColumn(targetColumn.id, excludeIds);
-    addActivity("daily_reset", "Kanban Diário resetado");
+    // Buscar IDs de tarefas recorrentes para excluir do reset
+    const { data: recurrentTasks } = await supabase
+      .from("tasks")
+      .select("id")
+      .not("recurrence_rule", "is", null);
+
+    const excludeTaskIds = recurrentTasks?.map(t => t.id) || [];
+
+    // Mover apenas tarefas não-recorrentes
+    await resetAllTasksToFirstColumn(targetColumn.id, excludeTaskIds);
+    addActivity("daily_reset", "Kanban resetado (exceto recorrentes)");
     toast({
       title: "Kanban resetado",
-      description: "Todas as tarefas (exceto recorrentes) foram movidas"
+      description: "Tarefas não-recorrentes foram movidas"
     });
     onBoardRefresh();
   }, [columns, resetAllTasksToFirstColumn, addActivity, toast, onBoardRefresh]);
