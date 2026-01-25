@@ -82,7 +82,7 @@ interface ProjectsKanbanViewProps {
   onRenameColumn: (columnId: string, newName: string) => void;
   onAddColumn: (name: string) => void;
   onReorderColumns: (columns: Column[]) => void;
-  onToggleKanbanVisibility: (columnId: string, kanbanType: 'daily' | 'projects', visible: boolean) => void;
+  onToggleKanbanVisibility: (columnId: string, kanbanType: 'projects', visible: boolean) => void;
   
   // Modais
   showStats: boolean;

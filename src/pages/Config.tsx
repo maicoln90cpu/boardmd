@@ -867,26 +867,6 @@ export default function Config() {
 
                 <Separator />
 
-                {/* Página Inicial */}
-                <div className="space-y-2">
-                  <Label>Página Inicial</Label>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Qual Kanban abrir por padrão ao fazer login
-                  </p>
-                  <Select 
-                    value={settings.kanban.defaultView} 
-                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultView: value as 'daily' | 'projects' } })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Kanban Diário</SelectItem>
-                      <SelectItem value="projects">Kanban Projetos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <Separator />
 
                 {/* Automação Semana Atual */}
@@ -1071,21 +1051,6 @@ export default function Config() {
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <Label>Colunas no Grid (Diário)</Label>
-                  <Select 
-                    value={String(settings.mobile.dailyGridColumns)} 
-                    onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, dailyGridColumns: Number(value) as 1 | 2 } })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 Coluna</SelectItem>
-                      <SelectItem value="2">2 Colunas</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <Label>Colunas no Grid (Projetos)</Label>

@@ -61,15 +61,6 @@ export function useSettingsUpdaters() {
     await saveSettings();
   }, [settings.mobile, updateSettings, saveSettings]);
 
-  const setDailyGridColumnsMobile = useCallback(async (value: 1 | 2) => {
-    updateSettings({
-      mobile: {
-        ...settings.mobile,
-        dailyGridColumns: value
-      }
-    });
-    await saveSettings();
-  }, [settings.mobile, updateSettings, saveSettings]);
 
   const setProjectsGridColumnsMobile = useCallback(async (value: 1 | 2) => {
     updateSettings({
@@ -108,7 +99,6 @@ export function useSettingsUpdaters() {
     setDensityMode,
     setShowFavoritesPanel,
     setHideBadgesMobile,
-    setDailyGridColumnsMobile,
     setProjectsGridColumnsMobile,
     setDailyDueDateFilter,
     setProjectsDueDateFilter,

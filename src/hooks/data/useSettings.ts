@@ -61,7 +61,6 @@ export interface AppSettings {
   // Colunas ocultas no kanban (sincronizar entre dispositivos)
   hiddenColumns: string[];
   mobile: {
-    dailyGridColumns: 1 | 2;
     projectsGridColumns: 1 | 2;
     hideBadges: boolean;
   };
@@ -141,7 +140,6 @@ const defaultSettings: AppSettings = {
   },
   hiddenColumns: [],
   mobile: {
-    dailyGridColumns: 2,
     projectsGridColumns: 2,
     hideBadges: false,
   },

@@ -54,7 +54,7 @@ interface ColumnManagerProps {
   onRenameColumn: (columnId: string, newName: string) => void;
   onReorderColumns: (newOrder: Column[]) => void;
   onAddColumn: (name: string) => void;
-  onToggleKanbanVisibility: (columnId: string, kanbanType: 'daily' | 'projects', visible: boolean) => void;
+  onToggleKanbanVisibility: (columnId: string, kanbanType: 'projects', visible: boolean) => void;
 }
 
 interface SortableColumnItemProps {
@@ -66,7 +66,7 @@ interface SortableColumnItemProps {
   onToggleVisibility: () => void;
   onDelete: () => void;
   onRename: (newName: string) => void;
-  onToggleKanbanVisibility: (kanbanType: 'daily' | 'projects', visible: boolean) => void;
+  onToggleKanbanVisibility: (kanbanType: 'projects', visible: boolean) => void;
 }
 
 function SortableColumnItem({
@@ -209,22 +209,14 @@ function SortableColumnItem({
         </div>
       </div>
 
-      {/* Checkboxes para controlar visibilidade por Kanban */}
+      {/* Checkbox para controlar visibilidade no Kanban */}
       <div className="flex items-center gap-4 pl-11">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox
-            checked={column.show_in_daily ?? true}
-            onCheckedChange={(checked) => onToggleKanbanVisibility('daily', checked as boolean)}
-          />
-          <span className="text-muted-foreground">Kanban Diário</span>
-        </label>
-        
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <Checkbox
             checked={column.show_in_projects ?? true}
             onCheckedChange={(checked) => onToggleKanbanVisibility('projects', checked as boolean)}
           />
-          <span className="text-muted-foreground">Kanban Projetos</span>
+          <span className="text-muted-foreground">Visível no Kanban</span>
         </label>
       </div>
     </motion.div>

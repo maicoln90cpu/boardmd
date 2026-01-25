@@ -130,7 +130,6 @@ export interface InterfaceSettings {
 }
 
 export interface MobileSettings {
-  dailyGridColumns: 1 | 2;
   projectsGridColumns: 1 | 2;
   hideBadges: boolean;
 }
