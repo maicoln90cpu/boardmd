@@ -338,8 +338,6 @@ export function KanbanBoard({
               onSave={handleSaveTask}
               task={selectedTask}
               columnId={selectedColumn}
-              isDailyKanban={isDailyKanban}
-              viewMode={viewMode}
               categoryId={selectedCategoryId || categoryId}
               columns={columns}
             />
@@ -423,8 +421,6 @@ export function KanbanBoard({
               onSave={handleSaveTask}
               task={selectedTask}
               columnId={selectedColumn}
-              isDailyKanban={isDailyKanban}
-              viewMode={viewMode}
               categoryId={selectedCategoryId || categoryId}
               columns={columns}
             />

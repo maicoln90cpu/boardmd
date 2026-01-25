@@ -135,7 +135,7 @@ describe('TaskModal', () => {
     onOpenChange: vi.fn(),
     onSave: vi.fn(),
     columnId: 'col-1',
-    categoryId: 'cat-diario',
+    categoryId: 'cat-projetos',
   };
 
   const renderModal = (props = {}) => {
