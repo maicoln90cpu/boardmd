@@ -30,7 +30,6 @@ interface MobileKanbanViewProps {
   duplicateTask: (taskId: string) => void;
   handleMoveTask: (taskId: string, direction: "left" | "right") => void;
   handleUncheckRecurrentTasks: (columnId: string) => void;
-  isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
@@ -52,7 +51,6 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   duplicateTask,
   handleMoveTask,
   handleUncheckRecurrentTasks,
-  isDailyKanban = false,
   showCategoryBadge = false,
   densityMode = "compact",
   hideBadges = false,
@@ -84,30 +82,6 @@ export const MobileKanbanView = memo(function MobileKanbanView({
           .eq("id", task.id);
 
         if (error) throw error;
-
-        // Sincronização bidirecional
-        if (task.mirror_task_id) {
-          await supabase
-            .from("tasks")
-            .update({ is_completed: newCompleted })
-            .eq("id", task.mirror_task_id);
-        }
-
-        // Buscar tarefas que apontam para esta
-        const { data: reverseMirrors } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("mirror_task_id", task.id);
-
-        if (reverseMirrors && reverseMirrors.length > 0) {
-          await supabase
-            .from("tasks")
-            .update({ is_completed: newCompleted })
-            .in(
-              "id",
-              reverseMirrors.map((t) => t.id)
-            );
-        }
 
         // Gamificação
         if (newCompleted && onAddPoints) {
@@ -213,17 +187,12 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                               <TaskCard
                                 task={{
                                   ...task,
-                                  originalCategory:
-                                    originalCategoriesMap[task.id] ||
-                                    (task.mirror_task_id
-                                      ? originalCategoriesMap[task.mirror_task_id]
-                                      : undefined),
+                                  originalCategory: originalCategoriesMap[task.id]
                                 }}
                                 onEdit={() => handleEditTask(task)}
                                 onDelete={() => handleDeleteClick(task.id)}
                                 onToggleFavorite={toggleFavorite}
                                 onDuplicate={duplicateTask}
-                                isDailyKanban={isDailyKanban}
                                 showCategoryBadge={showCategoryBadge}
                                 densityMode={densityMode}
                                 hideBadges={hideBadges}
@@ -244,17 +213,12 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                                 <TaskCard
                                   task={{
                                     ...task,
-                                    originalCategory:
-                                      originalCategoriesMap[task.id] ||
-                                      (task.mirror_task_id
-                                        ? originalCategoriesMap[task.mirror_task_id]
-                                        : undefined),
+                                    originalCategory: originalCategoriesMap[task.id]
                                   }}
                                   onEdit={() => handleEditTask(task)}
                                   onDelete={() => handleDeleteClick(task.id)}
                                   onToggleFavorite={toggleFavorite}
                                   onDuplicate={duplicateTask}
-                                  isDailyKanban={isDailyKanban}
                                   showCategoryBadge={showCategoryBadge}
                                   densityMode={densityMode}
                                   hideBadges={hideBadges}

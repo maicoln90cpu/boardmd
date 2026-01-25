@@ -31,11 +31,9 @@ interface KanbanBoardProps {
   priorityFilter?: string;
   tagFilter?: string;
   dueDateFilter?: string;
-  isDailyKanban?: boolean;
   sortOption?: string;
   showCategoryBadge?: boolean;
   allowCrossCategoryDrag?: boolean;
-  viewMode?: string;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
   gridColumns?: 1 | 2;
@@ -52,11 +50,9 @@ export function KanbanBoard({
   priorityFilter = "all",
   tagFilter = "all",
   dueDateFilter = "all",
-  isDailyKanban = false,
   sortOption = "manual",
   showCategoryBadge = false,
   allowCrossCategoryDrag = false,
-  viewMode = "daily",
   densityMode = "comfortable",
   hideBadges = false,
   gridColumns = 2,
@@ -111,50 +107,8 @@ export function KanbanBoard({
     // Isso será salvo junto com outras alterações para evitar muitas chamadas
   }, [localColumnSizes]);
 
-  // Mapa de categorias originais para tarefas espelhadas
-  const [originalCategoriesMap, setOriginalCategoriesMap] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (!isDailyKanban) return;
-
-    const dailyRecurrentIds = tasks.filter((t) => t.recurrence_rule).map((t) => t.id);
-    const mirrorIds = tasks.filter((t) => t.mirror_task_id).map((t) => t.mirror_task_id!);
-
-    const fetchFromMirrorIds =
-      mirrorIds.length > 0
-        ? supabase.from("tasks").select("id, categories:categories(name)").in("id", mirrorIds)
-        : Promise.resolve({ data: [] });
-
-    const fetchFromProjectMirrors =
-      dailyRecurrentIds.length > 0
-        ? supabase
-            .from("tasks")
-            .select("id, mirror_task_id, categories:categories(name)")
-            .in("mirror_task_id", dailyRecurrentIds)
-        : Promise.resolve({ data: [] });
-
-    Promise.all([fetchFromMirrorIds, fetchFromProjectMirrors]).then(([result1, result2]) => {
-      const map: Record<string, string> = {};
-
-      if (result1.data) {
-        (result1.data as TaskWithCategory[]).forEach((task) => {
-          if (task.categories?.name) {
-            map[task.id] = task.categories.name;
-          }
-        });
-      }
-
-      if (result2.data) {
-        (result2.data as TaskWithCategory[]).forEach((task) => {
-          if (task.categories?.name && task.mirror_task_id) {
-            map[task.mirror_task_id] = task.categories.name;
-          }
-        });
-      }
-
-      setOriginalCategoriesMap(map);
-    });
-  }, [isDailyKanban, tasks]);
+  // Mapa de categorias originais (simplificado - sem espelhamento)
+  const originalCategoriesMap: Record<string, string> = {};
 
   // Drag and Drop hook
   const {
@@ -319,7 +273,6 @@ export function KanbanBoard({
           duplicateTask={duplicateTask}
           handleMoveTask={handleMoveTask}
           handleUncheckRecurrentTasks={handleUncheckRecurrentTasksWrapper}
-          isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
           densityMode={densityMode}
           hideBadges={hideBadges}
@@ -386,7 +339,6 @@ export function KanbanBoard({
           toggleFavorite={toggleFavorite}
           duplicateTask={duplicateTask}
           updateTask={updateTask}
-          isDailyKanban={isDailyKanban}
           showCategoryBadge={showCategoryBadge}
           priorityColors={settings.customization?.priorityColors}
           getTagColor={getTagColor}

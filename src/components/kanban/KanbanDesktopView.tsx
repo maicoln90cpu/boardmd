@@ -32,7 +32,6 @@ interface KanbanDesktopViewProps {
   toggleFavorite: (id: string) => void;
   duplicateTask: (id: string) => void;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
-  isDailyKanban: boolean;
   showCategoryBadge: boolean;
   priorityColors?: {
     high: { background: string; text: string };
@@ -68,7 +67,6 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
   toggleFavorite,
   duplicateTask,
   updateTask,
-  isDailyKanban,
   showCategoryBadge,
   priorityColors,
   getTagColor,
@@ -176,7 +174,6 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                         toggleFavorite={toggleFavorite}
                         duplicateTask={duplicateTask}
                         updateTask={updateTask}
-                        isDailyKanban={isDailyKanban}
                         showCategoryBadge={showCategoryBadge}
                         priorityColors={priorityColors}
                         getTagColor={getTagColor}

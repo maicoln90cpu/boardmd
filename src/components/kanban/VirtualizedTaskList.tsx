@@ -20,7 +20,6 @@ interface VirtualizedTaskListProps {
   toggleFavorite: (id: string) => void;
   duplicateTask: (id: string) => void;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
-  isDailyKanban: boolean;
   showCategoryBadge: boolean;
   priorityColors?: {
     high: { background: string; text: string };
@@ -64,7 +63,6 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
   toggleFavorite,
   duplicateTask,
   updateTask,
-  isDailyKanban,
   showCategoryBadge,
   priorityColors,
   getTagColor,
@@ -103,8 +101,7 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
             <TaskCard
               task={{
                 ...task,
-                originalCategory: originalCategoriesMap[task.id] || 
-                  (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                originalCategory: originalCategoriesMap[task.id]
               }}
               onEdit={onEditTask}
               onDelete={onDeleteClick}
@@ -113,7 +110,6 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
               canMoveLeft={columnIndex > 0}
               canMoveRight={columnIndex < columnsLength - 1}
               compact={compact || densityMode !== "comfortable"}
-              isDailyKanban={isDailyKanban}
               showCategoryBadge={showCategoryBadge}
               onToggleFavorite={toggleFavorite}
               onDuplicate={duplicateTask}
@@ -165,8 +161,7 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
               <TaskCard
                 task={{
                   ...task,
-                  originalCategory: originalCategoriesMap[task.id] || 
-                    (task.mirror_task_id ? originalCategoriesMap[task.mirror_task_id] : undefined)
+                  originalCategory: originalCategoriesMap[task.id]
                 }}
                 onEdit={onEditTask}
                 onDelete={onDeleteClick}
@@ -175,7 +170,6 @@ export const VirtualizedTaskList = memo(function VirtualizedTaskList({
                 canMoveLeft={columnIndex > 0}
                 canMoveRight={columnIndex < columnsLength - 1}
                 compact={compact || densityMode !== "comfortable"}
-                isDailyKanban={isDailyKanban}
                 showCategoryBadge={showCategoryBadge}
                 onToggleFavorite={toggleFavorite}
                 onDuplicate={duplicateTask}
