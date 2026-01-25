@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useTasks } from "@/hooks/tasks/useTasks";
-import { TaskCard } from "@/components/TaskCard";
 import { TaskModal } from "@/components/TaskModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Star, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
 interface FavoritesSectionProps {
   columns: Array<{
     id: string;
@@ -17,6 +17,7 @@ interface FavoritesSectionProps {
     name: string;
   }>;
 }
+
 export function FavoritesSection({
   columns,
   categories
@@ -31,9 +32,9 @@ export function FavoritesSection({
   const [editingTask, setEditingTask] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Filtrar apenas favoritos de categorias não-Diário
-  const dailyCategory = categories.find(c => c.name === "Diário");
-  const favoriteTasks = tasks.filter(t => t.is_favorite && t.category_id !== dailyCategory?.id);
+  // Filtrar apenas favoritos
+  const favoriteTasks = tasks.filter(t => t.is_favorite);
+  
   if (!categories || categories.length === 0) {
     return null;
   }
@@ -54,11 +55,14 @@ export function FavoritesSection({
     category: any;
     tasks: any[];
   }>);
+
   if (favoriteTasks.length === 0) return null;
+
   const handleEditTask = (task: any) => {
     setEditingTask(task);
     setModalOpen(true);
   };
+
   const handleSaveTask = async (taskData: any) => {
     if (editingTask) {
       await updateTask(editingTask.id, taskData);
@@ -66,7 +70,9 @@ export function FavoritesSection({
     setEditingTask(null);
     setModalOpen(false);
   };
-  return <>
+
+  return (
+    <>
       <div className="mx-4 my-4">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           {/* Header com gradiente e sombra */}
@@ -81,7 +87,7 @@ export function FavoritesSection({
                   </div>
                   <div className="text-left">
                     <h2 className="text-xs font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-yellow-400 dark:to-amber-400 bg-clip-text text-transparent">
-                      Favoritos de Outros Projetos
+                      Favoritos
                     </h2>
                     <p className="text-xs text-muted-foreground">
                       {favoriteTasks.length} {favoriteTasks.length === 1 ? 'tarefa' : 'tarefas'} favorita{favoriteTasks.length !== 1 && 's'}
@@ -100,9 +106,10 @@ export function FavoritesSection({
             <CollapsibleContent>
               <div className="p-4 pt-0 space-y-4">
                 {Object.values(tasksByCategory).map(({
-                category,
-                tasks: categoryTasks
-              }) => <div key={category.id} className="space-y-3">
+                  category,
+                  tasks: categoryTasks
+                }) => (
+                  <div key={category.id} className="space-y-3">
                     {/* Category Header */}
                     <div className="flex items-center gap-2 px-2">
                       <Folder className="h-4 w-4 text-muted-foreground" />
@@ -117,8 +124,17 @@ export function FavoritesSection({
                     {/* Task Cards Grid */}
                     <div className="">
                       {categoryTasks.map((task: any) => {
-                    const currentColumnIndex = columns.findIndex(c => c.id === task.column_id);
-                    return <div key={task.id} className={cn("relative group rounded-lg", "bg-gradient-to-br from-background to-muted/30", "border border-border/50 hover:border-yellow-500/40", "shadow-sm hover:shadow-md transition-all duration-200", "hover:scale-[1.01]")}>
+                        return (
+                          <div 
+                            key={task.id} 
+                            className={cn(
+                              "relative group rounded-lg",
+                              "bg-gradient-to-br from-background to-muted/30",
+                              "border border-border/50 hover:border-yellow-500/40",
+                              "shadow-sm hover:shadow-md transition-all duration-200",
+                              "hover:scale-[1.01]"
+                            )}
+                          >
                             {/* Glow effect on hover */}
                             <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-yellow-500/0 to-amber-500/0 group-hover:from-yellow-500/5 group-hover:to-amber-500/5 transition-all duration-300 pointer-events-none" />
                             
@@ -129,37 +145,63 @@ export function FavoritesSection({
                             <div className="p-1 pl-4 flex items-start gap-3">
                               {/* Task info */}
                               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleEditTask(task)}>
-                                <h4 className={cn("text-sm font-medium truncate", task.is_completed && "line-through opacity-50")}>
+                                <h4 className={cn(
+                                  "text-sm font-medium truncate",
+                                  task.is_completed && "line-through opacity-50"
+                                )}>
                                   {task.title}
                                 </h4>
-                                {task.description && <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground truncate mt-0.5">
                                     {task.description}
-                                  </p>}
+                                  </p>
+                                )}
                                 <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                                  {task.priority && <Badge className={cn("text-[10px] px-1.5 py-0", task.priority === "high" && "bg-destructive text-destructive-foreground", task.priority === "medium" && "bg-yellow-500 text-white", task.priority === "low" && "bg-green-500 text-white")}>
+                                  {task.priority && (
+                                    <Badge className={cn(
+                                      "text-[10px] px-1.5 py-0",
+                                      task.priority === "high" && "bg-destructive text-destructive-foreground",
+                                      task.priority === "medium" && "bg-yellow-500 text-white",
+                                      task.priority === "low" && "bg-green-500 text-white"
+                                    )}>
                                       {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
-                                    </Badge>}
-                                  {task.due_date && <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                    </Badge>
+                                  )}
+                                  {task.due_date && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                                       {new Date(task.due_date).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: 'short'
-                              })}
-                                    </Badge>}
+                                        day: '2-digit',
+                                        month: 'short'
+                                      })}
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               
                               {/* Unfavorite button */}
-                              <Button size="icon" variant="ghost" className={cn("shrink-0 h-8 w-8 rounded-full", "bg-yellow-500/10 hover:bg-yellow-500/20", "text-yellow-600 dark:text-yellow-400")} onClick={e => {
-                          e.stopPropagation();
-                          toggleFavorite(task.id);
-                        }} title="Remover dos favoritos">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className={cn(
+                                  "shrink-0 h-8 w-8 rounded-full",
+                                  "bg-yellow-500/10 hover:bg-yellow-500/20",
+                                  "text-yellow-600 dark:text-yellow-400"
+                                )} 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(task.id);
+                                }} 
+                                title="Remover dos favoritos"
+                              >
                                 <Star className="h-4 w-4 fill-current" />
                               </Button>
                             </div>
-                          </div>;
-                  })}
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
             </CollapsibleContent>
           </div>
@@ -167,6 +209,14 @@ export function FavoritesSection({
       </div>
 
       {/* Modal de Edição */}
-      <TaskModal open={modalOpen} onOpenChange={setModalOpen} onSave={handleSaveTask} task={editingTask} columnId={editingTask?.column_id || columns[0]?.id} categoryId={editingTask?.category_id} />
-    </>;
+      <TaskModal 
+        open={modalOpen} 
+        onOpenChange={setModalOpen} 
+        onSave={handleSaveTask} 
+        task={editingTask} 
+        columnId={editingTask?.column_id || columns[0]?.id} 
+        categoryId={editingTask?.category_id} 
+      />
+    </>
+  );
 }

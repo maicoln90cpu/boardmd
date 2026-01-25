@@ -47,7 +47,6 @@ interface TaskCardProps {
   canMoveLeft?: boolean;
   canMoveRight?: boolean;
   compact?: boolean;
-  isDailyKanban?: boolean;
   showCategoryBadge?: boolean;
   onToggleFavorite?: (taskId: string) => void;
   onDuplicate?: (taskId: string) => void;
@@ -135,7 +134,6 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
 
   // Compare other props
   if (prevProps.compact !== nextProps.compact) return false;
-  if (prevProps.isDailyKanban !== nextProps.isDailyKanban) return false;
   if (prevProps.showCategoryBadge !== nextProps.showCategoryBadge) return false;
   if (prevProps.densityMode !== nextProps.densityMode) return false;
   if (prevProps.hideBadges !== nextProps.hideBadges) return false;
@@ -173,7 +171,6 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   onMoveRight,
   canMoveLeft = false,
   canMoveRight = false,
-  isDailyKanban = false,
   showCategoryBadge = false,
   onToggleFavorite,
   onDuplicate,
@@ -437,7 +434,6 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         originalCategoryName={originalCategoryName}
                         subtasksCount={task.subtasks?.length || 0}
                         subtasksCompleted={task.subtasks?.filter(s => s.completed).length || 0}
-                        isDailyKanban={isDailyKanban}
                         hideBadges={hideBadges}
                         showCategoryBadge={showCategoryBadge}
                         hasRecurrence={!!task.recurrence_rule}
@@ -461,10 +457,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         onDelete={onDelete}
                       />
 
-                      {/* Line 4: Mirror badge and tags */}
+                      {/* Line 4: Tags */}
                       <TaskCardTags
                         tags={task.tags || []}
-                        hasMirror={!!task.mirror_task_id}
                         hideBadges={hideBadges}
                         densityMode={densityMode}
                       />

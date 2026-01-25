@@ -360,7 +360,6 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
             tagFilter={tagFilter}
             dueDateFilter={dueDateFilter}
             sortOption={sortOption}
-            viewMode="all"
             showCategoryBadge
             densityMode={densityMode}
             hideBadges={hideBadges}
@@ -393,7 +392,6 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                   tagFilter={tagFilter}
                   dueDateFilter={dueDateFilter}
                   sortOption={sortOption}
-                  viewMode="all"
                   densityMode={densityMode}
                   hideBadges={hideBadges}
                   gridColumns={gridColumns}

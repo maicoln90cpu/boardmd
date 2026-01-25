@@ -10,7 +10,6 @@ export function useIndexFilters(categories: Category[]) {
   // Category filters
   const {
     selectedCategory,
-    dailyCategory,
     categoryFilter,
     categoryFilterInitialized,
     selectedCategoryFilterMobile,
@@ -105,7 +104,6 @@ export function useIndexFilters(categories: Category[]) {
     
     // Category filters
     selectedCategory,
-    dailyCategory,
     categoryFilter,
     categoryFilterInitialized,
     selectedCategoryFilterMobile,

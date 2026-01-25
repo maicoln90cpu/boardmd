@@ -61,7 +61,6 @@ interface TaskCardBadgesProps {
   originalCategoryName?: string | null;
   subtasksCount: number;
   subtasksCompleted: number;
-  isDailyKanban: boolean;
   hideBadges: boolean;
   showCategoryBadge: boolean;
   hasRecurrence: boolean;
@@ -78,7 +77,6 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
   originalCategoryName,
   subtasksCount,
   subtasksCompleted,
-  isDailyKanban,
   hideBadges,
   showCategoryBadge,
   hasRecurrence,
@@ -100,34 +98,8 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
         densityMode === "comfortable" && "gap-2",
       )}
     >
-      {/* Date + time in daily kanban */}
-      {dueDate && isDailyKanban && (
-        <div
-          className={cn(
-            "flex items-center gap-1 px-1.5 py-0.5 bg-muted rounded",
-            densityMode === "compact" && "text-[10px]",
-            densityMode === "comfortable" && "text-xs py-1 px-2",
-          )}
-        >
-          <Calendar
-            className={cn(
-              densityMode === "compact" && "h-2.5 w-2.5",
-              densityMode === "comfortable" && "h-3.5 w-3.5",
-            )}
-          />
-          {formatDateShortBR(dueDate)}
-          <Clock
-            className={cn(
-              "ml-1",
-              densityMode === "compact" && "h-2.5 w-2.5",
-              densityMode === "comfortable" && "h-3.5 w-3.5",
-            )}
-          />
-          {formatTimeOnlyBR(dueDate)}
-        </div>
-      )}
-
-      {dueDate && !isDailyKanban && (
+      {/* Date + time badge */}
+      {dueDate && (
         <div
           className={cn(
             "flex items-center gap-0.5 rounded",
@@ -183,8 +155,8 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
         </Badge>
       )}
 
-      {/* Category badge for recurrent tasks in daily */}
-      {!hideBadges && isDailyKanban && hasRecurrence && originalCategoryName && (
+      {/* Category badge for recurrent tasks */}
+      {!hideBadges && hasRecurrence && originalCategoryName && (
         <Badge
           className={cn(
             "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
@@ -198,7 +170,7 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
       )}
 
       {/* Category badge in projects */}
-      {!hideBadges && !isDailyKanban && showCategoryBadge && categoryName && (
+      {!hideBadges && showCategoryBadge && categoryName && !originalCategoryName && (
         <Badge
           className={cn(
             "rounded-full font-medium shadow-sm transition-transform hover:scale-105",
