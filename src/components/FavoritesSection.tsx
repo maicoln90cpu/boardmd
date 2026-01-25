@@ -167,6 +167,6 @@ export function FavoritesSection({
       </div>
 
       {/* Modal de Edição */}
-      <TaskModal open={modalOpen} onOpenChange={setModalOpen} onSave={handleSaveTask} task={editingTask} columnId={editingTask?.column_id || columns[0]?.id} viewMode="all" />
+      <TaskModal open={modalOpen} onOpenChange={setModalOpen} onSave={handleSaveTask} task={editingTask} columnId={editingTask?.column_id || columns[0]?.id} categoryId={editingTask?.category_id} />
     </>;
 }
