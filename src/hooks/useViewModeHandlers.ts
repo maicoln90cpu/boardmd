@@ -14,6 +14,7 @@ interface UseViewModeHandlersProps {
   simplifiedMode: boolean;
   getVisibleColumns: (kanbanType: 'daily' | 'projects') => Column[];
   refreshProjectsBoard: () => void;
+  recurrenceFilter?: "all" | "recurring" | "non-recurring";
 }
 
 export function useViewModeHandlers({
@@ -27,6 +28,7 @@ export function useViewModeHandlers({
   simplifiedMode,
   getVisibleColumns,
   refreshProjectsBoard,
+  recurrenceFilter = "all",
 }: UseViewModeHandlersProps) {
   
   // All tasks (no daily filtering)
@@ -41,26 +43,32 @@ export function useViewModeHandlers({
 
   // Filter tasks based on filters
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      // Filter by selected category in sidebar (high priority)
-      if (selectedCategory && task.category_id !== selectedCategory) {
-        return false;
-      }
+    let filtered = tasks;
+    
+    // Filter by selected category in sidebar (high priority)
+    if (selectedCategory) {
+      filtered = filtered.filter(task => task.category_id === selectedCategory);
+    }
 
-      // Category filter (after initialization)
-      if (!selectedCategory && categoryFilterInitialized && categoryFilter.length > 0 && !categoryFilter.includes(task.category_id)) {
-        return false;
-      }
+    // Category filter (after initialization)
+    if (!selectedCategory && categoryFilterInitialized && categoryFilter.length > 0) {
+      filtered = filtered.filter(task => categoryFilter.includes(task.category_id));
+    }
 
-      // Mobile category filter
-      if (isMobile && selectedCategoryFilterMobile !== "all") {
-        if (task.category_id !== selectedCategoryFilterMobile) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [tasks, categoryFilter, isMobile, selectedCategoryFilterMobile, categoryFilterInitialized, selectedCategory]);
+    // Mobile category filter
+    if (isMobile && selectedCategoryFilterMobile !== "all") {
+      filtered = filtered.filter(task => task.category_id === selectedCategoryFilterMobile);
+    }
+
+    // Recurrence filter
+    if (recurrenceFilter === "recurring") {
+      filtered = filtered.filter(task => task.recurrence_rule !== null);
+    } else if (recurrenceFilter === "non-recurring") {
+      filtered = filtered.filter(task => task.recurrence_rule === null);
+    }
+
+    return filtered;
+  }, [tasks, categoryFilter, isMobile, selectedCategoryFilterMobile, categoryFilterInitialized, selectedCategory, recurrenceFilter]);
 
   // Available tags
   const availableTags = useMemo(() => {

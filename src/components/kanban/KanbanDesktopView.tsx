@@ -135,7 +135,6 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
                     densityMode={densityMode}
                     isSelectionMode={isSelectionMode}
                     onAddTask={onAddTask}
-                    onUncheckRecurrentTasks={onUncheckRecurrentTasks}
                     onColorChange={(color) => onColorChange(column.id, color)}
                     onToggleSelectionMode={() =>
                       isSelectionMode ? onExitSelectionMode() : onEnterSelectionMode()

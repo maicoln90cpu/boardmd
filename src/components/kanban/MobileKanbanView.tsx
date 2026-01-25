@@ -3,7 +3,7 @@ import { Column } from "@/hooks/data/useColumns";
 import { Task } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "../TaskCard";
 import { Button } from "@/components/ui/button";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus } from "lucide-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { getColumnTopBarClass, getColumnBackgroundClass } from "@/lib/columnStyles";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,6 @@ interface MobileKanbanViewProps {
   toggleFavorite: (taskId: string) => void;
   duplicateTask: (taskId: string) => void;
   handleMoveTask: (taskId: string, direction: "left" | "right") => void;
-  handleUncheckRecurrentTasks: (columnId: string) => void;
   showCategoryBadge?: boolean;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   hideBadges?: boolean;
@@ -50,7 +49,6 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   toggleFavorite,
   duplicateTask,
   handleMoveTask,
-  handleUncheckRecurrentTasks,
   showCategoryBadge = false,
   densityMode = "compact",
   hideBadges = false,
@@ -145,17 +143,6 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                         </span>
                       )}
                     </div>
-                    {isRecurrent && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleUncheckRecurrentTasks(column.id)}
-                        title="Desmarcar todas as tarefas recorrentes"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                      </Button>
-                    )}
                   </div>
                 </div>
 

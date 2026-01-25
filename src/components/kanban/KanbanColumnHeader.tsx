@@ -12,7 +12,6 @@ interface KanbanColumnHeaderProps {
   densityMode: "comfortable" | "compact" | "ultra-compact";
   isSelectionMode: boolean;
   onAddTask: (columnId: string) => void;
-  onUncheckRecurrentTasks?: (columnId: string) => void;
   onColorChange: (color: string) => void;
   onToggleSelectionMode: () => void;
 }
@@ -23,7 +22,6 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
   densityMode,
   isSelectionMode,
   onAddTask,
-  onUncheckRecurrentTasks,
   onColorChange,
   onToggleSelectionMode,
 }: KanbanColumnHeaderProps) {
@@ -58,10 +56,6 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
 
   // Memoizar handlers
   const handleAddTask = useCallback(() => onAddTask(column.id), [onAddTask, column.id]);
-  const handleUncheck = useCallback(
-    () => onUncheckRecurrentTasks?.(column.id),
-    [onUncheckRecurrentTasks, column.id]
-  );
 
   return (
     <div
@@ -100,16 +94,6 @@ export const KanbanColumnHeader = memo(function KanbanColumnHeader({
           >
             <CheckSquare className={styles.iconSize} />
           </Button>
-          {isRecurrentColumn && onUncheckRecurrentTasks && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleUncheck}
-              title="Desmarcar todas as tarefas recorrentes"
-            >
-              <RotateCcw className={styles.iconSize} />
-            </Button>
-          )}
           <ColumnColorPicker currentColor={column.color} onColorChange={onColorChange} />
           <Button
             size="sm"
