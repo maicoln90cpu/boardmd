@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { TaskModal } from "@/components/TaskModal";
 import { toast } from "sonner";
+import { FilterPresetsManager } from "@/components/kanban/FilterPresetsManager";
 
 interface Task {
   id: string;
@@ -35,8 +36,9 @@ interface Task {
   is_completed: boolean | null;
 }
 
+import { FilterPresetFilters } from "@/types";
+
 export default function Calendar() {
-  const [viewMode, setViewMode] = useState<"daily" | "all">("all");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -45,7 +47,7 @@ export default function Calendar() {
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Novos estados de filtro avançado
+  // Estados de filtro avançado
   const [searchTerm, setSearchTerm] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("all");
@@ -53,6 +55,32 @@ export default function Calendar() {
   
   const { columns } = useColumns();
   const { categories } = useCategories();
+
+  // Objeto de filtros atuais para o FilterPresetsManager
+  const currentFilters: FilterPresetFilters = useMemo(() => ({
+    searchTerm: searchTerm,
+    priorityFilter: priorityFilter,
+    tagFilter: tagFilter,
+    categoryFilter: selectedCategories,
+  }), [searchTerm, priorityFilter, tagFilter, selectedCategories]);
+
+  // Verificar se há filtros ativos
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm !== "" || 
+           priorityFilter !== "all" || 
+           tagFilter !== "all" || 
+           dueDateFilter !== "all" || 
+           selectedCategories.length > 0 || 
+           selectedColumns.length > 0;
+  }, [searchTerm, priorityFilter, tagFilter, dueDateFilter, selectedCategories, selectedColumns]);
+
+  // Aplicar preset de filtros
+  const handleApplyPreset = (filters: FilterPresetFilters) => {
+    if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
+    if (filters.priorityFilter !== undefined) setPriorityFilter(filters.priorityFilter);
+    if (filters.tagFilter !== undefined) setTagFilter(filters.tagFilter);
+    if (filters.categoryFilter !== undefined) setSelectedCategories(filters.categoryFilter);
+  };
 
   // Fetch ALL tasks from all kanbans and categories
   useEffect(() => {
@@ -102,7 +130,7 @@ export default function Calendar() {
     let filtered = tasks;
     const today = new Date();
     
-    // Filter out mirrored tasks to avoid duplicates
+    // Filter out mirrored tasks to avoid duplicates (legacy cleanup)
     filtered = filtered.filter(task => !task.mirror_task_id);
     
     // Filtro de busca
@@ -370,6 +398,14 @@ export default function Calendar() {
           onColumnChange={setSelectedColumns}
           dueDateFilter={dueDateFilter}
           onDueDateChange={setDueDateFilter}
+          filterPresetsSlot={
+            <FilterPresetsManager
+              currentFilters={currentFilters}
+              onApplyPreset={handleApplyPreset}
+              onClearFilters={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+          }
         />
 
         {/* Day Tasks Dialog */}

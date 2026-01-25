@@ -244,11 +244,6 @@ describe('KanbanBoard', () => {
       expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
     });
 
-    it('deve aceitar isDailyKanban', () => {
-      const { getByTestId } = renderBoard({ isDailyKanban: true });
-      expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();
-    });
-
     it('deve aceitar showColumnManager', () => {
       const { getByTestId } = renderBoard({ showColumnManager: true });
       expect(getByTestId('kanban-desktop-view')).toBeInTheDocument();

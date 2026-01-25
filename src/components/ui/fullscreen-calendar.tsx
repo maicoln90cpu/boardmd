@@ -63,6 +63,8 @@ interface FullScreenCalendarProps {
   onColumnChange?: (value: string[]) => void;
   dueDateFilter?: string;
   onDueDateChange?: (value: string) => void;
+  // Slot para presets de filtros
+  filterPresetsSlot?: React.ReactNode;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -299,7 +301,8 @@ export function FullScreenCalendar({
   availableTags = [],
   onColumnChange,
   dueDateFilter = "all",
-  onDueDateChange
+  onDueDateChange,
+  filterPresetsSlot
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
@@ -481,6 +484,9 @@ export function FullScreenCalendar({
 
           {/* Right: Controls */}
           <div className="flex flex-wrap items-center gap-2">
+
+            {/* Filter Presets Slot */}
+            {filterPresetsSlot}
 
             {/* View Toggle */}
             <div className="flex rounded-lg border bg-muted/50 p-0.5">
