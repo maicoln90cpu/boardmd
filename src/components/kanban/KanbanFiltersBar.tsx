@@ -169,18 +169,21 @@ export function KanbanFiltersBar({
     </>
   );
 
+  // Filtrar a tag "recorrente" da lista para evitar duplicação com RecurrenceFilter
+  const filteredTags = availableTags.filter(tag => tag.toLowerCase() !== "recorrente");
+
   // Filtros secundários (em sheet no mobile)
   const renderSecondaryFilters = () => (
     <>
-      {/* Tag */}
-      {availableTags.length > 0 && (
+      {/* Tag (excluindo "recorrente" que tem filtro dedicado) */}
+      {filteredTags.length > 0 && (
         <Select value={tagFilter} onValueChange={onTagChange}>
           <SelectTrigger className="w-full md:w-[130px] h-10">
             <SelectValue placeholder="Tag" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
-            {availableTags.map((tag) => (
+            {filteredTags.map((tag) => (
               <SelectItem key={tag} value={tag}>{tag}</SelectItem>
             ))}
           </SelectContent>
