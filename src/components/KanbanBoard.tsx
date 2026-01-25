@@ -272,7 +272,6 @@ export function KanbanBoard({
           toggleFavorite={toggleFavorite}
           duplicateTask={duplicateTask}
           handleMoveTask={handleMoveTask}
-          handleUncheckRecurrentTasks={handleUncheckRecurrentTasksWrapper}
           showCategoryBadge={showCategoryBadge}
           densityMode={densityMode}
           hideBadges={hideBadges}

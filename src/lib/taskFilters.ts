@@ -17,6 +17,7 @@ import {
   isThisWeek,
   isPast,
   startOfDay,
+  addDays,
 } from "date-fns";
 import { parseDateTimeForSort } from "./dateUtils";
 
@@ -42,6 +43,7 @@ export type DueDateFilterType =
   | "overdue_today"
   | "today"
   | "tomorrow"
+  | "next_7_days"
   | "week"
   | "this_week"
   | "month";
@@ -146,6 +148,15 @@ export function filterByDueDateKanban<T extends TaskLike>(
         tomorrow.setDate(tomorrow.getDate() + 1);
         return taskDueDate && taskDueDate.toDateString() === tomorrow.toDateString();
 
+      case "next_7_days": {
+        const next7Days = addDays(today, 7);
+        return (
+          taskDueDate &&
+          !isBefore(taskDueDate, today) &&
+          !isAfter(taskDueDate, next7Days)
+        );
+      }
+
       case "week":
       case "this_week": {
         const weekStart = startOfWeek(today, { weekStartsOn: 0 });
@@ -201,6 +212,10 @@ export function filterByDueDate<T extends TaskLike>(
         return isToday(dueDate);
       case "tomorrow":
         return isTomorrow(dueDate);
+      case "next_7_days": {
+        const next7Days = addDays(today, 7);
+        return !isBefore(dueDate, today) && !isAfter(dueDate, next7Days);
+      }
       case "this_week":
         return isThisWeek(dueDate, { weekStartsOn: 1 });
       case "overdue":

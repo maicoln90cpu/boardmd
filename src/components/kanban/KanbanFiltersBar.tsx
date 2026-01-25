@@ -161,6 +161,7 @@ export function KanbanFiltersBar({
             <SelectItem value="overdue_today">🔥 Atrasadas + Hoje</SelectItem>
             <SelectItem value="overdue">🔴 Atrasadas</SelectItem>
             <SelectItem value="today">📅 Hoje</SelectItem>
+            <SelectItem value="next_7_days">📆 Próximos 7 dias</SelectItem>
             <SelectItem value="week">📆 Esta semana</SelectItem>
             <SelectItem value="month">🗓️ Este mês</SelectItem>
           </SelectContent>

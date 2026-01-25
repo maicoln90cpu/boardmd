@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { isSameDay, parseISO, startOfDay, isToday, isBefore, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { isSameDay, parseISO, startOfDay, isToday, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
@@ -163,6 +163,11 @@ export default function Calendar() {
             return dueDate && isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
           case "today":
             return dueDate && isToday(dueDate);
+          case "next_7_days": {
+            const next7Days = new Date(today);
+            next7Days.setDate(next7Days.getDate() + 7);
+            return dueDate && !isBefore(dueDate, startOfDay(today)) && !isAfter(dueDate, next7Days);
+          }
           case "week":
             return dueDate && isWithinInterval(dueDate, {
               start: startOfWeek(today, { locale: ptBR }),

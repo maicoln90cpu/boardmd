@@ -40,6 +40,7 @@ function Index() {
     simplifiedMode: state.simplifiedMode,
     getVisibleColumns: state.getVisibleColumns,
     refreshProjectsBoard: state.refreshProjectsBoard,
+    recurrenceFilter: state.recurrenceFilter,
   });
 
   // Settings updaters
