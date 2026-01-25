@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useSettings } from "@/hooks/data/useSettings";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 type Theme = "light" | "dark" | "auto";
 
@@ -14,19 +14,91 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const { settings, updateSettings, isLoading } = useSettings();
-  
-  // Estado local para tema (fallback para localStorage quando não logado)
-  const [localTheme, setLocalTheme] = useState<Theme>(() => {
+  // Estado local para tema (sempre começa do localStorage para evitar flash)
+  const [theme, setThemeState] = useState<Theme>(() => {
     const stored = localStorage.getItem("theme") as Theme;
     return stored || "auto";
   });
-
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const [user, setUser] = useState<User | null>(null);
+  const [isDbLoaded, setIsDbLoaded] = useState(false);
 
-  // Tema atual: usa settings se logado, senão localStorage
-  const theme: Theme = user && !isLoading ? (settings.theme || "auto") : localTheme;
+  // Carregar user e settings do banco de forma independente
+  useEffect(() => {
+    // Obter usuário atual
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Escutar mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (!session?.user) {
+        setIsDbLoaded(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Carregar tema do banco quando usuário está logado
+  useEffect(() => {
+    if (!user) {
+      setIsDbLoaded(false);
+      return;
+    }
+
+    const loadFromDb = async () => {
+      try {
+        const { data } = await supabase
+          .from("user_settings")
+          .select("settings")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (data?.settings) {
+          const dbTheme = (data.settings as any).theme as Theme;
+          if (dbTheme && ['light', 'dark', 'auto'].includes(dbTheme)) {
+            setThemeState(dbTheme);
+            localStorage.setItem("theme", dbTheme);
+          }
+        }
+      } catch (error) {
+        // Silently fail, use localStorage fallback
+      } finally {
+        setIsDbLoaded(true);
+      }
+    };
+
+    loadFromDb();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('theme_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new?.settings) {
+            const dbTheme = (payload.new.settings as any).theme as Theme;
+            if (dbTheme && ['light', 'dark', 'auto'].includes(dbTheme)) {
+              setThemeState(dbTheme);
+              localStorage.setItem("theme", dbTheme);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Atualizar resolvedTheme baseado no tema atual
   useEffect(() => {
@@ -50,22 +122,37 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
-    
-    // Também salvar no localStorage como fallback
     localStorage.setItem("theme", theme);
   }, [resolvedTheme, theme]);
 
   // Setter que atualiza no banco quando logado
-  const setTheme = useCallback((newTheme: Theme) => {
+  const setTheme = useCallback(async (newTheme: Theme) => {
+    setThemeState(newTheme);
+    localStorage.setItem("theme", newTheme);
+    
     if (user) {
-      // Salvar no banco via settings
-      updateSettings({ theme: newTheme });
-    } else {
-      // Salvar apenas localmente
-      setLocalTheme(newTheme);
-      localStorage.setItem("theme", newTheme);
+      try {
+        // Buscar settings atuais e fazer merge
+        const { data } = await supabase
+          .from("user_settings")
+          .select("settings")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const currentSettings = (data?.settings || {}) as Record<string, any>;
+        const mergedSettings = { ...currentSettings, theme: newTheme };
+
+        await supabase
+          .from("user_settings")
+          .upsert(
+            { user_id: user.id, settings: mergedSettings },
+            { onConflict: 'user_id' }
+          );
+      } catch (error) {
+        // Silently fail, localStorage is already updated
+      }
     }
-  }, [user, updateSettings]);
+  }, [user]);
 
   const toggleTheme = useCallback(() => {
     const themes: Theme[] = ["light", "dark", "auto"];
