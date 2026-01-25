@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { useSettings } from "@/hooks/data/useSettings";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 export type ColorPalette = "default" | "ocean" | "forest" | "sunset" | "lavender";
 
@@ -66,21 +66,84 @@ export const paletteColors: Record<ColorPalette, string> = {
   lavender: "#a855f7",
 };
 
-export function ColorThemeProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const { settings, updateSettings, isLoading } = useSettings();
-  
-  // Estado local para paleta (fallback para localStorage quando não logado)
-  const [localPalette, setLocalPalette] = useState<ColorPalette>(() => {
-    const stored = localStorage.getItem("color-palette") as ColorPalette;
-    return stored || "default";
-  });
+const isValidPalette = (value: unknown): value is ColorPalette => {
+  return typeof value === 'string' && ['default', 'ocean', 'forest', 'sunset', 'lavender'].includes(value);
+};
 
-  // Paleta atual: usa settings se logado, senão localStorage
-  // Nota: colorPalette está em settings.appearance?.colorPalette (a adicionar) ou fallback
-  const colorPalette: ColorPalette = user && !isLoading 
-    ? ((settings as any).colorPalette || localPalette) 
-    : localPalette;
+export function ColorThemeProvider({ children }: { children: React.ReactNode }) {
+  // Estado local para paleta (sempre começa do localStorage para evitar flash)
+  const [colorPalette, setColorPaletteState] = useState<ColorPalette>(() => {
+    const stored = localStorage.getItem("color-palette");
+    return isValidPalette(stored) ? stored : "default";
+  });
+  const [user, setUser] = useState<User | null>(null);
+
+  // Carregar user de forma independente
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Carregar paleta do banco quando usuário está logado
+  useEffect(() => {
+    if (!user) return;
+
+    const loadFromDb = async () => {
+      try {
+        const { data } = await supabase
+          .from("user_settings")
+          .select("settings")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (data?.settings) {
+          const dbPalette = (data.settings as any).colorPalette;
+          if (isValidPalette(dbPalette)) {
+            setColorPaletteState(dbPalette);
+            localStorage.setItem("color-palette", dbPalette);
+          }
+        }
+      } catch (error) {
+        // Silently fail, use localStorage fallback
+      }
+    };
+
+    loadFromDb();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('color_settings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_settings',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new?.settings) {
+            const dbPalette = (payload.new.settings as any).colorPalette;
+            if (isValidPalette(dbPalette)) {
+              setColorPaletteState(dbPalette);
+              localStorage.setItem("color-palette", dbPalette);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Aplicar variáveis CSS
   useEffect(() => {
@@ -91,21 +154,36 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
       root.style.setProperty(`--${key}`, value);
     });
 
-    // Também salvar no localStorage como fallback
     localStorage.setItem("color-palette", colorPalette);
   }, [colorPalette]);
 
   // Setter que atualiza no banco quando logado
-  const setColorPalette = useCallback((newPalette: ColorPalette) => {
+  const setColorPalette = useCallback(async (newPalette: ColorPalette) => {
+    setColorPaletteState(newPalette);
+    localStorage.setItem("color-palette", newPalette);
+    
     if (user) {
-      // Salvar no banco via settings
-      updateSettings({ colorPalette: newPalette } as any);
-    } else {
-      // Salvar apenas localmente
-      setLocalPalette(newPalette);
-      localStorage.setItem("color-palette", newPalette);
+      try {
+        const { data } = await supabase
+          .from("user_settings")
+          .select("settings")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const currentSettings = (data?.settings || {}) as Record<string, any>;
+        const mergedSettings = { ...currentSettings, colorPalette: newPalette };
+
+        await supabase
+          .from("user_settings")
+          .upsert(
+            { user_id: user.id, settings: mergedSettings },
+            { onConflict: 'user_id' }
+          );
+      } catch (error) {
+        // Silently fail, localStorage is already updated
+      }
     }
-  }, [user, updateSettings]);
+  }, [user]);
 
   return (
     <ColorThemeContext.Provider value={{ colorPalette, setColorPalette }}>
