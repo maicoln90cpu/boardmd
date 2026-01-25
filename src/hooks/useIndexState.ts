@@ -12,20 +12,12 @@ export function useIndexState() {
 
   // Derived values from settings
   const simplifiedMode = filters.settings.kanban.simplifiedMode;
-  const dailySortOption = filters.settings.kanban.dailySortOption;
-  const dailySortOrder = filters.settings.kanban.dailySortOrder;
   const densityMode = filters.settings.defaultDensity;
   const showFavoritesPanel = filters.settings.kanban.showFavoritesPanel;
   const hideBadgesMobile = filters.settings.mobile.hideBadges;
-  const dailyGridColumnsMobile = filters.settings.mobile.dailyGridColumns;
   const projectsGridColumnsMobile = filters.settings.mobile.projectsGridColumns;
   const projectsSortOption = filters.settings.kanban.projectsSortOption;
   const projectsSortOrder = filters.settings.kanban.projectsSortOrder;
-
-  // Wrapped handlers that need viewState setters
-  const handleReorderDailyTasks = useCallback(async (reorderedTasks: Array<{ id: string; position: number }>) => {
-    await data.handleReorderDailyTasks(reorderedTasks, viewState.refreshDailyBoard);
-  }, [data.handleReorderDailyTasks, viewState.refreshDailyBoard]);
 
   const handleTaskSelect = useCallback((task: Task) => {
     data.handleTaskSelect(task, viewState.setSelectedTaskForHistory, viewState.setShowHistory);
@@ -46,15 +38,11 @@ export function useIndexState() {
     loadingColumns: data.loadingColumns,
     
     // Board keys
-    dailyBoardKey: viewState.dailyBoardKey,
     projectsBoardKey: viewState.projectsBoardKey,
-    refreshDailyBoard: viewState.refreshDailyBoard,
     refreshProjectsBoard: viewState.refreshProjectsBoard,
     refreshAllBoards: viewState.refreshAllBoards,
     
     // View state
-    viewMode: viewState.viewMode,
-    setViewMode: viewState.setViewMode,
     displayMode: viewState.displayMode,
     setDisplayMode: viewState.setDisplayMode,
     
@@ -96,21 +84,16 @@ export function useIndexState() {
     updateSettings: filters.updateSettings,
     saveSettings: filters.saveSettings,
     simplifiedMode,
-    dailySortOption,
-    dailySortOrder,
     densityMode,
     showFavoritesPanel,
     hideBadgesMobile,
-    dailyGridColumnsMobile,
     projectsGridColumnsMobile,
     projectsSortOption,
     projectsSortOrder,
-    dailyDueDateFilter: filters.dailyDueDateFilter,
     projectsDueDateFilter: filters.projectsDueDateFilter,
     
     // Category filters
     selectedCategory: filters.selectedCategory,
-    dailyCategory: filters.dailyCategory,
     categoryFilter: filters.categoryFilter,
     categoryFilterInitialized: filters.categoryFilterInitialized,
     selectedCategoryFilterMobile: filters.selectedCategoryFilterMobile,
@@ -126,22 +109,11 @@ export function useIndexState() {
     setPriorityFilter: filters.setPriorityFilter,
     tagFilter: filters.tagFilter,
     setTagFilter: filters.setTagFilter,
-    dailyPriorityFilter: filters.dailyPriorityFilter,
-    setDailyPriorityFilter: filters.setDailyPriorityFilter,
-    dailyTagFilter: filters.dailyTagFilter,
-    setDailyTagFilter: filters.setDailyTagFilter,
-    dailySearchTerm: filters.dailySearchTerm,
-    setDailySearchTerm: filters.setDailySearchTerm,
     
     // Date filters
-    setDailyDueDateFilter: filters.setDailyDueDateFilter,
     setProjectsDueDateFilter: filters.setProjectsDueDateFilter,
     
-    // Task reset
-    resetDailyTasks: data.resetDailyTasks,
-    
     // Handlers
-    handleReorderDailyTasks,
     handleTaskSelect,
     handleClearFilters,
   };

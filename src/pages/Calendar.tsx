@@ -343,8 +343,6 @@ export default function Calendar() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={() => {}}
-        onViewChange={setViewMode}
-        viewMode={viewMode}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden pb-16 md:pb-0">

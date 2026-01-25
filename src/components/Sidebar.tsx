@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, Layers, FileText, BarChart3, LogOut, MoreHorizontal, ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { Layers, FileText, BarChart3, LogOut, MoreHorizontal, ChevronDown, ChevronRight, Folder, Timer } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -12,14 +12,12 @@ import { useSettings } from "@/hooks/data/useSettings";
 import { useCategories } from "@/hooks/data/useCategories";
 import { CategoryTree } from "@/components/sidebar/CategoryTree";
 import { useTaskCounts } from "@/hooks/data/useTaskCounts";
-import { useMenuItems, PRIMARY_MENU_ITEMS, SECONDARY_MENU_ITEMS } from "@/hooks/ui/useMenuItems";
+import { useMenuItems } from "@/hooks/ui/useMenuItems";
 
 interface SidebarProps {
   onExport: () => void;
   onImport: () => void;
   onThemeToggle: () => void;
-  onViewChange: (mode: "daily" | "all") => void;
-  viewMode: "daily" | "all";
   onCategorySelect?: (categoryId: string | null) => void;
   selectedCategoryId?: string | null;
 }
@@ -52,13 +50,9 @@ const Logo = () => {
 
 // Desktop sidebar content
 const SidebarContent = ({
-  viewMode,
-  onViewChange,
   onCategorySelect,
   selectedCategoryId,
 }: {
-  viewMode: "daily" | "all";
-  onViewChange: (mode: "daily" | "all") => void;
   onCategorySelect?: (categoryId: string | null) => void;
   selectedCategoryId?: string | null;
 }) => {
@@ -70,8 +64,6 @@ const SidebarContent = ({
 
   // Usar hook centralizado para itens de menu
   const { primaryLinks, secondaryLinks, handleNavigation } = useMenuItems({
-    viewMode,
-    onViewChange,
     onCategorySelect,
   });
 
@@ -84,7 +76,6 @@ const SidebarContent = ({
   const handleCategorySelect = (categoryId: string) => {
     onCategorySelect?.(categoryId);
     navigate("/");
-    setTimeout(() => onViewChange("all"), 50);
   };
 
   // Filter categories for projects (depth 0 or all)
@@ -166,8 +157,6 @@ export function Sidebar({
   onExport,
   onImport,
   onThemeToggle,
-  onViewChange,
-  viewMode,
   onCategorySelect,
   selectedCategoryId,
 }: SidebarProps) {
@@ -183,6 +172,7 @@ export function Sidebar({
   const { categories } = useCategories();
   const { counts: taskCountByCategory, totalCount: totalTaskCount } = useTaskCounts();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Filter categories for projects (exclude "Diário")
   const projectCategories = categories.filter((c) => c.name !== "Diário");
@@ -208,10 +198,11 @@ export function Sidebar({
 
   // Usar hook centralizado para itens de menu mobile
   const { primaryItems, secondaryItems, handleNavigation } = useMenuItems({
-    viewMode,
-    onViewChange,
     onCategorySelect,
   });
+
+  // Check if current route is home
+  const isHomeActive = location.pathname === "/";
 
   // Skeleton da sidebar enquanto carrega
   if (isLoading) {
@@ -223,7 +214,7 @@ export function Sidebar({
             <Skeleton className="h-8 w-8 rounded-lg" />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-8 w-8 rounded-md" />
             ))}
           </div>
@@ -260,8 +251,6 @@ export function Sidebar({
       <AnimatedSidebar open={open} setOpen={setOpen} animate={true} isPinned={isPinned}>
         <SidebarBody className="justify-between gap-6">
           <SidebarContent
-            viewMode={viewMode}
-            onViewChange={onViewChange}
             onCategorySelect={onCategorySelect}
             selectedCategoryId={selectedCategoryId}
           />
@@ -271,21 +260,11 @@ export function Sidebar({
       {/* Mobile bottom navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
         <div className="grid grid-cols-5 gap-0.5 p-2 px-0">
-          {/* Diário */}
-          <Button
-            variant={primaryItems[0].active ? "secondary" : "ghost"}
-            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
-            onClick={primaryItems[0].onClick}
-          >
-            <Calendar className="h-5 w-5 shrink-0" />
-            <span className="truncate w-full text-center leading-tight">Diário</span>
-          </Button>
-
           {/* Projetos - Sheet com lista de categorias */}
           <Sheet open={projectsMenuOpen} onOpenChange={setProjectsMenuOpen}>
             <SheetTrigger asChild>
               <Button
-                variant={primaryItems[1].active ? "secondary" : "ghost"}
+                variant={isHomeActive ? "secondary" : "ghost"}
                 className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px] relative"
               >
                 <Layers className="h-5 w-5 shrink-0" />
@@ -302,11 +281,11 @@ export function Sidebar({
               <div className="flex flex-col gap-2 mt-4 max-h-[60vh] overflow-y-auto">
                 {/* Todos os Projetos */}
                 <Button
-                  variant={!selectedCategoryId && viewMode === "all" ? "secondary" : "ghost"}
+                  variant={!selectedCategoryId && isHomeActive ? "secondary" : "ghost"}
                   className="w-full justify-start gap-3 min-h-[48px] text-base"
                   onClick={() => {
                     onCategorySelect?.(null);
-                    handleNavigation("/", "all");
+                    handleNavigation("/");
                     setProjectsMenuOpen(false);
                   }}
                 >
@@ -326,7 +305,7 @@ export function Sidebar({
                     style={{ paddingLeft: `${(category.depth || 0) * 16 + 16}px` }}
                     onClick={() => {
                       onCategorySelect?.(category.id);
-                      handleNavigation("/", "all");
+                      handleNavigation("/");
                       setProjectsMenuOpen(false);
                     }}
                   >
@@ -347,9 +326,9 @@ export function Sidebar({
 
           {/* Anotações */}
           <Button
-            variant={primaryItems[2].active ? "secondary" : "ghost"}
+            variant={primaryItems[1]?.active ? "secondary" : "ghost"}
             className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
-            onClick={primaryItems[2].onClick}
+            onClick={primaryItems[1]?.onClick}
           >
             <FileText className="h-5 w-5 shrink-0" />
             <span className="truncate w-full text-center leading-tight">Anotações</span>
@@ -357,19 +336,29 @@ export function Sidebar({
 
           {/* Dashboard */}
           <Button
-            variant={primaryItems[3].active ? "secondary" : "ghost"}
+            variant={primaryItems[2]?.active ? "secondary" : "ghost"}
             className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
-            onClick={primaryItems[3].onClick}
+            onClick={primaryItems[2]?.onClick}
           >
             <BarChart3 className="h-5 w-5 shrink-0" />
             <span className="truncate w-full text-center leading-tight">Dashboard</span>
+          </Button>
+
+          {/* Pomodoro - direct link */}
+          <Button
+            variant={secondaryItems[0]?.active ? "secondary" : "ghost"}
+            className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
+            onClick={secondaryItems[0]?.onClick}
+          >
+            <Timer className="h-5 w-5 shrink-0" />
+            <span className="truncate w-full text-center leading-tight">Pomodoro</span>
           </Button>
 
           {/* Mais opções */}
           <Sheet open={moreMenuOpen} onOpenChange={setMoreMenuOpen}>
             <SheetTrigger asChild>
               <Button
-                variant={secondaryItems.some((item) => item.active) ? "secondary" : "ghost"}
+                variant={secondaryItems.slice(1).some((item) => item.active) ? "secondary" : "ghost"}
                 className="flex-col gap-1 min-h-[60px] min-w-[44px] h-auto py-2 px-1 text-[10px]"
               >
                 <MoreHorizontal className="h-5 w-5 shrink-0" />
@@ -381,7 +370,7 @@ export function Sidebar({
                 <SheetTitle>Mais opções</SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-2 mt-6">
-                {secondaryItems.map((item) => (
+                {secondaryItems.slice(1).map((item) => (
                   <Button
                     key={item.label}
                     variant={item.active ? "secondary" : "ghost"}

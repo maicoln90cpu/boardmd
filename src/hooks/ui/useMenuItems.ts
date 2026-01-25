@@ -23,8 +23,7 @@ export interface MenuItem {
 }
 
 export const PRIMARY_MENU_ITEMS: MenuItem[] = [
-  { icon: Calendar, label: "Diário", path: "/", mode: "daily" },
-  { icon: Layers, label: "Projetos", path: "/", mode: "all" },
+  { icon: Layers, label: "Projetos", path: "/" },
   { icon: FileText, label: "Anotações", path: "/notes" },
   { icon: BarChart3, label: "Dashboard", path: "/dashboard" },
 ];
@@ -40,18 +39,12 @@ export const SECONDARY_MENU_ITEMS: MenuItem[] = [
 // Helper para verificar se item está ativo
 export const isMenuItemActive = (
   item: MenuItem,
-  pathname: string,
-  viewMode: "daily" | "all"
+  pathname: string
 ): boolean => {
-  if (item.path === "/" && item.mode) {
-    return pathname === "/" && viewMode === item.mode;
-  }
   return pathname === item.path;
 };
 
 interface UseMenuItemsOptions {
-  viewMode: "daily" | "all";
-  onViewChange: (mode: "daily" | "all") => void;
   onCategorySelect?: (categoryId: string | null) => void;
 }
 
@@ -69,18 +62,13 @@ export interface SidebarLinkItem {
 }
 
 export function useMenuItems({ 
-  viewMode, 
-  onViewChange, 
   onCategorySelect 
 }: UseMenuItemsOptions) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleNavigation = (path: string, mode?: "daily" | "all") => {
+  const handleNavigation = (path: string) => {
     navigate(path);
-    if (mode) {
-      setTimeout(() => onViewChange(mode), 50);
-    }
   };
 
   // Primary menu items processados
@@ -88,15 +76,15 @@ export function useMenuItems({
     (): ProcessedMenuItem[] =>
       PRIMARY_MENU_ITEMS.map((item) => ({
         ...item,
-        active: isMenuItemActive(item, location.pathname, viewMode),
+        active: isMenuItemActive(item, location.pathname),
         onClick: () => {
-          if (item.mode === "all") {
+          if (item.path === "/") {
             onCategorySelect?.(null);
           }
-          handleNavigation(item.path, item.mode);
+          handleNavigation(item.path);
         },
       })),
-    [location.pathname, viewMode, onCategorySelect]
+    [location.pathname, onCategorySelect]
   );
 
   // Secondary menu items processados

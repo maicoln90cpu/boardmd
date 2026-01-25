@@ -194,8 +194,6 @@ export default function Pomodoro() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={() => {}}
-        onViewChange={() => {}}
-        viewMode="all"
       />
 
       <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">

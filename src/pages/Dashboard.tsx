@@ -166,8 +166,6 @@ export default function Dashboard() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={toggleTheme}
-        onViewChange={(mode) => navigate(`/?view=${mode}`)}
-        viewMode="all"
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">

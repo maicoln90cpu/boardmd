@@ -32,8 +32,6 @@ export default function Settings() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={toggleTheme}
-        onViewChange={(mode) => navigate(`/?view=${mode}`)}
-        viewMode="all"
       />
       
       <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
