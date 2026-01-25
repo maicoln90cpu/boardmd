@@ -169,6 +169,7 @@ function Index() {
             onClearCategorySelection={() => state.setSelectedCategory("")}
             onTaskSelect={state.handleTaskSelect}
             onEqualizeColumns={viewHandlers.handleEqualizeColumns}
+            onResetRecurrentTasks={handleResetRecurrentTasks}
             hiddenColumns={state.hiddenColumns}
             onToggleColumnVisibility={state.toggleColumnVisibility}
             onDeleteColumn={state.deleteColumn}

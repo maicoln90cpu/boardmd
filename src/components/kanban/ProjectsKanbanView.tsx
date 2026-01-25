@@ -5,7 +5,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardStats } from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Columns3, Equal } from "lucide-react";
+import { BarChart3, Columns3, Equal, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
@@ -72,6 +72,7 @@ interface ProjectsKanbanViewProps {
   // Callbacks de ação
   onTaskSelect: (task: Task) => void;
   onEqualizeColumns: () => void;
+  onResetRecurrentTasks?: () => void;
   
   // Column Manager
   hiddenColumns: string[];
@@ -127,6 +128,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   onClearCategorySelection,
   onTaskSelect,
   onEqualizeColumns,
+  onResetRecurrentTasks,
   hiddenColumns,
   onToggleColumnVisibility,
   onDeleteColumn,
@@ -231,6 +233,17 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               >
                 <Equal className="h-4 w-4" />
               </Button>
+              {onResetRecurrentTasks && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onResetRecurrentTasks}
+                  title="Resetar tarefas recorrentes concluídas"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Resetar Recorrentes
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => onShowStatsChange(true)}>
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Estatísticas
@@ -268,7 +281,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               </div>
             </div>
 
-            {/* LINHA 2: Botão Colunas + Botão Estatísticas */}
+            {/* LINHA 2: Botão Colunas + Resetar + Estatísticas */}
             <div className="px-3 py-2 border-b flex items-center gap-2">
               <Button
                 variant="outline"
@@ -279,6 +292,18 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                 <Columns3 className="h-4 w-4 mr-2" />
                 Colunas
               </Button>
+              {onResetRecurrentTasks && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onResetRecurrentTasks}
+                  className="flex-1 h-10"
+                  title="Resetar tarefas recorrentes concluídas"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Resetar
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
