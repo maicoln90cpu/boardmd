@@ -65,6 +65,17 @@ const PRIORITY_ORDER: Record<string, number> = {
   high: 3,
 };
 
+// ============= Helpers =============
+
+/**
+ * Normaliza filtro para array (suporte a multi-select)
+ */
+const normalizeFilterToArray = (filter: string | string[]): string[] => {
+  if (Array.isArray(filter)) return filter;
+  if (filter === "all" || filter === "") return [];
+  return [filter];
+};
+
 // ============= Funções de Filtro =============
 
 /**
@@ -86,31 +97,106 @@ export function filterBySearchTerm<T extends TaskLike>(
 }
 
 /**
- * Filtra tarefas por prioridade
+ * Filtra tarefas por prioridade (suporta múltiplos valores)
  */
 export function filterByPriority<T extends TaskLike>(
   tasks: T[],
-  priorityFilter: string
+  priorityFilter: string | string[]
 ): T[] {
-  if (priorityFilter === "all") return tasks;
-  return tasks.filter((task) => task.priority === priorityFilter);
+  const priorities = normalizeFilterToArray(priorityFilter);
+  if (priorities.length === 0) return tasks;
+  return tasks.filter((task) => priorities.includes(task.priority || "medium"));
 }
 
 /**
- * Filtra tarefas por tag
+ * Filtra tarefas por tag (suporta múltiplos valores)
  */
-export function filterByTag<T extends TaskLike>(tasks: T[], tagFilter: string): T[] {
-  if (tagFilter === "all") return tasks;
-  return tasks.filter((task) => task.tags?.includes(tagFilter));
+export function filterByTag<T extends TaskLike>(
+  tasks: T[],
+  tagFilter: string | string[]
+): T[] {
+  const tags = normalizeFilterToArray(tagFilter);
+  if (tags.length === 0) return tasks;
+  return tasks.filter((task) => 
+    task.tags?.some((tag) => tags.includes(tag))
+  );
+}
+
+/**
+ * Verifica se uma tarefa corresponde a um filtro de data específico
+ */
+function matchesDueDateFilter<T extends TaskLike>(
+  task: T,
+  filter: string,
+  today: Date
+): boolean {
+  const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
+
+  switch (filter) {
+    case "no_date":
+      return taskDueDate === null;
+
+    case "overdue":
+      return taskDueDate !== null && isBefore(taskDueDate, today) && !task.is_completed;
+
+    case "overdue_today": {
+      if (!taskDueDate) return false;
+      const isOverdue = isBefore(taskDueDate, today) && !task.is_completed;
+      const isTodayDate = taskDueDate.toDateString() === today.toDateString();
+      return isOverdue || isTodayDate;
+    }
+
+    case "today":
+      return taskDueDate !== null && taskDueDate.toDateString() === today.toDateString();
+
+    case "tomorrow": {
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return taskDueDate !== null && taskDueDate.toDateString() === tomorrow.toDateString();
+    }
+
+    case "next_7_days": {
+      const next7Days = addDays(today, 7);
+      return (
+        taskDueDate !== null &&
+        !isBefore(taskDueDate, today) &&
+        !isAfter(taskDueDate, next7Days)
+      );
+    }
+
+    case "week":
+    case "this_week": {
+      const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+      return (
+        taskDueDate !== null &&
+        !isBefore(taskDueDate, weekStart) &&
+        !isAfter(taskDueDate, weekEnd)
+      );
+    }
+
+    case "month": {
+      const monthStart = startOfMonth(today);
+      const monthEnd = endOfMonth(today);
+      return (
+        taskDueDate !== null &&
+        !isBefore(taskDueDate, monthStart) &&
+        !isAfter(taskDueDate, monthEnd)
+      );
+    }
+
+    default:
+      return true;
+  }
 }
 
 /**
  * Filtra tarefas por data de vencimento (versão KanbanBoard)
- * Usada no KanbanBoard com filtros específicos de semana/mês
+ * Suporta múltiplos valores (OR logic)
  */
 export function filterByDueDateKanban<T extends TaskLike>(
   tasks: T[],
-  dueDateFilter: DueDateFilterType,
+  dueDateFilter: DueDateFilterType | string | string[],
   hideCompleted: boolean = false
 ): T[] {
   let filtered = tasks;
@@ -119,112 +205,60 @@ export function filterByDueDateKanban<T extends TaskLike>(
     filtered = filtered.filter((task) => !task.is_completed);
   }
 
-  if (dueDateFilter === "all") return filtered;
+  const filters = normalizeFilterToArray(dueDateFilter as string | string[]);
+  if (filters.length === 0) return filtered;
 
   const today = startOfToday();
 
-  return filtered.filter((task) => {
-    const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
-
-    switch (dueDateFilter) {
-      case "no_date":
-        return taskDueDate === null;
-
-      case "overdue":
-        return taskDueDate && isBefore(taskDueDate, today) && !task.is_completed;
-
-      case "overdue_today": {
-        if (!taskDueDate) return false;
-        const isOverdue = isBefore(taskDueDate, today) && !task.is_completed;
-        const isToday = taskDueDate.toDateString() === today.toDateString();
-        return isOverdue || isToday;
-      }
-
-      case "today":
-        return taskDueDate && taskDueDate.toDateString() === today.toDateString();
-
-      case "tomorrow":
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return taskDueDate && taskDueDate.toDateString() === tomorrow.toDateString();
-
-      case "next_7_days": {
-        const next7Days = addDays(today, 7);
-        return (
-          taskDueDate &&
-          !isBefore(taskDueDate, today) &&
-          !isAfter(taskDueDate, next7Days)
-        );
-      }
-
-      case "week":
-      case "this_week": {
-        const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-        return (
-          taskDueDate &&
-          !isBefore(taskDueDate, weekStart) &&
-          !isAfter(taskDueDate, weekEnd)
-        );
-      }
-
-      case "month": {
-        const monthStart = startOfMonth(today);
-        const monthEnd = endOfMonth(today);
-        return (
-          taskDueDate &&
-          !isBefore(taskDueDate, monthStart) &&
-          !isAfter(taskDueDate, monthEnd)
-        );
-      }
-
-      default:
-        return true;
-    }
-  });
+  return filtered.filter((task) =>
+    filters.some((filter) => matchesDueDateFilter(task, filter, today))
+  );
 }
 
 /**
  * Filtra tarefas por data de vencimento (versão useTaskFiltering)
- * Usada em hooks com filtros date-fns
+ * Suporta múltiplos valores (OR logic)
  */
 export function filterByDueDate<T extends TaskLike>(
   tasks: T[],
-  dueDateFilter: string
+  dueDateFilter: string | string[]
 ): T[] {
-  if (dueDateFilter === "all") return tasks;
+  const filters = normalizeFilterToArray(dueDateFilter);
+  if (filters.length === 0) return tasks;
 
   const today = startOfDay(new Date());
 
   return tasks.filter((task) => {
-    if (dueDateFilter === "no_date") {
-      return !task.due_date;
-    }
-
-    if (!task.due_date) {
-      return false;
-    }
-
-    const dueDate = parseISO(task.due_date);
-
-    switch (dueDateFilter) {
-      case "today":
-        return isToday(dueDate);
-      case "tomorrow":
-        return isTomorrow(dueDate);
-      case "next_7_days": {
-        const next7Days = addDays(today, 7);
-        return !isBefore(dueDate, today) && !isAfter(dueDate, next7Days);
+    return filters.some((filter) => {
+      if (filter === "no_date") {
+        return !task.due_date;
       }
-      case "this_week":
-        return isThisWeek(dueDate, { weekStartsOn: 1 });
-      case "overdue":
-        return isPast(dueDate) && !isToday(dueDate);
-      case "overdue_today":
-        return isPast(dueDate) || isToday(dueDate);
-      default:
-        return true;
-    }
+
+      if (!task.due_date) {
+        return false;
+      }
+
+      const dueDate = parseISO(task.due_date);
+
+      switch (filter) {
+        case "today":
+          return isToday(dueDate);
+        case "tomorrow":
+          return isTomorrow(dueDate);
+        case "next_7_days": {
+          const next7Days = addDays(today, 7);
+          return !isBefore(dueDate, today) && !isAfter(dueDate, next7Days);
+        }
+        case "this_week":
+          return isThisWeek(dueDate, { weekStartsOn: 1 });
+        case "overdue":
+          return isPast(dueDate) && !isToday(dueDate);
+        case "overdue_today":
+          return isPast(dueDate) || isToday(dueDate);
+        default:
+          return true;
+      }
+    });
   });
 }
 
@@ -291,9 +325,9 @@ export function applyAllFilters<T extends TaskLike>(
   tasks: T[],
   options: {
     searchTerm?: string;
-    priorityFilter?: string;
-    tagFilter?: string;
-    dueDateFilter?: string;
+    priorityFilter?: string | string[];
+    tagFilter?: string | string[];
+    dueDateFilter?: string | string[];
     hideCompleted?: boolean;
   }
 ): T[] {
@@ -307,16 +341,25 @@ export function applyAllFilters<T extends TaskLike>(
     result = filterBySearchTerm(result, options.searchTerm);
   }
 
-  if (options.priorityFilter && options.priorityFilter !== "all") {
-    result = filterByPriority(result, options.priorityFilter);
+  if (options.priorityFilter) {
+    const priorities = normalizeFilterToArray(options.priorityFilter);
+    if (priorities.length > 0) {
+      result = filterByPriority(result, priorities);
+    }
   }
 
-  if (options.tagFilter && options.tagFilter !== "all") {
-    result = filterByTag(result, options.tagFilter);
+  if (options.tagFilter) {
+    const tags = normalizeFilterToArray(options.tagFilter);
+    if (tags.length > 0) {
+      result = filterByTag(result, tags);
+    }
   }
 
-  if (options.dueDateFilter && options.dueDateFilter !== "all") {
-    result = filterByDueDate(result, options.dueDateFilter);
+  if (options.dueDateFilter) {
+    const dates = normalizeFilterToArray(options.dueDateFilter);
+    if (dates.length > 0) {
+      result = filterByDueDate(result, dates);
+    }
   }
 
   return result;
@@ -329,9 +372,9 @@ export function filterAndSortTasks<T extends TaskLike>(
   tasks: T[],
   filterOptions: {
     searchTerm?: string;
-    priorityFilter?: string;
-    tagFilter?: string;
-    dueDateFilter?: string;
+    priorityFilter?: string | string[];
+    tagFilter?: string | string[];
+    dueDateFilter?: string | string[];
     hideCompleted?: boolean;
   },
   sortOption: SortOptionType = "manual"

@@ -19,17 +19,44 @@ export function useIndexFilters(categories: Category[]) {
     clearCategoryFilters,
   } = useCategoryFilters(categories);
 
-  // Synced filters from settings
+  // Synced filters from settings - agora como arrays
   const searchTerm = settings.filters?.search ?? "";
-  const priorityFilter = settings.filters?.priority ?? "all";
-  const tagFilter = settings.filters?.tag ?? "all";
+  
+  // Priority filter - converter para array se for string legado
+  const priorityFilterRaw = settings.filters?.priority ?? "all";
+  const priorityFilter: string[] = Array.isArray(priorityFilterRaw) 
+    ? priorityFilterRaw 
+    : (priorityFilterRaw === "all" || priorityFilterRaw === "") 
+      ? [] 
+      : [priorityFilterRaw];
+  
+  // Tag filter - converter para array se for string legado
+  const tagFilterRaw = settings.filters?.tag ?? "all";
+  const tagFilter: string[] = Array.isArray(tagFilterRaw)
+    ? tagFilterRaw
+    : (tagFilterRaw === "all" || tagFilterRaw === "")
+      ? []
+      : [tagFilterRaw];
+  
+  // Daily filters (legado - manter compatibilidade)
   const dailyPriorityFilter = settings.filters?.dailyPriority ?? "all";
   const dailyTagFilter = settings.filters?.dailyTag ?? "all";
   const dailySearchTerm = settings.filters?.dailySearch ?? "";
   
-  // Date filters from settings.kanban
-  const dailyDueDateFilter = settings.kanban.dailyDueDateFilter;
-  const projectsDueDateFilter = settings.kanban.projectsDueDateFilter;
+  // Date filters from settings.kanban - converter para array
+  const dailyDueDateFilterRaw = settings.kanban.dailyDueDateFilter;
+  const dailyDueDateFilter: string[] = Array.isArray(dailyDueDateFilterRaw)
+    ? dailyDueDateFilterRaw
+    : (dailyDueDateFilterRaw === "all" || dailyDueDateFilterRaw === "")
+      ? []
+      : [dailyDueDateFilterRaw];
+  
+  const projectsDueDateFilterRaw = settings.kanban.projectsDueDateFilter;
+  const projectsDueDateFilter: string[] = Array.isArray(projectsDueDateFilterRaw)
+    ? projectsDueDateFilterRaw
+    : (projectsDueDateFilterRaw === "all" || projectsDueDateFilterRaw === "")
+      ? []
+      : [projectsDueDateFilterRaw];
   
   // Recurrence filter from settings.filters
   const recurrenceFilter = (settings.filters?.recurrence ?? "all") as "all" | "recurring" | "non-recurring";
@@ -39,19 +66,23 @@ export function useIndexFilters(categories: Category[]) {
     saveSettings();
   }, 500);
 
-  // Setters that update settings locally and save with debounce
+  // Setters que atualizam settings localmente e salvam com debounce
   const setSearchTerm = useCallback((value: string) => {
     updateSettings({ filters: { ...settings.filters, search: value } });
     debouncedSave();
   }, [updateSettings, settings.filters, debouncedSave]);
 
-  const setPriorityFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, priority: value } });
+  // Priority filter - aceita string ou array
+  const setPriorityFilter = useCallback((value: string | string[]) => {
+    const arrayValue = Array.isArray(value) ? value : (value === "all" ? [] : [value]);
+    updateSettings({ filters: { ...settings.filters, priority: arrayValue as any } });
     debouncedSave();
   }, [updateSettings, settings.filters, debouncedSave]);
 
-  const setTagFilter = useCallback((value: string) => {
-    updateSettings({ filters: { ...settings.filters, tag: value } });
+  // Tag filter - aceita string ou array
+  const setTagFilter = useCallback((value: string | string[]) => {
+    const arrayValue = Array.isArray(value) ? value : (value === "all" ? [] : [value]);
+    updateSettings({ filters: { ...settings.filters, tag: arrayValue as any } });
     debouncedSave();
   }, [updateSettings, settings.filters, debouncedSave]);
 
@@ -70,13 +101,16 @@ export function useIndexFilters(categories: Category[]) {
     debouncedSave();
   }, [updateSettings, settings.filters, debouncedSave]);
 
-  const setDailyDueDateFilter = useCallback((value: string) => {
-    updateSettings({ kanban: { ...settings.kanban, dailyDueDateFilter: value } });
+  // Due date filters - aceitam string ou array
+  const setDailyDueDateFilter = useCallback((value: string | string[]) => {
+    const arrayValue = Array.isArray(value) ? value : (value === "all" ? [] : [value]);
+    updateSettings({ kanban: { ...settings.kanban, dailyDueDateFilter: arrayValue as any } });
     debouncedSave();
   }, [updateSettings, settings.kanban, debouncedSave]);
 
-  const setProjectsDueDateFilter = useCallback((value: string) => {
-    updateSettings({ kanban: { ...settings.kanban, projectsDueDateFilter: value } });
+  const setProjectsDueDateFilter = useCallback((value: string | string[]) => {
+    const arrayValue = Array.isArray(value) ? value : (value === "all" ? [] : [value]);
+    updateSettings({ kanban: { ...settings.kanban, projectsDueDateFilter: arrayValue as any } });
     debouncedSave();
   }, [updateSettings, settings.kanban, debouncedSave]);
 
@@ -88,11 +122,11 @@ export function useIndexFilters(categories: Category[]) {
   // Clear all filters
   const handleClearFilters = useCallback(() => {
     setSearchTerm("");
-    setPriorityFilter("all");
-    setTagFilter("all");
+    setPriorityFilter([]);
+    setTagFilter([]);
     clearCategoryFilters();
-    setDailyDueDateFilter("all");
-    setProjectsDueDateFilter("all");
+    setDailyDueDateFilter([]);
+    setProjectsDueDateFilter([]);
     setRecurrenceFilter("all");
   }, [setSearchTerm, setPriorityFilter, setTagFilter, clearCategoryFilters, setDailyDueDateFilter, setProjectsDueDateFilter, setRecurrenceFilter]);
 
@@ -112,7 +146,7 @@ export function useIndexFilters(categories: Category[]) {
     setSelectedCategoryFilterMobile,
     clearCategoryFilters,
     
-    // Search and filters
+    // Search and filters - retorna arrays
     searchTerm,
     setSearchTerm,
     priorityFilter,
@@ -126,7 +160,7 @@ export function useIndexFilters(categories: Category[]) {
     dailySearchTerm,
     setDailySearchTerm,
     
-    // Date filters
+    // Date filters - retorna arrays
     dailyDueDateFilter,
     setDailyDueDateFilter,
     projectsDueDateFilter,

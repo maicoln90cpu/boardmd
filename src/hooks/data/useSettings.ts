@@ -9,6 +9,8 @@ export interface AppSettings {
   theme: 'light' | 'dark' | 'auto';
   defaultDensity: 'comfortable' | 'compact' | 'ultra-compact';
   timezone: string; // Timezone do usuário (ex: "America/Sao_Paulo")
+  // Paleta de cores sincronizada (migrada de localStorage)
+  colorPalette?: 'default' | 'ocean' | 'forest' | 'sunset' | 'lavender';
   notifications: {
     dueDate: boolean;
     achievements: boolean;
@@ -30,9 +32,9 @@ export interface AppSettings {
     projectsSortOrder: 'asc' | 'desc';
     simplifiedMode: boolean;
     hideCompletedTasks: boolean;
-    // Filtros de data persistidos
-    dailyDueDateFilter: string;
-    projectsDueDateFilter: string;
+    // Filtros de data persistidos - agora suportam array
+    dailyDueDateFilter: string | string[];
+    projectsDueDateFilter: string | string[];
     // View padrão ao fazer login
     defaultView: 'daily' | 'projects';
     // Automação: mover tarefas da semana atual automaticamente
@@ -79,11 +81,11 @@ export interface AppSettings {
   notificationTemplates?: NotificationTemplate[];
   // Filtros de data do calendário persistidos
   calendarDueDateFilter?: string;
-  // Filtros do Kanban sincronizados (migrados de localStorage)
+  // Filtros do Kanban sincronizados (migrados de localStorage) - agora suportam arrays
   filters?: {
     search: string;
-    priority: string;
-    tag: string;
+    priority: string | string[];
+    tag: string | string[];
     dailyPriority: string;
     dailyTag: string;
     dailySearch: string;

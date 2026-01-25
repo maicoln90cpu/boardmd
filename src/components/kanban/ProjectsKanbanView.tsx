@@ -48,21 +48,21 @@ interface ProjectsKanbanViewProps {
   // Ordenação
   sortOption: string;
   
-  // Filtros
+  // Filtros - agora suportam arrays para multi-select
   searchTerm: string;
-  priorityFilter: string;
-  tagFilter: string;
-  dueDateFilter: string;
+  priorityFilter: string | string[];
+  tagFilter: string | string[];
+  dueDateFilter: string | string[];
   recurrenceFilter?: "all" | "recurring" | "non-recurring";
   categoryFilter: string[];
   categoryFilterInitialized: boolean;
   selectedCategory?: string;
   
-  // Callbacks de filtro
+  // Callbacks de filtro - agora aceitam arrays
   onSearchChange: (value: string) => void;
-  onPriorityChange: (value: string) => void;
-  onTagChange: (value: string) => void;
-  onDueDateChange: (value: string) => void;
+  onPriorityChange: (value: string | string[]) => void;
+  onTagChange: (value: string | string[]) => void;
+  onDueDateChange: (value: string | string[]) => void;
   onRecurrenceFilterChange?: (value: "all" | "recurring" | "non-recurring") => void;
   onCategoryChange: (value: string[]) => void;
   onDisplayModeChange: (value: string) => void;
@@ -213,13 +213,6 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <GlobalSearch
-                tasks={filteredTasks}
-                onSelectTask={onTaskSelect}
-                categories={categories}
-                notes={notes}
-                notebooks={notebooks}
-              />
               <Button variant="outline" size="sm" onClick={() => onShowColumnManagerChange(true)}>
                 <Columns3 className="h-4 w-4 mr-2" />
                 Colunas
@@ -270,15 +263,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                   ✕
                 </Button>
               )}
-              <div className="flex-1 min-w-0">
-                <GlobalSearch
-                  tasks={filteredTasks}
-                  onSelectTask={onTaskSelect}
-                  categories={categories}
-                  notes={notes}
-                  notebooks={notebooks}
-                />
-              </div>
+              <div className="flex-1" />
             </div>
 
             {/* LINHA 2: Botão Colunas + Equalizar + Resetar + Estatísticas */}

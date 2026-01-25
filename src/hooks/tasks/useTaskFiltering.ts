@@ -10,9 +10,9 @@ import {
 
 export interface TaskFilterOptions {
   searchTerm?: string;
-  priorityFilter?: string;
-  tagFilter?: string;
-  dueDateFilter?: string;
+  priorityFilter?: string | string[];
+  tagFilter?: string | string[];
+  dueDateFilter?: string | string[];
   recurrenceFilter?: "all" | "recurring" | "non-recurring";
   categoryFilter?: string[];
   categoryFilterInitialized?: boolean;
@@ -22,6 +22,19 @@ export interface TaskFilterOptions {
   viewMode?: "daily" | "all";
 }
 
+// Helper para normalizar filtros
+const normalizeToArray = (value: string | string[] | undefined): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (value === "all" || value === "") return [];
+  return [value];
+};
+
+const hasActiveFilter = (value: string | string[] | undefined): boolean => {
+  const arr = normalizeToArray(value);
+  return arr.length > 0;
+};
+
 export function useTaskFiltering(
   tasks: Task[],
   categories: Category[],
@@ -29,9 +42,9 @@ export function useTaskFiltering(
 ) {
   const {
     searchTerm = "",
-    priorityFilter = "all",
-    tagFilter = "all",
-    dueDateFilter = "all",
+    priorityFilter = [],
+    tagFilter = [],
+    dueDateFilter = [],
     recurrenceFilter = "all",
     categoryFilter = [],
     categoryFilterInitialized = false,
@@ -76,18 +89,18 @@ export function useTaskFiltering(
       result = filterBySearchTerm(result, searchTerm);
     }
 
-    // Filtro de prioridade
-    if (priorityFilter !== "all") {
+    // Filtro de prioridade (suporta array)
+    if (hasActiveFilter(priorityFilter)) {
       result = filterByPriority(result, priorityFilter);
     }
 
-    // Filtro de tag
-    if (tagFilter !== "all") {
+    // Filtro de tag (suporta array)
+    if (hasActiveFilter(tagFilter)) {
       result = filterByTag(result, tagFilter);
     }
 
-    // Filtro de data de vencimento
-    if (dueDateFilter !== "all") {
+    // Filtro de data de vencimento (suporta array)
+    if (hasActiveFilter(dueDateFilter)) {
       result = filterByDueDate(result, dueDateFilter);
     }
 
