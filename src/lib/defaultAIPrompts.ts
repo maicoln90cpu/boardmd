@@ -232,8 +232,8 @@ Retorne APENAS HTML válido, sem explicações.`
   },
   dailyAssistant: {
     key: 'dailyAssistant',
-    label: 'Organizar Tarefas Diárias',
-    description: 'Usado pelo assistente de IA do Kanban Diário para priorizar tarefas',
+    label: 'Organizar Tarefas',
+    description: 'Usado pelo assistente de IA do Kanban para priorizar tarefas',
     category: 'kanban',
     defaultValue: `Você é um assistente de produtividade. Analise as tarefas fornecidas e retorne um JSON com:
 
@@ -249,13 +249,13 @@ Retorne APENAS HTML válido, sem explicações.`
     "Insight 1 sobre o dia",
     "Insight 2 sobre padrões detectados"
   ],
-  "summary": "Resumo geral do dia e recomendações"
+  "summary": "Resumo geral e recomendações"
 }
 
 Critérios de organização:
 1. Urgência (prazos próximos primeiro)
 2. Prioridade definida pelo usuário
-3. Tarefas com bloqueios ou dependências
+3. Tarefas recorrentes e seus ciclos
 4. Contexto e agrupamento lógico
 5. Nível de energia necessário
 
