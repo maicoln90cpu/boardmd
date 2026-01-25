@@ -18,8 +18,6 @@ export default function NotificationsDashboard() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={toggleTheme}
-        onViewChange={(mode) => navigate(`/?view=${mode}`)}
-        viewMode="daily"
       />
 
       <div className="flex-1">

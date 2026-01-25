@@ -601,8 +601,6 @@ export default function Config() {
         onExport={handleExport}
         onImport={handleImport}
         onThemeToggle={toggleTheme}
-        onViewChange={(mode) => navigate(`/?view=${mode}`)}
-        viewMode="daily"
       />
 
       <div className="flex-1">

@@ -4,14 +4,12 @@ import { TaskModal } from "@/components/TaskModal";
 import { DailyReviewModal } from "@/components/DailyReviewModal";
 import { ImportPreviewModal } from "@/components/ImportPreviewModal";
 import { ActivityHistory } from "@/components/ActivityHistory";
-import { DailyKanbanView } from "@/components/kanban/DailyKanbanView";
 import { ProjectsKanbanView } from "@/components/kanban/ProjectsKanbanView";
 import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/ui/useToast";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useSearchParams } from "react-router-dom";
 import { useIsMobile } from "@/hooks/ui/useMobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { useWeeklyAutomation } from "@/hooks/useWeeklyAutomation";
@@ -26,17 +24,14 @@ function Index() {
   const isMobile = useIsMobile();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
 
   // Main state hook
   const state = useIndexState();
 
   // View mode handlers
   const viewHandlers = useViewModeHandlers({
-    viewMode: state.viewMode,
     allTasks: state.allTasks,
     categories: state.categories,
-    dailyCategory: state.dailyCategory,
     selectedCategory: state.selectedCategory,
     categoryFilter: state.categoryFilter,
     categoryFilterInitialized: state.categoryFilterInitialized,
@@ -44,7 +39,6 @@ function Index() {
     isMobile,
     simplifiedMode: state.simplifiedMode,
     getVisibleColumns: state.getVisibleColumns,
-    refreshDailyBoard: state.refreshDailyBoard,
     refreshProjectsBoard: state.refreshProjectsBoard,
   });
 
@@ -63,10 +57,10 @@ function Index() {
   });
 
   // Task reset hook
-  const { handleResetRecurrentTasks, handleResetDaily } = useTaskReset({
+  const { handleResetRecurrentTasks } = useTaskReset({
     columns: state.columns,
-    resetAllTasksToFirstColumn: state.resetDailyTasks,
-    onBoardRefresh: state.refreshDailyBoard
+    resetAllTasksToFirstColumn: async () => {},
+    onBoardRefresh: state.refreshProjectsBoard
   });
 
   // Import/export hook
@@ -99,9 +93,7 @@ function Index() {
   // Keyboard shortcuts
   useKeyboardShortcuts({
     onSearch: () => {
-      if (state.viewMode === "all") {
-        state.searchInputRef.current?.focus();
-      }
+      state.searchInputRef.current?.focus();
     },
     onNewTask: () => {
       state.setShowQuickTaskModal(true);
@@ -119,16 +111,6 @@ function Index() {
     hasActiveSelection: !!state.selectedCategory,
   });
 
-  // Read view from URL or use default from settings
-  useEffect(() => {
-    const view = searchParams.get("view");
-    if (view === "all" || view === "daily") {
-      state.setViewMode(view);
-    } else if (state.settings.kanban.defaultView) {
-      state.setViewMode(state.settings.kanban.defaultView === "projects" ? "all" : "daily");
-    }
-  }, [state.settings.kanban.defaultView]);
-
   // Loading state
   if (state.loadingCategories || state.loadingColumns) {
     return <KanbanLoadingSkeleton />;
@@ -140,61 +122,13 @@ function Index() {
         onExport={handleExport} 
         onImport={handleImport} 
         onThemeToggle={toggleTheme} 
-        onViewChange={state.setViewMode} 
-        viewMode={state.viewMode}
         onCategorySelect={state.setSelectedCategory}
         selectedCategoryId={state.selectedCategory}
       />
 
       <main className="flex-1 overflow-auto">
-        {/* Daily Kanban */}
-        {state.viewMode === "daily" && state.dailyCategory && viewHandlers.visibleColumns.length > 0 && (
-          <DailyKanbanView
-            columns={viewHandlers.visibleColumns}
-            allColumns={state.columns}
-            categories={state.categories}
-            dailyCategory={state.dailyCategory}
-            availableTags={viewHandlers.dailyAvailableTags}
-            boardKey={state.dailyBoardKey}
-            densityMode={state.densityMode}
-            hideBadges={state.hideBadgesMobile}
-            gridColumns={state.dailyGridColumnsMobile}
-            showFavoritesPanel={state.showFavoritesPanel}
-            sortOption={state.dailySortOption}
-            sortOrder={state.dailySortOrder}
-            searchTerm={state.dailySearchTerm}
-            priorityFilter={state.dailyPriorityFilter}
-            tagFilter={state.dailyTagFilter}
-            dueDateFilter={state.dailyDueDateFilter}
-            onSearchChange={state.setDailySearchTerm}
-            onPriorityChange={state.setDailyPriorityFilter}
-            onTagChange={state.setDailyTagFilter}
-            onDueDateChange={state.setDailyDueDateFilter}
-            onClearFilters={() => {
-              state.setDailyPriorityFilter("all");
-              state.setDailyTagFilter("all");
-              state.setDailySearchTerm("");
-              state.setDailyDueDateFilter("all");
-            }}
-            onResetRecurrentTasks={handleResetRecurrentTasks}
-            onEqualizeColumns={viewHandlers.handleEqualizeColumns}
-            hiddenColumns={state.hiddenColumns}
-            onToggleColumnVisibility={state.toggleColumnVisibility}
-            onDeleteColumn={state.deleteColumn}
-            onResetToDefault={state.resetToDefaultView}
-            onRenameColumn={state.renameColumn}
-            onAddColumn={state.addColumn}
-            onReorderColumns={state.reorderColumns}
-            onToggleKanbanVisibility={state.toggleColumnKanbanVisibility}
-            showTemplates={state.showTemplates}
-            onShowTemplatesChange={state.setShowTemplates}
-            showColumnManager={state.showColumnManager}
-            onShowColumnManagerChange={state.setShowColumnManager}
-          />
-        )}
-        
-        {/* Projects Kanban */}
-        {state.viewMode === "all" && viewHandlers.visibleColumns.length > 0 && (
+        {/* Projects Kanban - always visible now */}
+        {viewHandlers.visibleColumns.length > 0 && (
           <ProjectsKanbanView
             columns={viewHandlers.visibleColumns}
             allColumns={state.columns}
@@ -290,11 +224,7 @@ function Index() {
           });
         }}
         columnId={state.columns[0]?.id || ""}
-        categoryId={state.viewMode === "daily" 
-          ? state.dailyCategory 
-          : (state.selectedCategory || state.categories.find(c => c.name !== "Diário")?.id || "")
-        }
-        isDailyKanban={state.viewMode === "daily"}
+        categoryId={state.selectedCategory || state.categories.find(c => c.name !== "Diário")?.id || ""}
         columns={state.columns}
       />
 

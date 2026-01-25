@@ -244,8 +244,6 @@ export default function Notes() {
           onExport={() => {}}
           onImport={() => {}}
           onThemeToggle={toggleTheme}
-          onViewChange={handleViewChange}
-          viewMode="daily"
         />
 
         <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
@@ -259,8 +257,6 @@ export default function Notes() {
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={toggleTheme}
-        onViewChange={handleViewChange}
-        viewMode="daily"
       />
 
       <main className="flex-1 flex h-screen overflow-hidden">

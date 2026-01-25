@@ -18,41 +18,32 @@ const createWrapper = (initialEntries: string[] = ["/"]) => {
 
 describe("useMenuItems", () => {
   describe("PRIMARY_MENU_ITEMS", () => {
-    it("should have 4 primary menu items", () => {
-      expect(PRIMARY_MENU_ITEMS.length).toBe(4);
+    it("should have 3 primary menu items", () => {
+      expect(PRIMARY_MENU_ITEMS.length).toBe(3);
     });
 
-    it("should have Diário as first item with mode daily", () => {
+    it("should have Projetos as first item", () => {
       const item = PRIMARY_MENU_ITEMS[0];
-      expect(item.label).toBe("Diário");
-      expect(item.path).toBe("/");
-      expect(item.mode).toBe("daily");
-    });
-
-    it("should have Projetos as second item with mode all", () => {
-      const item = PRIMARY_MENU_ITEMS[1];
       expect(item.label).toBe("Projetos");
       expect(item.path).toBe("/");
-      expect(item.mode).toBe("all");
     });
 
     it("should have Anotações with path /notes", () => {
-      const item = PRIMARY_MENU_ITEMS[2];
+      const item = PRIMARY_MENU_ITEMS[1];
       expect(item.label).toBe("Anotações");
       expect(item.path).toBe("/notes");
-      expect(item.mode).toBeUndefined();
     });
 
     it("should have Dashboard with path /dashboard", () => {
-      const item = PRIMARY_MENU_ITEMS[3];
+      const item = PRIMARY_MENU_ITEMS[2];
       expect(item.label).toBe("Dashboard");
       expect(item.path).toBe("/dashboard");
     });
   });
 
   describe("SECONDARY_MENU_ITEMS", () => {
-    it("should have 4 secondary menu items", () => {
-      expect(SECONDARY_MENU_ITEMS.length).toBe(4);
+    it("should have 5 secondary menu items", () => {
+      expect(SECONDARY_MENU_ITEMS.length).toBe(5);
     });
 
     it("should have Pomodoro with path /pomodoro", () => {
@@ -81,40 +72,28 @@ describe("useMenuItems", () => {
   });
 
   describe("isMenuItemActive", () => {
-    it("should return true for Diário when on / with daily mode", () => {
-      const item = PRIMARY_MENU_ITEMS[0]; // Diário
-      expect(isMenuItemActive(item, "/", "daily")).toBe(true);
-    });
-
-    it("should return false for Diário when on / with all mode", () => {
-      const item = PRIMARY_MENU_ITEMS[0]; // Diário
-      expect(isMenuItemActive(item, "/", "all")).toBe(false);
-    });
-
-    it("should return true for Projetos when on / with all mode", () => {
-      const item = PRIMARY_MENU_ITEMS[1]; // Projetos
-      expect(isMenuItemActive(item, "/", "all")).toBe(true);
-    });
-
-    it("should return false for Projetos when on / with daily mode", () => {
-      const item = PRIMARY_MENU_ITEMS[1]; // Projetos
-      expect(isMenuItemActive(item, "/", "daily")).toBe(false);
+    it("should return true for Projetos when on /", () => {
+      const item = PRIMARY_MENU_ITEMS[0]; // Projetos
+      expect(isMenuItemActive(item, "/")).toBe(true);
     });
 
     it("should return true for Anotações when on /notes", () => {
-      const item = PRIMARY_MENU_ITEMS[2]; // Anotações
-      expect(isMenuItemActive(item, "/notes", "daily")).toBe(true);
-      expect(isMenuItemActive(item, "/notes", "all")).toBe(true);
+      const item = PRIMARY_MENU_ITEMS[1]; // Anotações
+      expect(isMenuItemActive(item, "/notes")).toBe(true);
     });
 
     it("should return false for Anotações when on different path", () => {
-      const item = PRIMARY_MENU_ITEMS[2]; // Anotações
-      expect(isMenuItemActive(item, "/dashboard", "daily")).toBe(false);
+      const item = PRIMARY_MENU_ITEMS[1]; // Anotações
+      expect(isMenuItemActive(item, "/dashboard")).toBe(false);
+    });
+
+    it("should return true for Dashboard when on /dashboard", () => {
+      const item = PRIMARY_MENU_ITEMS[2]; // Dashboard
+      expect(isMenuItemActive(item, "/dashboard")).toBe(true);
     });
   });
 
   describe("useMenuItems hook", () => {
-    const mockOnViewChange = vi.fn();
     const mockOnCategorySelect = vi.fn();
 
     beforeEach(() => {
@@ -125,59 +104,38 @@ describe("useMenuItems", () => {
       const { result } = renderHook(
         () =>
           useMenuItems({
-            viewMode: "daily",
-            onViewChange: mockOnViewChange,
             onCategorySelect: mockOnCategorySelect,
           }),
         { wrapper: createWrapper(["/"])}
       );
 
-      expect(result.current.primaryItems).toHaveLength(4);
-      expect(result.current.secondaryItems).toHaveLength(4);
+      expect(result.current.primaryItems).toHaveLength(3);
+      expect(result.current.secondaryItems).toHaveLength(5);
     });
 
     it("should return primaryLinks and secondaryLinks", () => {
       const { result } = renderHook(
         () =>
           useMenuItems({
-            viewMode: "daily",
-            onViewChange: mockOnViewChange,
             onCategorySelect: mockOnCategorySelect,
           }),
         { wrapper: createWrapper(["/"])}
       );
 
-      expect(result.current.primaryLinks).toHaveLength(4);
-      expect(result.current.secondaryLinks).toHaveLength(4);
+      expect(result.current.primaryLinks).toHaveLength(3);
+      expect(result.current.secondaryLinks).toHaveLength(5);
     });
 
-    it("should mark Diário as active when on / with daily mode", () => {
+    it("should mark Projetos as active when on /", () => {
       const { result } = renderHook(
         () =>
           useMenuItems({
-            viewMode: "daily",
-            onViewChange: mockOnViewChange,
             onCategorySelect: mockOnCategorySelect,
           }),
         { wrapper: createWrapper(["/"])}
       );
 
-      const diarioItem = result.current.primaryItems[0];
-      expect(diarioItem.active).toBe(true);
-    });
-
-    it("should mark Projetos as active when on / with all mode", () => {
-      const { result } = renderHook(
-        () =>
-          useMenuItems({
-            viewMode: "all",
-            onViewChange: mockOnViewChange,
-            onCategorySelect: mockOnCategorySelect,
-          }),
-        { wrapper: createWrapper(["/"])}
-      );
-
-      const projetosItem = result.current.primaryItems[1];
+      const projetosItem = result.current.primaryItems[0];
       expect(projetosItem.active).toBe(true);
     });
 
@@ -185,23 +143,32 @@ describe("useMenuItems", () => {
       const { result } = renderHook(
         () =>
           useMenuItems({
-            viewMode: "daily",
-            onViewChange: mockOnViewChange,
             onCategorySelect: mockOnCategorySelect,
           }),
         { wrapper: createWrapper(["/notes"])}
       );
 
-      const anotacoesItem = result.current.primaryItems[2];
+      const anotacoesItem = result.current.primaryItems[1];
       expect(anotacoesItem.active).toBe(true);
+    });
+
+    it("should mark Dashboard as active when on /dashboard", () => {
+      const { result } = renderHook(
+        () =>
+          useMenuItems({
+            onCategorySelect: mockOnCategorySelect,
+          }),
+        { wrapper: createWrapper(["/dashboard"])}
+      );
+
+      const dashboardItem = result.current.primaryItems[2];
+      expect(dashboardItem.active).toBe(true);
     });
 
     it("should provide handleNavigation function", () => {
       const { result } = renderHook(
         () =>
           useMenuItems({
-            viewMode: "daily",
-            onViewChange: mockOnViewChange,
             onCategorySelect: mockOnCategorySelect,
           }),
         { wrapper: createWrapper(["/"])}
