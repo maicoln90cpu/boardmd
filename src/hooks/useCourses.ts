@@ -251,16 +251,16 @@ export function useCourses() {
     [courses, updateCourse]
   );
 
-  // Incrementar episódio (+1)
+  // Incrementar/Decrementar episódio
   const incrementEpisode = useCallback(
-    async (id: string): Promise<boolean> => {
+    async (id: string, increment: boolean = true): Promise<boolean> => {
       const course = courses.find((c) => c.id === id);
       if (!course) return false;
 
-      const newEpisode = Math.min(
-        course.current_episode + 1,
-        course.total_episodes
-      );
+      const newEpisode = increment
+        ? Math.min(course.current_episode + 1, course.total_episodes)
+        : Math.max(course.current_episode - 1, 0);
+      
       return updateProgress(id, newEpisode);
     },
     [courses, updateProgress]
