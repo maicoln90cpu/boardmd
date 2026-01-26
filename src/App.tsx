@@ -42,6 +42,7 @@ const Config = lazy(() => import("./pages/Config"));
 const NotificationsDashboard = lazy(() => import("./pages/NotificationsDashboard"));
 const Pomodoro = lazy(() => import("./pages/Pomodoro"));
 const Tools = lazy(() => import("./pages/Tools"));
+const Courses = lazy(() => import("./pages/Courses"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -162,6 +163,16 @@ function AppContent() {
             <ProtectedRoute>
               <Suspense fallback={<PageLoadingSkeleton />}>
                 <Tools />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/courses" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Courses />
               </Suspense>
             </ProtectedRoute>
           } 
