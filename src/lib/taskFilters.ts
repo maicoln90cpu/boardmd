@@ -186,7 +186,7 @@ function matchesDueDateFilter<T extends TaskLike>(
  * Filtra tarefas por data de vencimento (versão KanbanBoard)
  * Suporta múltiplos valores (OR logic)
  */
-export function filterByDueDateKanban<T extends TaskLike>(
+export function filterByDueDateKanban<T extends TaskLike & { recurrence_rule?: unknown }>(
   tasks: T[],
   dueDateFilter: DueDateFilterType | string | string[],
   hideCompleted: boolean = false
@@ -194,7 +194,11 @@ export function filterByDueDateKanban<T extends TaskLike>(
   let filtered = tasks;
 
   if (hideCompleted) {
-    filtered = filtered.filter((task) => !task.is_completed);
+    // Tarefas recorrentes SEMPRE são exibidas, mesmo concluídas (ficam riscadas até reset)
+    filtered = filtered.filter((task) => {
+      if (task.recurrence_rule) return true; // Recorrentes sempre visíveis
+      return !task.is_completed;
+    });
   }
 
   const filters = normalizeFilterToArray(dueDateFilter as string | string[]);
@@ -311,7 +315,7 @@ export function sortTasksByOption<T extends TaskLike>(
 /**
  * Aplica múltiplos filtros de uma vez
  */
-export function applyAllFilters<T extends TaskLike>(
+export function applyAllFilters<T extends TaskLike & { recurrence_rule?: unknown }>(
   tasks: T[],
   options: {
     searchTerm?: string;
@@ -324,7 +328,11 @@ export function applyAllFilters<T extends TaskLike>(
   let result = tasks;
 
   if (options.hideCompleted) {
-    result = result.filter((task) => !task.is_completed);
+    // Tarefas recorrentes SEMPRE são exibidas, mesmo concluídas (ficam riscadas até reset)
+    result = result.filter((task) => {
+      if (task.recurrence_rule) return true; // Recorrentes sempre visíveis
+      return !task.is_completed;
+    });
   }
 
   if (options.searchTerm) {

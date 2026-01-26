@@ -61,7 +61,8 @@ export default function Courses() {
     updateCourse, 
     deleteCourse,
     toggleFavorite,
-    incrementEpisode 
+    incrementEpisode,
+    incrementModule
   } = useCourses();
 
   const { categories: dbCategories, isLoading: categoriesLoading } = useCourseCategories();
@@ -219,6 +220,10 @@ export default function Courses() {
     incrementEpisode(id, increment);
   }, [incrementEpisode]);
 
+  const handleIncrementModule = useCallback((id: string, increment: boolean) => {
+    incrementModule(id, increment);
+  }, [incrementModule]);
+
   if (isLoading || categoriesLoading) {
     return (
       <div className="flex h-screen">
@@ -342,10 +347,12 @@ export default function Courses() {
                     <CourseCard
                       key={course.id}
                       course={course}
+                      categories={dbCategories}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                       onToggleFavorite={toggleFavorite}
                       onIncrementEpisode={handleIncrementEpisode}
+                      onIncrementModule={handleIncrementModule}
                     />
                   ))}
                 </div>

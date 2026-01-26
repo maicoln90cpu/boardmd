@@ -35,6 +35,8 @@ export function useCourses() {
       const typedCourses: Course[] = (data || []).map((c) => ({
         ...c,
         price: Number(c.price) || 0,
+        current_module: c.current_module || 0,
+        total_modules: c.total_modules || 1,
         priority: (c.priority as CoursePriority) || "medium",
         status: (c.status as CourseStatus) || "not_started",
       }));
@@ -74,6 +76,8 @@ export function useCourses() {
               {
                 ...newCourse,
                 price: Number(newCourse.price) || 0,
+                current_module: newCourse.current_module || 0,
+                total_modules: newCourse.total_modules || 1,
                 priority: (newCourse.priority as CoursePriority) || "medium",
                 status: (newCourse.status as CourseStatus) || "not_started",
               },
@@ -87,6 +91,8 @@ export function useCourses() {
                   ? {
                       ...updated,
                       price: Number(updated.price) || 0,
+                      current_module: updated.current_module || 0,
+                      total_modules: updated.total_modules || 1,
                       priority: (updated.priority as CoursePriority) || "medium",
                       status: (updated.status as CourseStatus) || "not_started",
                     }
@@ -124,6 +130,8 @@ export function useCourses() {
             price: data.price || 0,
             current_episode: data.current_episode || 0,
             total_episodes: data.total_episodes || 1,
+            current_module: data.current_module || 0,
+            total_modules: data.total_modules || 1,
             priority: data.priority || "medium",
             status: data.status || "not_started",
             category: data.category || null,
@@ -266,6 +274,36 @@ export function useCourses() {
     [courses, updateProgress]
   );
 
+  // Incrementar/Decrementar módulo
+  const incrementModule = useCallback(
+    async (id: string, increment: boolean = true): Promise<boolean> => {
+      const course = courses.find((c) => c.id === id);
+      if (!course) return false;
+
+      const totalModules = course.total_modules || 1;
+      const currentModule = course.current_module || 0;
+      
+      const newModule = increment
+        ? Math.min(currentModule + 1, totalModules)
+        : Math.max(currentModule - 1, 0);
+      
+      const updates: Partial<CourseFormData> = {
+        current_module: newModule,
+      };
+
+      // Auto-atualizar status baseado no progresso de módulos
+      if (newModule > 0 && course.status === "not_started") {
+        updates.status = "in_progress";
+      }
+      if (newModule >= totalModules && course.current_episode >= course.total_episodes) {
+        updates.status = "completed";
+      }
+
+      return updateCourse(id, updates);
+    },
+    [courses, updateCourse]
+  );
+
   // Estatísticas computadas
   const stats: CourseStats = useMemo(() => {
     const total = courses.length;
@@ -347,6 +385,7 @@ export function useCourses() {
     toggleFavorite,
     updateProgress,
     incrementEpisode,
+    incrementModule,
     refetch: fetchCourses,
   };
 }

@@ -95,7 +95,7 @@ export interface AppSettings {
 
 const defaultSettings: AppSettings = {
   theme: 'auto',
-  defaultDensity: 'comfortable',
+  defaultDensity: 'compact', // ALTERADO: padrão agora é compacto
   timezone: 'America/Sao_Paulo', // Padrão Brasil
   notifications: {
     dueDate: true,
@@ -114,14 +114,14 @@ const defaultSettings: AppSettings = {
     showFavoritesPanel: true,
     dailySortOption: 'time',
     dailySortOrder: 'asc',
-    projectsSortOption: 'manual',
+    projectsSortOption: 'date_asc', // ALTERADO: padrão agora é data mais próxima
     projectsSortOrder: 'asc',
     simplifiedMode: false,
-    hideCompletedTasks: false,
+    hideCompletedTasks: true, // ALTERADO: padrão agora é ocultar concluídas
     dailyDueDateFilter: 'all',
     projectsDueDateFilter: 'all',
     autoMoveToCurrentWeek: false,
-    defaultView: 'daily',
+    defaultView: 'projects', // ALTERADO: padrão agora é projetos (Diário removido)
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
     columnSizes: {},
   },
@@ -136,7 +136,7 @@ const defaultSettings: AppSettings = {
   interface: {
     sidebarPosition: 'left',
     language: 'pt-BR',
-    sidebarPinned: false,
+    sidebarPinned: true, // ALTERADO: menu fixo por padrão
     sidebarExpandedWhenPinned: true,
     autoDataIntegrityMonitor: false,
   },

@@ -175,6 +175,7 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           current_episode: number | null
+          current_module: number | null
           id: string
           is_favorite: boolean | null
           name: string
@@ -185,6 +186,7 @@ export type Database = {
           started_at: string | null
           status: string | null
           total_episodes: number | null
+          total_modules: number | null
           updated_at: string | null
           url: string | null
           user_id: string
@@ -194,6 +196,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_episode?: number | null
+          current_module?: number | null
           id?: string
           is_favorite?: boolean | null
           name: string
@@ -204,6 +207,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           total_episodes?: number | null
+          total_modules?: number | null
           updated_at?: string | null
           url?: string | null
           user_id: string
@@ -213,6 +217,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           current_episode?: number | null
+          current_module?: number | null
           id?: string
           is_favorite?: boolean | null
           name?: string
@@ -223,6 +228,7 @@ export type Database = {
           started_at?: string | null
           status?: string | null
           total_episodes?: number | null
+          total_modules?: number | null
           updated_at?: string | null
           url?: string | null
           user_id?: string

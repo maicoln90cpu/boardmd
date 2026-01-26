@@ -198,6 +198,8 @@ export interface Course {
   price: number;
   current_episode: number;
   total_episodes: number;
+  current_module: number;
+  total_modules: number;
   priority: CoursePriority;
   status: CourseStatus;
   category?: string | null;
@@ -216,6 +218,8 @@ export interface CourseFormData {
   price?: number;
   current_episode?: number;
   total_episodes?: number;
+  current_module?: number;
+  total_modules?: number;
   priority?: CoursePriority;
   status?: CourseStatus;
   category?: string;

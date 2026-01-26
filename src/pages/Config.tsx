@@ -960,41 +960,6 @@ export default function Config() {
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label>Ordenação Padrão (Diário)</Label>
-                  <Select 
-                    value={settings.kanban.dailySortOption} 
-                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOption: value as 'time' | 'name' | 'priority' } })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="time">Por Horário</SelectItem>
-                      <SelectItem value="name">Por Nome</SelectItem>
-                      <SelectItem value="priority">Por Prioridade</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Direção da Ordenação (Diário)</Label>
-                  <Select 
-                    value={settings.kanban.dailySortOrder} 
-                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, dailySortOrder: value as 'asc' | 'desc' } })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="asc">Crescente</SelectItem>
-                      <SelectItem value="desc">Decrescente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
                   <Label>Ordenação Padrão (Projetos)</Label>
                   <Select 
                     value={settings.kanban.projectsSortOption} 
