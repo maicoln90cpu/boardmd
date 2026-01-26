@@ -67,12 +67,14 @@ const priorities = [
 ];
 
 export function CourseModal({ open, onOpenChange, course, onSubmit, categories = [] }: CourseModalProps) {
-  // Build category options from database categories
-  const categoryOptions = categories.map((cat) => ({
-    value: cat.name,
-    label: cat.name,
-    color: cat.color,
-  }));
+  // Build category options from database categories (filter empty names)
+  const categoryOptions = categories
+    .filter((cat) => cat.name && cat.name.trim() !== "")
+    .map((cat) => ({
+      value: cat.name,
+      label: cat.name,
+      color: cat.color,
+    }));
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
@@ -194,9 +196,9 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
                       </FormControl>
                       <SelectContent>
                         {categoryOptions.length === 0 ? (
-                          <SelectItem value="" disabled>
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">
                             Nenhuma categoria criada
-                          </SelectItem>
+                          </div>
                         ) : (
                           categoryOptions.map((cat) => (
                             <SelectItem key={cat.value} value={cat.value}>
