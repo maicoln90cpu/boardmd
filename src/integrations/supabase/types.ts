@@ -142,6 +142,66 @@ export type Database = {
         }
         Relationships: []
       }
+      courses: {
+        Row: {
+          category: string | null
+          completed_at: string | null
+          created_at: string | null
+          current_episode: number | null
+          id: string
+          is_favorite: boolean | null
+          name: string
+          notes: string | null
+          platform: string | null
+          price: number | null
+          priority: string | null
+          started_at: string | null
+          status: string | null
+          total_episodes: number | null
+          updated_at: string | null
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_episode?: number | null
+          id?: string
+          is_favorite?: boolean | null
+          name: string
+          notes?: string | null
+          platform?: string | null
+          price?: number | null
+          priority?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_episodes?: number | null
+          updated_at?: string | null
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          current_episode?: number | null
+          id?: string
+          is_favorite?: boolean | null
+          name?: string
+          notes?: string | null
+          platform?: string | null
+          price?: number | null
+          priority?: string | null
+          started_at?: string | null
+          status?: string | null
+          total_episodes?: number | null
+          updated_at?: string | null
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           auto_increment: boolean

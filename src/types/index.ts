@@ -184,3 +184,55 @@ export interface TaskWithCategory {
     name: string;
   } | null;
 }
+
+// ============= Tipos para Cursos =============
+
+export type CourseStatus = "not_started" | "in_progress" | "completed" | "paused";
+export type CoursePriority = "low" | "medium" | "high";
+
+export interface Course {
+  id: string;
+  user_id: string;
+  name: string;
+  url?: string | null;
+  price: number;
+  current_episode: number;
+  total_episodes: number;
+  priority: CoursePriority;
+  status: CourseStatus;
+  category?: string | null;
+  platform?: string | null;
+  notes?: string | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourseFormData {
+  name: string;
+  url?: string;
+  price?: number;
+  current_episode?: number;
+  total_episodes?: number;
+  priority?: CoursePriority;
+  status?: CourseStatus;
+  category?: string;
+  platform?: string;
+  notes?: string;
+  started_at?: string;
+  is_favorite?: boolean;
+}
+
+export interface CourseStats {
+  total: number;
+  notStarted: number;
+  inProgress: number;
+  completed: number;
+  paused: number;
+  totalInvestment: number;
+  averageProgress: number;
+  totalEpisodes: number;
+  watchedEpisodes: number;
+}
