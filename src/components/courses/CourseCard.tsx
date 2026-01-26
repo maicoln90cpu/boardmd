@@ -16,15 +16,18 @@ import {
   Clock
 } from "lucide-react";
 import type { Course } from "@/types";
+import type { CourseCategory } from "@/hooks/useCourseCategories";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface CourseCardProps {
   course: Course;
+  categories?: CourseCategory[];
   onEdit: (course: Course) => void;
   onDelete: (course: Course) => void;
   onToggleFavorite: (id: string) => void;
   onIncrementEpisode: (id: string, increment: boolean) => void;
+  onIncrementModule?: (id: string, increment: boolean) => void;
 }
 
 const statusConfig = {
@@ -56,19 +59,34 @@ const categoryIcons: Record<string, string> = {
 
 export function CourseCard({ 
   course, 
+  categories = [],
   onEdit, 
   onDelete, 
   onToggleFavorite,
-  onIncrementEpisode 
+  onIncrementEpisode,
+  onIncrementModule
 }: CourseCardProps) {
-  const progress = course.total_episodes > 0 
-    ? (course.current_episode / course.total_episodes) * 100 
-    : 0;
+  // Progresso baseado em módulos e episódios
+  const totalModules = course.total_modules || 1;
+  const currentModule = course.current_module || 0;
+  const totalEpisodes = course.total_episodes || 1;
+  const currentEpisode = course.current_episode || 0;
+  
+  // Progresso geral: considera módulos completos + fração do módulo atual
+  const moduleProgress = totalModules > 0 ? (currentModule / totalModules) * 100 : 0;
+  const episodeProgress = totalEpisodes > 0 ? (currentEpisode / totalEpisodes) * 100 : 0;
+  // Média ponderada: 70% módulos, 30% episódios (ou só episódios se só tiver 1 módulo)
+  const progress = totalModules > 1 
+    ? (moduleProgress * 0.7 + episodeProgress * 0.3) 
+    : episodeProgress;
   
   const status = statusConfig[course.status] || statusConfig.not_started;
   const priority = priorityConfig[course.priority] || priorityConfig.medium;
   const categoryIcon = categoryIcons[course.category || ""] || categoryIcons.default;
   const StatusIcon = status.icon;
+  
+  // Buscar cor da categoria
+  const categoryData = categories.find(cat => cat.name === course.category);
 
   return (
     <Card className="group hover:shadow-md transition-all duration-200 border-border/50">
@@ -109,11 +127,55 @@ export function CourseCard({
           <Badge variant="secondary" className={`text-xs ${priority.color}`}>
             {priority.label}
           </Badge>
+          {/* Badge de categoria com cor do banco */}
+          {course.category && (
+            <Badge 
+              variant="secondary" 
+              className="text-xs"
+              style={categoryData ? { 
+                backgroundColor: `${categoryData.color}20`,
+                color: categoryData.color 
+              } : undefined}
+            >
+              {course.category}
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-4 space-y-3">
-        {/* Progresso com controles */}
+        {/* Progresso de Módulos (se houver mais de 1) */}
+        {totalModules > 1 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={currentModule <= 0}
+                  onClick={() => onIncrementModule?.(course.id, false)}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="min-w-[90px] text-center font-medium">
+                  Módulo {currentModule}/{totalModules}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={currentModule >= totalModules}
+                  onClick={() => onIncrementModule?.(course.id, true)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progresso de Episódios/Aulas */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1">
@@ -121,19 +183,19 @@ export function CourseCard({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                disabled={course.current_episode <= 0}
+                disabled={currentEpisode <= 0}
                 onClick={() => onIncrementEpisode(course.id, false)}
               >
                 <Minus className="h-3 w-3" />
               </Button>
               <span className="min-w-[80px] text-center">
-                Ep. {course.current_episode}/{course.total_episodes}
+                Ep. {currentEpisode}/{totalEpisodes}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6"
-                disabled={course.current_episode >= course.total_episodes}
+                disabled={currentEpisode >= totalEpisodes}
                 onClick={() => onIncrementEpisode(course.id, true)}
               >
                 <Plus className="h-3 w-3" />

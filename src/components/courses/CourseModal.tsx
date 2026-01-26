@@ -35,6 +35,8 @@ const courseSchema = z.object({
   price: z.coerce.number().min(0, "Valor deve ser positivo").optional(),
   current_episode: z.coerce.number().min(0).optional(),
   total_episodes: z.coerce.number().min(1, "Mínimo 1 episódio").optional(),
+  current_module: z.coerce.number().min(0).optional(),
+  total_modules: z.coerce.number().min(1, "Mínimo 1 módulo").optional(),
   priority: z.enum(["low", "medium", "high"]).optional(),
   status: z.enum(["not_started", "in_progress", "completed", "paused"]).optional(),
   category: z.string().optional(),
@@ -84,6 +86,8 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       price: 0,
       current_episode: 0,
       total_episodes: 1,
+      current_module: 0,
+      total_modules: 1,
       priority: "medium",
       status: "not_started",
       category: "",
@@ -101,6 +105,8 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         price: course.price || 0,
         current_episode: course.current_episode || 0,
         total_episodes: course.total_episodes || 1,
+        current_module: course.current_module || 0,
+        total_modules: course.total_modules || 1,
         priority: course.priority,
         status: course.status,
         category: course.category || "",
@@ -115,6 +121,8 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         price: 0,
         current_episode: 0,
         total_episodes: 1,
+        current_module: 0,
+        total_modules: 1,
         priority: "medium",
         status: "not_started",
         category: "",
@@ -132,6 +140,8 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       price: values.price,
       current_episode: values.current_episode,
       total_episodes: values.total_episodes,
+      current_module: values.current_module,
+      total_modules: values.total_modules,
       priority: values.priority,
       status: values.status,
       category: values.category || undefined,
@@ -234,21 +244,54 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
               )}
             />
 
-            <div className="grid grid-cols-3 gap-3">
+            {/* Preço */}
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" min="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Módulos */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
-                name="price"
+                name="current_module"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço (R$)</FormLabel>
+                    <FormLabel>Módulo Atual</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="total_modules"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Módulos</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Episódios */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="current_episode"
