@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
+import { type CourseCategory, DEFAULT_COURSE_CATEGORIES } from "./CourseCategoryManager";
 
 interface CourseFiltersProps {
   searchTerm: string;
@@ -19,6 +20,7 @@ interface CourseFiltersProps {
   priorityFilter: string;
   onPriorityChange: (value: string) => void;
   onClearFilters: () => void;
+  customCategories?: CourseCategory[];
 }
 
 const statuses = [
@@ -27,21 +29,6 @@ const statuses = [
   { value: "in_progress", label: "Em Progresso" },
   { value: "completed", label: "Concluído" },
   { value: "paused", label: "Pausado" },
-];
-
-const categories = [
-  { value: "all", label: "Todas Categorias" },
-  { value: "programacao", label: "💻 Programação" },
-  { value: "design", label: "🎨 Design" },
-  { value: "marketing", label: "📈 Marketing" },
-  { value: "negocios", label: "💼 Negócios" },
-  { value: "idiomas", label: "🌍 Idiomas" },
-  { value: "desenvolvimento_pessoal", label: "🧠 Desenvolvimento Pessoal" },
-  { value: "financas", label: "💰 Finanças" },
-  { value: "saude", label: "🏃 Saúde" },
-  { value: "musica", label: "🎵 Música" },
-  { value: "fotografia", label: "📷 Fotografia" },
-  { value: "outro", label: "📚 Outro" },
 ];
 
 const priorities = [
@@ -61,8 +48,18 @@ export function CourseFilters({
   priorityFilter,
   onPriorityChange,
   onClearFilters,
+  customCategories,
 }: CourseFiltersProps) {
-  const hasActiveFilters = 
+  // Usar categorias customizadas ou padrão
+  const categoryOptions = [
+    { value: "all", label: "Todas Categorias" },
+    ...(customCategories || DEFAULT_COURSE_CATEGORIES).map((cat) => ({
+      value: cat.value,
+      label: `${cat.emoji} ${cat.label}`,
+    })),
+  ];
+
+  const hasActiveFilters =
     searchTerm || 
     statusFilter !== "all" || 
     categoryFilter !== "all" || 
@@ -99,7 +96,7 @@ export function CourseFilters({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {categories.map((c) => (
+            {categoryOptions.map((c) => (
               <SelectItem key={c.value} value={c.value}>
                 {c.label}
               </SelectItem>

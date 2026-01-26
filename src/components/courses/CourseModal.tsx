@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, CourseFormData } from "@/types";
+import { type CourseCategory, DEFAULT_COURSE_CATEGORIES } from "./CourseCategoryManager";
 
 const courseSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),
@@ -49,21 +50,10 @@ interface CourseModalProps {
   onOpenChange: (open: boolean) => void;
   course?: Course | null;
   onSubmit: (data: CourseFormData) => Promise<void>;
+  customCategories?: CourseCategory[];
 }
 
-const categories = [
-  { value: "programacao", label: "💻 Programação" },
-  { value: "design", label: "🎨 Design" },
-  { value: "marketing", label: "📈 Marketing" },
-  { value: "negocios", label: "💼 Negócios" },
-  { value: "idiomas", label: "🌍 Idiomas" },
-  { value: "desenvolvimento_pessoal", label: "🧠 Desenvolvimento Pessoal" },
-  { value: "financas", label: "💰 Finanças" },
-  { value: "saude", label: "🏃 Saúde" },
-  { value: "musica", label: "🎵 Música" },
-  { value: "fotografia", label: "📷 Fotografia" },
-  { value: "outro", label: "📚 Outro" },
-];
+// Removido: categorias hardcoded - agora vem via props
 
 const statuses = [
   { value: "not_started", label: "Não Iniciado" },
@@ -78,7 +68,12 @@ const priorities = [
   { value: "high", label: "Alta" },
 ];
 
-export function CourseModal({ open, onOpenChange, course, onSubmit }: CourseModalProps) {
+export function CourseModal({ open, onOpenChange, course, onSubmit, customCategories }: CourseModalProps) {
+  // Usar categorias customizadas ou padrão
+  const categoryOptions = (customCategories || DEFAULT_COURSE_CATEGORIES).map((cat) => ({
+    value: cat.value,
+    label: `${cat.emoji} ${cat.label}`,
+  }));
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
     defaultValues: {
@@ -198,7 +193,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit }: CourseModa
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((cat) => (
+                        {categoryOptions.map((cat) => (
                           <SelectItem key={cat.value} value={cat.value}>
                             {cat.label}
                           </SelectItem>

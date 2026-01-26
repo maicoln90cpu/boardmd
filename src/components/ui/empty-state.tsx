@@ -9,7 +9,8 @@ import {
   Plus,
   Sparkles,
   FolderOpen,
-  Clock
+  Clock,
+  GraduationCap
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,7 +22,8 @@ type EmptyStateVariant =
   | "filter" 
   | "column" 
   | "notebooks"
-  | "pomodoro";
+  | "pomodoro"
+  | "courses";
 
 interface EmptyStateProps {
   variant: EmptyStateVariant;
@@ -96,6 +98,14 @@ const variants = {
     actionLabel: "Iniciar sessão",
     color: "text-red-500",
     bgColor: "bg-red-500/10",
+  },
+  courses: {
+    icon: GraduationCap,
+    title: "Nenhum curso ainda",
+    description: "Adicione seus cursos e acompanhe seu progresso de aprendizado!",
+    actionLabel: "Adicionar curso",
+    color: "text-indigo-500",
+    bgColor: "bg-indigo-500/10",
   },
 };
 
