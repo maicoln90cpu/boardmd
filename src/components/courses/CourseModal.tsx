@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Course, CourseFormData } from "@/types";
-import { type CourseCategory, DEFAULT_COURSE_CATEGORIES } from "./CourseCategoryManager";
+import type { CourseCategory } from "@/hooks/useCourseCategories";
 
 const courseSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),
@@ -50,10 +50,8 @@ interface CourseModalProps {
   onOpenChange: (open: boolean) => void;
   course?: Course | null;
   onSubmit: (data: CourseFormData) => Promise<void>;
-  customCategories?: CourseCategory[];
+  categories?: CourseCategory[];
 }
-
-// Removido: categorias hardcoded - agora vem via props
 
 const statuses = [
   { value: "not_started", label: "Não Iniciado" },
@@ -68,12 +66,14 @@ const priorities = [
   { value: "high", label: "Alta" },
 ];
 
-export function CourseModal({ open, onOpenChange, course, onSubmit, customCategories }: CourseModalProps) {
-  // Usar categorias customizadas ou padrão
-  const categoryOptions = (customCategories || DEFAULT_COURSE_CATEGORIES).map((cat) => ({
-    value: cat.value,
-    label: `${cat.emoji} ${cat.label}`,
+export function CourseModal({ open, onOpenChange, course, onSubmit, categories = [] }: CourseModalProps) {
+  // Build category options from database categories
+  const categoryOptions = categories.map((cat) => ({
+    value: cat.name,
+    label: cat.name,
+    color: cat.color,
   }));
+
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
     defaultValues: {
@@ -193,11 +193,23 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, customCatego
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categoryOptions.map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>
-                            {cat.label}
+                        {categoryOptions.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            Nenhuma categoria criada
                           </SelectItem>
-                        ))}
+                        ) : (
+                          categoryOptions.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full shrink-0" 
+                                  style={{ backgroundColor: cat.color }}
+                                />
+                                <span>{cat.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

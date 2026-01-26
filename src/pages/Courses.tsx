@@ -1,14 +1,17 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, GraduationCap, Settings2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, GraduationCap, Settings2, LayoutDashboard, List } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
+import { useCourseCategories } from "@/hooks/useCourseCategories";
 import { CourseStats } from "@/components/courses/CourseStats";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { CourseModal } from "@/components/courses/CourseModal";
 import { CourseFilters } from "@/components/courses/CourseFilters";
 import { CourseSortOptions, type CourseSortOption } from "@/components/courses/CourseSortOptions";
-import { CourseCategoryManager, DEFAULT_COURSE_CATEGORIES, type CourseCategory } from "@/components/courses/CourseCategoryManager";
+import { CourseCategoryManager } from "@/components/courses/CourseCategoryManager";
+import { CoursesDashboard } from "@/components/courses/CoursesDashboard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -24,9 +27,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Course, CourseFormData } from "@/types";
-
-// Storage key para categorias customizadas
-const COURSE_CATEGORIES_KEY = "course-categories";
 
 // Função para disparar confetti
 const triggerConfetti = () => {
@@ -64,6 +64,11 @@ export default function Courses() {
     incrementEpisode 
   } = useCourses();
 
+  const { categories: dbCategories, isLoading: categoriesLoading } = useCourseCategories();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"list" | "dashboard">("list");
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -74,10 +79,6 @@ export default function Courses() {
 
   // Category manager
   const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
-  const [customCategories, setCustomCategories] = useState<CourseCategory[]>(() => {
-    const saved = localStorage.getItem(COURSE_CATEGORIES_KEY);
-    return saved ? JSON.parse(saved) : DEFAULT_COURSE_CATEGORIES;
-  });
 
   // Filters
   const [searchTerm, setSearchTerm] = useState("");
@@ -91,11 +92,6 @@ export default function Courses() {
     const completed = courses.filter(c => c.status === "completed").map(c => c.id);
     return new Set(completed);
   });
-
-  // Save categories to localStorage
-  useEffect(() => {
-    localStorage.setItem(COURSE_CATEGORIES_KEY, JSON.stringify(customCategories));
-  }, [customCategories]);
 
   // Check for newly completed courses and trigger confetti
   useEffect(() => {
@@ -223,7 +219,7 @@ export default function Courses() {
     incrementEpisode(id, increment);
   }, [incrementEpisode]);
 
-  if (isLoading) {
+  if (isLoading || categoriesLoading) {
     return (
       <div className="flex h-screen">
         <Sidebar
@@ -290,55 +286,77 @@ export default function Courses() {
             </div>
           </div>
 
-          {/* Stats */}
-          <CourseStats stats={stats} />
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "list" | "dashboard")}>
+            <TabsList className="grid w-full max-w-[300px] grid-cols-2">
+              <TabsTrigger value="list" className="flex items-center gap-2">
+                <List className="h-4 w-4" />
+                Lista
+              </TabsTrigger>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Filters and Sort */}
-          <div className="flex flex-col gap-3">
-            <CourseFilters
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
-              categoryFilter={categoryFilter}
-              onCategoryChange={setCategoryFilter}
-              priorityFilter={priorityFilter}
-              onPriorityChange={setPriorityFilter}
-              onClearFilters={handleClearFilters}
-              customCategories={customCategories}
-            />
-            <div className="flex justify-end">
-              <CourseSortOptions value={sortOption} onChange={setSortOption} />
-            </div>
-          </div>
+            {/* List Tab */}
+            <TabsContent value="list" className="space-y-6 mt-6">
+              {/* Stats */}
+              <CourseStats stats={stats} />
 
-          {/* Course List */}
-          {filteredAndSortedCourses.length === 0 ? (
-            <EmptyState
-              variant="courses"
-              title={courses.length === 0 ? "Nenhum curso cadastrado" : "Nenhum curso encontrado"}
-              description={
-                courses.length === 0
-                  ? "Adicione seu primeiro curso para começar a acompanhar seu progresso de aprendizado."
-                  : "Tente ajustar os filtros para encontrar o que procura."
-              }
-              actionLabel={courses.length === 0 ? "Adicionar Curso" : undefined}
-              onAction={courses.length === 0 ? handleOpenCreate : undefined}
-            />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredAndSortedCourses.map((course) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleFavorite={toggleFavorite}
-                  onIncrementEpisode={handleIncrementEpisode}
+              {/* Filters and Sort */}
+              <div className="flex flex-col gap-3">
+                <CourseFilters
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  statusFilter={statusFilter}
+                  onStatusChange={setStatusFilter}
+                  categoryFilter={categoryFilter}
+                  onCategoryChange={setCategoryFilter}
+                  priorityFilter={priorityFilter}
+                  onPriorityChange={setPriorityFilter}
+                  onClearFilters={handleClearFilters}
+                  categories={dbCategories}
                 />
-              ))}
-            </div>
-          )}
+                <div className="flex justify-end">
+                  <CourseSortOptions value={sortOption} onChange={setSortOption} />
+                </div>
+              </div>
+
+              {/* Course List */}
+              {filteredAndSortedCourses.length === 0 ? (
+                <EmptyState
+                  variant="courses"
+                  title={courses.length === 0 ? "Nenhum curso cadastrado" : "Nenhum curso encontrado"}
+                  description={
+                    courses.length === 0
+                      ? "Adicione seu primeiro curso para começar a acompanhar seu progresso de aprendizado."
+                      : "Tente ajustar os filtros para encontrar o que procura."
+                  }
+                  actionLabel={courses.length === 0 ? "Adicionar Curso" : undefined}
+                  onAction={courses.length === 0 ? handleOpenCreate : undefined}
+                />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredAndSortedCourses.map((course) => (
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onToggleFavorite={toggleFavorite}
+                      onIncrementEpisode={handleIncrementEpisode}
+                    />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Dashboard Tab */}
+            <TabsContent value="dashboard" className="mt-6">
+              <CoursesDashboard courses={courses} />
+            </TabsContent>
+          </Tabs>
 
           {/* Modal */}
           <CourseModal
@@ -346,15 +364,13 @@ export default function Courses() {
             onOpenChange={setModalOpen}
             course={editingCourse}
             onSubmit={handleSubmit}
-            customCategories={customCategories}
+            categories={dbCategories}
           />
 
           {/* Category Manager */}
           <CourseCategoryManager
             open={categoryManagerOpen}
             onOpenChange={setCategoryManagerOpen}
-            categories={customCategories}
-            onCategoriesChange={setCustomCategories}
           />
 
           {/* Delete Confirmation */}
