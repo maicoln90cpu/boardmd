@@ -50,14 +50,16 @@ export function CourseFilters({
   onClearFilters,
   categories = [],
 }: CourseFiltersProps) {
-  // Build category options from database categories
+  // Build category options from database categories (filter empty names)
   const categoryOptions = [
     { value: "all", label: "Todas Categorias", color: "" },
-    ...categories.map((cat) => ({
-      value: cat.name,
-      label: cat.name,
-      color: cat.color,
-    })),
+    ...categories
+      .filter((cat) => cat.name && cat.name.trim() !== "")
+      .map((cat) => ({
+        value: cat.name,
+        label: cat.name,
+        color: cat.color,
+      })),
   ];
 
   const hasActiveFilters =
