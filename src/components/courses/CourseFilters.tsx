@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
-import { type CourseCategory, DEFAULT_COURSE_CATEGORIES } from "./CourseCategoryManager";
+import type { CourseCategory } from "@/hooks/useCourseCategories";
 
 interface CourseFiltersProps {
   searchTerm: string;
@@ -20,7 +20,7 @@ interface CourseFiltersProps {
   priorityFilter: string;
   onPriorityChange: (value: string) => void;
   onClearFilters: () => void;
-  customCategories?: CourseCategory[];
+  categories?: CourseCategory[];
 }
 
 const statuses = [
@@ -48,14 +48,15 @@ export function CourseFilters({
   priorityFilter,
   onPriorityChange,
   onClearFilters,
-  customCategories,
+  categories = [],
 }: CourseFiltersProps) {
-  // Usar categorias customizadas ou padrão
+  // Build category options from database categories
   const categoryOptions = [
-    { value: "all", label: "Todas Categorias" },
-    ...(customCategories || DEFAULT_COURSE_CATEGORIES).map((cat) => ({
-      value: cat.value,
-      label: `${cat.emoji} ${cat.label}`,
+    { value: "all", label: "Todas Categorias", color: "" },
+    ...categories.map((cat) => ({
+      value: cat.name,
+      label: cat.name,
+      color: cat.color,
     })),
   ];
 
@@ -98,7 +99,15 @@ export function CourseFilters({
           <SelectContent>
             {categoryOptions.map((c) => (
               <SelectItem key={c.value} value={c.value}>
-                {c.label}
+                <div className="flex items-center gap-2">
+                  {c.color && (
+                    <div 
+                      className="w-3 h-3 rounded-full shrink-0" 
+                      style={{ backgroundColor: c.color }}
+                    />
+                  )}
+                  <span>{c.label}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
