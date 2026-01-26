@@ -14,6 +14,12 @@ interface UserStats {
   level: number;
 }
 
+interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -22,6 +28,9 @@ interface Task {
   column_id: string;
   created_at: string;
   tags?: string[];
+  is_completed?: boolean;
+  recurrence_rule?: Record<string, unknown> | null;
+  subtasks?: Subtask[] | null;
 }
 
 serve(async (req) => {
@@ -44,37 +53,48 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Default system prompt
+    // Default system prompt - melhorado com fórmula clara de score
     let systemPrompt = `Você é um analista de produtividade especializado em padrões de trabalho.
 
 Analise os dados fornecidos e retorne insights acionáveis sobre produtividade.
 
-Considere:
-1. CONSISTÊNCIA: Streak atual vs. melhor streak, padrão de conclusão diária
-2. EFICIÊNCIA: Taxa de conclusão, tempo médio de tarefas pendentes
-3. PRIORIZAÇÃO: Distribuição de prioridades (high/medium/low)
-4. ORGANIZAÇÃO: Uso de tags, categorização, tarefas com prazo
-5. TENDÊNCIAS: Evolução semanal, dias mais/menos produtivos
-6. BLOQUEIOS: Tarefas antigas não concluídas, acúmulo de backlog
+IMPORTANTE - Métricas a analisar:
+1. TAXA DE CONCLUSÃO: (completed / total) * 100 - Quantas tarefas foram realmente finalizadas (campo is_completed)
+2. EFICIÊNCIA POR PRIORIDADE: Proporção de tarefas de alta prioridade concluídas vs. pendentes
+3. CONSISTÊNCIA (Streak): Dias consecutivos completando tarefas
+4. GESTÃO DE RECORRENTES: % de tarefas recorrentes sendo completadas regularmente
+5. PROGRESSO DE SUBTAREFAS: % de subtarefas concluídas por tarefa
+6. DÉBITO TÉCNICO: Tarefas atrasadas (overdue) - atenção especial se > 20% do total pendente
+7. ORGANIZAÇÃO: Uso de tags, datas de vencimento, distribuição de prioridades
+
+FÓRMULA DE SCORE (use como base):
+- Base: 50 pontos
+- +20 se taxa de conclusão > 60%
+- +15 se streak >= 3 dias
+- +10 se 80%+ das tarefas têm data de vencimento
+- +10 se overdue < 10% do total pendente
+- -15 se overdue > 30% do total pendente
+- -10 se tarefas de alta prioridade pendentes > 50%
+- +5 se progresso de subtarefas > 70%
 
 Retorne um JSON no seguinte formato:
 {
   "overallScore": 85,
   "scoreLabel": "Muito Bom",
-  "mainInsight": "Sua produtividade está acima da média, mas há espaço para melhorias na consistência.",
+  "mainInsight": "Insight principal baseado na análise REAL dos números fornecidos",
   "patterns": [
     {
       "icon": "🎯",
       "title": "Padrão identificado",
-      "description": "Descrição detalhada do padrão observado",
+      "description": "Descrição específica com números reais dos dados",
       "type": "positive" | "warning" | "negative"
     }
   ],
   "suggestions": [
     {
       "icon": "💡",
-      "title": "Sugestão acionável",
-      "description": "Como implementar essa sugestão",
+      "title": "Ação sugerida",
+      "description": "Como implementar essa sugestão de forma prática",
       "priority": "high" | "medium" | "low"
     }
   ],
@@ -86,10 +106,11 @@ Retorne um JSON no seguinte formato:
 }
 
 IMPORTANTE: 
-- Retorne apenas o JSON, sem texto adicional
-- Insights devem ser específicos e acionáveis
+- Use os NÚMEROS REAIS fornecidos, não invente estatísticas
+- Insights devem ser específicos ao contexto do usuário
+- Máximo 4 patterns e 4 suggestions
 - Tom motivacional mas realista
-- Máximo 4 patterns e 4 suggestions`;
+- Retorne apenas o JSON, sem texto adicional`;
 
     // Get custom prompt from user settings if authenticated
     const authHeader = req.headers.get('Authorization');
@@ -121,6 +142,46 @@ IMPORTANTE:
       }
     }
 
+    // Calcular métricas usando is_completed (CORREÇÃO DO BUG)
+    const now = new Date();
+    const completedTasks = tasks.filter((t: Task) => t.is_completed === true);
+    const pendingTasks = tasks.filter((t: Task) => !t.is_completed);
+    const overdueTasks = pendingTasks.filter((t: Task) => 
+      t.due_date && new Date(t.due_date) < now
+    );
+    
+    // Métricas de prioridade
+    const highPriorityTasks = tasks.filter((t: Task) => t.priority === "high");
+    const highPriorityCompleted = highPriorityTasks.filter((t: Task) => t.is_completed === true);
+    const highPriorityPending = highPriorityTasks.filter((t: Task) => !t.is_completed);
+
+    // Métricas de recorrência
+    const recurringTasks = tasks.filter((t: Task) => t.recurrence_rule);
+    const recurringCompleted = recurringTasks.filter((t: Task) => t.is_completed === true);
+    const recurringPending = recurringTasks.filter((t: Task) => !t.is_completed);
+
+    // Métricas de subtarefas
+    const tasksWithSubtasks = tasks.filter((t: Task) => t.subtasks && t.subtasks.length > 0);
+    const totalSubtasks = tasks.reduce((acc: number, t: Task) => 
+      acc + (t.subtasks?.length || 0), 0);
+    const completedSubtasks = tasks.reduce((acc: number, t: Task) => 
+      acc + (t.subtasks?.filter((s: Subtask) => s.completed).length || 0), 0);
+
+    // Métricas de data
+    const tasksWithDueDate = tasks.filter((t: Task) => t.due_date);
+    const todayTasks = pendingTasks.filter((t: Task) => {
+      if (!t.due_date) return false;
+      const d = new Date(t.due_date);
+      return d.toDateString() === now.toDateString();
+    });
+    const thisWeekTasks = pendingTasks.filter((t: Task) => {
+      if (!t.due_date) return false;
+      const d = new Date(t.due_date);
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() + 7);
+      return d >= now && d <= weekEnd;
+    });
+
     const statsContext = {
       stats: {
         level: stats.level,
@@ -132,23 +193,67 @@ IMPORTANTE:
       },
       tasks: {
         total: tasks.length,
-        completed: tasks.filter((t: Task) => t.column_id.includes("done")).length,
-        pending: tasks.filter((t: Task) => !t.column_id.includes("done")).length,
-        overdue: tasks.filter((t: Task) => 
-          t.due_date && new Date(t.due_date) < new Date() && !t.column_id.includes("done")
-        ).length,
+        // CORRIGIDO: usar is_completed ao invés de column_id
+        completed: completedTasks.length,
+        pending: pendingTasks.length,
+        overdue: overdueTasks.length,
+        // Taxa de conclusão calculada
+        completion_rate: tasks.length > 0 
+          ? Math.round((completedTasks.length / tasks.length) * 100) 
+          : 0,
+        // Análise por prioridade
         priorities: {
-          high: tasks.filter((t: Task) => t.priority === "high").length,
+          high: highPriorityTasks.length,
           medium: tasks.filter((t: Task) => t.priority === "medium").length,
           low: tasks.filter((t: Task) => t.priority === "low").length,
         },
+        // Análise de prioridade vs. conclusão
+        completed_by_priority: {
+          high: highPriorityCompleted.length,
+          medium: tasks.filter((t: Task) => t.priority === "medium" && t.is_completed).length,
+          low: tasks.filter((t: Task) => t.priority === "low" && t.is_completed).length,
+        },
+        high_priority_pending: highPriorityPending.length,
+        // Métricas de recorrência
+        recurring: {
+          total: recurringTasks.length,
+          completed: recurringCompleted.length,
+          pending: recurringPending.length,
+          completion_rate: recurringTasks.length > 0
+            ? Math.round((recurringCompleted.length / recurringTasks.length) * 100)
+            : 0,
+        },
+        // Métricas de subtarefas
+        subtasks: {
+          tasks_with_subtasks: tasksWithSubtasks.length,
+          total_subtasks: totalSubtasks,
+          completed_subtasks: completedSubtasks,
+          progress_rate: totalSubtasks > 0
+            ? Math.round((completedSubtasks / totalSubtasks) * 100)
+            : 0,
+        },
+        // Organização
         with_tags: tasks.filter((t: Task) => t.tags && t.tags.length > 0).length,
-        with_due_date: tasks.filter((t: Task) => t.due_date).length,
+        with_due_date: tasksWithDueDate.length,
+        due_date_rate: tasks.length > 0
+          ? Math.round((tasksWithDueDate.length / tasks.length) * 100)
+          : 0,
+        // Distribuição por vencimento
+        due_distribution: {
+          no_date: pendingTasks.filter((t: Task) => !t.due_date).length,
+          overdue: overdueTasks.length,
+          today: todayTasks.length,
+          this_week: thisWeekTasks.length,
+        },
+        // Débito técnico (% de tarefas atrasadas sobre pendentes)
+        overdue_rate: pendingTasks.length > 0
+          ? Math.round((overdueTasks.length / pendingTasks.length) * 100)
+          : 0,
       },
       weekHistory: weekHistory || []
     };
 
-    console.log(`[productivity-insights] Analyzing stats for user - Level ${stats.level}, ${tasks.length} tasks`);
+    console.log(`[productivity-insights] Analyzing stats - Level ${stats.level}, ${tasks.length} tasks (${completedTasks.length} completed, ${pendingTasks.length} pending, ${overdueTasks.length} overdue)`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

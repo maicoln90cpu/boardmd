@@ -40,7 +40,6 @@ export type DueDateFilterType =
   | "all"
   | "no_date"
   | "overdue"
-  | "overdue_today"
   | "today"
   | "tomorrow"
   | "next_7_days"
@@ -138,13 +137,6 @@ function matchesDueDateFilter<T extends TaskLike>(
 
     case "overdue":
       return taskDueDate !== null && isBefore(taskDueDate, today) && !task.is_completed;
-
-    case "overdue_today": {
-      if (!taskDueDate) return false;
-      const isOverdue = isBefore(taskDueDate, today) && !task.is_completed;
-      const isTodayDate = taskDueDate.toDateString() === today.toDateString();
-      return isOverdue || isTodayDate;
-    }
 
     case "today":
       return taskDueDate !== null && taskDueDate.toDateString() === today.toDateString();
@@ -253,8 +245,6 @@ export function filterByDueDate<T extends TaskLike>(
           return isThisWeek(dueDate, { weekStartsOn: 1 });
         case "overdue":
           return isPast(dueDate) && !isToday(dueDate);
-        case "overdue_today":
-          return isPast(dueDate) || isToday(dueDate);
         default:
           return true;
       }
