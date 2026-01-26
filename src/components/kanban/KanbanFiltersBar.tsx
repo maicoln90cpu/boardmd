@@ -59,10 +59,9 @@ const priorityOptions = [
   { value: "low", label: "Baixa", icon: "🟢" },
 ];
 
-// Opções de data de vencimento
+// Opções de data de vencimento (removido overdue_today pois multi-select permite selecionar ambos)
 const dueDateOptions = [
   { value: "no_date", label: "Sem data", icon: "📭" },
-  { value: "overdue_today", label: "Atrasadas + Hoje", icon: "🔥" },
   { value: "overdue", label: "Atrasadas", icon: "🔴" },
   { value: "today", label: "Hoje", icon: "📅" },
   { value: "next_7_days", label: "Próximos 7 dias", icon: "📆" },
