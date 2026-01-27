@@ -114,7 +114,6 @@ export type Database = {
           kanban_type: string | null
           name: string
           position: number
-          show_in_daily: boolean | null
           show_in_projects: boolean | null
           user_id: string
         }
@@ -125,7 +124,6 @@ export type Database = {
           kanban_type?: string | null
           name: string
           position: number
-          show_in_daily?: boolean | null
           show_in_projects?: boolean | null
           user_id: string
         }
@@ -136,7 +134,6 @@ export type Database = {
           kanban_type?: string | null
           name?: string
           position?: number
-          show_in_daily?: boolean | null
           show_in_projects?: boolean | null
           user_id?: string
         }
@@ -606,6 +603,47 @@ export type Database = {
         }
         Relationships: []
       }
+      task_completion_logs: {
+        Row: {
+          comment: string | null
+          completed_at: string
+          created_at: string | null
+          id: string
+          metric_type: string | null
+          metric_value: number | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          completed_at?: string
+          created_at?: string | null
+          id?: string
+          metric_type?: string | null
+          metric_value?: number | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          completed_at?: string
+          created_at?: string | null
+          id?: string
+          metric_type?: string | null
+          metric_value?: number | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completion_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_history: {
         Row: {
           action: string
@@ -644,6 +682,7 @@ export type Database = {
           is_completed: boolean | null
           is_favorite: boolean
           linked_note_id: string | null
+          metric_type: string | null
           mirror_task_id: string | null
           position: number
           priority: string | null
@@ -651,6 +690,8 @@ export type Database = {
           subtasks: Json | null
           tags: string[] | null
           title: string
+          track_comments: boolean | null
+          track_metrics: boolean | null
           updated_at: string
           user_id: string
         }
@@ -664,6 +705,7 @@ export type Database = {
           is_completed?: boolean | null
           is_favorite?: boolean
           linked_note_id?: string | null
+          metric_type?: string | null
           mirror_task_id?: string | null
           position?: number
           priority?: string | null
@@ -671,6 +713,8 @@ export type Database = {
           subtasks?: Json | null
           tags?: string[] | null
           title: string
+          track_comments?: boolean | null
+          track_metrics?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -684,6 +728,7 @@ export type Database = {
           is_completed?: boolean | null
           is_favorite?: boolean
           linked_note_id?: string | null
+          metric_type?: string | null
           mirror_task_id?: string | null
           position?: number
           priority?: string | null
@@ -691,6 +736,8 @@ export type Database = {
           subtasks?: Json | null
           tags?: string[] | null
           title?: string
+          track_comments?: boolean | null
+          track_metrics?: boolean | null
           updated_at?: string
           user_id?: string
         }

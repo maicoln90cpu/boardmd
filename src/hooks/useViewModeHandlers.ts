@@ -31,15 +31,10 @@ export function useViewModeHandlers({
   recurrenceFilter = "all",
 }: UseViewModeHandlersProps) {
   
-  // All tasks (no daily filtering)
+  // All tasks (já não há mais filtro por Diário)
   const tasks = useMemo(() => {
-    // Exclude "Diário" category tasks if it exists
-    const dailyCat = categories.find(c => c.name === "Diário");
-    if (dailyCat) {
-      return allTasks.filter(task => task.category_id !== dailyCat.id);
-    }
     return allTasks;
-  }, [allTasks, categories]);
+  }, [allTasks]);
 
   // Filter tasks based on filters
   const filteredTasks = useMemo(() => {
@@ -134,8 +129,7 @@ export function useViewModeHandlers({
     
     // Aplicar para todas as categorias de projetos
     const newColumnSizes = { ...currentColumnSizes, all: equalSizes };
-    const nonDailyCategories = categories.filter(c => c.name !== "Diário");
-    nonDailyCategories.forEach(cat => {
+    categories.forEach(cat => {
       newColumnSizes[cat.id] = equalSizes;
     });
     

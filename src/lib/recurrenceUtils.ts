@@ -29,7 +29,8 @@
 export interface RecurrenceRule {
   frequency?: 'daily' | 'weekly' | 'monthly';
   interval?: number;
-  weekday?: number; // 0=Domingo, 1=Segunda, ..., 6=Sábado
+  weekday?: number; // 0=Domingo, 1=Segunda, ..., 6=Sábado (legacy - único dia)
+  weekdays?: number[]; // NOVO: array de dias [1, 4] = Segunda e Quinta
 }
 
 /**
@@ -80,21 +81,27 @@ export function calculateNextRecurrenceDate(
     return createDateWithTime(now, hours, minutes, seconds);
   }
   
-  // MODO 1: Por dia da semana específico
-  if (recurrenceRule.weekday !== undefined && recurrenceRule.weekday !== null) {
-    const targetDay = recurrenceRule.weekday; // 0-6 (Domingo a Sábado)
-    const nextDate = new Date(now);
+  // MODO 1: Por dias da semana (suporta array ou valor único)
+  const weekdays = recurrenceRule.weekdays || 
+    (recurrenceRule.weekday !== undefined && recurrenceRule.weekday !== null ? [recurrenceRule.weekday] : null);
+  
+  if (weekdays && weekdays.length > 0) {
+    const currentDay = now.getDay();
+    const sortedDays = [...weekdays].sort((a, b) => a - b);
     
-    // Calcular dias até o próximo dia da semana desejado
-    const currentDay = nextDate.getDay();
-    let daysUntilTarget = targetDay - currentDay;
+    // Encontrar o próximo dia na lista
+    let nextDay = sortedDays.find(d => d > currentDay);
+    let daysToAdd = 0;
     
-    // Se hoje é o dia ou já passou, agendar para próxima semana
-    if (daysUntilTarget <= 0) {
-      daysUntilTarget += 7;
+    if (nextDay !== undefined) {
+      daysToAdd = nextDay - currentDay;
+    } else {
+      // Próxima semana, primeiro dia da lista
+      daysToAdd = 7 - currentDay + sortedDays[0];
     }
     
-    nextDate.setDate(nextDate.getDate() + daysUntilTarget);
+    const nextDate = new Date(now);
+    nextDate.setDate(nextDate.getDate() + daysToAdd);
     return createDateWithTime(nextDate, hours, minutes, seconds);
   }
   

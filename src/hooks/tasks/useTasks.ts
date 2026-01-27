@@ -18,6 +18,7 @@ export interface TaskRecurrenceRule {
   frequency?: 'daily' | 'weekly' | 'monthly';
   interval?: number;
   weekday?: number;
+  weekdays?: number[]; // Suporte a múltiplos dias
 }
 
 export interface Task {
@@ -39,6 +40,10 @@ export interface Task {
   recurrence_rule: TaskRecurrenceRule | null;
   mirror_task_id: string | null;
   linked_note_id: string | null;
+  // Campos de tracking de métricas
+  track_metrics?: boolean;
+  metric_type?: string | null;
+  track_comments?: boolean;
 }
 
 export function useTasks(categoryId: string | null | "all") {

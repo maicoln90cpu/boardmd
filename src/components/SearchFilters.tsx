@@ -27,10 +27,6 @@ interface SearchFiltersProps {
   viewMode?: string;
   displayMode?: string;
   onDisplayModeChange?: (value: string) => void;
-  dailySortOption?: string;
-  onDailySortChange?: (value: "time" | "name" | "priority") => void;
-  dailySortOrder?: string;
-  onDailySortOrderChange?: (value: "asc" | "desc") => void;
   searchInputRef?: React.RefObject<HTMLInputElement>;
   densityMode?: "comfortable" | "compact" | "ultra-compact";
   onDensityChange?: (mode: "comfortable" | "compact" | "ultra-compact") => void;
@@ -57,10 +53,6 @@ export function SearchFilters({
   viewMode,
   displayMode,
   onDisplayModeChange,
-  dailySortOption,
-  onDailySortChange,
-  dailySortOrder,
-  onDailySortOrderChange,
   searchInputRef,
   densityMode = "comfortable",
   onDensityChange,
@@ -138,30 +130,6 @@ export function SearchFilters({
             <SelectItem value="all_tasks">📋 Todas as tarefas</SelectItem>
           </SelectContent>
         </Select>
-      )}
-
-      {viewMode === "daily" && dailySortOption && onDailySortChange && dailySortOrder && onDailySortOrderChange && (
-        <>
-          <Select value={dailySortOption} onValueChange={onDailySortChange}>
-            <SelectTrigger className={selectClass}>
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="time">⏰ Horário</SelectItem>
-              <SelectItem value="name">📝 Nome</SelectItem>
-              <SelectItem value="priority">🎯 Prioridade</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="default"
-            onClick={() => onDailySortOrderChange(dailySortOrder === "asc" ? "desc" : "asc")}
-            className="gap-2 min-h-[48px] w-full"
-          >
-            {dailySortOrder === "asc" ? "↑ Crescente" : "↓ Decrescente"}
-          </Button>
-        </>
       )}
 
       {viewMode === "all" && sortOption && onSortChange && (

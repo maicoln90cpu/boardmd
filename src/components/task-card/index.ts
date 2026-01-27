@@ -5,4 +5,6 @@ export { TaskCardTags } from "./TaskCardTags";
 export { TaskCardUltraCompact } from "./TaskCardUltraCompact";
 export { TaskCardHoverContent } from "./TaskCardHoverContent";
 export { TaskCardCompleteDialog } from "./TaskCardCompleteDialog";
+export { TaskCompletionModal } from "./TaskCompletionModal";
+export { TaskMetricsHistoryModal } from "./TaskMetricsHistoryModal";
 export { TaskCardSkeleton } from "./TaskCardSkeleton";

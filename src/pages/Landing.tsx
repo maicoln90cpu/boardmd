@@ -95,8 +95,8 @@ export default function Landing() {
   };
   const features = [{
     icon: Target,
-    title: "Kanban Duplo: Diário + Projetos",
-    description: "Separe o que é urgente do que é importante. Gerencie rotinas e grandes metas no mesmo lugar, sem confusão.",
+    title: "Kanban de Projetos",
+    description: "Organize todas suas tarefas em quadros personalizáveis. Gerencie rotinas e grandes metas no mesmo lugar, sem confusão.",
     benefit: "Visão clara e organizada"
   }, {
     icon: Brain,
