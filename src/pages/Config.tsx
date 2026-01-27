@@ -398,17 +398,11 @@ export default function Config() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const nonDiarioCategories = categories.filter(cat => cat.name !== "Diário");
-      const oldIndex = nonDiarioCategories.findIndex((cat) => cat.id === active.id);
-      const newIndex = nonDiarioCategories.findIndex((cat) => cat.id === over.id);
+      const oldIndex = categories.findIndex((cat) => cat.id === active.id);
+      const newIndex = categories.findIndex((cat) => cat.id === over.id);
 
-      const reordered = arrayMove(nonDiarioCategories, oldIndex, newIndex);
-      
-      // Include "Diário" back if it exists
-      const diarioCategory = categories.find(cat => cat.name === "Diário");
-      const finalCategories = diarioCategory ? [diarioCategory, ...reordered] : reordered;
-      
-      reorderCategories(finalCategories);
+      const reordered = arrayMove(categories, oldIndex, newIndex);
+      reorderCategories(reordered);
     }
   };
 
@@ -419,12 +413,6 @@ export default function Config() {
   const handleEditCategory = async (id: string, newName: string) => {
     if (!newName.trim()) {
       toast({ title: "Nome não pode ser vazio", variant: "destructive" });
-      return;
-    }
-
-    const category = categories.find(c => c.id === id);
-    if (category?.name === "Diário") {
-      toast({ title: "Não é possível editar a categoria Diário", variant: "destructive" });
       return;
     }
 
@@ -444,10 +432,6 @@ export default function Config() {
 
   const handleDeleteCategory = async (id: string, hasChildren?: boolean) => {
     const category = categories.find(c => c.id === id);
-    if (category?.name === "Diário") {
-      toast({ title: "Não é possível excluir a categoria Diário", variant: "destructive" });
-      return;
-    }
 
     if (hasChildren) {
       toast({ title: "Exclua primeiro as subcategorias", variant: "destructive" });

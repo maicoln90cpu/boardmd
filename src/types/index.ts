@@ -103,16 +103,17 @@ export interface KanbanSettings {
   maxTasksPerColumn: number;
   allowCrossCategoryDrag: boolean;
   showFavoritesPanel: boolean;
-  dailySortOption: "time" | "name" | "priority";
-  dailySortOrder: "asc" | "desc";
   projectsSortOption: "manual" | "date_asc" | "date_desc" | "name_asc" | "name_desc" | "priority_asc" | "priority_desc";
   projectsSortOrder: "asc" | "desc";
   simplifiedMode: boolean;
   hideCompletedTasks: boolean;
-  dailyDueDateFilter: string;
   projectsDueDateFilter: string;
   autoMoveToCurrentWeek: boolean;
-  defaultView: "daily" | "projects";
+  // Campos obsoletos mantidos para compatibilidade (serão ignorados)
+  dailySortOption?: "time" | "name" | "priority";
+  dailySortOrder?: "asc" | "desc";
+  dailyDueDateFilter?: string;
+  defaultView?: "daily" | "projects";
 }
 
 export interface ProductivitySettings {

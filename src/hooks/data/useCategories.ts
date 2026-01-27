@@ -51,8 +51,8 @@ export function useCategories() {
         return;
       }
 
+      // Criar apenas "Projetos" como categoria padrão (Diário foi removido)
       const defaultCategories = [
-        { name: "Diário", user_id: user.id, depth: 0 },
         { name: "Projetos", user_id: user.id, depth: 0 },
       ];
 
@@ -63,14 +63,6 @@ export function useCategories() {
       if (!insertError) {
         fetchCategories(); // Refetch after seeding
       }
-      return;
-    }
-
-    // Ensure "Diário" exists
-    const hasDiario = data.some(c => c.name === "Diário");
-    if (!hasDiario && user) {
-      await supabase.from("categories").insert([{ name: "Diário", user_id: user.id, depth: 0 }]);
-      fetchCategories();
       return;
     }
 
