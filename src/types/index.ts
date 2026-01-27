@@ -205,6 +205,7 @@ export interface Course {
   status: CourseStatus;
   category?: string | null;
   platform?: string | null;
+  author?: string | null;
   notes?: string | null;
   started_at?: string | null;
   completed_at?: string | null;
@@ -225,6 +226,7 @@ export interface CourseFormData {
   status?: CourseStatus;
   category?: string;
   platform?: string;
+  author?: string;
   notes?: string;
   started_at?: string;
   is_favorite?: boolean;
