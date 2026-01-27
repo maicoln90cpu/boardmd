@@ -247,7 +247,12 @@ export function KanbanBoard({
         if (!matchesAnyDateFilter) return false;
       }
 
+      // Ocultar tarefas concluídas EXCETO recorrentes (que ficam riscadas até reset)
       if (settings.kanban.hideCompletedTasks && t.is_completed) {
+        // Tarefas recorrentes sempre visíveis (riscadas) até reset manual/cron
+        if (t.recurrence_rule) {
+          return true;
+        }
         return false;
       }
       
