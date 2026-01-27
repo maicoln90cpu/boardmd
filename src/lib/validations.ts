@@ -42,12 +42,14 @@ const subtaskSchema = z.object({
 const recurrenceRuleSchema = z.object({
   frequency: z.enum(['daily', 'weekly', 'monthly']).optional(),
   interval: z.number().int().min(1).max(365).optional(),
-  weekday: z.number().int().min(0).max(6).optional() // 0=Dom, 1=Seg, ..., 6=Sáb
+  weekday: z.number().int().min(0).max(6).optional(), // 0=Dom, 1=Seg, ..., 6=Sáb (legacy)
+  weekdays: z.array(z.number().int().min(0).max(6)).optional() // [0,1,4] = Dom, Seg, Qui (multi-select)
 }).refine(data => {
-  // Deve ter (frequency + interval) OU weekday
+  // Deve ter (frequency + interval) OU weekday OU weekdays[]
   const hasFrequency = data.frequency !== undefined && data.interval !== undefined;
   const hasWeekday = data.weekday !== undefined;
-  return hasFrequency || hasWeekday;
+  const hasWeekdays = data.weekdays !== undefined && data.weekdays.length > 0;
+  return hasFrequency || hasWeekday || hasWeekdays;
 }, { message: "Deve ter frequência com intervalo ou dia da semana" });
 
 export const taskSchema = z.object({
