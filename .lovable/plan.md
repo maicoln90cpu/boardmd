@@ -1,276 +1,363 @@
 
-# Plano de Implementação - 4 Correções e Melhorias
+# Plano de Implementação - Sistema de Métricas, Multi-Select e Limpeza do Diário
 
 ## Resumo Executivo
 
-Este plano aborda 4 solicitações distintas:
-1. **Cursos:** Renomear "episódios" para "módulos" e adicionar campo "episódio atual"
-2. **Cursos:** Mostrar badge da categoria nos cards
-3. **Configurações:** Corrigir persistência e atualizar valores padrão
-4. **Tarefas Recorrentes:** Explicar e padronizar comportamento de conclusão
+Este plano aborda 4 solicitações:
+1. **Sistema de Métricas e Comentários** em tarefas concluídas
+2. **Multi-Select para dias da semana** em tarefas recorrentes
+3. **Remover "Diário"** das categorias visíveis
+4. **Mapeamento completo** de referências ao Diário para remoção
 
 ---
 
-## 1. Alteração de Nomenclatura em Cursos
+## 1. Sistema de Métricas e Comentários nas Tarefas
 
-### Situação Atual
-- Campo `current_episode` (episódio atual) e `total_episodes` (total de episódios)
-- Interface mostra "Ep. X/Y"
-- Formulário tem campos "Ep. Atual" e "Total Eps."
+### Visão Geral do Funcionamento
 
-### Alterações Propostas
+Ao marcar uma tarefa como concluída, se ela estiver configurada para rastrear métricas/comentários:
+1. Modal aparece perguntando a métrica (ex: 45 minutos de treino)
+2. Campo opcional para comentário (ex: "Treino de pernas hoje")
+3. Histórico acessível via ícone no card da tarefa (tabela com data, métrica, comentário)
+4. Estatísticas: soma de dias, soma de métricas, média
 
-**Banco de Dados (Migration):**
+### Tipos de Métricas Sugeridos (8 opções)
+
+| ID | Nome | Unidade | Exemplo de Uso |
+|----|------|---------|----------------|
+| time_minutes | Tempo (minutos) | min | Treino, estudo, meditação |
+| pages | Páginas | pág | Leitura de livros |
+| weight_kg | Peso (kg) | kg | Levantamento de peso |
+| distance_km | Distância (km) | km | Corrida, caminhada |
+| count | Quantidade | un | Emails enviados, ligações |
+| percentage | Percentual | % | Progresso em projeto |
+| calories | Calorias | kcal | Exercícios |
+| money | Valor (R$) | R$ | Vendas, economia |
+
+### Alterações no Banco de Dados
+
+**Tabela: tasks (alteração)**
 ```sql
--- Adicionar nova coluna para módulo atual
-ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS current_module integer DEFAULT 0;
-ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS total_modules integer DEFAULT 1;
-
--- Renomear para clareza (episódio vira aula dentro do módulo)
-COMMENT ON COLUMN public.courses.current_episode IS 'Aula/Episódio atual dentro do módulo';
-COMMENT ON COLUMN public.courses.total_episodes IS 'Total de aulas/episódios';
-COMMENT ON COLUMN public.courses.current_module IS 'Módulo atual';
-COMMENT ON COLUMN public.courses.total_modules IS 'Total de módulos';
+ALTER TABLE public.tasks
+ADD COLUMN IF NOT EXISTS track_metrics boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS metric_type text DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS track_comments boolean DEFAULT false;
 ```
 
-**Arquivos a Modificar:**
+**Nova Tabela: task_completion_logs**
+```sql
+CREATE TABLE public.task_completion_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  metric_value NUMERIC DEFAULT NULL,
+  metric_type TEXT DEFAULT NULL,
+  comment TEXT DEFAULT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+);
 
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/types/index.ts` | Adicionar `current_module` e `total_modules` ao tipo `Course` e `CourseFormData` |
-| `src/components/courses/CourseCard.tsx` | Exibir "Módulo X/Y - Ep. X/Y" |
-| `src/components/courses/CourseModal.tsx` | Adicionar campos para módulos |
-| `src/hooks/useCourses.ts` | Incluir novos campos nas operações CRUD |
+-- RLS Policies
+ALTER TABLE public.task_completion_logs ENABLE ROW LEVEL SECURITY;
 
-**Nova estrutura visual no Card:**
-```text
-┌─────────────────────────────┐
-│ [📚] React Avançado    [⭐] │
-│       Udemy                 │
-│ ─────────────────────────── │
-│ Módulo 3/10 · Ep. 5/12      │
-│ [- ] ████████░░ 75% [ +]    │
-│ ─────────────────────────── │
-│ R$ 99,00    Início: 10/01   │
-│ [Abrir] [✏️] [🗑️]          │
-└─────────────────────────────┘
+CREATE POLICY "Users can view own completion logs" ON public.task_completion_logs
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own completion logs" ON public.task_completion_logs
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own completion logs" ON public.task_completion_logs
+  FOR DELETE USING (auth.uid() = user_id);
 ```
-
-**Risco:** Baixo | **Complexidade:** 4/10
-
----
-
-## 2. Badge de Categoria nos Cards de Cursos
-
-### Situação Atual
-- A categoria é armazenada como texto (`course.category`)
-- O `CourseCard` mostra apenas um ícone emoji baseado na categoria
-- As cores das categorias estão na tabela `course_categories`
-
-### Alterações Propostas
-
-**Arquivo:** `src/components/courses/CourseCard.tsx`
-
-Adicionar uma prop `categories` para buscar a cor da categoria e exibir badge colorido:
-
-```tsx
-// Dentro do CardHeader, após os badges de status/prioridade
-{course.category && (
-  <Badge 
-    variant="secondary" 
-    className="text-xs"
-    style={{ 
-      backgroundColor: getCategoryColor(course.category) + '20',
-      color: getCategoryColor(course.category) 
-    }}
-  >
-    {course.category}
-  </Badge>
-)}
-```
-
-**Arquivos a Modificar:**
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/courses/CourseCard.tsx` | Adicionar prop `categories` e renderizar badge |
-| `src/pages/Courses.tsx` | Passar `categories` para `CourseCard` |
-
-**Risco:** Baixo | **Complexidade:** 2/10
-
----
-
-## 3. Correção de Configurações Persistidas
-
-### Diagnóstico do Problema
-
-O problema ocorre porque os valores **padrão** no `defaultSettings` são diferentes do que o usuário espera. Quando não há configuração salva no banco, o sistema usa os defaults. Além disso, existe um campo obsoleto "Ordenação Padrão (Diário)" que deve ser removido já que o modo Diário foi eliminado.
-
-### Situação Atual em `useSettings.ts`:
-```typescript
-const defaultSettings: AppSettings = {
-  defaultDensity: 'comfortable',  // ← Deveria ser 'compact'
-  interface: {
-    sidebarPinned: false,         // ← Deveria ser true
-    sidebarExpandedWhenPinned: true, // ✓ Correto
-  },
-  kanban: {
-    hideCompletedTasks: false,    // ← Deveria ser true
-    projectsSortOption: 'manual', // ← Deveria ser 'date_asc'
-    dailySortOption: 'time',      // ← Campo obsoleto (Diário não existe mais)
-    dailySortOrder: 'asc',        // ← Campo obsoleto
-  },
-};
-```
-
-### Alterações Propostas
-
-**Arquivo:** `src/hooks/data/useSettings.ts`
-
-Atualizar os valores padrão:
-
-```typescript
-const defaultSettings: AppSettings = {
-  // ... outros campos
-  defaultDensity: 'compact', // ALTERADO
-  interface: {
-    // ...
-    sidebarPinned: true,           // ALTERADO
-    sidebarExpandedWhenPinned: true,
-  },
-  kanban: {
-    // ...
-    hideCompletedTasks: true,      // ALTERADO
-    projectsSortOption: 'date_asc', // ALTERADO
-    // dailySortOption e dailySortOrder mantidos para compatibilidade
-  },
-};
-```
-
-**Arquivo:** `src/pages/Config.tsx`
-
-Remover a seção "Ordenação Padrão (Diário)" e "Direção da Ordenação (Diário)" (linhas ~962-992), já que o modo Diário não existe mais.
-
-**Por que as configurações "se perdem":**
-1. Se o usuário nunca salvou uma configuração específica, o sistema usa o default
-2. O deep merge em `deepMergeSettings` preenche campos faltantes com defaults
-3. Se o default for diferente da preferência, parece que "resetou"
-
-**Solução adicional:** Para usuários existentes que já têm configurações salvas mas com valores antigos, podemos adicionar uma migração de settings que atualiza valores específicos se ainda estiverem no antigo default.
-
-**Risco:** Baixo | **Complexidade:** 3/10
-
----
-
-## 4. Comportamento de Tarefas Recorrentes
-
-### Explicação do Comportamento Atual
-
-Existem **dois comportamentos diferentes** porque a lógica de conclusão depende de **onde** a tarefa está:
-
-#### Cenário A: Tarefa some e volta no próximo dia
-Isso acontece quando:
-1. A tarefa está em uma coluna normal (não "Recorrente")
-2. O usuário marca como concluída
-3. Se `hideCompletedTasks` está ativado, ela some imediatamente
-4. O cron job às 23:59h reseta tarefas recorrentes completadas
-
-#### Cenário B: Tarefa fica riscada sem atualizar data
-Isso acontece quando:
-1. A tarefa tem `recurrence_rule` definido
-2. O usuário marca como concluída (`is_completed = true`)
-3. A tarefa fica visível (riscada) até:
-   - O cron job rodar (23:59h)
-   - OU o usuário clicar em "Resetar Recorrentes" no header
-
-### O Comportamento Desejado (Confirmado)
-
-O usuário quer que **TODAS** as tarefas recorrentes sigam o **Cenário B**:
-- Ao marcar como concluída → fica riscada visualmente
-- NÃO atualiza a data automaticamente
-- NÃO some da tela (mesmo com `hideCompletedTasks` ativo)
-- Permanece riscada até:
-  - Cron job executar às 23:59h
-  - OU clique manual em "Resetar Recorrentes"
-
-### Alterações Propostas
-
-**Arquivo:** `src/lib/taskFilters.ts`
-
-Modificar o filtro `hideCompletedTasks` para **excluir tarefas recorrentes**:
-
-```typescript
-// Na função filterTasks ou equivalente
-if (settings.kanban.hideCompletedTasks) {
-  filteredTasks = filteredTasks.filter(task => {
-    // Se tem regra de recorrência, SEMPRE mostrar (mesmo concluída)
-    if (task.recurrence_rule) return true;
-    // Caso contrário, ocultar se completada
-    return !task.is_completed;
-  });
-}
-```
-
-**Arquivo:** `src/components/TaskCard.tsx`
-
-Garantir que ao marcar tarefa recorrente como concluída:
-1. Define `is_completed = true`
-2. NÃO altera `due_date`
-3. Tarefa fica visualmente riscada
-
-O código atual já faz isso corretamente (linhas 257-306). O problema está no filtro de visibilidade.
-
-**Risco:** Baixo | **Complexidade:** 3/10
-
----
-
-## Detalhes Técnicos
 
 ### Arquivos a Criar
-Nenhum novo arquivo necessário.
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `src/components/task-card/TaskCompletionModal.tsx` | Modal que aparece ao marcar tarefa como concluída |
+| `src/components/task-card/TaskMetricsHistoryModal.tsx` | Modal com tabela de histórico de métricas |
+| `src/hooks/useTaskCompletionLogs.ts` | Hook para CRUD dos logs de conclusão |
 
 ### Arquivos a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/types/index.ts` | Adicionar `current_module`, `total_modules` |
-| `src/components/courses/CourseCard.tsx` | Badge categoria + nova estrutura módulo/episódio |
-| `src/components/courses/CourseModal.tsx` | Campos para módulos |
-| `src/hooks/useCourses.ts` | CRUD com novos campos |
-| `src/hooks/data/useSettings.ts` | Novos valores default |
-| `src/pages/Config.tsx` | Remover campos de Diário |
-| `src/lib/taskFilters.ts` | Excluir recorrentes do hideCompleted |
+| `src/types/index.ts` | Adicionar interface `TaskCompletionLog` e atualizar `Task` |
+| `src/components/TaskModal.tsx` | Adicionar toggles para habilitar métricas/comentários + select de tipo de métrica |
+| `src/components/TaskCard.tsx` | Adicionar ícone de histórico (📊) e chamar modal ao concluir |
+| `src/components/task-card/TaskCardActions.tsx` | Adicionar botão de histórico de métricas |
+| `src/hooks/tasks/useTasks.ts` | Incluir novos campos nas operações |
 
-### Migration de Banco de Dados
+### Fluxo de Uso
 
-```sql
--- Adicionar colunas de módulos
-ALTER TABLE public.courses 
-  ADD COLUMN IF NOT EXISTS current_module integer DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS total_modules integer DEFAULT 1;
+```text
+CONFIGURAÇÃO (TaskModal):
+┌───────────────────────────────────────┐
+│ ☐ Rastrear métricas ao concluir       │
+│   └─ Tipo: [Tempo (minutos) ▼]        │
+│ ☐ Solicitar comentário ao concluir    │
+└───────────────────────────────────────┘
+
+AO MARCAR COMO CONCLUÍDA (TaskCompletionModal):
+┌───────────────────────────────────────┐
+│ Treino Matinal - Concluído! 🎉        │
+│───────────────────────────────────────│
+│ Quanto tempo durou?                    │
+│ [     45     ] minutos                │
+│                                        │
+│ Comentário (opcional):                 │
+│ ┌─────────────────────────────────┐   │
+│ │ Treino de pernas hoje, foquei   │   │
+│ │ em agachamento e leg press      │   │
+│ └─────────────────────────────────┘   │
+│                                        │
+│        [Cancelar]  [Salvar]           │
+└───────────────────────────────────────┘
+
+HISTÓRICO (TaskMetricsHistoryModal):
+┌───────────────────────────────────────┐
+│ 📊 Histórico: Treino Matinal          │
+│───────────────────────────────────────│
+│ Data       │ Tempo │ Comentário       │
+│────────────┼───────┼──────────────────│
+│ 27/01/2026 │ 45min │ Pernas           │
+│ 26/01/2026 │ 60min │ Costas           │
+│ 25/01/2026 │ 50min │ Peito            │
+│────────────┴───────┴──────────────────│
+│ Total: 3 dias | Soma: 155min          │
+│ Média: 51.7 min/dia                   │
+└───────────────────────────────────────┘
 ```
+
+### Risco e Complexidade
+- **Risco:** Médio (nova tabela, novo fluxo de UX)
+- **Complexidade:** 7/10
 
 ---
 
-## Vantagens
+## 2. Multi-Select para Dias da Semana
 
-1. **Cursos mais organizados:** Módulos e episódios separados refletem melhor a estrutura real de cursos online
-2. **Identificação visual:** Badge de categoria facilita localizar cursos por área
-3. **Configurações consistentes:** Defaults alinhados com as preferências do usuário
-4. **Recorrentes previsíveis:** Comportamento uniforme para todas as tarefas recorrentes
+### Situação Atual
+- Campo `weekday` armazena UM único número (0-6)
+- Select permite escolher apenas um dia
 
-## Desvantagens/Riscos
+### Alteração Proposta
 
-1. **Migration de dados:** Usuários existentes terão `current_module = 0` inicialmente
-2. **Ajuste de configurações:** Usuários com settings salvos manterão valores antigos (não serão afetados pelos novos defaults)
+**Alterar estrutura de dados:**
+```typescript
+// ANTES (RecurrenceRule em recurrenceUtils.ts):
+interface RecurrenceRule {
+  weekday?: number; // Um único dia (0-6)
+}
+
+// DEPOIS:
+interface RecurrenceRule {
+  weekday?: number;     // Mantido para compatibilidade
+  weekdays?: number[];  // NOVO: array de dias [1, 4] = Segunda e Quinta
+}
+```
+
+**Não precisa de migration** - o campo `recurrence_rule` já é JSONB, basta adicionar a propriedade `weekdays`.
+
+### Arquivos a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/lib/recurrenceUtils.ts` | Adicionar suporte a `weekdays[]`, calcular próxima data considerando múltiplos dias |
+| `src/types/index.ts` | Atualizar `RecurrenceRule` |
+| `src/components/kanban/RecurrenceEditor.tsx` | Trocar Select por checkboxes multi-select |
+| `supabase/functions/reset-recurring-tasks/index.ts` | Atualizar lógica para suportar `weekdays[]` |
+
+### Nova Interface do RecurrenceEditor
+
+```text
+ANTES:
+┌─────────────────────────────┐
+│ Repetir toda                │
+│ [Quarta-feira         ▼]    │
+└─────────────────────────────┘
+
+DEPOIS:
+┌─────────────────────────────┐
+│ Repetir nos dias:           │
+│ ☐ Domingo                   │
+│ ☑ Segunda-feira             │
+│ ☐ Terça-feira               │
+│ ☐ Quarta-feira              │
+│ ☑ Quinta-feira              │
+│ ☐ Sexta-feira               │
+│ ☐ Sábado                    │
+└─────────────────────────────┘
+```
+
+### Lógica de Cálculo da Próxima Data
+
+```typescript
+// Encontrar o próximo dia que está na lista de weekdays
+function calculateNextRecurrenceDate(currentDate: string, rule: RecurrenceRule): string {
+  if (rule.weekdays && rule.weekdays.length > 0) {
+    const now = new Date();
+    const currentDay = now.getDay();
+    
+    // Ordenar os dias da semana
+    const sortedDays = [...rule.weekdays].sort((a, b) => a - b);
+    
+    // Encontrar o próximo dia na lista
+    let nextDay = sortedDays.find(d => d > currentDay);
+    let daysToAdd = 0;
+    
+    if (nextDay !== undefined) {
+      daysToAdd = nextDay - currentDay;
+    } else {
+      // Próxima semana, primeiro dia da lista
+      daysToAdd = 7 - currentDay + sortedDays[0];
+    }
+    
+    // ... calcular data
+  }
+}
+```
+
+### Risco e Complexidade
+- **Risco:** Baixo (compatível com dados existentes)
+- **Complexidade:** 4/10
+
+---
+
+## 3. Remover "Diário" das Categorias
+
+### Problema
+A categoria "Diário" ainda aparece no select de categorias ao editar tarefas, mesmo que o modo Diário tenha sido removido.
+
+### Solução
+
+**Arquivo:** `src/components/TaskModal.tsx`
+
+```tsx
+// ANTES (linha ~336):
+{categories.map((category) => (
+  <SelectItem key={category.id} value={category.id}>
+    {category.name}
+  </SelectItem>
+))}
+
+// DEPOIS:
+{categories
+  .filter(category => category.name !== "Diário")
+  .map((category) => (
+    <SelectItem key={category.id} value={category.id}>
+      {category.name}
+    </SelectItem>
+  ))}
+```
+
+**Adicionar filtro também em:**
+- `src/pages/Config.tsx` (lista de categorias para gerenciamento)
+- Qualquer outro lugar que liste categorias para seleção
+
+### Risco e Complexidade
+- **Risco:** Baixo
+- **Complexidade:** 1/10
+
+---
+
+## 4. Mapeamento Completo de Referências ao "Diário"
+
+### Arquivos com Referências a Remover/Ajustar
+
+| Arquivo | Linha(s) | Tipo | Ação Recomendada |
+|---------|----------|------|------------------|
+| `src/hooks/data/useCategories.ts` | 54-75 | Criação automática | **REMOVER** criação automática de "Diário" |
+| `src/hooks/data/useSettings.ts` | 29-30, 89-91, 115-116 | Campos obsoletos | **REMOVER** dailySortOption, dailySortOrder, dailyPriority, dailyTag, dailySearch |
+| `src/types/index.ts` | 106, 115 | Tipos obsoletos | **REMOVER** dailySortOption, dailySortOrder, defaultView: 'daily' |
+| `src/components/TaskModal.tsx` | 87, 155 | Filtro de tags | **MANTER** (remove tag legada espelho-diário) |
+| `src/components/TaskCard.tsx` | 214 | Filtro de tags | **MANTER** (remove tag legada espelho-diário) |
+| `src/components/SearchFilters.tsx` | 28-33, 58-63, 143-163 | Props/render obsoletos | **REMOVER** dailySortOption, dailySortChange, dailySortOrder |
+| `src/pages/Config.tsx` | 399-411, 424-428, 445-448 | Proteção de categoria | **REMOVER** verificações especiais para "Diário" |
+| `src/pages/Landing.tsx` | 96-104 | Texto de marketing | **ATUALIZAR** descrição das features |
+| `src/lib/importValidation.ts` | 158-196 | Validação de import | **REMOVER** referências a "Diário" |
+| `src/hooks/useViewModeHandlers.ts` | 34-39, 137-138 | Exclusão de categoria | **REMOVER** filtros por "Diário" |
+| `src/hooks/useDataImportExport.ts` | 149-152 | Fallback de categoria | **REMOVER** referência a "Diário" |
+| `src/hooks/tasks/useTaskFiltering.ts` | 58-62 | Comentário | **ATUALIZAR** comentário (remover menção a Diário) |
+| `e2e/kanban.spec.ts` | 26 | Teste E2E | **REMOVER** expectativa de texto "diário" |
+| `README.md` | 213 | Documentação | **ATUALIZAR** descrição |
+| `PENDENCIAS.md` | 52, 288 | Documentação | **ATUALIZAR** descrição |
+| `ROADMAP.md` | 156 | Documentação | **MANTER** (refere a "diário" como adjetivo, não feature) |
+| `src/__tests__/hooks/useCategories.test.ts` | 87-91, 165-190 | Testes | **REMOVER** ou ATUALIZAR testes que dependem de "Diário" |
+
+### Tabelas/Colunas do Banco Obsoletas
+
+| Tabela | Coluna | Ação |
+|--------|--------|------|
+| `columns` | `show_in_daily` | **REMOVER** (migration) |
+| `columns` | `kanban_type` com valor 'daily' | **ATUALIZAR** dados existentes |
+
+### Tipos/Interfaces a Atualizar
+
+```typescript
+// src/types/index.ts - REMOVER:
+interface KanbanSettings {
+  dailySortOption: 'time' | 'name' | 'priority';    // REMOVER
+  dailySortOrder: 'asc' | 'desc';                    // REMOVER
+  dailyDueDateFilter: string | string[];             // REMOVER
+  defaultView: 'daily' | 'projects';                 // ALTERAR para apenas 'projects'
+}
+
+// AppSettings.filters - REMOVER:
+filters: {
+  dailyPriority: string;   // REMOVER
+  dailyTag: string;        // REMOVER
+  dailySearch: string;     // REMOVER
+}
+```
+
+### Risco e Complexidade
+- **Risco:** Médio (afeta múltiplos arquivos)
+- **Complexidade:** 5/10
 
 ---
 
 ## Ordem de Execução Recomendada
 
-| # | Item | Prioridade |
-|---|------|------------|
-| 1 | Corrigir filtro de tarefas recorrentes | Alta |
-| 2 | Atualizar defaults de configurações + remover campos Diário | Alta |
-| 3 | Adicionar badge categoria em CourseCard | Média |
-| 4 | Implementar sistema módulo/episódio | Média |
+| # | Item | Prioridade | Dependências |
+|---|------|------------|--------------|
+| 1 | Filtrar "Diário" do select de categorias | Alta | Nenhuma |
+| 2 | Multi-select para dias da semana | Alta | Nenhuma |
+| 3 | Limpeza de referências ao Diário (código) | Alta | Item 1 |
+| 4 | Sistema de métricas - Database migration | Média | Nenhuma |
+| 5 | Sistema de métricas - Hooks e modais | Média | Item 4 |
+| 6 | Sistema de métricas - Integração no TaskCard | Média | Item 5 |
+| 7 | Limpeza de referências ao Diário (banco) | Baixa | Item 3 |
+
+---
+
+## Resumo de Impacto
+
+### Arquivos a Criar (3)
+- `src/components/task-card/TaskCompletionModal.tsx`
+- `src/components/task-card/TaskMetricsHistoryModal.tsx`
+- `src/hooks/useTaskCompletionLogs.ts`
+
+### Arquivos a Modificar (20+)
+- TaskModal, TaskCard, RecurrenceEditor
+- useSettings, useCategories, useTasks
+- types/index.ts, recurrenceUtils.ts
+- Config.tsx, Landing.tsx
+- SearchFilters, useViewModeHandlers
+- Vários arquivos de teste e documentação
+
+### Migrations de Banco (2)
+1. Adicionar colunas em `tasks` (track_metrics, metric_type, track_comments)
+2. Criar tabela `task_completion_logs`
+
+### Vantagens
+1. **Métricas:** Acompanhamento quantitativo de hábitos e tarefas
+2. **Multi-select:** Flexibilidade para tarefas que ocorrem em múltiplos dias
+3. **Limpeza:** Código mais limpo sem referências a feature removida
+
+### Riscos
+1. **Métricas:** Nova tabela e fluxo de UX podem introduzir bugs
+2. **Multi-select:** Compatibilidade com dados existentes (weekday singular)
+3. **Limpeza:** Possível quebra de testes ou comportamentos edge case
