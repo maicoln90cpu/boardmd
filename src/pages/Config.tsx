@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2 } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
@@ -27,6 +27,9 @@ import { useColumns } from "@/hooks/data/useColumns";
 import { getAllPrompts, AI_MODELS } from "@/lib/defaultAIPrompts";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sidebar } from "@/components/Sidebar";
+import { usePWAUpdate } from "@/hooks/usePWAUpdate";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   DndContext,
   closestCenter,
@@ -372,6 +375,17 @@ export default function Config() {
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState("#3B82F6");
   const [isAddingTag, setIsAddingTag] = useState(false);
+  
+  // PWA Update hook
+  const { 
+    isChecking: isPWAChecking, 
+    updateAvailable, 
+    lastCheck, 
+    isStandalone,
+    checkForUpdates, 
+    applyUpdate, 
+    forceReinstall 
+  } = usePWAUpdate();
   
   const { 
     columns, 
@@ -966,6 +980,36 @@ export default function Config() {
 
                 <Separator />
 
+                {/* Toggle de Reset Imediato de Recorrentes */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Label>Reset Imediato de Recorrentes</Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Quando ativado, ao marcar uma tarefa recorrente como concluída, ela automaticamente recalcula a próxima data e reaparece desmarcada.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {settings.kanban.immediateRecurrentReset 
+                        ? "Recalcula próxima data imediatamente ao concluir" 
+                        : "Fica riscada até o reset no fim do dia"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.kanban.immediateRecurrentReset}
+                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, immediateRecurrentReset: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="space-y-2">
                   <Label>Gerenciar Colunas</Label>
                   <p className="text-sm text-muted-foreground mb-2">
@@ -1522,6 +1566,72 @@ export default function Config() {
                     checked={settings.kanban.simplifiedMode}
                     onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
                   />
+                </div>
+
+                <Separator />
+
+                {/* Seção PWA */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-5 w-5 text-primary" />
+                    <Label className="text-base font-semibold">Aplicativo (PWA)</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          <p>No iOS, atualizações são verificadas ao abrir o app. Service Workers são suspensos quando o app está fechado.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  {isStandalone && (
+                    <p className="text-sm text-muted-foreground flex items-center gap-1">
+                      <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+                      Instalado como app (modo standalone)
+                    </p>
+                  )}
+                  
+                  {lastCheck && (
+                    <p className="text-sm text-muted-foreground">
+                      Última verificação: {formatDistanceToNow(lastCheck, { addSuffix: true, locale: ptBR })}
+                    </p>
+                  )}
+                  
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline" 
+                      onClick={checkForUpdates}
+                      disabled={isPWAChecking}
+                    >
+                      {isPWAChecking ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
+                      Verificar Atualizações
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      onClick={forceReinstall}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Limpar Cache
+                    </Button>
+                  </div>
+                  
+                  {updateAvailable && (
+                    <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-medium">Nova versão disponível!</span>
+                      <Button size="sm" onClick={applyUpdate}>
+                        Atualizar Agora
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
