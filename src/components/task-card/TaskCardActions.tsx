@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Copy,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,11 +16,13 @@ interface TaskCardActionsProps {
   canMoveLeft: boolean;
   canMoveRight: boolean;
   densityMode: "comfortable" | "compact" | "ultra-compact";
+  trackMetrics?: boolean;
   onToggleFavorite?: (taskId: string) => void;
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
   onDuplicate?: (taskId: string) => void;
   onDelete: (taskId: string) => void;
+  onOpenMetricsHistory?: () => void;
 }
 
 export const TaskCardActions: React.FC<TaskCardActionsProps> = ({
@@ -28,11 +31,13 @@ export const TaskCardActions: React.FC<TaskCardActionsProps> = ({
   canMoveLeft,
   canMoveRight,
   densityMode,
+  trackMetrics,
   onToggleFavorite,
   onMoveLeft,
   onMoveRight,
   onDuplicate,
   onDelete,
+  onOpenMetricsHistory,
 }) => {
   return (
     <div
@@ -62,6 +67,29 @@ export const TaskCardActions: React.FC<TaskCardActionsProps> = ({
           <Star
             className={cn(
               isFavorite && "fill-yellow-500",
+              densityMode === "compact" && "h-3 w-3",
+              densityMode === "comfortable" && "h-4 w-4",
+            )}
+          />
+        </Button>
+      )}
+      {trackMetrics && onOpenMetricsHistory && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className={cn(
+            "text-primary hover:text-primary/80",
+            densityMode === "compact" && "h-5 w-5",
+            densityMode === "comfortable" && "h-7 w-7",
+          )}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenMetricsHistory();
+          }}
+          title="Ver histórico de métricas"
+        >
+          <BarChart3
+            className={cn(
               densityMode === "compact" && "h-3 w-3",
               densityMode === "comfortable" && "h-4 w-4",
             )}

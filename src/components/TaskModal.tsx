@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Clock, FileText, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { CalendarIcon, Clock, FileText, X, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -24,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { RecurrenceRule } from "@/lib/recurrenceUtils";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { METRIC_TYPES } from "@/hooks/useTaskCompletionLogs";
 
 interface TaskModalProps {
   open: boolean;
@@ -62,6 +64,9 @@ export function TaskModal({
   const [subtasks, setSubtasks] = useState<Array<{ id: string; title: string; completed: boolean }>>([]);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
   const [linkedNotes, setLinkedNotes] = useState<Array<{ id: string; title: string }>>([]);
+  const [trackMetrics, setTrackMetrics] = useState(false);
+  const [metricType, setMetricType] = useState<string | null>(null);
+  const [trackComments, setTrackComments] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,6 +78,9 @@ export function TaskModal({
       setSelectedColumn(task.column_id || columnId);
       setSubtasks(task.subtasks || []);
       setRecurrence(task.recurrence_rule);
+      setTrackMetrics(task.track_metrics || false);
+      setMetricType(task.metric_type || null);
+      setTrackComments(task.track_comments || false);
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -104,6 +112,9 @@ export function TaskModal({
       setSelectedColumn(columnId);
       setLinkedNotes([]);
       setSelectedCategory(categoryId || "");
+      setTrackMetrics(false);
+      setMetricType(null);
+      setTrackComments(false);
       
       // Se foi passada uma data padrão (ex: clicou em um dia do calendário)
       if (defaultDueDate) {
@@ -163,6 +174,9 @@ export function TaskModal({
       column_id: finalColumnId,
       position: task?.position ?? 0,
       category_id: finalCategoryId,
+      track_metrics: trackMetrics,
+      metric_type: trackMetrics ? metricType : null,
+      track_comments: trackComments,
       subtasks,
       recurrence_rule: recurrence,
     };
@@ -379,6 +393,65 @@ export function TaskModal({
             )}
             
             <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
+            
+            {/* Rastreamento de Métricas */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <Label className="font-medium">Rastreamento de Conclusão</Label>
+              </div>
+              
+              <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="track-metrics" className="text-sm">
+                    Rastrear métricas ao concluir
+                  </Label>
+                  <Switch
+                    id="track-metrics"
+                    checked={trackMetrics}
+                    onCheckedChange={(checked) => {
+                      setTrackMetrics(checked);
+                      if (!checked) setMetricType(null);
+                    }}
+                  />
+                </div>
+                
+                {trackMetrics && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tipo de métrica</Label>
+                    <Select value={metricType || ""} onValueChange={setMetricType}>
+                      <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {METRIC_TYPES.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.icon} {m.name} ({m.unit})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="track-comments" className="text-sm">
+                    Solicitar comentário ao concluir
+                  </Label>
+                  <Switch
+                    id="track-comments"
+                    checked={trackComments}
+                    onCheckedChange={setTrackComments}
+                  />
+                </div>
+                
+                {(trackMetrics || trackComments) && (
+                  <p className="text-xs text-muted-foreground">
+                    Ao marcar como concluída, aparecerá um modal para registrar {trackMetrics && "a métrica"}{trackMetrics && trackComments && " e "}{trackComments && "um comentário"}.
+                  </p>
+                )}
+              </div>
+            </div>
             
             {/* Notas vinculadas (apenas para tarefas existentes) */}
             {task && linkedNotes.length > 0 && (

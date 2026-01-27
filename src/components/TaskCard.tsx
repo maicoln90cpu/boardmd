@@ -23,9 +23,12 @@ import {
   TaskCardHoverContent,
   TaskCardCompleteDialog,
   TaskCardSkeleton,
+  TaskCompletionModal,
+  TaskMetricsHistoryModal,
 } from "@/components/task-card";
 import { useSavingTasks } from "@/contexts/SavingTasksContext";
 import { AnimatePresence } from "framer-motion";
+import { useTaskCompletionLogs } from "@/hooks/useTaskCompletionLogs";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -108,6 +111,9 @@ const arePropsEqual = (prevProps: TaskCardProps, nextProps: TaskCardProps): bool
   if (prevTask.linked_note_id !== nextTask.linked_note_id) return false;
   if (prevTask.originalCategory !== nextTask.originalCategory) return false;
   if (prevTask.categories?.name !== nextTask.categories?.name) return false;
+  if (prevTask.track_metrics !== nextTask.track_metrics) return false;
+  if (prevTask.metric_type !== nextTask.metric_type) return false;
+  if (prevTask.track_comments !== nextTask.track_comments) return false;
 
   // Compare subtasks efficiently
   const prevSubtasks = prevTask.subtasks || [];
@@ -222,6 +228,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const [confirmCompleteOpen, setConfirmCompleteOpen] = React.useState(false);
   const [pendingComplete, setPendingComplete] = React.useState(false);
   const [originalCategoryName, setOriginalCategoryName] = React.useState<string | null>(null);
+  const [completionModalOpen, setCompletionModalOpen] = React.useState(false);
+  const [metricsHistoryOpen, setMetricsHistoryOpen] = React.useState(false);
+  const { addLog } = useTaskCompletionLogs();
 
   // Sync local state when task changes
   React.useEffect(() => {
@@ -308,6 +317,14 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
 
   const handleToggleCompleted = async (checked: boolean) => {
     const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
+    const shouldTrackMetrics = task.track_metrics || task.track_comments;
+    
+    // Se está marcando como concluída e tem rastreamento habilitado
+    if (checked && shouldTrackMetrics) {
+      setPendingComplete(true);
+      setCompletionModalOpen(true);
+      return;
+    }
     
     if (checked && !isRecurrentColumn && completedColumnId && onMoveToCompleted) {
       setPendingComplete(true);
@@ -315,6 +332,27 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     } else {
       await executeToggleCompleted(checked);
     }
+  };
+
+  const handleCompletionConfirm = async (metricValue: number | null, comment: string | null) => {
+    setCompletionModalOpen(false);
+    
+    // Salvar log de conclusão
+    await addLog(task.id, metricValue, task.metric_type, comment);
+    
+    // Verificar se deve mover para coluna de concluídos
+    const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
+    if (!isRecurrentColumn && completedColumnId && onMoveToCompleted) {
+      setConfirmCompleteOpen(true);
+    } else {
+      await executeToggleCompleted(true);
+      setPendingComplete(false);
+    }
+  };
+
+  const handleCompletionCancel = () => {
+    setCompletionModalOpen(false);
+    setPendingComplete(false);
   };
 
   const handleConfirmComplete = async (moveToCompleted: boolean) => {
@@ -450,11 +488,13 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         canMoveLeft={canMoveLeft}
                         canMoveRight={canMoveRight}
                         densityMode={densityMode}
+                        trackMetrics={task.track_metrics}
                         onToggleFavorite={onToggleFavorite}
                         onMoveLeft={onMoveLeft}
                         onMoveRight={onMoveRight}
                         onDuplicate={onDuplicate}
                         onDelete={onDelete}
+                        onOpenMetricsHistory={() => setMetricsHistoryOpen(true)}
                       />
 
                       {/* Line 4: Tags */}
@@ -485,6 +525,24 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onOpenChange={setConfirmCompleteOpen}
         onCancel={handleCancelComplete}
         onConfirm={handleConfirmComplete}
+      />
+
+      <TaskCompletionModal
+        open={completionModalOpen}
+        onOpenChange={setCompletionModalOpen}
+        taskTitle={task.title}
+        trackMetrics={task.track_metrics || false}
+        metricType={task.metric_type}
+        trackComments={task.track_comments || false}
+        onConfirm={handleCompletionConfirm}
+        onCancel={handleCompletionCancel}
+      />
+
+      <TaskMetricsHistoryModal
+        open={metricsHistoryOpen}
+        onOpenChange={setMetricsHistoryOpen}
+        taskId={task.id}
+        taskTitle={task.title}
       />
     </>
   );
