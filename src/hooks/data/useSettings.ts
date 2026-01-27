@@ -43,6 +43,8 @@ export interface AppSettings {
     excludeFromWeeklyAutomation: string[];
     // Tamanhos das colunas por categoria (sincronizado)
     columnSizes?: Record<string, number[]>;
+    // Reset imediato de tarefas recorrentes ao concluir
+    immediateRecurrentReset: boolean;
   };
   productivity: {
     dailyGoal: number;
@@ -124,6 +126,7 @@ const defaultSettings: AppSettings = {
     defaultView: 'projects', // ALTERADO: padrão agora é projetos (Diário removido)
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
     columnSizes: {},
+    immediateRecurrentReset: false, // Padrão: aguardar reset (comportamento atual)
   },
   productivity: {
     dailyGoal: 5,
