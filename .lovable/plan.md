@@ -1,363 +1,264 @@
 
-# Plano de Implementação - Sistema de Métricas, Multi-Select e Limpeza do Diário
+# Plano de Implementação - Toggle Recorrentes + Atualização PWA
 
-## Resumo Executivo
+## 1. Toggle de Comportamento de Tarefas Recorrentes
 
-Este plano aborda 4 solicitações:
-1. **Sistema de Métricas e Comentários** em tarefas concluídas
-2. **Multi-Select para dias da semana** em tarefas recorrentes
-3. **Remover "Diário"** das categorias visíveis
-4. **Mapeamento completo** de referências ao Diário para remoção
+### Descrição do Problema
+Atualmente, quando uma tarefa recorrente é marcada como concluída, ela fica visível (riscada) até o cron job de reset no fim do dia ou até o usuário clicar em "Resetar Recorrentes". O usuário deseja ter a opção de escolher se a tarefa já recalcula a próxima data imediatamente ou mantém o comportamento atual.
 
----
-
-## 1. Sistema de Métricas e Comentários nas Tarefas
-
-### Visão Geral do Funcionamento
-
-Ao marcar uma tarefa como concluída, se ela estiver configurada para rastrear métricas/comentários:
-1. Modal aparece perguntando a métrica (ex: 45 minutos de treino)
-2. Campo opcional para comentário (ex: "Treino de pernas hoje")
-3. Histórico acessível via ícone no card da tarefa (tabela com data, métrica, comentário)
-4. Estatísticas: soma de dias, soma de métricas, média
-
-### Tipos de Métricas Sugeridos (8 opções)
-
-| ID | Nome | Unidade | Exemplo de Uso |
-|----|------|---------|----------------|
-| time_minutes | Tempo (minutos) | min | Treino, estudo, meditação |
-| pages | Páginas | pág | Leitura de livros |
-| weight_kg | Peso (kg) | kg | Levantamento de peso |
-| distance_km | Distância (km) | km | Corrida, caminhada |
-| count | Quantidade | un | Emails enviados, ligações |
-| percentage | Percentual | % | Progresso em projeto |
-| calories | Calorias | kcal | Exercícios |
-| money | Valor (R$) | R$ | Vendas, economia |
-
-### Alterações no Banco de Dados
-
-**Tabela: tasks (alteração)**
-```sql
-ALTER TABLE public.tasks
-ADD COLUMN IF NOT EXISTS track_metrics boolean DEFAULT false,
-ADD COLUMN IF NOT EXISTS metric_type text DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS track_comments boolean DEFAULT false;
-```
-
-**Nova Tabela: task_completion_logs**
-```sql
-CREATE TABLE public.task_completion_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL,
-  completed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  metric_value NUMERIC DEFAULT NULL,
-  metric_type TEXT DEFAULT NULL,
-  comment TEXT DEFAULT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  
-  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-);
-
--- RLS Policies
-ALTER TABLE public.task_completion_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can view own completion logs" ON public.task_completion_logs
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own completion logs" ON public.task_completion_logs
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete own completion logs" ON public.task_completion_logs
-  FOR DELETE USING (auth.uid() = user_id);
-```
-
-### Arquivos a Criar
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/components/task-card/TaskCompletionModal.tsx` | Modal que aparece ao marcar tarefa como concluída |
-| `src/components/task-card/TaskMetricsHistoryModal.tsx` | Modal com tabela de histórico de métricas |
-| `src/hooks/useTaskCompletionLogs.ts` | Hook para CRUD dos logs de conclusão |
+### Solução Proposta
+Adicionar um toggle nas configurações Kanban:
+- **Opção A (Reset Imediato):** Ao marcar como concluída, a tarefa é automaticamente "resetada" com a próxima data calculada (como se o cron tivesse rodado)
+- **Opção B (Aguardar Reset - padrão atual):** Tarefa fica riscada até o cron de 23:59h ou clique manual
 
 ### Arquivos a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/types/index.ts` | Adicionar interface `TaskCompletionLog` e atualizar `Task` |
-| `src/components/TaskModal.tsx` | Adicionar toggles para habilitar métricas/comentários + select de tipo de métrica |
-| `src/components/TaskCard.tsx` | Adicionar ícone de histórico (📊) e chamar modal ao concluir |
-| `src/components/task-card/TaskCardActions.tsx` | Adicionar botão de histórico de métricas |
-| `src/hooks/tasks/useTasks.ts` | Incluir novos campos nas operações |
+| `src/hooks/data/useSettings.ts` | Adicionar campo `immediateRecurrentReset: boolean` em `kanban` |
+| `src/pages/Config.tsx` | Adicionar toggle na aba Kanban |
+| `src/components/TaskCard.tsx` | Verificar configuração e aplicar reset imediato se habilitado |
+| `src/lib/recurrenceUtils.ts` | Expor função já existente para cálculo de próxima data |
 
 ### Fluxo de Uso
 
 ```text
-CONFIGURAÇÃO (TaskModal):
-┌───────────────────────────────────────┐
-│ ☐ Rastrear métricas ao concluir       │
-│   └─ Tipo: [Tempo (minutos) ▼]        │
-│ ☐ Solicitar comentário ao concluir    │
-└───────────────────────────────────────┘
+CONFIGURAÇÃO (Config > Kanban):
+┌─────────────────────────────────────────────────────────┐
+│ Comportamento ao Concluir Recorrentes                    │
+│                                                          │
+│ ○ Aguardar reset (fica riscada até fim do dia)          │
+│ ● Reset imediato (recalcula próxima data na hora)       │
+└─────────────────────────────────────────────────────────┘
 
-AO MARCAR COMO CONCLUÍDA (TaskCompletionModal):
-┌───────────────────────────────────────┐
-│ Treino Matinal - Concluído! 🎉        │
-│───────────────────────────────────────│
-│ Quanto tempo durou?                    │
-│ [     45     ] minutos                │
-│                                        │
-│ Comentário (opcional):                 │
-│ ┌─────────────────────────────────┐   │
-│ │ Treino de pernas hoje, foquei   │   │
-│ │ em agachamento e leg press      │   │
-│ └─────────────────────────────────┘   │
-│                                        │
-│        [Cancelar]  [Salvar]           │
-└───────────────────────────────────────┘
-
-HISTÓRICO (TaskMetricsHistoryModal):
-┌───────────────────────────────────────┐
-│ 📊 Histórico: Treino Matinal          │
-│───────────────────────────────────────│
-│ Data       │ Tempo │ Comentário       │
-│────────────┼───────┼──────────────────│
-│ 27/01/2026 │ 45min │ Pernas           │
-│ 26/01/2026 │ 60min │ Costas           │
-│ 25/01/2026 │ 50min │ Peito            │
-│────────────┴───────┴──────────────────│
-│ Total: 3 dias | Soma: 155min          │
-│ Média: 51.7 min/dia                   │
-└───────────────────────────────────────┘
+AO MARCAR COMO CONCLUÍDA:
+- Se "Aguardar reset": mantém comportamento atual (riscado)
+- Se "Reset imediato": calcula próxima data, atualiza due_date, 
+  define is_completed = false (tarefa "reaparece" desmarcada)
 ```
 
-### Risco e Complexidade
-- **Risco:** Médio (nova tabela, novo fluxo de UX)
-- **Complexidade:** 7/10
+### Alteração no AppSettings
+
+```typescript
+kanban: {
+  // ... campos existentes
+  immediateRecurrentReset: boolean; // NOVO - default: false
+}
+```
+
+### Alteração no TaskCard.tsx
+
+```typescript
+const handleToggleCompleted = async (checked: boolean) => {
+  const isRecurrent = !!task.recurrence_rule;
+  
+  // Se é recorrente E está marcando como concluída E reset imediato habilitado
+  if (checked && isRecurrent && settings.kanban.immediateRecurrentReset) {
+    // Calcular próxima data
+    const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule);
+    
+    // Atualizar tarefa com nova data e is_completed = false
+    await supabase.from("tasks").update({
+      is_completed: false,
+      due_date: nextDueDate
+    }).eq("id", task.id);
+    
+    // Trigger confetti e toast de sucesso
+    triggerConfetti();
+    toast({ title: "Tarefa resetada", description: `Próxima: ${formatDate(nextDueDate)}` });
+    return;
+  }
+  
+  // Comportamento padrão para não-recorrentes ou aguardar reset
+  // ...
+};
+```
 
 ---
 
-## 2. Multi-Select para Dias da Semana
+## 2. Botão de Atualização PWA + Explicação iOS
 
-### Situação Atual
-- Campo `weekday` armazena UM único número (0-6)
-- Select permite escolher apenas um dia
+### Limitações do iOS PWA (Importante)
+O iOS possui uma limitação fundamental:
+- **Service Workers são suspensos quando o PWA está fechado**
+- Isso significa que atualizações automáticas em background **não funcionam** no iOS
+- A única forma de atualizar é **abrir o app** e ele verificar se há nova versão
 
-### Alteração Proposta
+### Solução Proposta
+1. Adicionar botão nas configurações para "Verificar Atualizações" manualmente
+2. Mostrar informação sobre a versão atual e última verificação
+3. Explicar ao usuário que ao abrir o app, ele já verifica automaticamente
 
-**Alterar estrutura de dados:**
-```typescript
-// ANTES (RecurrenceRule em recurrenceUtils.ts):
-interface RecurrenceRule {
-  weekday?: number; // Um único dia (0-6)
-}
-
-// DEPOIS:
-interface RecurrenceRule {
-  weekday?: number;     // Mantido para compatibilidade
-  weekdays?: number[];  // NOVO: array de dias [1, 4] = Segunda e Quinta
-}
-```
-
-**Não precisa de migration** - o campo `recurrence_rule` já é JSONB, basta adicionar a propriedade `weekdays`.
-
-### Arquivos a Modificar
+### Arquivos a Modificar/Criar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/lib/recurrenceUtils.ts` | Adicionar suporte a `weekdays[]`, calcular próxima data considerando múltiplos dias |
-| `src/types/index.ts` | Atualizar `RecurrenceRule` |
-| `src/components/kanban/RecurrenceEditor.tsx` | Trocar Select por checkboxes multi-select |
-| `supabase/functions/reset-recurring-tasks/index.ts` | Atualizar lógica para suportar `weekdays[]` |
+| `src/pages/Config.tsx` | Adicionar seção "Aplicativo (PWA)" na aba Avançado |
+| `src/lib/pwa/pwaUpdater.ts` | Adicionar métodos `forceUpdate()` e `getLastUpdateCheck()` |
+| `src/hooks/usePWAUpdate.ts` | CRIAR - Hook para gerenciar estado de atualização |
 
-### Nova Interface do RecurrenceEditor
+### Interface na Aba Avançado
 
 ```text
-ANTES:
-┌─────────────────────────────┐
-│ Repetir toda                │
-│ [Quarta-feira         ▼]    │
-└─────────────────────────────┘
-
-DEPOIS:
-┌─────────────────────────────┐
-│ Repetir nos dias:           │
-│ ☐ Domingo                   │
-│ ☑ Segunda-feira             │
-│ ☐ Terça-feira               │
-│ ☐ Quarta-feira              │
-│ ☑ Quinta-feira              │
-│ ☐ Sexta-feira               │
-│ ☐ Sábado                    │
-└─────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│ 📱 Aplicativo (PWA)                                     │
+│──────────────────────────────────────────────────────────│
+│ Versão instalada: 1.0.0                                  │
+│ Última verificação: há 5 minutos                        │
+│                                                          │
+│ [🔄 Verificar Atualizações]  [📥 Reinstalar App]        │
+│                                                          │
+│ ⓘ No iOS, atualizações são verificadas ao abrir o app.  │
+│   Se houver problemas, use "Reinstalar App" para baixar │
+│   a versão mais recente.                                │
+└────────────────────────────────────────────────────────┘
 ```
 
-### Lógica de Cálculo da Próxima Data
+### Hook usePWAUpdate.ts
 
 ```typescript
-// Encontrar o próximo dia que está na lista de weekdays
-function calculateNextRecurrenceDate(currentDate: string, rule: RecurrenceRule): string {
-  if (rule.weekdays && rule.weekdays.length > 0) {
-    const now = new Date();
-    const currentDay = now.getDay();
-    
-    // Ordenar os dias da semana
-    const sortedDays = [...rule.weekdays].sort((a, b) => a - b);
-    
-    // Encontrar o próximo dia na lista
-    let nextDay = sortedDays.find(d => d > currentDay);
-    let daysToAdd = 0;
-    
-    if (nextDay !== undefined) {
-      daysToAdd = nextDay - currentDay;
-    } else {
-      // Próxima semana, primeiro dia da lista
-      daysToAdd = 7 - currentDay + sortedDays[0];
+export function usePWAUpdate() {
+  const [isChecking, setIsChecking] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+
+  const checkForUpdates = async () => {
+    setIsChecking(true);
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.update();
+        setLastCheck(new Date());
+        // Verificar se há worker waiting
+        if (registration.waiting) {
+          setUpdateAvailable(true);
+        }
+      }
+    } finally {
+      setIsChecking(false);
     }
-    
-    // ... calcular data
-  }
+  };
+
+  const applyUpdate = async () => {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
+      }
+    }
+  };
+
+  const forceReinstall = () => {
+    // Limpar cache e recarregar
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => caches.delete(name));
+      });
+    }
+    localStorage.setItem('pwa_force_update', Date.now().toString());
+    window.location.reload();
+  };
+
+  return {
+    isChecking,
+    updateAvailable,
+    lastCheck,
+    checkForUpdates,
+    applyUpdate,
+    forceReinstall
+  };
 }
 ```
 
-### Risco e Complexidade
-- **Risco:** Baixo (compatível com dados existentes)
-- **Complexidade:** 4/10
-
----
-
-## 3. Remover "Diário" das Categorias
-
-### Problema
-A categoria "Diário" ainda aparece no select de categorias ao editar tarefas, mesmo que o modo Diário tenha sido removido.
-
-### Solução
-
-**Arquivo:** `src/components/TaskModal.tsx`
+### Alteração no Config.tsx (Aba Avançado)
 
 ```tsx
-// ANTES (linha ~336):
-{categories.map((category) => (
-  <SelectItem key={category.id} value={category.id}>
-    {category.name}
-  </SelectItem>
-))}
+// Adicionar após "Modo Simplificado"
+<Separator />
 
-// DEPOIS:
-{categories
-  .filter(category => category.name !== "Diário")
-  .map((category) => (
-    <SelectItem key={category.id} value={category.id}>
-      {category.name}
-    </SelectItem>
-  ))}
+<div className="space-y-4">
+  <div className="flex items-center gap-2">
+    <Label>📱 Aplicativo (PWA)</Label>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger>
+          <Info className="h-4 w-4 text-muted-foreground" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p>No iOS, atualizações são verificadas ao abrir o app. 
+             Use "Reinstalar App" se houver problemas.</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  </div>
+  
+  {lastCheck && (
+    <p className="text-sm text-muted-foreground">
+      Última verificação: {formatRelative(lastCheck)}
+    </p>
+  )}
+  
+  <div className="flex gap-2 flex-wrap">
+    <Button 
+      variant="outline" 
+      onClick={checkForUpdates}
+      disabled={isChecking}
+    >
+      {isChecking ? (
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      ) : (
+        <RefreshCw className="h-4 w-4 mr-2" />
+      )}
+      Verificar Atualizações
+    </Button>
+    
+    <Button 
+      variant="outline" 
+      onClick={forceReinstall}
+    >
+      <Download className="h-4 w-4 mr-2" />
+      Reinstalar App
+    </Button>
+  </div>
+  
+  {updateAvailable && (
+    <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+      <Sparkles className="h-5 w-5 text-primary" />
+      <span className="text-sm">Nova versão disponível!</span>
+      <Button size="sm" onClick={applyUpdate}>
+        Atualizar Agora
+      </Button>
+    </div>
+  )}
+</div>
 ```
-
-**Adicionar filtro também em:**
-- `src/pages/Config.tsx` (lista de categorias para gerenciamento)
-- Qualquer outro lugar que liste categorias para seleção
-
-### Risco e Complexidade
-- **Risco:** Baixo
-- **Complexidade:** 1/10
-
----
-
-## 4. Mapeamento Completo de Referências ao "Diário"
-
-### Arquivos com Referências a Remover/Ajustar
-
-| Arquivo | Linha(s) | Tipo | Ação Recomendada |
-|---------|----------|------|------------------|
-| `src/hooks/data/useCategories.ts` | 54-75 | Criação automática | **REMOVER** criação automática de "Diário" |
-| `src/hooks/data/useSettings.ts` | 29-30, 89-91, 115-116 | Campos obsoletos | **REMOVER** dailySortOption, dailySortOrder, dailyPriority, dailyTag, dailySearch |
-| `src/types/index.ts` | 106, 115 | Tipos obsoletos | **REMOVER** dailySortOption, dailySortOrder, defaultView: 'daily' |
-| `src/components/TaskModal.tsx` | 87, 155 | Filtro de tags | **MANTER** (remove tag legada espelho-diário) |
-| `src/components/TaskCard.tsx` | 214 | Filtro de tags | **MANTER** (remove tag legada espelho-diário) |
-| `src/components/SearchFilters.tsx` | 28-33, 58-63, 143-163 | Props/render obsoletos | **REMOVER** dailySortOption, dailySortChange, dailySortOrder |
-| `src/pages/Config.tsx` | 399-411, 424-428, 445-448 | Proteção de categoria | **REMOVER** verificações especiais para "Diário" |
-| `src/pages/Landing.tsx` | 96-104 | Texto de marketing | **ATUALIZAR** descrição das features |
-| `src/lib/importValidation.ts` | 158-196 | Validação de import | **REMOVER** referências a "Diário" |
-| `src/hooks/useViewModeHandlers.ts` | 34-39, 137-138 | Exclusão de categoria | **REMOVER** filtros por "Diário" |
-| `src/hooks/useDataImportExport.ts` | 149-152 | Fallback de categoria | **REMOVER** referência a "Diário" |
-| `src/hooks/tasks/useTaskFiltering.ts` | 58-62 | Comentário | **ATUALIZAR** comentário (remover menção a Diário) |
-| `e2e/kanban.spec.ts` | 26 | Teste E2E | **REMOVER** expectativa de texto "diário" |
-| `README.md` | 213 | Documentação | **ATUALIZAR** descrição |
-| `PENDENCIAS.md` | 52, 288 | Documentação | **ATUALIZAR** descrição |
-| `ROADMAP.md` | 156 | Documentação | **MANTER** (refere a "diário" como adjetivo, não feature) |
-| `src/__tests__/hooks/useCategories.test.ts` | 87-91, 165-190 | Testes | **REMOVER** ou ATUALIZAR testes que dependem de "Diário" |
-
-### Tabelas/Colunas do Banco Obsoletas
-
-| Tabela | Coluna | Ação |
-|--------|--------|------|
-| `columns` | `show_in_daily` | **REMOVER** (migration) |
-| `columns` | `kanban_type` com valor 'daily' | **ATUALIZAR** dados existentes |
-
-### Tipos/Interfaces a Atualizar
-
-```typescript
-// src/types/index.ts - REMOVER:
-interface KanbanSettings {
-  dailySortOption: 'time' | 'name' | 'priority';    // REMOVER
-  dailySortOrder: 'asc' | 'desc';                    // REMOVER
-  dailyDueDateFilter: string | string[];             // REMOVER
-  defaultView: 'daily' | 'projects';                 // ALTERAR para apenas 'projects'
-}
-
-// AppSettings.filters - REMOVER:
-filters: {
-  dailyPriority: string;   // REMOVER
-  dailyTag: string;        // REMOVER
-  dailySearch: string;     // REMOVER
-}
-```
-
-### Risco e Complexidade
-- **Risco:** Médio (afeta múltiplos arquivos)
-- **Complexidade:** 5/10
-
----
-
-## Ordem de Execução Recomendada
-
-| # | Item | Prioridade | Dependências |
-|---|------|------------|--------------|
-| 1 | Filtrar "Diário" do select de categorias | Alta | Nenhuma |
-| 2 | Multi-select para dias da semana | Alta | Nenhuma |
-| 3 | Limpeza de referências ao Diário (código) | Alta | Item 1 |
-| 4 | Sistema de métricas - Database migration | Média | Nenhuma |
-| 5 | Sistema de métricas - Hooks e modais | Média | Item 4 |
-| 6 | Sistema de métricas - Integração no TaskCard | Média | Item 5 |
-| 7 | Limpeza de referências ao Diário (banco) | Baixa | Item 3 |
 
 ---
 
 ## Resumo de Impacto
 
-### Arquivos a Criar (3)
-- `src/components/task-card/TaskCompletionModal.tsx`
-- `src/components/task-card/TaskMetricsHistoryModal.tsx`
-- `src/hooks/useTaskCompletionLogs.ts`
+### Arquivos a Criar (1)
+- `src/hooks/usePWAUpdate.ts`
 
-### Arquivos a Modificar (20+)
-- TaskModal, TaskCard, RecurrenceEditor
-- useSettings, useCategories, useTasks
-- types/index.ts, recurrenceUtils.ts
-- Config.tsx, Landing.tsx
-- SearchFilters, useViewModeHandlers
-- Vários arquivos de teste e documentação
+### Arquivos a Modificar (4)
+- `src/hooks/data/useSettings.ts` - Adicionar `immediateRecurrentReset`
+- `src/pages/Config.tsx` - Adicionar 2 novos blocos de configuração
+- `src/components/TaskCard.tsx` - Lógica de reset imediato
+- `src/lib/pwa/pwaUpdater.ts` - Métodos auxiliares
 
-### Migrations de Banco (2)
-1. Adicionar colunas em `tasks` (track_metrics, metric_type, track_comments)
-2. Criar tabela `task_completion_logs`
+### Análise de Risco
 
-### Vantagens
-1. **Métricas:** Acompanhamento quantitativo de hábitos e tarefas
-2. **Multi-select:** Flexibilidade para tarefas que ocorrem em múltiplos dias
-3. **Limpeza:** Código mais limpo sem referências a feature removida
+| Item | Risco | Complexidade |
+|------|-------|--------------|
+| Toggle recorrentes | Baixo | 4/10 |
+| Hook PWA | Baixo | 3/10 |
+| UI Config | Baixo | 2/10 |
 
-### Riscos
-1. **Métricas:** Nova tabela e fluxo de UX podem introduzir bugs
-2. **Multi-select:** Compatibilidade com dados existentes (weekday singular)
-3. **Limpeza:** Possível quebra de testes ou comportamentos edge case
+### Nota Importante sobre iOS
+O comportamento de atualização automática é uma **limitação do iOS**, não um bug do sistema. A Apple suspende Service Workers quando apps estão em background. A melhor solução é:
+1. Verificar atualizações ao abrir o app (já implementado)
+2. Oferecer botão manual para verificar/forçar
+3. Informar o usuário sobre essa limitação
+
+Se o usuário precisar de atualizações em tempo real no iOS, a única alternativa seria migrar para um **app nativo via Capacitor**, que tem acesso total ao sistema de push e background updates do iOS.
