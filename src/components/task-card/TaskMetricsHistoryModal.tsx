@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,10 +7,21 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, BarChart3 } from "lucide-react";
+import { Trash2, BarChart3, TrendingUp } from "lucide-react";
 import { useTaskCompletionLogs, TaskCompletionLog } from "@/hooks/useTaskCompletionLogs";
 import { formatDateTimeBR } from "@/lib/dateUtils";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface TaskMetricsHistoryModalProps {
   open: boolean;
@@ -38,13 +49,27 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
     ? getMetricLabel(logs[0].metric_type) 
     : { name: "Valor", unit: "", icon: "📊" };
 
+  // Prepare chart data (reverse to show oldest first)
+  const chartData = useMemo(() => {
+    return [...logs]
+      .filter(log => log.metric_value !== null)
+      .reverse()
+      .map(log => ({
+        date: format(parseISO(log.completed_at), "dd/MM", { locale: ptBR }),
+        fullDate: format(parseISO(log.completed_at), "dd/MM/yyyy", { locale: ptBR }),
+        value: log.metric_value || 0,
+      }));
+  }, [logs]);
+
   const handleDelete = async (logId: string) => {
     await deleteLog(logId);
   };
 
+  const hasChartData = chartData.length >= 2;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[80vh]">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
@@ -65,8 +90,66 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
             <p className="text-sm">Complete esta tarefa para começar a rastrear métricas</p>
           </div>
         ) : (
-          <>
-            <ScrollArea className="max-h-[400px]">
+          <div className="flex flex-col gap-4 overflow-hidden">
+            {/* Chart Section */}
+            {hasChartData && (
+              <div className="bg-muted/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Evolução ({metricInfo.unit})</span>
+                </div>
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="date"
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      className="text-xs"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                      formatter={(value: number) => [`${value} ${metricInfo.unit}`, metricInfo.name]}
+                      labelFormatter={(label, payload) => {
+                        const item = payload?.[0]?.payload;
+                        return item?.fullDate || label;
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#colorMetric)"
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 0, r: 3 }}
+                      activeDot={{ r: 5, fill: 'hsl(var(--primary))' }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Table Section */}
+            <ScrollArea className="flex-1 max-h-[250px]">
               <table className="w-full text-sm">
                 <thead className="bg-muted/50 sticky top-0">
                   <tr>
@@ -109,7 +192,7 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
             </ScrollArea>
 
             {/* Statistics Footer */}
-            <div className="border-t pt-4 mt-4">
+            <div className="border-t pt-4">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="bg-muted/30 rounded-lg p-3">
                   <p className="text-2xl font-bold text-primary">{stats.totalDays}</p>
@@ -133,7 +216,7 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>
