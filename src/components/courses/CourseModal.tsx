@@ -31,6 +31,7 @@ import type { CourseCategory } from "@/hooks/useCourseCategories";
 
 const courseSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),
+  author: z.string().max(200, "Máximo 200 caracteres").optional(),
   url: z.string().url("URL inválida").optional().or(z.literal("")),
   price: z.coerce.number().min(0, "Valor deve ser positivo").optional(),
   current_episode: z.coerce.number().min(0).optional(),
@@ -82,6 +83,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
     resolver: zodResolver(courseSchema),
     defaultValues: {
       name: "",
+      author: "",
       url: "",
       price: 0,
       current_episode: 0,
@@ -101,6 +103,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
     if (course) {
       form.reset({
         name: course.name,
+        author: (course as any).author || "",
         url: course.url || "",
         price: course.price || 0,
         current_episode: course.current_episode || 0,
@@ -117,6 +120,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
     } else {
       form.reset({
         name: "",
+        author: "",
         url: "",
         price: 0,
         current_episode: 0,
@@ -136,6 +140,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
   const handleSubmit = async (values: CourseFormValues) => {
     await onSubmit({
       name: values.name,
+      author: values.author || undefined,
       url: values.url || undefined,
       price: values.price,
       current_episode: values.current_episode,
@@ -148,7 +153,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       platform: values.platform || undefined,
       notes: values.notes || undefined,
       started_at: values.started_at || undefined,
-    });
+    } as any);
     onOpenChange(false);
   };
 
@@ -171,6 +176,20 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
                   <FormLabel>Nome do Curso *</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: React Avançado" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="author"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Autor / Instrutor</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Fernando Daciuk" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
