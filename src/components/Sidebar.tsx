@@ -164,9 +164,9 @@ export function Sidebar({
   const isPinned = settings.interface.sidebarPinned;
   const isExpandedWhenPinned = settings.interface.sidebarExpandedWhenPinned;
 
-  // Iniciar expandido por padrão para evitar flash visual
+  // Start with expanded state to prevent flash (optimistic render)
+  // Use default settings initially, update when loaded
   const [open, setOpen] = useState(true);
-  const [hasInitialized, setHasInitialized] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [projectsMenuOpen, setProjectsMenuOpen] = useState(false);
   const { categories } = useCategories();
@@ -177,24 +177,16 @@ export function Sidebar({
   // Filter categories for projects (exclude "Diário")
   const projectCategories = categories.filter((c) => c.name !== "Diário");
 
-  // Aplicar configuração do usuário SOMENTE após carregar
+  // Apply user configuration after loading
   useEffect(() => {
-    if (!isLoading && !hasInitialized) {
+    if (!isLoading) {
       if (isPinned) {
         setOpen(isExpandedWhenPinned);
       } else {
         setOpen(false);
       }
-      setHasInitialized(true);
     }
-  }, [isLoading, isPinned, isExpandedWhenPinned, hasInitialized]);
-
-  // Reagir a mudanças nas configurações após inicialização
-  useEffect(() => {
-    if (hasInitialized && isPinned) {
-      setOpen(isExpandedWhenPinned);
-    }
-  }, [isPinned, isExpandedWhenPinned, hasInitialized]);
+  }, [isLoading, isPinned, isExpandedWhenPinned]);
 
   // Usar hook centralizado para itens de menu mobile
   const { primaryItems, secondaryItems, handleNavigation } = useMenuItems({
@@ -204,47 +196,8 @@ export function Sidebar({
   // Check if current route is home
   const isHomeActive = location.pathname === "/";
 
-  // Skeleton da sidebar enquanto carrega
-  if (isLoading) {
-    return (
-      <>
-        {/* Desktop Sidebar Skeleton */}
-        <div className="hidden md:flex flex-col h-screen w-[60px] bg-card border-r border-border p-3 gap-4">
-          <div className="flex items-center gap-2 py-2">
-            <Skeleton className="h-8 w-8 rounded-lg" />
-          </div>
-          <div className="flex flex-col gap-2 mt-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-8 w-8 rounded-md" />
-            ))}
-          </div>
-          <div className="h-px bg-border my-2" />
-          <div className="flex flex-col gap-2">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-8 w-8 rounded-md" />
-            ))}
-          </div>
-          <div className="mt-auto">
-            <div className="h-px bg-border mb-2" />
-            <Skeleton className="h-8 w-8 rounded-md" />
-          </div>
-        </div>
-
-        {/* Mobile bottom navigation skeleton */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
-          <div className="grid grid-cols-5 gap-0.5 p-2 px-0">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 min-h-[60px] py-2">
-                <Skeleton className="h-5 w-5 rounded" />
-                <Skeleton className="h-3 w-10 rounded" />
-              </div>
-            ))}
-          </div>
-        </nav>
-      </>
-    );
-  }
-
+  // Render immediately without waiting for settings to load
+  // The sidebar will adjust its state once settings are available
   return (
     <>
       {/* Desktop Sidebar with hover animation */}

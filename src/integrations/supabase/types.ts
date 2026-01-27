@@ -168,6 +168,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          author: string | null
           category: string | null
           completed_at: string | null
           created_at: string | null
@@ -189,6 +190,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          author?: string | null
           category?: string | null
           completed_at?: string | null
           created_at?: string | null
@@ -210,6 +212,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          author?: string | null
           category?: string | null
           completed_at?: string | null
           created_at?: string | null
