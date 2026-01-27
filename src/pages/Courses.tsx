@@ -119,7 +119,8 @@ export default function Courses() {
         const matchesSearch = 
           course.name.toLowerCase().includes(search) ||
           course.platform?.toLowerCase().includes(search) ||
-          course.category?.toLowerCase().includes(search);
+          course.category?.toLowerCase().includes(search) ||
+          course.author?.toLowerCase().includes(search);
         if (!matchesSearch) return false;
       }
 

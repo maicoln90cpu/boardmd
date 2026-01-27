@@ -98,8 +98,18 @@ export function CourseCard({
               <h3 className="font-medium text-sm truncate leading-tight">
                 {course.name}
               </h3>
-              {course.platform && (
+              {course.author && (
                 <p className="text-xs text-muted-foreground truncate">
+                  por {course.author}
+                </p>
+              )}
+              {course.platform && !course.author && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {course.platform}
+                </p>
+              )}
+              {course.platform && course.author && (
+                <p className="text-xs text-muted-foreground/70 truncate">
                   {course.platform}
                 </p>
               )}
