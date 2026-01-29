@@ -28,16 +28,30 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { widgetConfig, updateWidgetConfig, isWidgetEnabled } = useDashboardWidgets();
 
-  // Buscar todas as tarefas de todas as categorias
+  // Buscar todas as tarefas e colunas
   const [tasks, setTasks] = useState<any[]>([]);
+  const [columns, setColumns] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    const fetchAllTasks = async () => {
-      const { data } = await supabase.from("tasks").select("*");
-      setTasks(data || []);
+    const fetchData = async () => {
+      const [tasksRes, columnsRes] = await Promise.all([
+        supabase.from("tasks").select("*"),
+        supabase.from("columns").select("id, name")
+      ]);
+      setTasks(tasksRes.data || []);
+      setColumns(columnsRes.data || []);
     };
-    fetchAllTasks();
+    fetchData();
   }, []);
+
+  // Filtrar tarefas excluindo coluna "Recorrente" para insights de IA
+  const tasksForInsights = useMemo(() => {
+    const recurrentColumnIds = columns
+      .filter(col => col.name.toLowerCase() === "recorrente" || col.name.toLowerCase() === "recorrentes")
+      .map(col => col.id);
+    
+    return tasks.filter(task => !recurrentColumnIds.includes(task.column_id));
+  }, [tasks, columns]);
 
   // Computed dashboard stats
   const dashboardStats = useMemo(() => ({
@@ -76,7 +90,7 @@ export default function Dashboard() {
       },
       "insights": {
         name: "🤖 Insights de IA",
-        component: <ProductivityInsights stats={stats} tasks={tasks} />,
+        component: <ProductivityInsights stats={stats} tasks={tasksForInsights} />,
       },
       "productivity-chart": {
         name: "📊 Gráfico de Produtividade",

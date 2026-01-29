@@ -82,6 +82,8 @@ export function useTaskReset({
     });
 
     // Batch update para cada grupo de data
+    // IMPORTANTE: Apenas atualizamos is_completed e due_date
+    // NÃO tocamos em track_metrics, track_comments, metric_type para preservar configuração do usuário
     let successCount = 0;
     for (const [dateKey, taskIds] of Object.entries(updatesByNextDate)) {
       const nextDueDate = dateKey === 'null' ? null : dateKey;
@@ -90,6 +92,7 @@ export function useTaskReset({
         .update({
           is_completed: false,
           due_date: nextDueDate
+          // Campos preservados: track_metrics, track_comments, metric_type
         })
         .in("id", taskIds);
       
