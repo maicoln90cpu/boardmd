@@ -79,7 +79,13 @@ export const taskSchema = z.object({
     .optional(),
   recurrence_rule: recurrenceRuleSchema.nullable().optional(),
   is_completed: z.boolean().default(false).optional(),
-  is_favorite: z.boolean().default(false).optional()
+  is_favorite: z.boolean().default(false).optional(),
+  // Campos de rastreamento de conclusão
+  track_metrics: z.boolean().default(false).optional(),
+  metric_type: z.string().nullable().optional(),
+  track_comments: z.boolean().default(false).optional(),
+  // Campo de nota vinculada
+  linked_note_id: z.string().uuid("ID de nota inválido").nullable().optional(),
 });
 
 export const categorySchema = z.object({
