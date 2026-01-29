@@ -382,15 +382,13 @@ export function TaskModal({
 
             <SubtasksEditor subtasks={subtasks} onChange={setSubtasks} />
             
-            {/* AI Subtasks Suggester */}
-            {!task && (
-              <AISubtasksSuggester
-                taskTitle={title}
-                taskDescription={description}
-                existingSubtasks={subtasks}
-                onAddSubtasks={setSubtasks}
-              />
-            )}
+            {/* AI Subtasks Suggester - disponível na criação e edição */}
+            <AISubtasksSuggester
+              taskTitle={title}
+              taskDescription={description}
+              existingSubtasks={subtasks}
+              onAddSubtasks={setSubtasks}
+            />
             
             <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
             
