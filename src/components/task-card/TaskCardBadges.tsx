@@ -183,17 +183,30 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
         </Badge>
       )}
 
-      {/* Subtasks counter */}
+      {/* Subtasks counter with progress bar */}
       {subtasksCount > 0 && (
-        <Badge
-          variant="outline"
-          className={cn(
-            densityMode === "compact" && "text-[10px] px-1 py-0",
-            densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
-          )}
-        >
-          ✓ {subtasksCompleted}/{subtasksCount}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant="outline"
+            className={cn(
+              densityMode === "compact" && "text-[10px] px-1 py-0",
+              densityMode === "comfortable" && "text-xs px-1.5 py-0.5",
+            )}
+          >
+            ✓ {subtasksCompleted}/{subtasksCount}
+          </Badge>
+          {/* Mini progress bar */}
+          <div className={cn(
+            "relative rounded-full bg-muted overflow-hidden",
+            densityMode === "compact" && "h-1 w-8",
+            densityMode === "comfortable" && "h-1.5 w-12",
+          )}>
+            <div 
+              className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${Math.round((subtasksCompleted / subtasksCount) * 100)}%` }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Recurrence badge */}

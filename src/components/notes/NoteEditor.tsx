@@ -328,6 +328,8 @@ export function NoteEditor({
         charCount={state.charCount}
         onSave={state.handleSave}
         onCancel={state.handleCancel}
+        isSaving={state.isSaving}
+        lastSaved={state.lastSaved}
       />
 
       {/* Task selector modal via Ctrl+Shift+T shortcut */}

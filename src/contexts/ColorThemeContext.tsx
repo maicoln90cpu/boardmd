@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-export type ColorPalette = "default" | "ocean" | "forest" | "sunset" | "lavender";
+export type ColorPalette = "default" | "ocean" | "forest" | "sunset" | "lavender" | "custom";
 
 interface ColorThemeContextType {
   colorPalette: ColorPalette;
@@ -48,6 +48,13 @@ const palettes: Record<ColorPalette, Record<string, string>> = {
     "accent-foreground": "270 67% 35%",
     ring: "270 67% 70%",
   },
+  custom: {
+    primary: "217 91% 60%",
+    "primary-foreground": "0 0% 100%",
+    accent: "217 91% 95%",
+    "accent-foreground": "217 91% 35%",
+    ring: "217 91% 70%",
+  },
 };
 
 export const paletteNames: Record<ColorPalette, string> = {
@@ -56,6 +63,7 @@ export const paletteNames: Record<ColorPalette, string> = {
   forest: "Floresta",
   sunset: "Pôr do Sol",
   lavender: "Lavanda",
+  custom: "Personalizado",
 };
 
 export const paletteColors: Record<ColorPalette, string> = {
@@ -64,10 +72,11 @@ export const paletteColors: Record<ColorPalette, string> = {
   forest: "#22c55e",
   sunset: "#f97316",
   lavender: "#a855f7",
+  custom: "#3b82f6",
 };
 
 const isValidPalette = (value: unknown): value is ColorPalette => {
-  return typeof value === 'string' && ['default', 'ocean', 'forest', 'sunset', 'lavender'].includes(value);
+  return typeof value === 'string' && ['default', 'ocean', 'forest', 'sunset', 'lavender', 'custom'].includes(value);
 };
 
 export function ColorThemeProvider({ children }: { children: React.ReactNode }) {

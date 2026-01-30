@@ -134,9 +134,20 @@ export function useTasks(categoryId: string | null | "all") {
           } else if (payload.eventType === "UPDATE") {
             const updatedTask = payload.new as Task;
             setTasks((prev) =>
-              prev.map((t) =>
-                t.id === updatedTask.id ? { ...t, ...updatedTask } : t
-              )
+              prev.map((t) => {
+                if (t.id !== updatedTask.id) return t;
+                // CORREÇÃO: Preservar campos críticos que podem não vir no payload Realtime
+                return {
+                  ...t,
+                  ...updatedTask,
+                  // Preservar recurrence_rule se não vier no payload
+                  recurrence_rule: updatedTask.recurrence_rule ?? t.recurrence_rule,
+                  // Preservar campos de tracking se não vierem no payload
+                  track_metrics: updatedTask.track_metrics ?? t.track_metrics,
+                  track_comments: updatedTask.track_comments ?? t.track_comments,
+                  metric_type: updatedTask.metric_type ?? t.metric_type,
+                };
+              })
             );
           } else if (payload.eventType === "DELETE") {
             const deletedId = (payload.old as { id: string }).id;

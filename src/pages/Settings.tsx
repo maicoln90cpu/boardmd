@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useTheme } from "@/contexts/ThemeContext";
-import { ColorPaletteSelector } from "@/components/settings/ColorPaletteSelector";
+import { CustomColorPicker } from "@/components/settings/CustomColorPicker";
 import { useNavigate } from "react-router-dom";
 import { Home, Settings as SettingsIcon } from "lucide-react";
 import { useToast } from "@/hooks/ui/useToast";
@@ -63,8 +63,8 @@ export default function Settings() {
 
               {/* Aparência */}
               <TabsContent value="appearance" className="space-y-4">
-                {/* Color Palette Selector */}
-                <ColorPaletteSelector />
+              {/* Custom Color Picker with presets */}
+                <CustomColorPicker />
 
                 <Card>
                   <CardHeader>

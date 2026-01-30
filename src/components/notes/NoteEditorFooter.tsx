@@ -1,11 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import { Check, X, Loader2, Cloud } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NoteEditorFooterProps {
   wordCount: number;
   charCount: number;
   onSave: () => void;
   onCancel: () => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
 }
 
 export function NoteEditorFooter({
@@ -13,20 +17,41 @@ export function NoteEditorFooter({
   charCount,
   onSave,
   onCancel,
+  isSaving = false,
+  lastSaved,
 }: NoteEditorFooterProps) {
   return (
     <>
-      {/* Word/Character counter */}
-      <div className="flex-shrink-0 px-4 sm:px-6 py-2 border-t bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="font-medium">{wordCount.toLocaleString()}</span>
-          {wordCount === 1 ? "palavra" : "palavras"}
-        </span>
-        <span className="w-px h-3 bg-border" />
-        <span className="flex items-center gap-1.5">
-          <span className="font-medium">{charCount.toLocaleString()}</span>
-          {charCount === 1 ? "caractere" : "caracteres"}
-        </span>
+      {/* Word/Character counter + Auto-save status */}
+      <div className="flex-shrink-0 px-4 sm:px-6 py-2 border-t bg-muted/30 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="font-medium">{wordCount.toLocaleString()}</span>
+            {wordCount === 1 ? "palavra" : "palavras"}
+          </span>
+          <span className="w-px h-3 bg-border" />
+          <span className="flex items-center gap-1.5">
+            <span className="font-medium">{charCount.toLocaleString()}</span>
+            {charCount === 1 ? "caractere" : "caracteres"}
+          </span>
+        </div>
+        
+        {/* Auto-save indicator */}
+        <div className="flex items-center gap-1.5">
+          {isSaving ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              <span className="text-primary animate-pulse">Salvando...</span>
+            </>
+          ) : lastSaved ? (
+            <>
+              <Cloud className="h-3 w-3 text-emerald-500" />
+              <span className="text-emerald-600 dark:text-emerald-400">
+                Salvo {formatDistanceToNow(lastSaved, { addSuffix: true, locale: ptBR })}
+              </span>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {/* Action buttons */}
