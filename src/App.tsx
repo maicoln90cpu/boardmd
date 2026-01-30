@@ -49,10 +49,135 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const queryClient = new QueryClient();
 
+// Inner component that uses Router hooks
+function RouterContent() {
+  useNotificationActions(); // Handle notification action buttons - must be inside Router
+  return (
+    <Routes>
+      <Route path="/landing" element={<Landing />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route 
+        path="/forgot-password" 
+        element={
+          <Suspense fallback={<PageLoadingSkeleton />}>
+            <ForgotPassword />
+          </Suspense>
+        } 
+      />
+      <Route 
+        path="/reset-password" 
+        element={
+          <Suspense fallback={<PageLoadingSkeleton />}>
+            <ResetPassword />
+          </Suspense>
+        } 
+      />
+      <Route
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Index />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<StatsLoadingSkeleton />}>
+              <Dashboard />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/notes" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<NotesLoadingSkeleton />}>
+              <Notes />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/calendar" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<CalendarLoadingSkeleton />}>
+              <Calendar />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<SettingsLoadingSkeleton />}>
+              <Settings />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/config" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<SettingsLoadingSkeleton />}>
+              <Config />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/notifications" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <NotificationsDashboard />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/pomodoro" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PomodoroLoadingSkeleton />}>
+              <Pomodoro />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/tools" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Tools />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/courses" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Courses />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
 function AppContent() {
   useForegroundPushHandler();
   useGoalTaskIntegration(); // Integração metas + tarefas
-  useNotificationActions(); // Handle notification action buttons
 
   // Initialize offline sync manager
   useEffect(() => {
@@ -62,125 +187,7 @@ function AppContent() {
   
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route 
-          path="/forgot-password" 
-          element={
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <ForgotPassword />
-            </Suspense>
-          } 
-        />
-        <Route 
-          path="/reset-password" 
-          element={
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <ResetPassword />
-            </Suspense>
-          } 
-        />
-        <Route
-          path="/" 
-          element={
-            <ProtectedRoute>
-              <Index />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<StatsLoadingSkeleton />}>
-                <Dashboard />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/notes" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<NotesLoadingSkeleton />}>
-                <Notes />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/calendar" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<CalendarLoadingSkeleton />}>
-                <Calendar />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<SettingsLoadingSkeleton />}>
-                <Settings />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/config" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<SettingsLoadingSkeleton />}>
-                <Config />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/notifications" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PageLoadingSkeleton />}>
-                <NotificationsDashboard />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/pomodoro" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PomodoroLoadingSkeleton />}>
-                <Pomodoro />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/tools" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PageLoadingSkeleton />}>
-                <Tools />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/courses" 
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<PageLoadingSkeleton />}>
-                <Courses />
-              </Suspense>
-            </ProtectedRoute>
-          } 
-        />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <RouterContent />
     </BrowserRouter>
   );
 }
