@@ -72,10 +72,12 @@ export function KanbanBoard({
   const { columns: allColumns, updateColumnColor } = useColumns();
 
   // FILTRO DE CATEGORIAS
+  // CORREÇÃO: Quando categoryFilter está vazio, mostrar todas as tarefas (não ocultar)
   const tasks = useMemo(() => {
     if (categoryId !== "all") return rawTasks;
     if (!categoryFilterInitialized) return rawTasks;
-    if (categoryFilter.length === 0) return [];
+    // Se filtro vazio = mostrar tudo, não ocultar
+    if (categoryFilter.length === 0) return rawTasks;
     return rawTasks.filter((task) => categoryFilter.includes(task.category_id));
   }, [rawTasks, categoryId, categoryFilter, categoryFilterInitialized]);
 
