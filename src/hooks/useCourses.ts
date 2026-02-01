@@ -114,7 +114,7 @@ export function useCourses() {
 
   // Adicionar curso
   const addCourse = useCallback(
-    async (data: CourseFormData): Promise<Course | null> => {
+    async (data: CourseFormData & { modules_checklist?: any[] }): Promise<Course | null> => {
       if (!user?.id) {
         toast.error("Você precisa estar logado");
         return null;
@@ -139,6 +139,7 @@ export function useCourses() {
             notes: data.notes || null,
             started_at: data.started_at || null,
             is_favorite: data.is_favorite || false,
+            modules_checklist: data.modules_checklist || [],
           })
           .select()
           .single();
@@ -158,7 +159,7 @@ export function useCourses() {
 
   // Atualizar curso
   const updateCourse = useCallback(
-    async (id: string, data: Partial<CourseFormData>): Promise<boolean> => {
+    async (id: string, data: Partial<CourseFormData> & { modules_checklist?: any[] }): Promise<boolean> => {
       if (!user?.id) return false;
 
       try {

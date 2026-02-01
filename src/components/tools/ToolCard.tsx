@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, Lu
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { SecureApiKeyField } from "./SecureApiKeyField";
 import { cn } from "@/lib/utils";
 
 // Map of common icon names to components
@@ -21,7 +20,6 @@ interface Tool {
   id: string;
   name: string;
   site_url: string | null;
-  api_key: string | null;
   description: string | null;
   icon: string | null;
   is_favorite: boolean | null;
@@ -147,17 +145,6 @@ export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardP
                     </Badge>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* API Key */}
-            {tool.api_key && (
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-1">API Key</h4>
-                <SecureApiKeyField 
-                  value={tool.api_key} 
-                  readOnly
-                />
               </div>
             )}
 

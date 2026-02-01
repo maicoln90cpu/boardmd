@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Loader2, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { CourseModulesUploader } from "./CourseModulesUploader";
+import { CourseModulesChecklist, type CourseModule } from "./CourseModulesChecklist";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Course, CourseFormData } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
 
@@ -52,7 +58,7 @@ interface CourseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   course?: Course | null;
-  onSubmit: (data: CourseFormData) => Promise<void>;
+  onSubmit: (data: CourseFormData & { modules_checklist?: CourseModule[] }) => Promise<void>;
   categories?: CourseCategory[];
 }
 
@@ -70,6 +76,10 @@ const priorities = [
 ];
 
 export function CourseModal({ open, onOpenChange, course, onSubmit, categories = [] }: CourseModalProps) {
+  const [modulesChecklist, setModulesChecklist] = useState<CourseModule[]>([]);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isGeneratingModules, setIsGeneratingModules] = useState(false);
+
   // Build category options from database categories (filter empty names)
   const categoryOptions = categories
     .filter((cat) => cat.name && cat.name.trim() !== "")
@@ -117,6 +127,13 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         notes: course.notes || "",
         started_at: course.started_at || "",
       });
+      // Load existing modules checklist
+      const existingModules = (course as any).modules_checklist;
+      if (Array.isArray(existingModules)) {
+        setModulesChecklist(existingModules);
+      } else {
+        setModulesChecklist([]);
+      }
     } else {
       form.reset({
         name: "",
@@ -134,8 +151,49 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         notes: "",
         started_at: "",
       });
+      setModulesChecklist([]);
     }
+    setUploadedImage(null);
   }, [course, form]);
+
+  const handleGenerateModules = async () => {
+    if (!uploadedImage) {
+      toast.error("Envie uma imagem primeiro");
+      return;
+    }
+
+    setIsGeneratingModules(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-course-modules", {
+        body: { image: uploadedImage },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (data?.modules && Array.isArray(data.modules)) {
+        setModulesChecklist(data.modules);
+        toast.success(`${data.modules.length} módulos extraídos!`);
+      } else {
+        toast.error("Não foi possível extrair módulos da imagem");
+      }
+    } catch (error) {
+      console.error("Error generating modules:", error);
+      toast.error("Erro ao processar imagem");
+    } finally {
+      setIsGeneratingModules(false);
+    }
+  };
+
+  const handleToggleModule = (moduleId: string) => {
+    setModulesChecklist((prev) =>
+      prev.map((m) => (m.id === moduleId ? { ...m, completed: !m.completed } : m))
+    );
+  };
 
   const handleSubmit = async (values: CourseFormValues) => {
     await onSubmit({
@@ -153,6 +211,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       platform: values.platform || undefined,
       notes: values.notes || undefined,
       started_at: values.started_at || undefined,
+      modules_checklist: modulesChecklist,
     } as any);
     onOpenChange(false);
   };
@@ -424,6 +483,47 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
                 </FormItem>
               )}
             />
+
+            {/* Modules Upload Section */}
+            <div className="space-y-3 pt-2 border-t">
+              <Label className="flex items-center gap-2">
+                📸 Módulos do Curso (via IA)
+              </Label>
+              
+              <CourseModulesUploader
+                onImageSelected={setUploadedImage}
+                isProcessing={isGeneratingModules}
+              />
+
+              {uploadedImage && !isGeneratingModules && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerateModules}
+                  className="w-full gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Gerar checklist com IA
+                </Button>
+              )}
+
+              {isGeneratingModules && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analisando imagem...
+                </div>
+              )}
+
+              {modulesChecklist.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Checklist de Módulos</Label>
+                  <CourseModulesChecklist
+                    modules={modulesChecklist}
+                    onToggleModule={handleToggleModule}
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

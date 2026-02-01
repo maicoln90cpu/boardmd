@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { SecureApiKeyField } from "./SecureApiKeyField";
 import { FunctionSelector } from "./FunctionSelector";
 import { IconSelector } from "./IconSelector";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +21,6 @@ interface Tool {
   id: string;
   name: string;
   site_url: string | null;
-  api_key: string | null;
   description: string | null;
   icon: string | null;
   is_favorite: boolean | null;
@@ -37,7 +35,6 @@ interface ToolModalProps {
   onSave: (data: {
     name: string;
     site_url?: string | null;
-    api_key?: string | null;
     description?: string | null;
     icon?: string | null;
     monthly_cost?: number | null;
@@ -48,7 +45,6 @@ interface ToolModalProps {
 export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) {
   const [name, setName] = useState("");
   const [siteUrl, setSiteUrl] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("wrench");
   const [monthlyCost, setMonthlyCost] = useState("");
@@ -65,7 +61,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
       if (tool) {
         setName(tool.name);
         setSiteUrl(tool.site_url || "");
-        setApiKey(tool.api_key || "");
         setDescription(tool.description || "");
         setIcon(tool.icon || "wrench");
         setMonthlyCost(tool.monthly_cost?.toString() || "");
@@ -73,7 +68,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
       } else {
         setName("");
         setSiteUrl("");
-        setApiKey("");
         setDescription("");
         setIcon("wrench");
         setMonthlyCost("");
@@ -115,7 +109,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
       const success = await onSave({
         name: name.trim(),
         site_url: siteUrl.trim() || null,
-        api_key: apiKey || null,
         description: description.trim() || null,
         icon,
         monthly_cost: parsedCost && !isNaN(parsedCost) ? parsedCost : null,
@@ -218,20 +211,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               {errors.siteUrl && (
                 <p className="text-xs text-destructive">{errors.siteUrl}</p>
               )}
-            </div>
-
-            {/* API Key */}
-            <div className="space-y-2">
-              <Label>API Key</Label>
-              <SecureApiKeyField
-                value={apiKey}
-                onChange={setApiKey}
-                placeholder="sk-xxxx... ou sua chave de API"
-              />
-              <p className="text-xs text-muted-foreground">
-                Sua chave é armazenada de forma segura e nunca é exibida por
-                padrão.
-              </p>
             </div>
 
             {/* Monthly Cost */}

@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_value: string
+          name: string
+          source: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_value: string
+          name: string
+          source: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_value?: string
+          name?: string
+          source?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           created_at: string
@@ -176,6 +206,7 @@ export type Database = {
           current_module: number | null
           id: string
           is_favorite: boolean | null
+          modules_checklist: Json | null
           name: string
           notes: string | null
           platform: string | null
@@ -198,6 +229,7 @@ export type Database = {
           current_module?: number | null
           id?: string
           is_favorite?: boolean | null
+          modules_checklist?: Json | null
           name: string
           notes?: string | null
           platform?: string | null
@@ -220,6 +252,7 @@ export type Database = {
           current_module?: number | null
           id?: string
           is_favorite?: boolean | null
+          modules_checklist?: Json | null
           name?: string
           notes?: string | null
           platform?: string | null
