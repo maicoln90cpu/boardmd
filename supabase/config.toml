@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.suggest-tools]
 verify_jwt = false
+
+[functions.parse-course-modules]
+verify_jwt = false

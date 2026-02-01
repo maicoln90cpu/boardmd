@@ -13,7 +13,6 @@ interface Tool {
   id: string;
   name: string;
   site_url: string | null;
-  api_key: string | null;
   description: string | null;
   icon: string | null;
   is_favorite: boolean | null;
