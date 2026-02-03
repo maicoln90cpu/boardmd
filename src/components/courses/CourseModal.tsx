@@ -308,97 +308,51 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL do Curso</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Preço */}
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço (R$)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" min="0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Módulos */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="current_module"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Módulo Atual</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            {/* ✨ AI MODULES SECTION - HIGHLIGHTED */}
+            <div className="space-y-3 p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+              <Label className="flex items-center gap-2 text-base font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Módulos do Curso (via IA)
+              </Label>
+              
+              <CourseModulesUploader
+                onImageSelected={setUploadedImage}
+                isProcessing={isGeneratingModules}
               />
 
-              <FormField
-                control={form.control}
-                name="total_modules"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Módulos</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {uploadedImage && !isGeneratingModules && (
+                <Button
+                  type="button"
+                  variant="default"
+                  onClick={handleGenerateModules}
+                  className="w-full gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Gerar checklist com IA
+                </Button>
+              )}
+
+              {isGeneratingModules && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analisando imagem...
+                </div>
+              )}
+
+              {modulesChecklist.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm">
+                    Checklist ({modulesChecklist.filter(m => m.completed).length}/{modulesChecklist.length} concluídos)
+                  </Label>
+                  <CourseModulesChecklist
+                    modules={modulesChecklist}
+                    onToggleModule={handleToggleModule}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Episódios */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="current_episode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ep. Atual</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="total_episodes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Eps.</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="1" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
+            {/* Status, Priority, Date Row */}
             <div className="grid grid-cols-3 gap-3">
               <FormField
                 control={form.control}
@@ -467,6 +421,35 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
 
             <FormField
               control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL do Curso</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Preço */}
+            <FormField
+              control={form.control}
+              name="price"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" min="0" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>
@@ -484,46 +467,79 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
               )}
             />
 
-            {/* Modules Upload Section */}
-            <div className="space-y-3 pt-2 border-t">
-              <Label className="flex items-center gap-2">
-                📸 Módulos do Curso (via IA)
-              </Label>
-              
-              <CourseModulesUploader
-                onImageSelected={setUploadedImage}
-                isProcessing={isGeneratingModules}
-              />
+            {/* Manual Episode/Module Fields (collapsed section) */}
+            {modulesChecklist.length === 0 && (
+              <details className="group">
+                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2">
+                  <span className="group-open:hidden">▸</span>
+                  <span className="hidden group-open:inline">▾</span>
+                  Configuração manual de episódios/módulos
+                </summary>
+                <div className="mt-3 space-y-3 pl-4 border-l-2 border-muted">
+                  {/* Módulos */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="current_module"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Módulo Atual</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-              {uploadedImage && !isGeneratingModules && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGenerateModules}
-                  className="w-full gap-2"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Gerar checklist com IA
-                </Button>
-              )}
+                    <FormField
+                      control={form.control}
+                      name="total_modules"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Módulos</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="1" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-              {isGeneratingModules && (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Analisando imagem...
+                  {/* Episódios */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="current_episode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ep. Atual</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="0" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="total_episodes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Eps.</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="1" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
-              )}
-
-              {modulesChecklist.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Checklist de Módulos</Label>
-                  <CourseModulesChecklist
-                    modules={modulesChecklist}
-                    onToggleModule={handleToggleModule}
-                  />
-                </div>
-              )}
-            </div>
+              </details>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

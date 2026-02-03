@@ -377,17 +377,36 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     }
   };
 
+  // Flag to track if immediate reset was already executed
+  const [alreadyReset, setAlreadyReset] = React.useState(false);
+
   const handleToggleCompleted = async (checked: boolean) => {
+    const isRecurrent = !!task.recurrence_rule;
     const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
     const shouldTrackMetrics = task.track_metrics || task.track_comments;
+    const shouldImmediateReset = checked && isRecurrent && settings.kanban.immediateRecurrentReset;
     
-    // Se está marcando como concluída e tem rastreamento habilitado
+    // CORREÇÃO: Se é recorrente COM reset imediato, fazer reset PRIMEIRO
+    if (shouldImmediateReset) {
+      // Execute immediate reset first
+      await executeToggleCompleted(true);
+      setAlreadyReset(true);
+      
+      // Then open metrics modal if needed (without marking complete again)
+      if (shouldTrackMetrics) {
+        setCompletionModalOpen(true);
+      }
+      return;
+    }
+    
+    // Normal flow: metrics modal first
     if (checked && shouldTrackMetrics) {
       setPendingComplete(true);
       setCompletionModalOpen(true);
       return;
     }
     
+    // Ask about moving to completed column
     if (checked && !isRecurrentColumn && completedColumnId && onMoveToCompleted) {
       setPendingComplete(true);
       setConfirmCompleteOpen(true);
@@ -402,6 +421,13 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     // Salvar log de conclusão
     await addLog(task.id, metricValue, task.metric_type, comment);
     
+    // Se já foi resetada (reset imediato), não fazer mais nada
+    if (alreadyReset) {
+      setAlreadyReset(false);
+      setPendingComplete(false);
+      return;
+    }
+    
     // Verificar se deve mover para coluna de concluídos
     const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
     if (!isRecurrentColumn && completedColumnId && onMoveToCompleted) {
@@ -415,6 +441,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const handleCompletionCancel = () => {
     setCompletionModalOpen(false);
     setPendingComplete(false);
+    setAlreadyReset(false);
   };
 
   const handleConfirmComplete = async (moveToCompleted: boolean) => {
