@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, ListChecks } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Course, CourseFormData } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
+import { useNavigate } from "react-router-dom";
 
 const courseSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),
@@ -79,6 +80,23 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
   const [modulesChecklist, setModulesChecklist] = useState<CourseModule[]>([]);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isGeneratingModules, setIsGeneratingModules] = useState(false);
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const [availableTasks, setAvailableTasks] = useState<Array<{ id: string; title: string }>>([]);
+  
+  const navigate = useNavigate();
+
+  // Fetch tasks for linking
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const { data } = await supabase
+        .from("tasks")
+        .select("id, title")
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      setAvailableTasks(data || []);
+    };
+    if (open) fetchTasks();
+  }, [open]);
 
   // Build category options from database categories (filter empty names)
   const categoryOptions = categories
@@ -134,6 +152,8 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       } else {
         setModulesChecklist([]);
       }
+      // Load linked task
+      setLinkedTaskId((course as any).linked_task_id || null);
     } else {
       form.reset({
         name: "",
@@ -152,6 +172,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         started_at: "",
       });
       setModulesChecklist([]);
+      setLinkedTaskId(null);
     }
     setUploadedImage(null);
   }, [course, form]);
@@ -212,6 +233,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
       notes: values.notes || undefined,
       started_at: values.started_at || undefined,
       modules_checklist: modulesChecklist,
+      linked_task_id: linkedTaskId,
     } as any);
     onOpenChange(false);
   };
@@ -466,6 +488,44 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
                 </FormItem>
               )}
             />
+
+            {/* Tarefa vinculada */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <ListChecks className="h-4 w-4 text-muted-foreground" />
+                Tarefa Vinculada
+              </Label>
+              <Select 
+                value={linkedTaskId || "none"} 
+                onValueChange={(val) => setLinkedTaskId(val === "none" ? null : val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhuma tarefa vinculada" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {availableTasks.map((task) => (
+                    <SelectItem key={task.id} value={task.id}>
+                      📋 {task.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {linkedTaskId && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="text-xs p-0 h-auto"
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/?taskId=${linkedTaskId}`);
+                  }}
+                >
+                  Ver tarefa vinculada →
+                </Button>
+              )}
+            </div>
 
             {/* Manual Episode/Module Fields (collapsed section) */}
             {modulesChecklist.length === 0 && (

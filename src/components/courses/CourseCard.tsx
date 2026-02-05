@@ -13,12 +13,15 @@ import {
   Play,
   Pause,
   CheckCircle2,
-  Clock
+  Clock,
+  GraduationCap,
+  ListChecks
 } from "lucide-react";
 import type { Course } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
 
 interface CourseCardProps {
   course: Course;
@@ -28,6 +31,7 @@ interface CourseCardProps {
   onToggleFavorite: (id: string) => void;
   onIncrementEpisode: (id: string, increment: boolean) => void;
   onIncrementModule?: (id: string, increment: boolean) => void;
+  onIncrementAIModule?: (id: string, increment: boolean) => void;
 }
 
 const statusConfig = {
@@ -64,8 +68,11 @@ export function CourseCard({
   onDelete, 
   onToggleFavorite,
   onIncrementEpisode,
-  onIncrementModule
+  onIncrementModule,
+  onIncrementAIModule
 }: CourseCardProps) {
+  const navigate = useNavigate();
+  
   // Parse AI-generated modules checklist
   const aiModules = Array.isArray((course as any).modules_checklist) 
     ? (course as any).modules_checklist as { id: string; title: string; completed: boolean }[]
@@ -83,18 +90,11 @@ export function CourseCard({
   const totalEpisodes = course.total_episodes || 1;
   const currentEpisode = course.current_episode || 0;
   
-  // Progresso geral: usa AI se disponível, senão fallback para manual
-  const moduleProgress = totalModules > 0 ? (currentModule / totalModules) * 100 : 0;
+  // Progresso de episódios (sempre disponível)
   const episodeProgress = totalEpisodes > 0 ? (currentEpisode / totalEpisodes) * 100 : 0;
-  const manualProgress = totalModules > 1 
-    ? (moduleProgress * 0.7 + episodeProgress * 0.3) 
-    : episodeProgress;
   
-  // Use AI progress if available, otherwise use manual
-  const progress = hasAIModules ? aiProgress : manualProgress;
-  
-  // Find next incomplete AI module for display
-  const nextAIModule = aiModules.find(m => !m.completed);
+  // Linked task badge
+  const linkedTaskId = (course as any).linked_task_id;
   
   const status = statusConfig[course.status] || statusConfig.not_started;
   const priority = priorityConfig[course.priority] || priorityConfig.medium;
@@ -166,91 +166,128 @@ export function CourseCard({
               {course.category}
             </Badge>
           )}
+          {/* Badge de tarefa vinculada */}
+          {linkedTaskId && (
+            <Badge 
+              variant="outline" 
+              className="text-xs cursor-pointer bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/?taskId=${linkedTaskId}`);
+              }}
+              title="Ir para tarefa vinculada"
+            >
+              <ListChecks className="h-3 w-3 mr-1" />
+              Tarefa
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-4 space-y-3">
         {/* AI Modules Progress (when AI checklist exists) */}
-        {hasAIModules ? (
-          <div className="space-y-2">
+        {hasAIModules && (
+          <div className="space-y-2 p-2 rounded-lg bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-primary">
-                📚 {aiCompletedCount}/{aiTotalCount} módulos
-              </span>
-              <span className="font-medium text-xs">{Math.round(progress)}%</span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={aiCompletedCount <= 0}
+                  onClick={() => onIncrementAIModule?.(course.id, false)}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="min-w-[100px] text-center font-medium text-primary">
+                  📚 {aiCompletedCount}/{aiTotalCount} módulos
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={aiCompletedCount >= aiTotalCount}
+                  onClick={() => onIncrementAIModule?.(course.id, true)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+              <span className="font-medium text-xs">{Math.round(aiProgress)}%</span>
             </div>
-            {nextAIModule && (
+            {aiModules.find(m => !m.completed) && (
               <p className="text-xs text-muted-foreground truncate">
-                Próximo: {nextAIModule.title}
+                Próximo: {aiModules.find(m => !m.completed)?.title}
               </p>
             )}
-            <Progress value={progress} className="h-2" />
+            <Progress value={aiProgress} className="h-2" />
           </div>
-        ) : (
-          <>
-            {/* Manual Module Progress (if more than 1 module and no AI) */}
-            {totalModules > 1 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={currentModule <= 0}
-                      onClick={() => onIncrementModule?.(course.id, false)}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="min-w-[90px] text-center font-medium">
-                      Módulo {currentModule}/{totalModules}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      disabled={currentModule >= totalModules}
-                      onClick={() => onIncrementModule?.(course.id, true)}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Manual Episode Progress (fallback) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    disabled={currentEpisode <= 0}
-                    onClick={() => onIncrementEpisode(course.id, false)}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <span className="min-w-[80px] text-center">
-                    Ep. {currentEpisode}/{totalEpisodes}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    disabled={currentEpisode >= totalEpisodes}
-                    onClick={() => onIncrementEpisode(course.id, true)}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-                <span className="font-medium text-xs">{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-          </>
         )}
+
+        {/* Manual Module Progress (if more than 1 module and no AI) */}
+        {!hasAIModules && totalModules > 1 && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={currentModule <= 0}
+                  onClick={() => onIncrementModule?.(course.id, false)}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <span className="min-w-[90px] text-center font-medium">
+                  Módulo {currentModule}/{totalModules}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  disabled={currentModule >= totalModules}
+                  onClick={() => onIncrementModule?.(course.id, true)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Episode Progress (ALWAYS shown - both with AI modules and without) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={currentEpisode <= 0}
+                onClick={() => onIncrementEpisode(course.id, false)}
+              >
+                <Minus className="h-3 w-3" />
+              </Button>
+              <span className="min-w-[80px] text-center">
+                🎬 Ep. {currentEpisode}/{totalEpisodes}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                disabled={currentEpisode >= totalEpisodes}
+                onClick={() => onIncrementEpisode(course.id, true)}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            {!hasAIModules && (
+              <span className="font-medium text-xs">{Math.round(episodeProgress)}%</span>
+            )}
+          </div>
+          {!hasAIModules && (
+            <Progress value={episodeProgress} className="h-2" />
+          )}
+        </div>
 
         {/* Meta-info */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
