@@ -1,309 +1,252 @@
 
-# Plano de Correção: 3 Pontos de Melhoria
+# Plano de Implementação - 4 Funcionalidades
 
-## Resumo dos Problemas Identificados
+## Resumo das Alterações
 
 ---
 
-## 1. Cards de Cursos - Mostrar Módulos IA em vez de Ep. 0/1
+## 1. Atrelar Tarefa a Curso e Vice-Versa
 
-### Problema
-Quando um curso tem `modules_checklist` gerado por IA, o card ainda mostra "Ep. 0/1" em vez de mostrar o progresso dos módulos gerados.
+**Impacto:** Alto | **Complexidade:** 7/10
 
 ### Análise Técnica
-**Arquivo:** `src/components/courses/CourseCard.tsx`
 
-O card atual usa apenas `current_episode/total_episodes` e `current_module/total_modules` (campos numéricos). Quando há `modules_checklist` (array de módulos com `completed: true/false`), o sistema deveria:
-1. Calcular o progresso baseado em `modules_checklist.filter(m => m.completed).length`
-2. Mostrar "Módulo X de Y" baseado nos módulos da IA
+**Tabelas Atuais:**
+- `tasks`: Não possui campo para vincular a curso
+- `courses`: Não possui campo para vincular a tarefa
 
-### Solução Proposta
-Modificar o `CourseCard.tsx` para:
-- Verificar se `modules_checklist` existe e tem itens
-- Se sim, usar o progresso baseado nos módulos da IA
-- Mostrar nome do módulo atual ou próximo a concluir
-- Manter compatibilidade com cursos sem checklist de IA
+### Alterações no Banco de Dados
+
+```sql
+-- Adicionar campo na tabela tasks
+ALTER TABLE tasks 
+ADD COLUMN linked_course_id uuid REFERENCES courses(id) ON DELETE SET NULL;
+
+-- Adicionar campo na tabela courses
+ALTER TABLE courses 
+ADD COLUMN linked_task_id uuid REFERENCES tasks(id) ON DELETE SET NULL;
+```
+
+### Arquivos a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/TaskModal.tsx` | Adicionar seletor de curso vinculado |
+| `src/components/courses/CourseModal.tsx` | Adicionar seletor de tarefa vinculada |
+| `src/hooks/tasks/useTasks.ts` | Adicionar `linked_course_id` ao tipo Task e queries |
+| `src/hooks/useCourses.ts` | Adicionar `linked_task_id` ao tipo Course e queries |
+| `src/types/index.ts` | Atualizar interfaces |
+| `src/components/task-card/TaskCardBadges.tsx` | Mostrar badge de curso vinculado |
+| `src/components/courses/CourseCard.tsx` | Mostrar badge de tarefa vinculada |
+
+### Fluxo de Uso
+
+1. **No TaskModal**: Adicionar campo "Curso vinculado" com select dos cursos disponíveis
+2. **No CourseModal**: Adicionar campo "Tarefa vinculada" com select de tarefas disponíveis
+3. **Nos Cards**: Mostrar ícone/badge indicando vínculo com navegação rápida
 
 ---
 
-## 2. Reformular Modal dos Cursos - Priorizar Módulos IA
+## 2. Novo Filtro de Data "Amanhã"
 
-### Problema
-O modal atual tem muitos campos e o upload de módulos por IA está no final. Deveria ser mais destacado.
+**Impacto:** Baixo | **Complexidade:** 2/10
 
 ### Análise Técnica
-**Arquivo:** `src/components/courses/CourseModal.tsx`
 
-O modal atual tem a seguinte ordem:
-1. Nome do Curso
-2. Autor/Instrutor
-3. Plataforma/Categoria
-4. URL
-5. Preço
-6. Módulo Atual/Total Módulos (manual)
-7. Ep. Atual/Total Eps (manual)
-8. Status/Prioridade/Data
-9. Anotações
-10. **Upload IA (no final)**
+O filtro "tomorrow" já existe implementado em `src/lib/taskFilters.ts` (linhas 144-148):
+```typescript
+case "tomorrow": {
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return taskDueDate !== null && taskDueDate.toDateString() === tomorrow.toDateString();
+}
+```
 
-### Solução Proposta
-Reorganizar para:
-1. Nome do Curso
-2. Autor/Instrutor  
-3. Plataforma/Categoria
-4. **📸 Módulos do Curso (via IA) - DESTAQUE**
-   - Seção expandida com upload de imagem
-   - Checklist interativo
-5. Status/Prioridade/Data (linha compacta)
-6. URL
-7. Preço
-8. Anotações
-9. **Campos numéricos manuais (collapsed por padrão)**
-   - Módulo Atual/Total (só se não usar IA)
-   - Ep. Atual/Total (só se não usar IA)
+### Arquivo a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/kanban/KanbanFiltersBar.tsx` | Adicionar opção "Amanhã" no array `dueDateOptions` |
+
+### Alteração Específica
+
+```typescript
+// Linha 63-70 - Adicionar "tomorrow" após "today"
+const dueDateOptions = [
+  { value: "no_date", label: "Sem data", icon: "📭" },
+  { value: "overdue", label: "Atrasadas", icon: "🔴" },
+  { value: "today", label: "Hoje", icon: "📅" },
+  { value: "tomorrow", label: "Amanhã", icon: "🌅" },  // ← ADICIONAR
+  { value: "next_7_days", label: "Próximos 7 dias", icon: "📆" },
+  { value: "week", label: "Esta semana", icon: "📆" },
+  { value: "month", label: "Este mês", icon: "🗓️" },
+];
+```
 
 ---
 
-## 3. Erros na Função de Riscar Tarefas Recorrentes
+## 3. Avançar/Retroceder Módulos IA no Card Externo
 
-### Problema Principal
-As 3 tarefas do projeto MDAccula ficaram riscadas e não resetaram, mesmo com `immediateRecurrentReset: true`.
+**Impacto:** Médio | **Complexidade:** 5/10
 
-### Análise do Banco de Dados
-```
-MDAccula - Disparos + Eventos: is_completed=true, recurrence: daily/1
-MDAccula - Emails Semana: is_completed=true, recurrence: daily/2  
-Revisar Campanhas Meta ADS: is_completed=true, recurrence: weekdays=[2]
-```
+### Análise Técnica
 
-### **ERRO 1: Modal de Métricas Interrompe o Fluxo**
+Atualmente, quando um curso tem `modules_checklist` (gerado por IA), o card mostra apenas texto estático:
+- "📚 X/Y módulos" 
+- "Próximo: [título do módulo]"
 
-**Arquivo:** `src/components/TaskCard.tsx` - Linha 380-397
+Não há botões +/- para avançar/retroceder como nos módulos/episódios manuais.
 
-```typescript
-const handleToggleCompleted = async (checked: boolean) => {
-  const shouldTrackMetrics = task.track_metrics || task.track_comments;
-  
-  // Se está marcando como concluída e tem rastreamento habilitado
-  if (checked && shouldTrackMetrics) {
-    setPendingComplete(true);
-    setCompletionModalOpen(true);
-    return; // <-- PROBLEMA: Retorna ANTES de verificar reset imediato!
-  }
-  // ...
-}
-```
+### Arquivos a Modificar
 
-Quando `track_metrics` ou `track_comments` está habilitado, o código abre o modal de métricas e **NÃO** chama `executeToggleCompleted`. Depois, em `handleCompletionConfirm`:
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/useCourses.ts` | Adicionar função `incrementAIModule(id, increment)` |
+| `src/components/courses/CourseCard.tsx` | Adicionar botões +/- para módulos IA |
+| `src/pages/Courses.tsx` | Passar nova função para o CourseCard |
+
+### Nova Função em useCourses.ts
 
 ```typescript
-const handleCompletionConfirm = async () => {
-  // ...
-  if (!isRecurrentColumn && completedColumnId && onMoveToCompleted) {
-    setConfirmCompleteOpen(true); // Abre OUTRO modal
-  } else {
-    await executeToggleCompleted(true); // Só aqui chama!
-  }
-}
-```
-
-Se a tarefa não está na coluna "Recorrente" MAS tem `completedColumnId`, abre mais um modal e pode não executar o reset.
-
-### **ERRO 2: Condição de Coluna Recorrente Incorreta**
-
-**Arquivo:** `src/components/TaskCard.tsx` - Linha 406-412
-
-```typescript
-const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
-if (!isRecurrentColumn && completedColumnId && onMoveToCompleted) {
-  setConfirmCompleteOpen(true);
-} else {
-  await executeToggleCompleted(true);
-}
-```
-
-A lógica depende de `columnName === "recorrente"`, mas:
-1. As tarefas MDAccula estão na coluna "Recorrente" (maiúsculo) 
-2. A comparação usa `.toLowerCase()` então isso deveria funcionar
-3. **MAS** o `completedColumnId` pode estar vindo como `undefined` em alguns casos
-
-### **ERRO 3: handleConfirmComplete NÃO Respeita immediateRecurrentReset**
-
-**Arquivo:** `src/components/TaskCard.tsx` - Linha 420-424
-
-```typescript
-const handleConfirmComplete = async (moveToCompleted: boolean) => {
-  setConfirmCompleteOpen(false);
-  await executeToggleCompleted(true, moveToCompleted); // Passa true sempre
-}
-```
-
-Quando o usuário confirma no modal "Mover para Concluído", o código chama `executeToggleCompleted(true)`. Isso deveria funcionar, MAS...
-
-O problema está em `executeToggleCompleted`:
-```typescript
-if (checked && isRecurrent && settings.kanban.immediateRecurrentReset) {
-  // Reset imediato - is_completed = false
-}
-```
-
-O fluxo deveria ser:
-1. Usuário marca checkbox ✓
-2. Modal de métricas abre (se habilitado)
-3. Usuário preenche métricas
-4. `executeToggleCompleted(true)` é chamado
-5. **Deveria** resetar se `immediateRecurrentReset === true`
-
-**O problema real**: Os modais intermediários estão quebrando a cadeia de execução. Em certos caminhos do código, a tarefa é marcada como `is_completed = true` no banco ANTES de `executeToggleCompleted` ser chamado.
-
-### **ERRO 4 (Raiz): Atualização Direta do Banco no Modal de Métricas**
-
-Ao investigar mais profundamente, o `addLog` pode estar atualizando o banco de dados com `is_completed = true` antes de `executeToggleCompleted` ter chance de fazer o reset:
-
-**Arquivo:** `src/hooks/useTaskCompletionLogs.ts` - Função `addLog`
-
-Se esse hook atualiza `is_completed` para `true` no banco como efeito colateral, o Realtime subscription atualiza o estado local, e quando `executeToggleCompleted` roda, o estado já está dessincronizado.
-
----
-
-## Solução Proposta para os 3 Erros
-
-### Correção 1: Unificar Lógica de Reset Antes dos Modais
-
-Modificar `handleToggleCompleted` para verificar `immediateRecurrentReset` PRIMEIRO:
-
-```typescript
-const handleToggleCompleted = async (checked: boolean) => {
-  const isRecurrent = !!task.recurrence_rule;
-  const shouldTrackMetrics = task.track_metrics || task.track_comments;
-  
-  // CORREÇÃO: Se é recorrente e reset imediato está habilitado, fazer reset ANTES de qualquer modal
-  if (checked && isRecurrent && settings.kanban.immediateRecurrentReset) {
-    // Se precisa registrar métricas, abrir modal MAS passar flag de "já resetou"
-    if (shouldTrackMetrics) {
-      // Primeiro: fazer o reset
-      await executeImmediateReset();
-      // Depois: abrir modal de métricas (sem marcar is_completed novamente)
-      setCompletionModalOpen(true);
-    } else {
-      await executeImmediateReset();
-    }
-    return;
-  }
-  
-  // Fluxo normal para tarefas não-recorrentes ou sem reset imediato
-  if (checked && shouldTrackMetrics) {
-    setPendingComplete(true);
-    setCompletionModalOpen(true);
-    return;
-  }
-  
-  // ...resto do código
-};
-```
-
-### Correção 2: Criar Função Dedicada para Reset Imediato
-
-```typescript
-const executeImmediateReset = async () => {
-  triggerConfetti();
-  
-  const nextDueDate = calculateNextRecurrenceDate(
-    task.due_date, 
-    task.recurrence_rule as RecurrenceRule
-  );
-  
-  const { error } = await supabase
-    .from("tasks")
-    .update({ 
-      is_completed: false,
-      due_date: nextDueDate 
-    })
-    .eq("id", task.id);
+const incrementAIModule = useCallback(
+  async (id: string, increment: boolean = true): Promise<boolean> => {
+    const course = courses.find((c) => c.id === id);
+    if (!course) return false;
     
-  if (error) {
-    toast.error("Erro ao resetar tarefa");
-    return;
-  }
-  
-  if (onAddPoints) onAddPoints();
-  
-  toast.success("✓ Tarefa concluída e resetada", {
-    description: `Próxima: ${formatDateTimeBR(new Date(nextDueDate))}`
-  });
-  
-  // Sync mirrors
-  if (task.mirror_task_id) {
-    await supabase
-      .from("tasks")
-      .update({ is_completed: false, due_date: nextDueDate })
-      .eq("id", task.mirror_task_id);
-  }
-  
-  window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
-};
+    const aiModules = (course as any).modules_checklist as CourseModule[];
+    if (!aiModules || aiModules.length === 0) return false;
+    
+    // Encontrar o próximo módulo não concluído (para incrementar)
+    // Ou o último concluído (para decrementar)
+    let updatedModules = [...aiModules];
+    
+    if (increment) {
+      // Marcar o próximo não concluído como concluído
+      const nextIndex = updatedModules.findIndex(m => !m.completed);
+      if (nextIndex !== -1) {
+        updatedModules[nextIndex].completed = true;
+      }
+    } else {
+      // Desmarcar o último concluído
+      const lastCompletedIndex = [...updatedModules]
+        .reverse()
+        .findIndex(m => m.completed);
+      if (lastCompletedIndex !== -1) {
+        const actualIndex = updatedModules.length - 1 - lastCompletedIndex;
+        updatedModules[actualIndex].completed = false;
+      }
+    }
+    
+    return updateCourse(id, { modules_checklist: updatedModules });
+  },
+  [courses, updateCourse]
+);
 ```
 
-### Correção 3: Modificar handleCompletionConfirm
+### UI no CourseCard
 
-```typescript
-const handleCompletionConfirm = async (metricValue: number | null, comment: string | null) => {
-  setCompletionModalOpen(false);
-  
-  // Salvar log de conclusão
-  await addLog(task.id, metricValue, task.metric_type, comment);
-  
-  // Se já foi resetada (reset imediato), não fazer mais nada
-  if (task.recurrence_rule && settings.kanban.immediateRecurrentReset) {
-    setPendingComplete(false);
-    return;
-  }
-  
-  // Verificar se deve mover para coluna de concluídos
-  const isRecurrentColumn = columnName?.toLowerCase() === "recorrente";
-  if (!isRecurrentColumn && completedColumnId && onMoveToCompleted) {
-    setConfirmCompleteOpen(true);
-  } else {
-    await executeToggleCompleted(true);
-    setPendingComplete(false);
-  }
-};
+```text
+┌──────────────────────────────────────────┐
+│ 📚 Módulos do Curso                      │
+│  [-]  2/5 módulos concluídos  [+]        │
+│  Próximo: 3. Google Analytics 4          │
+│  ▓▓▓▓▓▓░░░░░░░░ 40%                      │
+└──────────────────────────────────────────┘
 ```
 
 ---
 
-## Resumo de Arquivos a Modificar
+## 4. Adicionar Controle de Capítulos/Episódios Externos nos Cards com IA
 
-| # | Problema | Arquivo | Risco | Complexidade |
-|---|----------|---------|-------|--------------|
-| 1 | Cards com módulos IA | `src/components/courses/CourseCard.tsx` | Baixo | 4/10 |
-| 2 | Modal cursos reorganizado | `src/components/courses/CourseModal.tsx` | Médio | 5/10 |
-| 3 | Reset recorrentes | `src/components/TaskCard.tsx` | Médio | 6/10 |
+**Impacto:** Médio | **Complexidade:** 4/10
 
-**Pontuação Total de Risco: 15/25** - Dentro do limite seguro.
+### Análise Técnica
+
+Atualmente, quando um curso tem módulos de IA, o card **esconde** os controles de episódios manuais. O usuário solicitou que os episódios também apareçam externamente.
+
+### Arquivo a Modificar
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/courses/CourseCard.tsx` | Mostrar controles de episódios mesmo quando há módulos IA |
+
+### Layout Proposto
+
+```text
+┌──────────────────────────────────────────┐
+│ 📚 Curso de Dados, Traqueamento...       │
+│  ⭐                                       │
+│  [Concluído] [Média] [Traqueamento]      │
+├──────────────────────────────────────────┤
+│ 📚 Módulos IA:                           │
+│  [-]  1/3 módulos  [+]   33%             │
+│  Próximo: 2. Google Analytics 4          │
+├──────────────────────────────────────────┤
+│ 🎬 Capítulos:                            │
+│  [-]  Ep. 0/1  [+]                       │
+│  ▓░░░░░░░░░░░░░░ 0%                      │
+├──────────────────────────────────────────┤
+│ R$ 0.00             Início: 31/01/26     │
+│ [Abrir] [✎] [🗑]                         │
+└──────────────────────────────────────────┘
+```
+
+### Alterações no CourseCard.tsx
+
+Modificar a seção que renderiza o progresso:
+- Quando `hasAIModules === true`: mostrar AMBOS os controles (módulos IA + episódios)
+- Módulos IA com botões +/- que chamam `onIncrementAIModule`
+- Episódios manuais com botões +/- que chamam `onIncrementEpisode`
+
+---
+
+## Resumo de Alterações
+
+| # | Feature | Arquivos Novos | Arquivos Modificados | Complexidade |
+|---|---------|----------------|----------------------|--------------|
+| 1 | Tarefa ↔ Curso | migração SQL | 7 | 7/10 |
+| 2 | Filtro "Amanhã" | 0 | 1 | 2/10 |
+| 3 | +/- Módulos IA | 0 | 3 | 5/10 |
+| 4 | Episódios externos | 0 | 1 | 4/10 |
+
+**Pontuação Total de Risco: 18/25** - Dentro do limite seguro.
+
+---
+
+## Ordem de Implementação
+
+1. ✅ Filtro "Amanhã" (mais simples)
+2. ✅ Controles +/- para módulos IA no CourseCard
+3. ✅ Controles de episódios externos nos cards com IA
+4. ✅ Migração e vínculo Tarefa ↔ Curso (mais complexo)
 
 ---
 
 ## Checklist de Testes Manuais
 
-### Cards de Cursos:
-- [ ] Criar curso com módulos gerados por IA
-- [ ] Verificar que o card mostra "Módulo X/Y" baseado no checklist IA
-- [ ] Verificar que o progresso reflete módulos concluídos
-- [ ] Testar curso sem checklist IA (deve mostrar Ep. X/Y normal)
+### Filtro Amanhã:
+- [ ] Acessar página Kanban/Projetos
+- [ ] Abrir filtro de Vencimento
+- [ ] Verificar que opção "Amanhã" aparece
+- [ ] Selecionar "Amanhã" e verificar que apenas tarefas com vencimento para amanhã aparecem
 
-### Modal Reorganizado:
-- [ ] Abrir modal de novo curso
-- [ ] Verificar que seção de IA está em destaque
-- [ ] Testar upload de imagem e geração de checklist
-- [ ] Verificar que campos manuais estão em seção secundária
+### Módulos IA com +/-:
+- [ ] Abrir card de curso COM módulos gerados por IA
+- [ ] Clicar em [+] e verificar que próximo módulo é marcado como concluído
+- [ ] Clicar em [-] e verificar que último módulo concluído é desmarcado
+- [ ] Verificar que a barra de progresso atualiza corretamente
 
-### Reset de Recorrentes:
-- [ ] Habilitar `immediateRecurrentReset` nas configurações
-- [ ] Criar tarefa recorrente COM rastreamento de métricas
-- [ ] Marcar como concluída
-- [ ] Verificar que o modal de métricas abre
-- [ ] Preencher métricas e confirmar
-- [ ] **Verificar que a tarefa foi RESETADA (não ficou riscada)**
-- [ ] Verificar que a nova data foi calculada corretamente
+### Episódios externos em cards com IA:
+- [ ] Abrir card de curso COM módulos IA
+- [ ] Verificar que TAMBÉM aparecem os controles de episódios (Ep. X/Y)
+- [ ] Testar incrementar/decrementar episódios
+- [ ] Verificar que ambos os progressos (módulos e episódios) são exibidos
 
+### Vínculo Tarefa ↔ Curso:
+- [ ] Criar nova tarefa
+- [ ] No modal, selecionar um curso no campo "Curso vinculado"
+- [ ] Salvar e verificar badge no card da tarefa
+- [ ] Clicar no badge e verificar navegação para o curso
+- [ ] Editar curso e selecionar uma tarefa no campo "Tarefa vinculada"
+- [ ] Salvar e verificar badge no card do curso
+- [ ] Clicar no badge e verificar navegação para a tarefa
