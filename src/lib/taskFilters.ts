@@ -123,58 +123,53 @@ export function filterByTag<T extends TaskLike>(
 
 /**
  * Verifica se uma tarefa corresponde a um filtro de data específico
+ * Usa date-fns para comparações precisas de data
  */
 function matchesDueDateFilter<T extends TaskLike>(
   task: T,
   filter: string,
   today: Date
 ): boolean {
-  const taskDueDate = task.due_date ? parseISO(task.due_date) : null;
+  if (!task.due_date) {
+    return filter === "no_date";
+  }
+
+  // Parse da data com tratamento de timezone
+  const taskDueDate = parseISO(task.due_date);
 
   switch (filter) {
     case "no_date":
-      return taskDueDate === null;
+      return false; // Já tratado acima
 
     case "overdue":
-      return taskDueDate !== null && isBefore(taskDueDate, today) && !task.is_completed;
+      // Atrasada = antes de hoje E não é hoje E não está concluída
+      return isBefore(startOfDay(taskDueDate), today) && !task.is_completed;
 
     case "today":
-      return taskDueDate !== null && taskDueDate.toDateString() === today.toDateString();
+      return isToday(taskDueDate);
 
-    case "tomorrow": {
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return taskDueDate !== null && taskDueDate.toDateString() === tomorrow.toDateString();
-    }
+    case "tomorrow":
+      return isTomorrow(taskDueDate);
 
     case "next_7_days": {
       const next7Days = addDays(today, 7);
-      return (
-        taskDueDate !== null &&
-        !isBefore(taskDueDate, today) &&
-        !isAfter(taskDueDate, next7Days)
-      );
+      const taskDay = startOfDay(taskDueDate);
+      return !isBefore(taskDay, today) && !isAfter(taskDay, next7Days);
     }
 
     case "week":
     case "this_week": {
       const weekStart = startOfWeek(today, { weekStartsOn: 0 });
       const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-      return (
-        taskDueDate !== null &&
-        !isBefore(taskDueDate, weekStart) &&
-        !isAfter(taskDueDate, weekEnd)
-      );
+      const taskDay = startOfDay(taskDueDate);
+      return !isBefore(taskDay, weekStart) && !isAfter(taskDay, weekEnd);
     }
 
     case "month": {
       const monthStart = startOfMonth(today);
       const monthEnd = endOfMonth(today);
-      return (
-        taskDueDate !== null &&
-        !isBefore(taskDueDate, monthStart) &&
-        !isAfter(taskDueDate, monthEnd)
-      );
+      const taskDay = startOfDay(taskDueDate);
+      return !isBefore(taskDay, monthStart) && !isAfter(taskDay, monthEnd);
     }
 
     default:
