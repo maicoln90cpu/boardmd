@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, Clock, FileText, X, BarChart3 } from "lucide-react";
+import { CalendarIcon, Clock, FileText, X, BarChart3, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -26,6 +26,7 @@ import { RecurrenceRule } from "@/lib/recurrenceUtils";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { METRIC_TYPES } from "@/hooks/useTaskCompletionLogs";
+import { useCourses } from "@/hooks/useCourses";
 
 interface TaskModalProps {
   open: boolean;
@@ -50,6 +51,7 @@ export function TaskModal({
 }: TaskModalProps) {
   const { categories } = useCategories();
   const { columns: allColumns } = useColumns();
+  const { courses } = useCourses();
   const navigate = useNavigate();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
@@ -67,6 +69,7 @@ export function TaskModal({
   const [trackMetrics, setTrackMetrics] = useState(false);
   const [metricType, setMetricType] = useState<string | null>(null);
   const [trackComments, setTrackComments] = useState(false);
+  const [linkedCourseId, setLinkedCourseId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,6 +84,7 @@ export function TaskModal({
       setTrackMetrics(task.track_metrics || false);
       setMetricType(task.metric_type || null);
       setTrackComments(task.track_comments || false);
+      setLinkedCourseId((task as any).linked_course_id || null);
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -115,6 +119,7 @@ export function TaskModal({
       setTrackMetrics(false);
       setMetricType(null);
       setTrackComments(false);
+      setLinkedCourseId(null);
       
       // Se foi passada uma data padrão (ex: clicou em um dia do calendário)
       if (defaultDueDate) {
@@ -165,7 +170,7 @@ export function TaskModal({
     // A identificação de recorrência é feita pelo campo recurrence_rule, não por tags
     const finalTags = tags.filter(t => t !== "espelho-diário");
     
-    const taskData: Partial<Task> = {
+    const taskData: Partial<Task> & { linked_course_id?: string | null } = {
       title,
       description: description || null,
       priority,
@@ -179,6 +184,7 @@ export function TaskModal({
       track_comments: trackComments,
       subtasks,
       recurrence_rule: recurrence,
+      linked_course_id: linkedCourseId,
     };
 
     // Notificar se adicionou recorrência
@@ -449,6 +455,43 @@ export function TaskModal({
                   </p>
                 )}
               </div>
+            </div>
+            
+            {/* Curso vinculado */}
+            <div className="space-y-2 pt-3 border-t">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                <Label className="font-medium">Curso Vinculado</Label>
+              </div>
+              <Select 
+                value={linkedCourseId || "none"} 
+                onValueChange={(val) => setLinkedCourseId(val === "none" ? null : val)}
+              >
+                <SelectTrigger className={isMobile ? 'min-h-[48px]' : ''}>
+                  <SelectValue placeholder="Nenhum curso vinculado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {courses.map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      📚 {course.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {linkedCourseId && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-xs p-0 h-auto"
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/courses`);
+                  }}
+                >
+                  Ver curso vinculado →
+                </Button>
+              )}
             </div>
             
             {/* Notas vinculadas (apenas para tarefas existentes) */}

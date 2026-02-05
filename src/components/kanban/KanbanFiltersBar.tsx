@@ -64,6 +64,7 @@ const dueDateOptions = [
   { value: "no_date", label: "Sem data", icon: "📭" },
   { value: "overdue", label: "Atrasadas", icon: "🔴" },
   { value: "today", label: "Hoje", icon: "📅" },
+  { value: "tomorrow", label: "Amanhã", icon: "🌅" },
   { value: "next_7_days", label: "Próximos 7 dias", icon: "📆" },
   { value: "week", label: "Esta semana", icon: "📆" },
   { value: "month", label: "Este mês", icon: "🗓️" },

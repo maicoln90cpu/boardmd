@@ -62,7 +62,8 @@ export default function Courses() {
     deleteCourse,
     toggleFavorite,
     incrementEpisode,
-    incrementModule
+    incrementModule,
+    incrementAIModule
   } = useCourses();
 
   const { categories: dbCategories, isLoading: categoriesLoading } = useCourseCategories();
@@ -225,6 +226,10 @@ export default function Courses() {
     incrementModule(id, increment);
   }, [incrementModule]);
 
+  const handleIncrementAIModule = useCallback((id: string, increment: boolean) => {
+    incrementAIModule(id, increment);
+  }, [incrementAIModule]);
+
   if (isLoading || categoriesLoading) {
     return (
       <div className="flex h-screen">
@@ -354,6 +359,7 @@ export default function Courses() {
                       onToggleFavorite={toggleFavorite}
                       onIncrementEpisode={handleIncrementEpisode}
                       onIncrementModule={handleIncrementModule}
+                      onIncrementAIModule={handleIncrementAIModule}
                     />
                   ))}
                 </div>

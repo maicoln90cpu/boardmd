@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, AlertCircle, FileText, Repeat } from "lucide-react";
+import { Calendar, Clock, AlertCircle, FileText, Repeat, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
 import { useNavigate } from "react-router-dom";
@@ -66,6 +66,8 @@ interface TaskCardBadgesProps {
   hasRecurrence: boolean;
   hasLinkedNote?: boolean;
   linkedNoteId?: string | null;
+  hasLinkedCourse?: boolean;
+  linkedCourseId?: string | null;
   densityMode: "comfortable" | "compact" | "ultra-compact";
   urgency: "overdue" | "urgent" | "warning" | "normal";
 }
@@ -82,6 +84,8 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
   hasRecurrence,
   hasLinkedNote = false,
   linkedNoteId,
+  hasLinkedCourse = false,
+  linkedCourseId,
   densityMode,
   urgency,
 }) => {
@@ -254,6 +258,31 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
             densityMode === "comfortable" && "h-3 w-3",
           )} />
           Nota
+        </Badge>
+      )}
+
+      {/* Linked course badge */}
+      {!hideBadges && hasLinkedCourse && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "flex items-center gap-1 bg-purple-500/10 text-purple-600 border-purple-500/20 cursor-pointer hover:bg-purple-500/20 transition-colors",
+            densityMode === "compact" && "text-[10px] px-1.5 py-0",
+            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+          )}
+          title="Clique para ver curso vinculado"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (linkedCourseId) {
+              navigate(`/courses`);
+            }
+          }}
+        >
+          <GraduationCap className={cn(
+            densityMode === "compact" && "h-2.5 w-2.5",
+            densityMode === "comfortable" && "h-3 w-3",
+          )} />
+          Curso
         </Badge>
       )}
     </div>

@@ -275,7 +275,7 @@ export function useCourses() {
     [courses, updateProgress]
   );
 
-  // Incrementar/Decrementar módulo
+  // Incrementar/Decrementar módulo manual
   const incrementModule = useCallback(
     async (id: string, increment: boolean = true): Promise<boolean> => {
       const course = courses.find((c) => c.id === id);
@@ -297,6 +297,57 @@ export function useCourses() {
         updates.status = "in_progress";
       }
       if (newModule >= totalModules && course.current_episode >= course.total_episodes) {
+        updates.status = "completed";
+      }
+
+      return updateCourse(id, updates);
+    },
+    [courses, updateCourse]
+  );
+
+  // Incrementar/Decrementar módulos gerados por IA
+  const incrementAIModule = useCallback(
+    async (id: string, increment: boolean = true): Promise<boolean> => {
+      const course = courses.find((c) => c.id === id);
+      if (!course) return false;
+
+      const aiModules = (course as any).modules_checklist as Array<{ id: string; title: string; completed: boolean }>;
+      if (!aiModules || aiModules.length === 0) return false;
+
+      const updatedModules = [...aiModules];
+
+      if (increment) {
+        // Marcar o próximo não concluído como concluído
+        const nextIndex = updatedModules.findIndex(m => !m.completed);
+        if (nextIndex !== -1) {
+          updatedModules[nextIndex].completed = true;
+        } else {
+          return false; // Todos já estão concluídos
+        }
+      } else {
+        // Desmarcar o último concluído
+        const completedIndices = updatedModules
+          .map((m, i) => m.completed ? i : -1)
+          .filter(i => i !== -1);
+        
+        if (completedIndices.length > 0) {
+          const lastCompletedIndex = completedIndices[completedIndices.length - 1];
+          updatedModules[lastCompletedIndex].completed = false;
+        } else {
+          return false; // Nenhum está concluído
+        }
+      }
+
+      // Auto-atualizar status
+      const completedCount = updatedModules.filter(m => m.completed).length;
+      const updates: Partial<CourseFormData> & { modules_checklist?: any[] } = {
+        modules_checklist: updatedModules,
+      };
+
+      if (completedCount > 0 && course.status === "not_started") {
+        updates.status = "in_progress";
+      }
+      if (completedCount === updatedModules.length) {
         updates.status = "completed";
       }
 
@@ -387,6 +438,7 @@ export function useCourses() {
     updateProgress,
     incrementEpisode,
     incrementModule,
+    incrementAIModule,
     refetch: fetchCourses,
   };
 }

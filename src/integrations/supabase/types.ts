@@ -206,6 +206,7 @@ export type Database = {
           current_module: number | null
           id: string
           is_favorite: boolean | null
+          linked_task_id: string | null
           modules_checklist: Json | null
           name: string
           notes: string | null
@@ -229,6 +230,7 @@ export type Database = {
           current_module?: number | null
           id?: string
           is_favorite?: boolean | null
+          linked_task_id?: string | null
           modules_checklist?: Json | null
           name: string
           notes?: string | null
@@ -252,6 +254,7 @@ export type Database = {
           current_module?: number | null
           id?: string
           is_favorite?: boolean | null
+          linked_task_id?: string | null
           modules_checklist?: Json | null
           name?: string
           notes?: string | null
@@ -266,7 +269,15 @@ export type Database = {
           url?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       goals: {
         Row: {
@@ -717,6 +728,7 @@ export type Database = {
           id: string
           is_completed: boolean | null
           is_favorite: boolean
+          linked_course_id: string | null
           linked_note_id: string | null
           metric_type: string | null
           mirror_task_id: string | null
@@ -740,6 +752,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           is_favorite?: boolean
+          linked_course_id?: string | null
           linked_note_id?: string | null
           metric_type?: string | null
           mirror_task_id?: string | null
@@ -763,6 +776,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           is_favorite?: boolean
+          linked_course_id?: string | null
           linked_note_id?: string | null
           metric_type?: string | null
           mirror_task_id?: string | null
@@ -790,6 +804,13 @@ export type Database = {
             columns: ["column_id"]
             isOneToOne: false
             referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_linked_course_id_fkey"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
             referencedColumns: ["id"]
           },
           {
