@@ -26,6 +26,8 @@
  * 2. Weekday-based: dia específico da semana (ex: toda segunda-feira)
  */
 
+import { getTimezone } from '@/lib/dateUtils';
+
 export interface RecurrenceRule {
   frequency?: 'daily' | 'weekly' | 'monthly';
   interval?: number;
@@ -34,13 +36,47 @@ export interface RecurrenceRule {
 }
 
 /**
- * Cria uma data ISO string preservando o horário original
+ * Obtém a data/hora atual no timezone configurado do usuário.
+ * Isso evita o bug onde às 21h de quinta no Brasil (UTC-3),
+ * new Date().getDay() retorna 5 (sexta em UTC).
+ */
+function getNowInTimezone(): Date {
+  const now = new Date();
+  const tz = getTimezone();
+  
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
+  
+  return new Date(
+    parseInt(getValue('year')),
+    parseInt(getValue('month')) - 1,
+    parseInt(getValue('day')),
+    parseInt(getValue('hour')),
+    parseInt(getValue('minute')),
+    parseInt(getValue('second'))
+  );
+}
+
+/**
+ * Cria uma data ISO string preservando o horário original.
+ * Usa coordenadas locais (não UTC) pois getNowInTimezone já retorna local.
  */
 function createDateWithTime(date: Date, hours: number, minutes: number, seconds: number): string {
   return new Date(Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
     hours,
     minutes,
     seconds
@@ -49,22 +85,13 @@ function createDateWithTime(date: Date, hours: number, minutes: number, seconds:
 
 /**
  * Calcula a próxima data de recorrência baseada na regra configurada.
- * 
- * IMPORTANTE: O cálculo é feito a partir de HOJE (data que a tarefa foi marcada
- * como concluída), NÃO da data original da tarefa. Isso garante que:
- * - Tarefas atrasadas não acumulem dias perdidos
- * - Daily com interval=1 marcada hoje aparece AMANHÃ
- * - Weekly marcada hoje aparece daqui 7 dias
- * 
- * @param currentDueDate - Data atual da tarefa (ISO string) - usado apenas para extrair horário
- * @param recurrenceRule - Regra de recorrência (frequência ou dia da semana)
- * @returns Nova data ISO string calculada a partir de HOJE + interval
+ * Usa o timezone do usuário para evitar bugs com UTC.
  */
 export function calculateNextRecurrenceDate(
   currentDueDate: string | null,
   recurrenceRule: RecurrenceRule | null
 ): string {
-  const now = new Date();
+  const now = getNowInTimezone();
   
   // Se não tem due_date, retornar data atual
   if (!currentDueDate) {
