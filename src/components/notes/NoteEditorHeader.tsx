@@ -3,11 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown } from "lucide-react";
+import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap } from "lucide-react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Task } from "@/hooks/tasks/useTasks";
 import { ColorPicker } from "./ColorPicker";
+import { useNavigate } from "react-router-dom";
+
+interface Course {
+  id: string;
+  name: string;
+}
 
 interface NoteEditorHeaderProps {
   note: Note;
@@ -27,6 +33,13 @@ interface NoteEditorHeaderProps {
   tasks: Task[];
   taskSearchOpen: boolean;
   onTaskSearchOpenChange: (open: boolean) => void;
+  
+  // Course linking
+  linkedCourseId: string | null;
+  onLinkedCourseChange: (courseId: string | null) => void;
+  courses: Course[];
+  courseSearchOpen: boolean;
+  onCourseSearchOpenChange: (open: boolean) => void;
 }
 
 export function NoteEditorHeader({
@@ -45,7 +58,13 @@ export function NoteEditorHeader({
   tasks,
   taskSearchOpen,
   onTaskSearchOpenChange,
+  linkedCourseId,
+  onLinkedCourseChange,
+  courses,
+  courseSearchOpen,
+  onCourseSearchOpenChange,
 }: NoteEditorHeaderProps) {
+  const navigate = useNavigate();
   return (
     <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
       {/* Title and actions */}
@@ -167,6 +186,89 @@ export function NoteEditorHeader({
             </Command>
           </PopoverContent>
         </Popover>
+        
+        {/* Navigate to linked task */}
+        {linkedTaskId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-8"
+            onClick={() => navigate("/")}
+          >
+            <Link2 className="h-3 w-3 mr-1" />
+            Ver Tarefa
+          </Button>
+        )}
+      </div>
+
+      {/* Link to course */}
+      <div className="flex items-center gap-2">
+        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+        <Popover open={courseSearchOpen} onOpenChange={onCourseSearchOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={courseSearchOpen}
+              className="w-full sm:w-[300px] h-9 justify-between text-sm font-normal"
+            >
+              {linkedCourseId
+                ? courses.find(c => c.id === linkedCourseId)?.name || "Curso selecionado"
+                : "Vincular a um curso..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Buscar curso..." />
+              <CommandList>
+                <CommandEmpty>Nenhum curso encontrado.</CommandEmpty>
+                <CommandGroup>
+                  <CommandItem
+                    value="none"
+                    onSelect={() => {
+                      onLinkedCourseChange(null);
+                      onCourseSearchOpenChange(false);
+                    }}
+                  >
+                    <Check
+                      className={`mr-2 h-4 w-4 ${!linkedCourseId ? "opacity-100" : "opacity-0"}`}
+                    />
+                    <span className="text-muted-foreground">Nenhum curso vinculado</span>
+                  </CommandItem>
+                  {courses.map(course => (
+                    <CommandItem
+                      key={course.id}
+                      value={course.name}
+                      onSelect={() => {
+                        onLinkedCourseChange(course.id);
+                        onCourseSearchOpenChange(false);
+                      }}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${linkedCourseId === course.id ? "opacity-100" : "opacity-0"}`}
+                      />
+                      {course.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        
+        {/* Navigate to linked course */}
+        {linkedCourseId && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-8"
+            onClick={() => navigate("/courses")}
+          >
+            <GraduationCap className="h-3 w-3 mr-1" />
+            Ver Curso
+          </Button>
+        )}
       </div>
     </div>
   );

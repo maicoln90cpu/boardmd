@@ -19,6 +19,7 @@ export interface Note {
   is_pinned: boolean;
   color: string | null;
   linked_task_id: string | null;
+  linked_course_id: string | null;
 }
 
 export function useNotes() {

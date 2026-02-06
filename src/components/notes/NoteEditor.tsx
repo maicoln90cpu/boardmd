@@ -181,7 +181,7 @@ export function NoteEditor({
   // Sync with external note changes
   useEffect(() => {
     state.syncWithNote(editor);
-  }, [note.id, note.title, note.content, note.color, note.linked_task_id, editor, state.syncWithNote]);
+  }, [note.id, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id, editor, state.syncWithNote]);
 
   // Auto-save when switching notes
   useEffect(() => {
@@ -314,6 +314,11 @@ export function NoteEditor({
         tasks={state.tasks}
         taskSearchOpen={state.taskSearchOpen}
         onTaskSearchOpenChange={state.setTaskSearchOpen}
+        linkedCourseId={state.linkedCourseId}
+        onLinkedCourseChange={state.setLinkedCourseId}
+        courses={state.courses}
+        courseSearchOpen={state.courseSearchOpen}
+        onCourseSearchOpenChange={state.setCourseSearchOpen}
       />
 
       <NoteEditorContent

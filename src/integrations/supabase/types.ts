@@ -358,6 +358,7 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean
+          linked_course_id: string | null
           linked_task_id: string | null
           notebook_id: string | null
           title: string
@@ -370,6 +371,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          linked_course_id?: string | null
           linked_task_id?: string | null
           notebook_id?: string | null
           title?: string
@@ -382,6 +384,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          linked_course_id?: string | null
           linked_task_id?: string | null
           notebook_id?: string | null
           title?: string
@@ -389,6 +392,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notes_linked_course_id_fkey"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notes_linked_task_id_fkey"
             columns: ["linked_task_id"]

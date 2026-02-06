@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { Column, useColumns } from "@/hooks/data/useColumns";
-import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter } from "date-fns";
+import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter, isToday, isTomorrow, startOfDay } from "date-fns";
 import { Task, useTasks } from "@/hooks/tasks/useTasks";
 import { TaskCard } from "./TaskCard";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
@@ -216,20 +216,22 @@ export function KanbanBoard({
             case "no_date":
               return taskDueDate === null;
             case "overdue":
-              return taskDueDate && isBefore(taskDueDate, today) && !t.is_completed;
+              return taskDueDate && isBefore(startOfDay(taskDueDate), today) && !t.is_completed;
             case "overdue_today": {
               if (!taskDueDate) return false;
-              const isOverdue = isBefore(taskDueDate, today) && !t.is_completed;
-              const isToday = taskDueDate.toDateString() === today.toDateString();
-              return isOverdue || isToday;
+              const isOverdueTask = isBefore(startOfDay(taskDueDate), today) && !t.is_completed;
+              const isTodayTask = isToday(taskDueDate);
+              return isOverdueTask || isTodayTask;
             }
             case "today":
-              return taskDueDate && taskDueDate.toDateString() === today.toDateString();
+              return taskDueDate && isToday(taskDueDate);
+            case "tomorrow":
+              return taskDueDate && isTomorrow(taskDueDate);
             case "next_7_days": {
               if (!taskDueDate) return false;
               const next7Days = new Date(today);
               next7Days.setDate(next7Days.getDate() + 7);
-              return !isBefore(taskDueDate, today) && !isAfter(taskDueDate, next7Days);
+              return !isBefore(startOfDay(taskDueDate), today) && !isAfter(taskDueDate, next7Days);
             }
             case "week": {
               const weekStart = startOfWeek(today, { weekStartsOn: 0 });
@@ -242,7 +244,7 @@ export function KanbanBoard({
               return taskDueDate && !isBefore(taskDueDate, monthStart) && !isAfter(taskDueDate, monthEnd);
             }
             default:
-              return true;
+              return false;
           }
         });
         

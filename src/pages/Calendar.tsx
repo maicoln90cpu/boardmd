@@ -403,6 +403,7 @@ export default function Calendar() {
           onColumnChange={setSelectedColumns}
           dueDateFilter={dueDateFilter}
           onDueDateChange={setDueDateFilter}
+          tasks={tasks}
           filterPresetsSlot={
             <FilterPresetsManager
               currentFilters={currentFilters}

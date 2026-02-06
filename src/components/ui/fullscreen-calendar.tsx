@@ -65,6 +65,8 @@ interface FullScreenCalendarProps {
   onDueDateChange?: (value: string) => void;
   // Slot para presets de filtros
   filterPresetsSlot?: React.ReactNode;
+  // Tasks para contagem de categorias
+  tasks?: Array<{ category_id: string; [key: string]: any }>;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -302,7 +304,8 @@ export function FullScreenCalendar({
   onColumnChange,
   dueDateFilter = "all",
   onDueDateChange,
-  filterPresetsSlot
+  filterPresetsSlot,
+  tasks
 }: FullScreenCalendarProps) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
@@ -450,7 +453,7 @@ export function FullScreenCalendar({
           onToggleCategory(cat);
         }
       });
-    }} categories={categories} columnFilter={selectedColumns} onColumnChange={onColumnChange} columns={columns} dueDateFilter={dueDateFilter} onDueDateChange={onDueDateChange} showPresets={false} searchPlaceholder="Buscar no calendário..." />
+    }} categories={categories} columnFilter={selectedColumns} onColumnChange={onColumnChange} columns={columns} dueDateFilter={dueDateFilter} onDueDateChange={onDueDateChange} showPresets={false} searchPlaceholder="Buscar no calendário..." tasks={tasks} />
 
       {/* Calendar Header */}
       <div className="flex flex-col gap-4 border-b bg-card px-4 py-4 lg:px-6">
