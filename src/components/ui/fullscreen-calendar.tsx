@@ -55,14 +55,14 @@ interface FullScreenCalendarProps {
   // Novos filtros avançados
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
-  priorityFilter?: string;
-  onPriorityChange?: (value: string) => void;
-  tagFilter?: string;
-  onTagChange?: (value: string) => void;
+  priorityFilter?: string | string[];
+  onPriorityChange?: (value: any) => void;
+  tagFilter?: string | string[];
+  onTagChange?: (value: any) => void;
   availableTags?: string[];
   onColumnChange?: (value: string[]) => void;
-  dueDateFilter?: string;
-  onDueDateChange?: (value: string) => void;
+  dueDateFilter?: string | string[];
+  onDueDateChange?: (value: any) => void;
   // Slot para presets de filtros
   filterPresetsSlot?: React.ReactNode;
   // Tasks para contagem de categorias
@@ -438,7 +438,7 @@ export function FullScreenCalendar({
         return "bg-muted hover:bg-muted/80";
     }
   };
-  const hasActiveFilters = searchTerm || priorityFilter !== "all" || tagFilter !== "all" || selectedCategories.length > 0 || selectedColumns.length > 0;
+  const hasActiveFilters = searchTerm || (Array.isArray(priorityFilter) ? priorityFilter.length > 0 : priorityFilter !== "all") || (Array.isArray(tagFilter) ? tagFilter.length > 0 : tagFilter !== "all") || selectedCategories.length > 0 || selectedColumns.length > 0;
   return <div className="flex h-full flex-col">
       {/* Filters Bar */}
       <KanbanFiltersBar searchTerm={searchTerm} onSearchChange={onSearchChange || (() => {})} priorityFilter={priorityFilter} onPriorityChange={onPriorityChange || (() => {})} tagFilter={tagFilter} onTagChange={onTagChange || (() => {})} availableTags={availableTags} onClearFilters={onClearFilters} categoryFilter={selectedCategories} onCategoryChange={cats => {

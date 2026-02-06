@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { isSameDay, parseISO, startOfDay, isToday, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { isSameDay, parseISO, startOfDay, isToday, isTomorrow, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
@@ -47,11 +47,11 @@ export default function Calendar() {
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Estados de filtro avançado
+  // Estados de filtro avançado (arrays para multi-select)
   const [searchTerm, setSearchTerm] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [tagFilter, setTagFilter] = useState("all");
-  const [dueDateFilter, setDueDateFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [dueDateFilter, setDueDateFilter] = useState<string[]>([]);
   
   const { columns } = useColumns();
   const { categories } = useCategories();
@@ -59,17 +59,17 @@ export default function Calendar() {
   // Objeto de filtros atuais para o FilterPresetsManager
   const currentFilters: FilterPresetFilters = useMemo(() => ({
     searchTerm: searchTerm,
-    priorityFilter: priorityFilter,
-    tagFilter: tagFilter,
+    priorityFilter: priorityFilter as any,
+    tagFilter: tagFilter as any,
     categoryFilter: selectedCategories,
   }), [searchTerm, priorityFilter, tagFilter, selectedCategories]);
 
   // Verificar se há filtros ativos
   const hasActiveFilters = useMemo(() => {
     return searchTerm !== "" || 
-           priorityFilter !== "all" || 
-           tagFilter !== "all" || 
-           dueDateFilter !== "all" || 
+           priorityFilter.length > 0 || 
+           tagFilter.length > 0 || 
+           dueDateFilter.length > 0 || 
            selectedCategories.length > 0 || 
            selectedColumns.length > 0;
   }, [searchTerm, priorityFilter, tagFilter, dueDateFilter, selectedCategories, selectedColumns]);
@@ -77,8 +77,14 @@ export default function Calendar() {
   // Aplicar preset de filtros
   const handleApplyPreset = (filters: FilterPresetFilters) => {
     if (filters.searchTerm !== undefined) setSearchTerm(filters.searchTerm);
-    if (filters.priorityFilter !== undefined) setPriorityFilter(filters.priorityFilter);
-    if (filters.tagFilter !== undefined) setTagFilter(filters.tagFilter);
+    if (filters.priorityFilter !== undefined) {
+      const val = filters.priorityFilter;
+      setPriorityFilter(Array.isArray(val) ? val : val === "all" || val === "" ? [] : [val]);
+    }
+    if (filters.tagFilter !== undefined) {
+      const val = filters.tagFilter;
+      setTagFilter(Array.isArray(val) ? val : val === "all" || val === "" ? [] : [val]);
+    }
     if (filters.categoryFilter !== undefined) setSelectedCategories(filters.categoryFilter);
   };
 
@@ -141,46 +147,50 @@ export default function Calendar() {
       );
     }
     
-    // Filtro de prioridade
-    if (priorityFilter !== "all") {
-      filtered = filtered.filter(task => task.priority === priorityFilter);
+    // Filtro de prioridade (OR logic - multi-select)
+    if (priorityFilter.length > 0) {
+      filtered = filtered.filter(task => priorityFilter.includes(task.priority || "medium"));
     }
     
-    // Filtro de tag
-    if (tagFilter !== "all") {
-      filtered = filtered.filter(task => task.tags?.includes(tagFilter));
+    // Filtro de tag (OR logic - multi-select)
+    if (tagFilter.length > 0) {
+      filtered = filtered.filter(task => task.tags?.some(tag => tagFilter.includes(tag)));
     }
     
-    // Filtro de data de vencimento
-    if (dueDateFilter !== "all") {
+    // Filtro de data de vencimento (OR logic - multi-select)
+    if (dueDateFilter.length > 0) {
       filtered = filtered.filter(task => {
         const dueDate = task.due_date ? parseISO(task.due_date) : null;
         
-        switch (dueDateFilter) {
-          case "no_date":
-            return dueDate === null;
-          case "overdue":
-            return dueDate && isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
-          case "today":
-            return dueDate && isToday(dueDate);
-          case "next_7_days": {
-            const next7Days = new Date(today);
-            next7Days.setDate(next7Days.getDate() + 7);
-            return dueDate && !isBefore(dueDate, startOfDay(today)) && !isAfter(dueDate, next7Days);
+        return dueDateFilter.some(dateFilter => {
+          switch (dateFilter) {
+            case "no_date":
+              return dueDate === null;
+            case "overdue":
+              return dueDate && isBefore(dueDate, startOfDay(today)) && !isToday(dueDate);
+            case "today":
+              return dueDate && isToday(dueDate);
+            case "tomorrow":
+              return dueDate && isTomorrow(dueDate);
+            case "next_7_days": {
+              const next7Days = new Date(today);
+              next7Days.setDate(next7Days.getDate() + 7);
+              return dueDate && !isBefore(dueDate, startOfDay(today)) && !isAfter(dueDate, next7Days);
+            }
+            case "week":
+              return dueDate && isWithinInterval(dueDate, {
+                start: startOfWeek(today, { locale: ptBR }),
+                end: endOfWeek(today, { locale: ptBR })
+              });
+            case "month":
+              return dueDate && isWithinInterval(dueDate, {
+                start: startOfMonth(today),
+                end: endOfMonth(today)
+              });
+            default:
+              return true;
           }
-          case "week":
-            return dueDate && isWithinInterval(dueDate, {
-              start: startOfWeek(today, { locale: ptBR }),
-              end: endOfWeek(today, { locale: ptBR })
-            });
-          case "month":
-            return dueDate && isWithinInterval(dueDate, {
-              start: startOfMonth(today),
-              end: endOfMonth(today)
-            });
-          default:
-            return true;
-        }
+        });
       });
     }
     
@@ -250,9 +260,9 @@ export default function Calendar() {
     setSelectedCategories([]);
     setSelectedColumns([]);
     setSearchTerm("");
-    setPriorityFilter("all");
-    setTagFilter("all");
-    setDueDateFilter("all");
+    setPriorityFilter([]);
+    setTagFilter([]);
+    setDueDateFilter([]);
   };
 
   const getPriorityColor = (priority?: string | null) => {
