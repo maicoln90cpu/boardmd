@@ -1,252 +1,206 @@
 
-# Plano de Implementação - 4 Funcionalidades
 
-## Resumo das Alterações
+# Plano de Correção - 3 Bugs e 1 Nova Funcionalidade
 
 ---
 
-## 1. Atrelar Tarefa a Curso e Vice-Versa
+## Resumo dos Problemas
 
-**Impacto:** Alto | **Complexidade:** 7/10
+| # | Problema | Causa Raiz | Arquivo Principal |
+|---|----------|------------|-------------------|
+| 1 | Atrelar cursos às anotações | Falta campo `linked_course_id` na tabela `notes` | Migração SQL + hooks |
+| 2 | Filtro "Amanhã" quebrado no Kanban | `KanbanBoard.getTasksForColumn()` não tem caso `"tomorrow"` | `KanbanBoard.tsx` |
+| 3 | Categorias com contagem 0 no Calendário | `tasks` não é passado para `CategoryFilter` no calendário | `fullscreen-calendar.tsx` |
 
-### Análise Técnica
+---
 
-**Tabelas Atuais:**
-- `tasks`: Não possui campo para vincular a curso
-- `courses`: Não possui campo para vincular a tarefa
+## 1. Atrelar Cursos às Anotações
+
+### Problema
+Não existe vínculo entre cursos e notas/anotações.
 
 ### Alterações no Banco de Dados
 
 ```sql
--- Adicionar campo na tabela tasks
-ALTER TABLE tasks 
+-- Adicionar campo na tabela notes para vincular a curso
+ALTER TABLE notes 
 ADD COLUMN linked_course_id uuid REFERENCES courses(id) ON DELETE SET NULL;
-
--- Adicionar campo na tabela courses
-ALTER TABLE courses 
-ADD COLUMN linked_task_id uuid REFERENCES tasks(id) ON DELETE SET NULL;
 ```
 
 ### Arquivos a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/components/TaskModal.tsx` | Adicionar seletor de curso vinculado |
-| `src/components/courses/CourseModal.tsx` | Adicionar seletor de tarefa vinculada |
-| `src/hooks/tasks/useTasks.ts` | Adicionar `linked_course_id` ao tipo Task e queries |
-| `src/hooks/useCourses.ts` | Adicionar `linked_task_id` ao tipo Course e queries |
-| `src/types/index.ts` | Atualizar interfaces |
-| `src/components/task-card/TaskCardBadges.tsx` | Mostrar badge de curso vinculado |
-| `src/components/courses/CourseCard.tsx` | Mostrar badge de tarefa vinculada |
-
-### Fluxo de Uso
-
-1. **No TaskModal**: Adicionar campo "Curso vinculado" com select dos cursos disponíveis
-2. **No CourseModal**: Adicionar campo "Tarefa vinculada" com select de tarefas disponíveis
-3. **Nos Cards**: Mostrar ícone/badge indicando vínculo com navegação rápida
+| `src/hooks/useNotes.ts` | Adicionar `linked_course_id` à interface `Note` |
+| `src/components/notes/NoteEditor.tsx` | Adicionar seletor de curso vinculado |
+| `src/components/notes/NoteEditorHeader.tsx` | Adicionar badge de curso vinculado |
+| `src/hooks/useCourses.ts` | Adicionar reciprocidade (notas vinculadas ao curso) |
 
 ---
 
-## 2. Novo Filtro de Data "Amanhã"
+## 2. Filtro "Amanhã" Quebrado no Kanban
 
-**Impacto:** Baixo | **Complexidade:** 2/10
+### Problema
+O filtro "Amanhã" está mostrando TODAS as tarefas em vez de filtrar apenas para o dia seguinte.
 
-### Análise Técnica
+### Causa Raiz
+O arquivo `src/components/KanbanBoard.tsx` tem sua **própria implementação** de filtros de data na função `getTasksForColumn` (linhas 210-247) e **não inclui o caso `"tomorrow"`**.
 
-O filtro "tomorrow" já existe implementado em `src/lib/taskFilters.ts` (linhas 144-148):
+### Código Atual (Problemático)
+
+```typescript
+// KanbanBoard.tsx - linhas 214-246
+const matchesAnyDateFilter = dueDates.some(dateFilter => {
+  switch (dateFilter) {
+    case "no_date": return taskDueDate === null;
+    case "overdue": return ...;
+    case "overdue_today": return ...; 
+    case "today": return taskDueDate.toDateString() === today.toDateString();  // USA toDateString() - INCORRETO
+    case "next_7_days": return ...;
+    case "week": return ...;
+    case "month": return ...;
+    default: return true;  // <-- "tomorrow" cai aqui e retorna TRUE para TUDO!
+  }
+});
+```
+
+### Solução
+Adicionar o caso `"tomorrow"` usando `isTomorrow` do date-fns:
+
 ```typescript
 case "tomorrow": {
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return taskDueDate !== null && taskDueDate.toDateString() === tomorrow.toDateString();
+  if (!taskDueDate) return false;
+  return isTomorrow(taskDueDate);
 }
 ```
 
+E corrigir o caso `"today"` para usar `isToday()`:
+
+```typescript
+case "today":
+  return taskDueDate && isToday(taskDueDate);
+```
+
 ### Arquivo a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/components/kanban/KanbanFiltersBar.tsx` | Adicionar opção "Amanhã" no array `dueDateOptions` |
-
-### Alteração Específica
-
-```typescript
-// Linha 63-70 - Adicionar "tomorrow" após "today"
-const dueDateOptions = [
-  { value: "no_date", label: "Sem data", icon: "📭" },
-  { value: "overdue", label: "Atrasadas", icon: "🔴" },
-  { value: "today", label: "Hoje", icon: "📅" },
-  { value: "tomorrow", label: "Amanhã", icon: "🌅" },  // ← ADICIONAR
-  { value: "next_7_days", label: "Próximos 7 dias", icon: "📆" },
-  { value: "week", label: "Esta semana", icon: "📆" },
-  { value: "month", label: "Este mês", icon: "🗓️" },
-];
-```
+| `src/components/KanbanBoard.tsx` | Adicionar caso `"tomorrow"` e usar `isToday()` para consistência |
 
 ---
 
-## 3. Avançar/Retroceder Módulos IA no Card Externo
+## 3. Categorias com Contagem 0 no Calendário
 
-**Impacto:** Médio | **Complexidade:** 5/10
+### Problema
+O filtro de categorias no calendário mostra "0" para todas as categorias.
 
-### Análise Técnica
+### Causa Raiz
+O componente `CategoryFilter` recebe a prop `tasks` para calcular a contagem por categoria (função `getTaskCount`). 
 
-Atualmente, quando um curso tem `modules_checklist` (gerado por IA), o card mostra apenas texto estático:
-- "📚 X/Y módulos" 
-- "Próximo: [título do módulo]"
+No calendário (`fullscreen-calendar.tsx`), a prop `tasks` **não está sendo passada** para o `CategoryFilter` interno do `KanbanFiltersBar`.
 
-Não há botões +/- para avançar/retroceder como nos módulos/episódios manuais.
+### Análise do Fluxo
+
+1. `Calendar.tsx` passa `categories` para `FullScreenCalendar`
+2. `FullScreenCalendar` passa para `KanbanFiltersBar`
+3. `KanbanFiltersBar` passa para `CategoryFilter`
+4. **MAS**: O array `tasks` não está sendo propagado em nenhum nível!
+
+### Solução
+Adicionar prop `tasks` ao fluxo:
+
+1. `FullScreenCalendar` precisa receber `tasks` ou `filteredTasks`
+2. Passar para `KanbanFiltersBar` 
+3. `KanbanFiltersBar` já suporta prop `tasks`
 
 ### Arquivos a Modificar
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/hooks/useCourses.ts` | Adicionar função `incrementAIModule(id, increment)` |
-| `src/components/courses/CourseCard.tsx` | Adicionar botões +/- para módulos IA |
-| `src/pages/Courses.tsx` | Passar nova função para o CourseCard |
-
-### Nova Função em useCourses.ts
-
-```typescript
-const incrementAIModule = useCallback(
-  async (id: string, increment: boolean = true): Promise<boolean> => {
-    const course = courses.find((c) => c.id === id);
-    if (!course) return false;
-    
-    const aiModules = (course as any).modules_checklist as CourseModule[];
-    if (!aiModules || aiModules.length === 0) return false;
-    
-    // Encontrar o próximo módulo não concluído (para incrementar)
-    // Ou o último concluído (para decrementar)
-    let updatedModules = [...aiModules];
-    
-    if (increment) {
-      // Marcar o próximo não concluído como concluído
-      const nextIndex = updatedModules.findIndex(m => !m.completed);
-      if (nextIndex !== -1) {
-        updatedModules[nextIndex].completed = true;
-      }
-    } else {
-      // Desmarcar o último concluído
-      const lastCompletedIndex = [...updatedModules]
-        .reverse()
-        .findIndex(m => m.completed);
-      if (lastCompletedIndex !== -1) {
-        const actualIndex = updatedModules.length - 1 - lastCompletedIndex;
-        updatedModules[actualIndex].completed = false;
-      }
-    }
-    
-    return updateCourse(id, { modules_checklist: updatedModules });
-  },
-  [courses, updateCourse]
-);
-```
-
-### UI no CourseCard
-
-```text
-┌──────────────────────────────────────────┐
-│ 📚 Módulos do Curso                      │
-│  [-]  2/5 módulos concluídos  [+]        │
-│  Próximo: 3. Google Analytics 4          │
-│  ▓▓▓▓▓▓░░░░░░░░ 40%                      │
-└──────────────────────────────────────────┘
-```
+| `src/components/ui/fullscreen-calendar.tsx` | Adicionar prop `tasks` e passar para `KanbanFiltersBar` |
+| `src/pages/Calendar.tsx` | Passar `tasks` para `FullScreenCalendar` |
 
 ---
 
-## 4. Adicionar Controle de Capítulos/Episódios Externos nos Cards com IA
+## Detalhamento Técnico
 
-**Impacto:** Médio | **Complexidade:** 4/10
+### Correção do KanbanBoard.tsx (Filtro Amanhã)
 
-### Análise Técnica
+```typescript
+// Adicionar import
+import { ..., isToday, isTomorrow } from "date-fns";
 
-Atualmente, quando um curso tem módulos de IA, o card **esconde** os controles de episódios manuais. O usuário solicitou que os episódios também apareçam externamente.
-
-### Arquivo a Modificar
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/courses/CourseCard.tsx` | Mostrar controles de episódios mesmo quando há módulos IA |
-
-### Layout Proposto
-
-```text
-┌──────────────────────────────────────────┐
-│ 📚 Curso de Dados, Traqueamento...       │
-│  ⭐                                       │
-│  [Concluído] [Média] [Traqueamento]      │
-├──────────────────────────────────────────┤
-│ 📚 Módulos IA:                           │
-│  [-]  1/3 módulos  [+]   33%             │
-│  Próximo: 2. Google Analytics 4          │
-├──────────────────────────────────────────┤
-│ 🎬 Capítulos:                            │
-│  [-]  Ep. 0/1  [+]                       │
-│  ▓░░░░░░░░░░░░░░ 0%                      │
-├──────────────────────────────────────────┤
-│ R$ 0.00             Início: 31/01/26     │
-│ [Abrir] [✎] [🗑]                         │
-└──────────────────────────────────────────┘
+// Na função getTasksForColumn, modificar o switch:
+switch (dateFilter) {
+  case "no_date":
+    return taskDueDate === null;
+  case "overdue":
+    return taskDueDate && isBefore(startOfDay(taskDueDate), today) && !t.is_completed;
+  case "today":
+    return taskDueDate && isToday(taskDueDate);  // <-- CORREÇÃO
+  case "tomorrow":
+    return taskDueDate && isTomorrow(taskDueDate);  // <-- ADICIONAR
+  case "next_7_days": 
+    // ... mantém igual
+}
 ```
 
-### Alterações no CourseCard.tsx
+### Correção do Calendário (Contagem de Categorias)
 
-Modificar a seção que renderiza o progresso:
-- Quando `hasAIModules === true`: mostrar AMBOS os controles (módulos IA + episódios)
-- Módulos IA com botões +/- que chamam `onIncrementAIModule`
-- Episódios manuais com botões +/- que chamam `onIncrementEpisode`
+**fullscreen-calendar.tsx:**
+```typescript
+interface FullScreenCalendarProps {
+  // ... props existentes
+  tasks?: Array<{ category_id: string; [key: string]: any }>;  // <-- ADICIONAR
+}
+
+// Na chamada do KanbanFiltersBar:
+<KanbanFiltersBar
+  // ... props existentes
+  tasks={tasks}  // <-- ADICIONAR
+/>
+```
+
+**Calendar.tsx:**
+```typescript
+<FullScreenCalendar
+  // ... props existentes
+  tasks={filteredTasks}  // <-- ADICIONAR (ou tasks se quiser contagem total)
+/>
+```
 
 ---
 
 ## Resumo de Alterações
 
-| # | Feature | Arquivos Novos | Arquivos Modificados | Complexidade |
-|---|---------|----------------|----------------------|--------------|
-| 1 | Tarefa ↔ Curso | migração SQL | 7 | 7/10 |
-| 2 | Filtro "Amanhã" | 0 | 1 | 2/10 |
-| 3 | +/- Módulos IA | 0 | 3 | 5/10 |
-| 4 | Episódios externos | 0 | 1 | 4/10 |
+| # | Feature/Bug | Arquivos | Complexidade |
+|---|-------------|----------|--------------|
+| 1 | Cursos ↔ Notas | migração + 4 arquivos | 6/10 |
+| 2 | Filtro "Amanhã" | 1 arquivo | 2/10 |
+| 3 | Contagem Categorias | 2 arquivos | 2/10 |
 
-**Pontuação Total de Risco: 18/25** - Dentro do limite seguro.
-
----
-
-## Ordem de Implementação
-
-1. ✅ Filtro "Amanhã" (mais simples)
-2. ✅ Controles +/- para módulos IA no CourseCard
-3. ✅ Controles de episódios externos nos cards com IA
-4. ✅ Migração e vínculo Tarefa ↔ Curso (mais complexo)
+**Pontuação Total de Risco: 10/25** - Baixo risco.
 
 ---
 
 ## Checklist de Testes Manuais
 
 ### Filtro Amanhã:
-- [ ] Acessar página Kanban/Projetos
-- [ ] Abrir filtro de Vencimento
-- [ ] Verificar que opção "Amanhã" aparece
-- [ ] Selecionar "Amanhã" e verificar que apenas tarefas com vencimento para amanhã aparecem
+- [ ] Acessar página de Projetos/Kanban
+- [ ] Selecionar filtro "Amanhã"
+- [ ] Verificar que APENAS tarefas com data de amanhã (06/02) aparecem
+- [ ] Verificar que tarefas de outras datas são filtradas
 
-### Módulos IA com +/-:
-- [ ] Abrir card de curso COM módulos gerados por IA
-- [ ] Clicar em [+] e verificar que próximo módulo é marcado como concluído
-- [ ] Clicar em [-] e verificar que último módulo concluído é desmarcado
-- [ ] Verificar que a barra de progresso atualiza corretamente
+### Contagem de Categorias:
+- [ ] Acessar página de Calendário
+- [ ] Abrir filtro de Categorias
+- [ ] Verificar que cada categoria mostra contagem correta (não 0)
+- [ ] Verificar que a contagem reflete tarefas do calendário
 
-### Episódios externos em cards com IA:
-- [ ] Abrir card de curso COM módulos IA
-- [ ] Verificar que TAMBÉM aparecem os controles de episódios (Ep. X/Y)
-- [ ] Testar incrementar/decrementar episódios
-- [ ] Verificar que ambos os progressos (módulos e episódios) são exibidos
+### Cursos ↔ Notas:
+- [ ] Criar nova nota
+- [ ] Vincular a um curso existente
+- [ ] Verificar badge de curso na nota
+- [ ] Verificar navegação para o curso
+- [ ] Editar nota e alterar/remover vínculo com curso
 
-### Vínculo Tarefa ↔ Curso:
-- [ ] Criar nova tarefa
-- [ ] No modal, selecionar um curso no campo "Curso vinculado"
-- [ ] Salvar e verificar badge no card da tarefa
-- [ ] Clicar no badge e verificar navegação para o curso
-- [ ] Editar curso e selecionar uma tarefa no campo "Tarefa vinculada"
-- [ ] Salvar e verificar badge no card do curso
-- [ ] Clicar no badge e verificar navegação para a tarefa
