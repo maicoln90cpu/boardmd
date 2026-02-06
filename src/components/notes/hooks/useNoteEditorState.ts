@@ -7,6 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Editor } from "@tiptap/react";
 
+interface Course {
+  id: string;
+  name: string;
+}
+
 interface UseNoteEditorStateProps {
   note: Note;
   onUpdate: (id: string, updates: Partial<Note>) => void;
@@ -18,11 +23,15 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(note.linked_task_id || null);
+  const [linkedCourseId, setLinkedCourseId] = useState<string | null>(note.linked_course_id || null);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
   const [taskSearchOpen, setTaskSearchOpen] = useState(false);
+  const [courseSearchOpen, setCourseSearchOpen] = useState(false);
   const [showTaskSelectorShortcut, setShowTaskSelectorShortcut] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
   
   const linkedTaskIdRef = useRef(linkedTaskId);
+  const linkedCourseIdRef = useRef(linkedCourseId);
   const hasUnsavedChanges = useRef(false);
   const currentNoteRef = useRef(note);
   const titleRef = useRef(title);
@@ -33,6 +42,25 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
   const { tasks, fetchTasks: refetchTasks } = useTasks("all");
   const { share } = useWebShare();
   const { user } = useAuth();
+  
+  // Fetch courses for selection
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const fetchCourses = async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, name")
+        .eq("user_id", user.id)
+        .order("name");
+      
+      if (data) {
+        setCourses(data);
+      }
+    };
+    
+    fetchCourses();
+  }, [user?.id]);
 
   // Word and character counter
   const wordCount = useMemo(() => {
@@ -53,8 +81,9 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     contentRef.current = content;
     colorRef.current = color;
     linkedTaskIdRef.current = linkedTaskId;
+    linkedCourseIdRef.current = linkedCourseId;
     onUpdateRef.current = onUpdate;
-  }, [title, content, color, linkedTaskId, onUpdate]);
+  }, [title, content, color, linkedTaskId, linkedCourseId, onUpdate]);
 
   // Auto-save timer ref
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,6 +97,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     const currentContent = contentRef.current;
     const currentColor = colorRef.current;
     const currentLinkedTaskId = linkedTaskIdRef.current;
+    const currentLinkedCourseId = linkedCourseIdRef.current;
     if (!currentTitle.trim() && !currentContent.trim()) return;
     
     setIsSaving(true);
@@ -75,7 +105,8 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
       title: currentTitle.trim() || "Sem título",
       content: currentContent.trim(),
       color: currentColor,
-      linked_task_id: currentLinkedTaskId
+      linked_task_id: currentLinkedTaskId,
+      linked_course_id: currentLinkedCourseId
     });
     hasUnsavedChanges.current = false;
     
@@ -88,7 +119,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
 
   // Track changes for auto-save with 3-second debounce
   useEffect(() => {
-    if (title !== note.title || content !== note.content || color !== note.color || linkedTaskId !== note.linked_task_id) {
+    if (title !== note.title || content !== note.content || color !== note.color || linkedTaskId !== note.linked_task_id || linkedCourseId !== note.linked_course_id) {
       hasUnsavedChanges.current = true;
       
       // Clear previous timer
@@ -103,7 +134,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
         }
       }, 3000);
     }
-  }, [title, content, color, linkedTaskId, note.title, note.content, note.color, note.linked_task_id, autoSave]);
+  }, [title, content, color, linkedTaskId, linkedCourseId, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id, autoSave]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -119,6 +150,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     setTitle(note.title);
     setColor(note.color || null);
     setLinkedTaskId(note.linked_task_id || null);
+    setLinkedCourseId(note.linked_course_id || null);
     if (editor && note.content !== editor.getHTML()) {
       editor.commands.setContent(note.content || "");
     }
@@ -139,7 +171,8 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
       title: title.trim() || "Sem título",
       content: content.trim(),
       color,
-      linked_task_id: newTaskId
+      linked_task_id: newTaskId,
+      linked_course_id: linkedCourseId
     });
     
     if (previousTaskId !== newTaskId) {
@@ -151,7 +184,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     setShowSavedIndicator(true);
     setTimeout(() => setShowSavedIndicator(false), 2000);
     onSave?.();
-  }, [title, content, color, linkedTaskId, note, onUpdate, onSave]);
+  }, [title, content, color, linkedTaskId, linkedCourseId, note, onUpdate, onSave]);
 
   const handleCancel = useCallback(() => {
     setTitle(note.title);
@@ -247,9 +280,13 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     color,
     linkedTaskId,
     setLinkedTaskId,
+    linkedCourseId,
+    setLinkedCourseId,
     showSavedIndicator,
     taskSearchOpen,
     setTaskSearchOpen,
+    courseSearchOpen,
+    setCourseSearchOpen,
     showTaskSelectorShortcut,
     setShowTaskSelectorShortcut,
     
@@ -269,6 +306,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     wordCount,
     charCount,
     tasks,
+    courses,
     
     // Handlers
     autoSave,

@@ -101,6 +101,7 @@ describe("VirtualizedNotebooksList", () => {
         is_pinned: false,
         color: null,
         linked_task_id: null,
+        linked_course_id: null,
       },
       {
         id: "note2",
@@ -113,6 +114,7 @@ describe("VirtualizedNotebooksList", () => {
         is_pinned: false,
         color: null,
         linked_task_id: null,
+        linked_course_id: null,
       },
     ];
 

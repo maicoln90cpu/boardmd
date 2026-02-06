@@ -82,6 +82,7 @@ describe('useNotes', () => {
       is_pinned: true,
       color: '#ffeb3b',
       linked_task_id: null,
+      linked_course_id: null,
     },
     {
       id: 'note-2',
@@ -94,6 +95,7 @@ describe('useNotes', () => {
       is_pinned: false,
       color: null,
       linked_task_id: null,
+      linked_course_id: null,
     },
   ];
 
