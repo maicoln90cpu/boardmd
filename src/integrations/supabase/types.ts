@@ -1106,30 +1106,39 @@ export type Database = {
       whatsapp_templates: {
         Row: {
           created_at: string | null
+          due_date_hours_before: number | null
+          excluded_column_ids: string[] | null
           id: string
           is_enabled: boolean | null
           message_template: string
           send_time: string | null
+          send_time_2: string | null
           template_type: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          due_date_hours_before?: number | null
+          excluded_column_ids?: string[] | null
           id?: string
           is_enabled?: boolean | null
           message_template: string
           send_time?: string | null
+          send_time_2?: string | null
           template_type: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
+          due_date_hours_before?: number | null
+          excluded_column_ids?: string[] | null
           id?: string
           is_enabled?: boolean | null
           message_template?: string
           send_time?: string | null
+          send_time_2?: string | null
           template_type?: string
           updated_at?: string | null
           user_id?: string

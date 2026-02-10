@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.whatsapp-daily-summary]
 verify_jwt = false
+
+[functions.whatsapp-due-alert]
+verify_jwt = false

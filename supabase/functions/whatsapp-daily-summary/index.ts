@@ -15,43 +15,42 @@ Deno.serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get all users with enabled daily_reminder WhatsApp template
+    // Get all enabled daily_reminder and daily_report templates
     const { data: templates, error: tplErr } = await supabase
       .from('whatsapp_templates')
-      .select('user_id, message_template, send_time')
-      .eq('template_type', 'daily_reminder')
+      .select('user_id, template_type, message_template, send_time, excluded_column_ids')
+      .in('template_type', ['daily_reminder', 'daily_report'])
       .eq('is_enabled', true);
 
     if (tplErr) throw tplErr;
     if (!templates || templates.length === 0) {
-      return new Response(JSON.stringify({ message: 'No active daily_reminder templates' }), {
+      return new Response(JSON.stringify({ message: 'No active templates' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const now = new Date();
-    const currentHour = now.getUTCHours() - 3; // BRT = UTC-3
+    const currentHour = now.getUTCHours() - 3;
     const adjustedHour = currentHour < 0 ? currentHour + 24 : currentHour;
 
-    const results: { user_id: string; sent: boolean; reason?: string }[] = [];
+    const results: { user_id: string; template_type: string; sent: boolean; reason?: string }[] = [];
 
     for (const tpl of templates) {
-      // Check if current hour matches template send_time
-      const sendTimeHour = tpl.send_time ? parseInt((tpl.send_time as string).split(':')[0], 10) : 7;
+      const sendTimeHour = tpl.send_time ? parseInt((tpl.send_time as string).split(':')[0], 10) : (tpl.template_type === 'daily_report' ? 23 : 7);
       if (adjustedHour !== sendTimeHour) {
-        results.push({ user_id: tpl.user_id, sent: false, reason: `hour mismatch: ${adjustedHour} vs ${sendTimeHour}` });
+        results.push({ user_id: tpl.user_id, template_type: tpl.template_type, sent: false, reason: `hour mismatch: ${adjustedHour} vs ${sendTimeHour}` });
         continue;
       }
 
       // Check WhatsApp connection
       const { data: config } = await supabase
         .from('whatsapp_config')
-        .select('phone_number, is_connected')
+        .select('phone_number, is_connected, instance_name, api_url, api_key')
         .eq('user_id', tpl.user_id)
         .single();
 
       if (!config?.is_connected || !config?.phone_number) {
-        results.push({ user_id: tpl.user_id, sent: false, reason: 'not connected' });
+        results.push({ user_id: tpl.user_id, template_type: tpl.template_type, sent: false, reason: 'not connected' });
         continue;
       }
 
@@ -62,66 +61,123 @@ Deno.serve(async (req) => {
         .from('whatsapp_logs')
         .select('id')
         .eq('user_id', tpl.user_id)
-        .eq('template_type', 'daily_reminder')
+        .eq('template_type', tpl.template_type)
         .eq('status', 'sent')
         .gte('sent_at', todayStart.toISOString())
         .limit(1);
 
       if (existingLogs && existingLogs.length > 0) {
-        results.push({ user_id: tpl.user_id, sent: false, reason: 'already sent today' });
+        results.push({ user_id: tpl.user_id, template_type: tpl.template_type, sent: false, reason: 'already sent today' });
         continue;
       }
 
-      // Count pending tasks
-      const { count: pendingCount } = await supabase
+      const excludedIds: string[] = (tpl as any).excluded_column_ids || [];
+
+      // Build column filter
+      let taskQuery = supabase
         .from('tasks')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', tpl.user_id)
         .eq('is_completed', false);
 
-      // Count overdue tasks
-      const { count: overdueCount } = await supabase
-        .from('tasks')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', tpl.user_id)
-        .eq('is_completed', false)
-        .lt('due_date', now.toISOString())
-        .not('due_date', 'is', null);
-
-      const overdueText = overdueCount && overdueCount > 0
-        ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)`
-        : '✅ Nenhuma tarefa atrasada!';
-
-      // Replace variables
-      let message = tpl.message_template;
-      message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount || 0));
-      message = message.replace(/\{\{overdueText\}\}/g, overdueText);
-
-      // Send via Evolution API
-      const evoUrl = (config as any).api_url || Deno.env.get('EVOLUTION_API_URL') || '';
-      const evoKey = (config as any).api_key || Deno.env.get('EVOLUTION_API_KEY') || '';
-
-      // Get instance name
-      const { data: fullConfig } = await supabase
-        .from('whatsapp_config')
-        .select('instance_name, api_url, api_key')
-        .eq('user_id', tpl.user_id)
-        .single();
-
-      if (!fullConfig) {
-        results.push({ user_id: tpl.user_id, sent: false, reason: 'no config' });
-        continue;
+      if (excludedIds.length > 0) {
+        // Exclude tasks in specific columns
+        for (const colId of excludedIds) {
+          taskQuery = taskQuery.neq('column_id', colId);
+        }
       }
 
-      const baseUrl = (fullConfig.api_url || evoUrl).replace(/\/$/, '');
-      const apiKey = fullConfig.api_key || evoKey;
+      let message = tpl.message_template;
+
+      if (tpl.template_type === 'daily_reminder') {
+        const { count: pendingCount } = await taskQuery;
+
+        let overdueQuery = supabase
+          .from('tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', tpl.user_id)
+          .eq('is_completed', false)
+          .lt('due_date', now.toISOString())
+          .not('due_date', 'is', null);
+
+        if (excludedIds.length > 0) {
+          for (const colId of excludedIds) {
+            overdueQuery = overdueQuery.neq('column_id', colId);
+          }
+        }
+        const { count: overdueCount } = await overdueQuery;
+
+        const overdueText = overdueCount && overdueCount > 0
+          ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)`
+          : '✅ Nenhuma tarefa atrasada!';
+
+        message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount || 0));
+        message = message.replace(/\{\{overdueText\}\}/g, overdueText);
+
+      } else if (tpl.template_type === 'daily_report') {
+        // Total tasks (not completed) respecting excluded columns
+        const { count: pendingCount } = await taskQuery;
+
+        // Completed today
+        const todayStr = new Date().toISOString().slice(0, 10);
+        let completedQuery = supabase
+          .from('tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', tpl.user_id)
+          .eq('is_completed', true)
+          .gte('updated_at', todayStr + 'T00:00:00')
+          .lte('updated_at', todayStr + 'T23:59:59');
+
+        if (excludedIds.length > 0) {
+          for (const colId of excludedIds) {
+            completedQuery = completedQuery.neq('column_id', colId);
+          }
+        }
+        const { count: completedToday } = await completedQuery;
+
+        const total = (pendingCount || 0) + (completedToday || 0);
+        const percent = total > 0 ? Math.round(((completedToday || 0) / total) * 100) : 0;
+
+        // Progress bar
+        const filled = Math.round(percent / 10);
+        const progressBar = '▓'.repeat(filled) + '░'.repeat(10 - filled) + ` ${percent}%`;
+
+        // Overdue
+        let overdueQuery = supabase
+          .from('tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', tpl.user_id)
+          .eq('is_completed', false)
+          .lt('due_date', now.toISOString())
+          .not('due_date', 'is', null);
+        if (excludedIds.length > 0) {
+          for (const colId of excludedIds) {
+            overdueQuery = overdueQuery.neq('column_id', colId);
+          }
+        }
+        const { count: overdueCount } = await overdueQuery;
+        const overdueText = overdueCount && overdueCount > 0
+          ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)`
+          : '✅ Nenhuma tarefa atrasada!';
+
+        message = message.replace(/\{\{completedToday\}\}/g, String(completedToday || 0));
+        message = message.replace(/\{\{totalTasks\}\}/g, String(total));
+        message = message.replace(/\{\{completionPercent\}\}/g, String(percent));
+        message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount || 0));
+        message = message.replace(/\{\{overdueText\}\}/g, overdueText);
+        message = message.replace(/\{\{progressBar\}\}/g, progressBar);
+      }
+
+      // Send via Evolution API
+      const baseUrl = (config.api_url || Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/$/, '');
+      const apiKey = config.api_key || Deno.env.get('EVOLUTION_API_KEY') || '';
 
       let phone = config.phone_number.replace(/\D/g, '');
       if (!phone.startsWith('55') && phone.length <= 11) {
         phone = '55' + phone;
       }
 
-      const res = await fetch(`${baseUrl}/message/sendText/${fullConfig.instance_name}`, {
+      const res = await fetch(`${baseUrl}/message/sendText/${config.instance_name}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: apiKey },
         body: JSON.stringify({ number: phone, text: message }),
@@ -129,17 +185,16 @@ Deno.serve(async (req) => {
 
       const resData = await res.json();
 
-      // Log
       await supabase.from('whatsapp_logs').insert({
         user_id: tpl.user_id,
-        template_type: 'daily_reminder',
+        template_type: tpl.template_type,
         phone_number: phone,
         message,
         status: res.ok ? 'sent' : 'failed',
         error_message: res.ok ? null : JSON.stringify(resData),
       });
 
-      results.push({ user_id: tpl.user_id, sent: res.ok });
+      results.push({ user_id: tpl.user_id, template_type: tpl.template_type, sent: res.ok });
     }
 
     return new Response(JSON.stringify({ success: true, results }), {
