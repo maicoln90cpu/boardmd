@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { isSameDay, parseISO, startOfDay, isToday, isTomorrow, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
 import { Sidebar } from "@/components/Sidebar";
 import { useColumns } from "@/hooks/data/useColumns";
 import { useCategories } from "@/hooks/data/useCategories";
+import { useSettings } from "@/hooks/data/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -38,21 +39,44 @@ interface Task {
 
 import { FilterPresetFilters } from "@/types";
 
+const defaultCalendarFilters = {
+  priority: [] as string[],
+  tag: [] as string[],
+  dueDate: [] as string[],
+  categories: [] as string[],
+  columns: [] as string[],
+  search: "",
+};
+
 export default function Calendar() {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
+  const { settings, updateSettings } = useSettings();
+  const calendarFilters = settings.calendarFilters || defaultCalendarFilters;
+  
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Estados de filtro avançado (arrays para multi-select)
-  const [searchTerm, setSearchTerm] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
-  const [tagFilter, setTagFilter] = useState<string[]>([]);
-  const [dueDateFilter, setDueDateFilter] = useState<string[]>([]);
-  
+  // Persistent filter setters (saved to DB via useSettings)
+  const searchTerm = calendarFilters.search;
+  const priorityFilter = calendarFilters.priority;
+  const tagFilter = calendarFilters.tag;
+  const dueDateFilter = calendarFilters.dueDate;
+  const selectedCategories = calendarFilters.categories;
+  const selectedColumns = calendarFilters.columns;
+
+  const updateCalendarFilter = useCallback((patch: Partial<typeof defaultCalendarFilters>) => {
+    updateSettings({ calendarFilters: { ...calendarFilters, ...patch } });
+  }, [calendarFilters, updateSettings]);
+
+  const setSearchTerm = useCallback((v: string) => updateCalendarFilter({ search: v }), [updateCalendarFilter]);
+  const setPriorityFilter = useCallback((v: string[]) => updateCalendarFilter({ priority: v }), [updateCalendarFilter]);
+  const setTagFilter = useCallback((v: string[]) => updateCalendarFilter({ tag: v }), [updateCalendarFilter]);
+  const setDueDateFilter = useCallback((v: string[]) => updateCalendarFilter({ dueDate: v }), [updateCalendarFilter]);
+  const setSelectedCategories = useCallback((v: string[]) => updateCalendarFilter({ categories: v }), [updateCalendarFilter]);
+  const setSelectedColumns = useCallback((v: string[]) => updateCalendarFilter({ columns: v }), [updateCalendarFilter]);
+
   const { columns } = useColumns();
   const { categories } = useCategories();
 
@@ -239,30 +263,23 @@ export default function Calendar() {
 
   // Toggle category filter
   const toggleCategory = (categoryId: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryId)
-        ? prev.filter(id => id !== categoryId)
-        : [...prev, categoryId]
-    );
+    const updated = selectedCategories.includes(categoryId)
+      ? selectedCategories.filter(id => id !== categoryId)
+      : [...selectedCategories, categoryId];
+    setSelectedCategories(updated);
   };
 
   // Toggle column filter
   const toggleColumn = (columnId: string) => {
-    setSelectedColumns(prev =>
-      prev.includes(columnId)
-        ? prev.filter(id => id !== columnId)
-        : [...prev, columnId]
-    );
+    const updated = selectedColumns.includes(columnId)
+      ? selectedColumns.filter(id => id !== columnId)
+      : [...selectedColumns, columnId];
+    setSelectedColumns(updated);
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setSelectedCategories([]);
-    setSelectedColumns([]);
-    setSearchTerm("");
-    setPriorityFilter([]);
-    setTagFilter([]);
-    setDueDateFilter([]);
+    updateSettings({ calendarFilters: defaultCalendarFilters });
   };
 
   const getPriorityColor = (priority?: string | null) => {
