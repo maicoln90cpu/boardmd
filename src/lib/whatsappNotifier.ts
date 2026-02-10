@@ -47,8 +47,17 @@ export async function sendWhatsAppNotification({
       const [templateHour] = (template.send_time as string).split(":").map(Number);
       const currentHour = now.getHours();
       
-      // For due_date alerts, skip time check (they're urgent)
-      if (templateType !== "due_date" && currentHour !== templateHour) {
+      // For due_date alerts, also check send_time_2
+      if (templateType === "due_date") {
+        const sendTime2 = (template as any).send_time_2;
+        if (sendTime2) {
+          const [hour2] = (sendTime2 as string).split(":").map(Number);
+          if (currentHour !== templateHour && currentHour !== hour2) {
+            return false;
+          }
+        }
+        // due_date without send_time_2: skip time check (urgent)
+      } else if (currentHour !== templateHour) {
         return false;
       }
     }
