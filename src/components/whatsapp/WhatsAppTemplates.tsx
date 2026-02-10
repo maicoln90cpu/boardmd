@@ -22,6 +22,7 @@ interface Template {
   send_time: string;
   send_time_2?: string;
   due_date_hours_before?: number;
+  due_date_hours_before_2?: number;
   excluded_column_ids: string[];
 }
 
@@ -37,9 +38,10 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
     message_template: "⏰ *Alerta de Prazo*\n\nA tarefa \"{{taskTitle}}\" vence em {{timeRemaining}}.\n\nAcesse o BoardMD para gerenciar.",
     is_enabled: true,
     variables: ["taskTitle", "timeRemaining"],
-    send_time: "08:00",
+    send_time: "",
     send_time_2: "",
     due_date_hours_before: 24,
+    due_date_hours_before_2: 2,
     excluded_column_ids: [],
   },
   {
@@ -124,6 +126,7 @@ export function WhatsAppTemplates() {
           send_time: saved?.send_time ? (saved.send_time as string).slice(0, 5) : def.send_time,
           send_time_2: saved?.send_time_2 ? (saved.send_time_2 as string).slice(0, 5) : (def.send_time_2 || ""),
           due_date_hours_before: (saved as any)?.due_date_hours_before ?? def.due_date_hours_before,
+          due_date_hours_before_2: (saved as any)?.due_date_hours_before_2 ?? def.due_date_hours_before_2,
           excluded_column_ids: (saved as any)?.excluded_column_ids || def.excluded_column_ids || [],
         };
       });
@@ -144,9 +147,10 @@ export function WhatsAppTemplates() {
         const payload: any = {
           message_template: tpl.message_template,
           is_enabled: tpl.is_enabled,
-          send_time: tpl.send_time + ":00",
+          send_time: tpl.send_time ? tpl.send_time + ":00" : null,
           send_time_2: tpl.send_time_2 ? tpl.send_time_2 + ":00" : null,
           due_date_hours_before: tpl.due_date_hours_before ?? 24,
+          due_date_hours_before_2: tpl.due_date_hours_before_2 ?? null,
           excluded_column_ids: tpl.excluded_column_ids || [],
         };
 
@@ -284,31 +288,24 @@ export function WhatsAppTemplates() {
             />
 
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-sm text-muted-foreground">Horário:</Label>
-                <Input
-                  type="time"
-                  value={tpl.send_time}
-                  onChange={(e) => updateTemplate(idx, "send_time", e.target.value)}
-                  className="w-28 h-8 text-sm"
-                />
-              </div>
+              {tpl.template_type !== "due_date" && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm text-muted-foreground">Horário:</Label>
+                  <Input
+                    type="time"
+                    value={tpl.send_time}
+                    onChange={(e) => updateTemplate(idx, "send_time", e.target.value)}
+                    className="w-28 h-8 text-sm"
+                  />
+                </div>
+              )}
 
               {tpl.template_type === "due_date" && (
                 <>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Label className="text-sm text-muted-foreground">2º Horário:</Label>
-                    <Input
-                      type="time"
-                      value={tpl.send_time_2 || ""}
-                      onChange={(e) => updateTemplate(idx, "send_time_2", e.target.value)}
-                      className="w-28 h-8 text-sm"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm text-muted-foreground">Horas antes:</Label>
+                    <Label className="text-sm text-muted-foreground">1º Alerta:</Label>
                     <Input
                       type="number"
                       min={1}
@@ -317,6 +314,24 @@ export function WhatsAppTemplates() {
                       onChange={(e) => updateTemplate(idx, "due_date_hours_before", parseInt(e.target.value) || 24)}
                       className="w-20 h-8 text-sm"
                     />
+                    <span className="text-sm text-muted-foreground">horas antes</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm text-muted-foreground">2º Alerta:</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={168}
+                      value={tpl.due_date_hours_before_2 ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseInt(e.target.value) : undefined;
+                        updateTemplate(idx, "due_date_hours_before_2", val);
+                      }}
+                      placeholder="Opcional"
+                      className="w-20 h-8 text-sm"
+                    />
+                    <span className="text-sm text-muted-foreground">horas antes</span>
                   </div>
                 </>
               )}
