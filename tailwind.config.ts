@@ -87,7 +87,7 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Open Sans',
+  				'Roboto',
   				'ui-sans-serif',
   				'system-ui',
   				'sans-serif',
@@ -97,7 +97,7 @@ export default {
   				'Noto Color Emoji'
   			],
   			serif: [
-  				'Playfair Display',
+  				'Source Serif Pro',
   				'ui-serif',
   				'Georgia',
   				'Cambria',
