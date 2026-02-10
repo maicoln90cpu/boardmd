@@ -1,202 +1,221 @@
 
 
-# Plano de Auditoria e Correção - Configurações, Filtros e Persistência
+# Plano Completo - Push VAPID + WhatsApp Evolution API
 
 ---
 
-## Diagnóstico Completo
+## Diagnostico do Item 1: Service Worker Push
 
-### 1. Configurações Perdendo Valores (Bug de Persistência)
+### O que esta instalado
 
-**Causa Raiz Identificada**: Race condition no mecanismo de batching do `useSettings.ts`.
+| Componente | Status | Observacao |
+|-----------|--------|------------|
+| `sw-push.js` com evento `push` | Instalado | Importado no Workbox SW via `importScripts` |
+| `sw-push.js` com evento `notificationclick` | Instalado | Funcional |
+| `sw-push.js` com evento `install` | NAO instalado | Nao necessario - Workbox ja faz `skipWaiting` |
+| `sw-push.js` com evento `activate` | NAO instalado | Nao necessario - Workbox ja faz `clientsClaim` |
+| `skipWaiting()` + `clientsClaim()` | Instalado | Configurado no `vite.config.ts` linhas 49-50 |
+| OneSignal SW (`OneSignalSDKWorker.js`) | Instalado | SW SEPARADO do Workbox |
+| PushManager subscribe via VAPID | NAO instalado | Apenas secrets existem, sem fluxo de subscribe |
+| Edge function para enviar push VAPID | NAO existe | Precisa ser criada (`send-vapid-push`) |
 
-O `flushPendingChanges` (linha 248) captura `settings` do estado via closure. Quando `scheduleBatchSave` cria um `setTimeout`, ele referencia a versão do `flushPendingChanges` daquele momento. Se o estado de `settings` mudar antes do timer disparar, o save usa dados ANTIGOS, sobrescrevendo configurações mais recentes.
+### Problema Arquitetural Atual
+
+Existem **DOIS Service Workers** registrados simultaneamente:
+
+1. **Workbox SW** (gerado pelo vite-plugin-pwa) - scope `/`, importa `sw-push.js`
+2. **OneSignalSDKWorker.js** - scope `/`, registrado pelo SDK OneSignal
+
+O OneSignal SDK gerencia seu proprio push subscription. O `sw-push.js` dentro do Workbox SW nunca recebe eventos push do OneSignal porque o OneSignal usa seu proprio SW.
+
+Para VAPID funcionar, o subscribe do PushManager precisa usar o **registration do Workbox SW** (que ja tem o `sw-push.js` importado), nao o do OneSignal.
+
+---
+
+## Solucao Proposta
+
+### Arquitetura de Push com 3 canais
 
 ```text
-Fluxo do Bug:
-1. Usuario muda tema -> settings = {theme: "dark"} -> timer agendado (500ms)
-2. Usuario muda densidade -> settings = {density: "compact"} -> novo timer
-3. Timer 1 dispara com settings ANTIGO (sem density) -> salva no banco SEM density
-4. Timer 2 dispara -> mas banco ja foi sobrescrito
++------------------+     +------------------+     +------------------+
+|   OneSignal      |     |   VAPID (Web     |     |   WhatsApp       |
+|   (Push via SDK) |     |   Push direto)   |     |   (Evolution API)|
++--------+---------+     +--------+---------+     +--------+---------+
+         |                        |                        |
+         v                        v                        v
+  OneSignalSDKWorker.js    Workbox SW + sw-push.js   Edge Function
+         |                        |                   (send-whatsapp)
+         v                        v                        |
+   API OneSignal           Edge Function                   v
+                           (send-vapid-push)         Evolution API
+                                                          |
+                                                          v
+                                                    WhatsApp do user
 ```
 
-**Solucao**: Usar `useRef` para armazenar settings atual, garantindo que `flushPendingChanges` sempre leia o valor mais recente:
+---
 
-```typescript
-const settingsRef = useRef<AppSettings>(settings);
-settingsRef.current = settings; // Sempre atualizado
+## Item 1 + 3: Push VAPID (reimplementacao)
 
-const flushPendingChanges = useCallback(async () => {
-  const currentSettings = settingsRef.current; // Sempre fresco
-  // ... merge e save
-}, [user]); // Remove 'settings' das dependencias
+### O que precisa ser feito
+
+#### 1. Hook `useVapidPush.ts` (novo)
+- Registrar push subscription usando o **Workbox SW** (`navigator.serviceWorker.ready`)
+- Usar `PushManager.subscribe()` com `applicationServerKey` = VAPID_PUBLIC_KEY publica
+- Salvar subscription na tabela `push_subscriptions` existente
+- Nao conflita com OneSignal porque usa SW diferente
+
+#### 2. Edge Function `send-vapid-push` (nova)
+- Recebe `user_id`, `title`, `body`, `data`
+- Busca subscriptions VAPID do user em `push_subscriptions`
+- Usa biblioteca `web-push` (npm) para enviar via VAPID
+- Usa secrets ja existentes: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`
+
+#### 3. Ajustes no `sw-push.js`
+- Adicionar `install` e `activate` listeners (para garantir ativacao imediata quando registrado standalone)
+- O codigo de `push` e `notificationclick` ja esta correto
+
+#### 4. UI - Aba "Ativar Push" reformulada
+- Componente `PushProviderSelector` com duas opcoes:
+  - **VAPID (Push Direto)** - sem dependencia externa, funciona com o SW do app
+  - **OneSignal** - servico gerenciado com dashboard
+- Ambos podem estar ativos simultaneamente
+- Status individual para cada provedor (inscrito/nao inscrito)
+
+### Arquivos a criar/modificar
+
+| Arquivo | Acao |
+|---------|------|
+| `src/hooks/useVapidPush.ts` | Criar - hook de subscribe/unsubscribe VAPID |
+| `supabase/functions/send-vapid-push/index.ts` | Criar - edge function para enviar push |
+| `public/sw-push.js` | Modificar - adicionar install/activate |
+| `src/components/PushProviderSelector.tsx` | Criar - UI para escolher VAPID e/ou OneSignal |
+| `src/pages/NotificationsDashboard.tsx` | Modificar - usar PushProviderSelector na aba config |
+| `src/lib/notifications/oneSignalNotifier.ts` | Modificar - fallback para VAPID se OneSignal falhar |
+
+---
+
+## Item 2: WhatsApp via Evolution API
+
+### Fluxo do Usuario
+
+1. Acessar Notificacoes > WhatsApp (nova aba na sidebar dentro de notificacoes)
+2. Configurar URL e API Key da Evolution API
+3. Sistema verifica se existe instancia criada
+4. Se nao existir, cria instancia e mostra QR Code para leitura
+5. Apos conectado, usuario configura templates de mensagem
+6. Sistema envia notificacoes via WhatsApp conforme templates
+
+### Tabelas necessarias (migracao SQL)
+
+```sql
+-- Configuracao da instancia Evolution API por usuario
+CREATE TABLE whatsapp_config (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  instance_name text NOT NULL,
+  instance_id text,
+  phone_number text,
+  is_connected boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(user_id)
+);
+
+-- Templates de mensagem WhatsApp
+CREATE TABLE whatsapp_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  template_type text NOT NULL, -- 'due_date', 'daily_reminder', 'pomodoro', etc.
+  message_template text NOT NULL,
+  is_enabled boolean DEFAULT true,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Log de mensagens enviadas
+CREATE TABLE whatsapp_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  template_type text,
+  phone_number text,
+  message text,
+  status text DEFAULT 'pending',
+  error_message text,
+  sent_at timestamptz DEFAULT now()
+);
 ```
 
-Alem disso, a subscription Realtime (linha 421) faz `pendingChangesRef.current = {}` ao receber update, descartando mudancas locais pendentes. Isso precisa ser corrigido para mergear em vez de descartar.
+### Edge Functions necessarias
 
-**Risco**: 4/10 | **Complexidade**: 5/10
+| Function | Descricao |
+|----------|-----------|
+| `whatsapp-instance` | Criar/verificar/conectar instancia, retornar QR Code |
+| `send-whatsapp` | Enviar mensagem via Evolution API |
 
----
+### Secrets necessarios
 
-### 2. Defaults Desalinhados com Configurações do Usuário
+| Secret | Descricao |
+|--------|-----------|
+| `EVOLUTION_API_URL` | URL base da Evolution API (ex: `https://evo.seudominio.com`) |
+| `EVOLUTION_API_KEY` | API Key global da Evolution API |
 
-Os defaults no codigo NAO correspondem aos valores que o usuario usa (confirmados no banco e nos prints):
+### Componentes UI (novos)
 
-| Setting | Default Atual | Valor Correto (print/banco) |
-|---------|--------------|---------------------------|
-| `notifications.dueDateHours` | 24 | **4** |
-| `productivity.dailyReviewEnabled` | true | **false** |
-| `mobile.projectsGridColumns` | 2 | **1** |
+| Componente | Descricao |
+|-----------|-----------|
+| `WhatsAppSettings.tsx` | Config principal com sub-abas |
+| `WhatsAppConnection.tsx` | Conectar instancia + QR Code |
+| `WhatsAppTemplates.tsx` | Editor de templates de mensagem |
+| `WhatsAppLogs.tsx` | Historico de mensagens enviadas |
 
-Isso significa que se o banco falhar ao carregar, o usuario ve valores errados. Os defaults devem refletir a configuracao desejada.
+### Fluxo da Evolution API
 
-**Arquivo**: `src/hooks/data/useSettings.ts` (linhas 103, 134, 148)
+1. `POST /instance/create` - criar instancia com `instanceName: "boardmd-{userId}"`
+2. `GET /instance/connect/{instanceName}` - obter QR Code (retorna base64)
+3. `GET /instance/connectionState/{instanceName}` - verificar se conectou
+4. `POST /message/sendText/{instanceName}` - enviar mensagem de texto
 
-**Risco**: 1/10 | **Complexidade**: 1/10
+### Layout da pagina WhatsApp
 
----
-
-### 3. Filtros do Calendário - Análise
-
-**Descoberta Importante**: Os filtros do calendario estao **funcionando corretamente**. Verifiquei no banco:
-
-- "Arrumar Alexia" tem prioridade **medium** (nao high)
-- "Missao 99Pay" tem prioridade **medium** (nao high)
-- "TP - Dnox" tem prioridade **medium**
-
-A confusao visual ocorre porque o **estilo do card usa a COR DA COLUNA** (ex: vermelha para "Urgente") como prioridade visual, fazendo parecer que sao tarefas de alta prioridade quando na verdade sao medias em colunas vermelhas.
-
-O filtro funciona no campo `priority` do banco, nao na cor visual. Ao selecionar "Media", TODAS as tarefas mostradas sao realmente de prioridade media - o que pode ser confuso quando a coluna tem cor vermelha.
-
-**Acao**: Nenhuma correcao necessaria nos filtros. Adicionar tooltip ou legenda explicativa no calendario para diferenciar "cor de prioridade" de "cor de coluna".
-
----
-
-### 4. Filtros do Calendário NÃO Persistidos
-
-Os filtros do calendario (`priorityFilter`, `tagFilter`, `dueDateFilter`, `selectedCategories`) sao estado local (`useState`) e se perdem ao navegar para outra pagina ou trocar de dispositivo.
-
-**Solucao**: Persistir filtros do calendario no `settings.calendarFilters` (novo campo no AppSettings):
-
-```typescript
-// Em AppSettings
-calendarFilters?: {
-  priority: string[];
-  tag: string[];
-  dueDate: string[];
-  categories: string[];
-  columns: string[];
-  search: string;
-};
-```
-
-**Arquivo Principal**: `src/pages/Calendar.tsx` - substituir `useState` por valores do `useSettings`
-
-**Risco**: 2/10 | **Complexidade**: 4/10
+Dentro de NotificationsDashboard, nova aba "WhatsApp" com sub-abas:
+- **Conexao** - Status da instancia, QR Code, reconectar
+- **Templates** - Editar mensagens padrao (due_date, daily_reminder, etc.)
+- **Historico** - Log de mensagens enviadas
 
 ---
 
-### 5. Tarefas Órfãs
+## Resumo de alteracoes
 
-**Resultado da auditoria**: Zero tarefas com `category_id = NULL` no banco. A validacao no `TaskModal.tsx` (linha 143) ja impede criacao de tarefas sem categoria. Nenhuma acao necessaria.
+| # | Area | Arquivos novos | Arquivos modificados | Complexidade |
+|---|------|---------------|---------------------|-------------|
+| 1 | VAPID Push | 3 | 3 | 6/10 |
+| 2 | WhatsApp | 5 componentes + 2 edge functions | 1 (NotificationsDashboard) | 8/10 |
+| 3 | Banco de dados | 1 migracao (3 tabelas + RLS) | 0 | 4/10 |
 
----
-
-### 6. Categoria "Diário" Fantasma
-
-A categoria "Diario" ja foi removida na sessao anterior (migracao SQL deletou a categoria e moveu/removeu as 37 tarefas). Confirmado que restam apenas 4 categorias: Casa (11), MDAccula (34), Pessoal (43), Projetos (35).
-
----
-
-## Arquivos a Modificar
-
-| # | Arquivo | Alteracao | Complexidade |
-|---|---------|-----------|--------------|
-| 1 | `src/hooks/data/useSettings.ts` | Fix stale closure com settingsRef + defaults | 5/10 |
-| 2 | `src/pages/Calendar.tsx` | Persistir filtros via useSettings | 4/10 |
-| 3 | `src/types/index.ts` | Adicionar tipo `calendarFilters` se necessario | 1/10 |
-
-**Pontuacao Total de Risco: 7/25** - Baixo risco.
-
----
-
-## Detalhamento Técnico
-
-### Fix do useSettings.ts
-
-```typescript
-// 1. Adicionar ref para settings
-const settingsRef = useRef<AppSettings>(defaultSettings);
-
-// 2. Manter ref sincronizada (apos setSettings)
-useEffect(() => {
-  settingsRef.current = settings;
-}, [settings]);
-
-// 3. flushPendingChanges usa ref em vez de state
-const flushPendingChanges = useCallback(async () => {
-  if (!user || Object.keys(pendingChangesRef.current).length === 0) return;
-  const currentSettings = settingsRef.current; // SEMPRE FRESCO
-  // ... resto igual mas usando currentSettings
-}, [user, deepMergePartial]); // SEM 'settings' nas deps
-
-// 4. Realtime: nao descartar pending changes
-.on('postgres_changes', ..., (payload) => {
-  // NAO fazer: pendingChangesRef.current = {};
-  // Apenas atualizar se nao houver mudancas pendentes
-  if (Object.keys(pendingChangesRef.current).length === 0) {
-    setSettings(deepMergeSettings(loadedSettings));
-  }
-})
-```
-
-### Persistência de Filtros do Calendário
-
-```typescript
-// Calendar.tsx - usar settings em vez de useState
-const { settings, updateSettings, saveSettings } = useSettings();
-const calendarFilters = settings.calendarFilters || defaultCalendarFilters;
-
-// Setters que salvam automaticamente
-const setPriorityFilter = (val: string[]) => {
-  updateSettings({ calendarFilters: { ...calendarFilters, priority: val } });
-};
-```
-
-### Defaults Corrigidos
-
-```typescript
-notifications: {
-  dueDateHours: 4,     // Era 24
-  // ... resto igual
-},
-productivity: {
-  dailyReviewEnabled: false,  // Era true
-  // ... resto igual
-},
-mobile: {
-  projectsGridColumns: 1,    // Era 2
-  // ... resto igual
-},
-```
+**Pontuacao Total de Risco: 18/25** - Medio-alto (principalmente pela integracao externa Evolution API).
 
 ---
 
 ## Checklist de Testes Manuais
 
-### Persistência de Settings:
-- [ ] Alterar tema para "Escuro" em /config
-- [ ] Navegar para outra pagina e voltar - verificar que tema permanece escuro
-- [ ] Recarregar a pagina (F5) - verificar que tema permanece escuro
-- [ ] Alterar densidade rapidamente 3x seguidas - verificar que a ultima opcao e salva
+### VAPID Push:
+- [ ] Ativar VAPID Push na aba "Ativar Push"
+- [ ] Verificar que subscription foi salva no banco (`push_subscriptions`)
+- [ ] Enviar notificacao de teste VAPID - deve aparecer como notificacao do sistema
+- [ ] Fechar o app e enviar push - deve aparecer como notificacao do SO
+- [ ] Desativar VAPID e verificar que subscription foi removida
 
-### Filtros do Calendario:
-- [ ] Selecionar filtro "Media" no calendario - verificar que tarefas aparecem corretamente
-- [ ] Navegar para outra pagina e voltar ao calendario - filtro deve estar mantido
-- [ ] Limpar filtros e verificar que tudo volta ao normal
+### OneSignal (regressao):
+- [ ] Verificar que OneSignal continua funcionando apos adicionar VAPID
+- [ ] Ativar ambos (VAPID + OneSignal) e enviar teste - ambos devem funcionar
 
-### Defaults:
-- [ ] Verificar que "Alertar com antecedencia" mostra 4 horas (nao 24)
-- [ ] Verificar que "Revisao Diaria" esta desativada por padrao
-- [ ] Verificar que "Colunas no Grid Mobile" mostra 1 coluna
+### WhatsApp:
+- [ ] Acessar Notificacoes > WhatsApp
+- [ ] Inserir credenciais da Evolution API
+- [ ] Criar instancia e escanear QR Code
+- [ ] Verificar status "Conectado"
+- [ ] Editar template de mensagem
+- [ ] Enviar mensagem de teste
+- [ ] Verificar historico de mensagens
 
