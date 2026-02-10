@@ -79,10 +79,10 @@
        ========================================================================= */
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0px 0px 10px 2px hsl(0, 0%, 0%);
-    --shadow: 0px 0px 20px 2px hsl(0, 0%, 0%);
-    --shadow-md: 0px 0px 30px 2px hsl(0, 0%, 0%);
-    --shadow-lg: 0px 0px 50px 2px hsl(0, 0%, 0%);
+    --shadow-sm: 0px 0px 10px 3px hsl(240, 91%, 83%);
+    --shadow: 0px 0px 20px 3px hsl(240, 91%, 83%);
+    --shadow-md: 0px 0px 30px 3px hsl(240, 91%, 83%);
+    --shadow-lg: 0px 0px 50px 3px hsl(240, 91%, 83%);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 
@@ -196,10 +196,10 @@
     --radius: 2rem;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
     --font-sans: Roboto, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-    --shadow-sm: 0px 0px 10px 2px hsl(0, 0%, 0%);
-    --shadow: 0px 0px 20px 2px hsl(0, 0%, 0%);
-    --shadow-md: 0px 0px 30px 2px hsl(0, 0%, 0%);
-    --shadow-lg: 0px 0px 50px 2px hsl(0, 0%, 0%);
+    --shadow-sm: 0px 0px 10px 3px hsl(240, 91%, 83%);
+    --shadow: 0px 0px 20px 3px hsl(240, 91%, 83%);
+    --shadow-md: 0px 0px 30px 3px hsl(240, 91%, 83%);
+    --shadow-lg: 0px 0px 50px 3px hsl(240, 91%, 83%);
   }
 }
 
