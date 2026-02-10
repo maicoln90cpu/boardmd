@@ -1,5 +1,16 @@
 // Custom Push Notification Service Worker
-// This handles push events, notification clicks, and rich notification actions
+// Handles push events, notification clicks, install and activate
+
+// Immediate activation
+self.addEventListener('install', (event) => {
+  console.log('[sw-push] Installing...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('[sw-push] Activating...');
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener('push', async (event) => {
   console.log('Push notification received:', event);
