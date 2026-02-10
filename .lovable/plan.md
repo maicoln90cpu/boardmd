@@ -1,221 +1,155 @@
 
 
-# Plano Completo - Push VAPID + WhatsApp Evolution API
+# Plano: Melhorar Templates WhatsApp
+
+## Resumo das Alteracoes
+
+5 melhorias nos templates WhatsApp: novo resumo diario (08h), relatorio de % concluidas (23h), alerta pre-vencimento com ate 2 horarios configuraveis, edge functions/triggers para automacao, e filtro de colunas por template.
 
 ---
 
-## Diagnostico do Item 1: Service Worker Push
+## 1. Alteracoes no Banco de Dados
 
-### O que esta instalado
-
-| Componente | Status | Observacao |
-|-----------|--------|------------|
-| `sw-push.js` com evento `push` | Instalado | Importado no Workbox SW via `importScripts` |
-| `sw-push.js` com evento `notificationclick` | Instalado | Funcional |
-| `sw-push.js` com evento `install` | NAO instalado | Nao necessario - Workbox ja faz `skipWaiting` |
-| `sw-push.js` com evento `activate` | NAO instalado | Nao necessario - Workbox ja faz `clientsClaim` |
-| `skipWaiting()` + `clientsClaim()` | Instalado | Configurado no `vite.config.ts` linhas 49-50 |
-| OneSignal SW (`OneSignalSDKWorker.js`) | Instalado | SW SEPARADO do Workbox |
-| PushManager subscribe via VAPID | NAO instalado | Apenas secrets existem, sem fluxo de subscribe |
-| Edge function para enviar push VAPID | NAO existe | Precisa ser criada (`send-vapid-push`) |
-
-### Problema Arquitetural Atual
-
-Existem **DOIS Service Workers** registrados simultaneamente:
-
-1. **Workbox SW** (gerado pelo vite-plugin-pwa) - scope `/`, importa `sw-push.js`
-2. **OneSignalSDKWorker.js** - scope `/`, registrado pelo SDK OneSignal
-
-O OneSignal SDK gerencia seu proprio push subscription. O `sw-push.js` dentro do Workbox SW nunca recebe eventos push do OneSignal porque o OneSignal usa seu proprio SW.
-
-Para VAPID funcionar, o subscribe do PushManager precisa usar o **registration do Workbox SW** (que ja tem o `sw-push.js` importado), nao o do OneSignal.
-
----
-
-## Solucao Proposta
-
-### Arquitetura de Push com 3 canais
-
-```text
-+------------------+     +------------------+     +------------------+
-|   OneSignal      |     |   VAPID (Web     |     |   WhatsApp       |
-|   (Push via SDK) |     |   Push direto)   |     |   (Evolution API)|
-+--------+---------+     +--------+---------+     +--------+---------+
-         |                        |                        |
-         v                        v                        v
-  OneSignalSDKWorker.js    Workbox SW + sw-push.js   Edge Function
-         |                        |                   (send-whatsapp)
-         v                        v                        |
-   API OneSignal           Edge Function                   v
-                           (send-vapid-push)         Evolution API
-                                                          |
-                                                          v
-                                                    WhatsApp do user
-```
-
----
-
-## Item 1 + 3: Push VAPID (reimplementacao)
-
-### O que precisa ser feito
-
-#### 1. Hook `useVapidPush.ts` (novo)
-- Registrar push subscription usando o **Workbox SW** (`navigator.serviceWorker.ready`)
-- Usar `PushManager.subscribe()` com `applicationServerKey` = VAPID_PUBLIC_KEY publica
-- Salvar subscription na tabela `push_subscriptions` existente
-- Nao conflita com OneSignal porque usa SW diferente
-
-#### 2. Edge Function `send-vapid-push` (nova)
-- Recebe `user_id`, `title`, `body`, `data`
-- Busca subscriptions VAPID do user em `push_subscriptions`
-- Usa biblioteca `web-push` (npm) para enviar via VAPID
-- Usa secrets ja existentes: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_EMAIL`
-
-#### 3. Ajustes no `sw-push.js`
-- Adicionar `install` e `activate` listeners (para garantir ativacao imediata quando registrado standalone)
-- O codigo de `push` e `notificationclick` ja esta correto
-
-#### 4. UI - Aba "Ativar Push" reformulada
-- Componente `PushProviderSelector` com duas opcoes:
-  - **VAPID (Push Direto)** - sem dependencia externa, funciona com o SW do app
-  - **OneSignal** - servico gerenciado com dashboard
-- Ambos podem estar ativos simultaneamente
-- Status individual para cada provedor (inscrito/nao inscrito)
-
-### Arquivos a criar/modificar
-
-| Arquivo | Acao |
-|---------|------|
-| `src/hooks/useVapidPush.ts` | Criar - hook de subscribe/unsubscribe VAPID |
-| `supabase/functions/send-vapid-push/index.ts` | Criar - edge function para enviar push |
-| `public/sw-push.js` | Modificar - adicionar install/activate |
-| `src/components/PushProviderSelector.tsx` | Criar - UI para escolher VAPID e/ou OneSignal |
-| `src/pages/NotificationsDashboard.tsx` | Modificar - usar PushProviderSelector na aba config |
-| `src/lib/notifications/oneSignalNotifier.ts` | Modificar - fallback para VAPID se OneSignal falhar |
-
----
-
-## Item 2: WhatsApp via Evolution API
-
-### Fluxo do Usuario
-
-1. Acessar Notificacoes > WhatsApp (nova aba na sidebar dentro de notificacoes)
-2. Configurar URL e API Key da Evolution API
-3. Sistema verifica se existe instancia criada
-4. Se nao existir, cria instancia e mostra QR Code para leitura
-5. Apos conectado, usuario configura templates de mensagem
-6. Sistema envia notificacoes via WhatsApp conforme templates
-
-### Tabelas necessarias (migracao SQL)
+### Tabela `whatsapp_templates` - novas colunas
 
 ```sql
--- Configuracao da instancia Evolution API por usuario
-CREATE TABLE whatsapp_config (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  instance_name text NOT NULL,
-  instance_id text,
-  phone_number text,
-  is_connected boolean DEFAULT false,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id)
-);
+ALTER TABLE whatsapp_templates
+  ADD COLUMN send_time_2 time DEFAULT NULL,        -- segundo horario de envio (due_date)
+  ADD COLUMN due_date_hours_before integer DEFAULT 24, -- horas antes do vencimento
+  ADD COLUMN excluded_column_ids uuid[] DEFAULT '{}'; -- colunas excluidas do envio
+```
 
--- Templates de mensagem WhatsApp
-CREATE TABLE whatsapp_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  template_type text NOT NULL, -- 'due_date', 'daily_reminder', 'pomodoro', etc.
-  message_template text NOT NULL,
-  is_enabled boolean DEFAULT true,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+- `send_time_2`: segundo horario opcional (apenas para `due_date`)
+- `due_date_hours_before`: quantas horas antes do vencimento enviar (configuravel)
+- `excluded_column_ids`: array de UUIDs das colunas que o usuario NAO quer receber naquele template
 
--- Log de mensagens enviadas
-CREATE TABLE whatsapp_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  template_type text,
-  phone_number text,
-  message text,
-  status text DEFAULT 'pending',
-  error_message text,
-  sent_at timestamptz DEFAULT now()
+---
+
+## 2. Novos Templates Padrao
+
+### Template "Resumo Diario" (ja existe, ajustar horario padrao para 08:00)
+
+Manter o existente com `send_time = 08:00`. Melhorar a mensagem para listar tarefas pendentes por coluna.
+
+### Novo Template: "Relatorio Diario" (`daily_report`)
+
+```text
+template_type: "daily_report"
+label: "Relatorio Diario"
+send_time: "23:00"
+message_template:
+  📊 *Relatorio do Dia*
+
+  ✅ Concluidas: {{completedToday}}/{{totalTasks}} ({{completionPercent}}%)
+  📋 Pendentes: {{pendingTasks}}
+  {{overdueText}}
+
+  {{progressBar}}
+
+  Ate amanha! 🌙
+variables: [completedToday, totalTasks, completionPercent, pendingTasks, overdueText, progressBar]
+```
+
+### Template "Tarefa Vencendo" (ja existe, adicionar segundo horario)
+
+Adicionar campos `send_time_2` e `due_date_hours_before` no card do template.
+
+---
+
+## 3. Edge Functions
+
+### 3a. Refatorar `whatsapp-daily-summary` para suportar ambos os templates
+
+A edge function atual so processa `daily_reminder`. Sera refatorada para processar TAMBEM `daily_report`:
+
+- Buscar templates com `template_type IN ('daily_reminder', 'daily_report')` e `is_enabled = true`
+- Para cada template, verificar hora atual vs `send_time`
+- Para `daily_report`: calcular tarefas concluidas hoje, total, percentual
+- Ambos respeitam `excluded_column_ids` -- filtrar tarefas cujo `column_id` NAO esta na lista de exclusao
+
+### 3b. Nova Edge Function: `whatsapp-due-alert`
+
+Edge function agendada (cron a cada 30 min) que:
+1. Busca todos os templates `due_date` habilitados
+2. Para cada usuario, busca tarefas com `due_date` dentro do intervalo `due_date_hours_before`
+3. Respeita `excluded_column_ids`
+4. Verifica `send_time` e `send_time_2` -- so envia se hora atual bater com um dos dois
+5. Verifica se ja foi enviado (via `whatsapp_logs`) para evitar duplicatas
+6. Envia via Evolution API e registra no log
+
+### 3c. Cron Jobs (pg_cron)
+
+```sql
+-- Resumo diario + relatorio: a cada hora
+-- (ja existe, manter)
+
+-- Alerta de vencimento: a cada 30 minutos
+SELECT cron.schedule(
+  'whatsapp-due-alert',
+  '*/30 * * * *',
+  $$ SELECT net.http_post(...) $$
 );
 ```
 
-### Edge Functions necessarias
+---
 
-| Function | Descricao |
-|----------|-----------|
-| `whatsapp-instance` | Criar/verificar/conectar instancia, retornar QR Code |
-| `send-whatsapp` | Enviar mensagem via Evolution API |
+## 4. UI - Card de Template Melhorado
 
-### Secrets necessarios
+Cada card de template tera:
 
-| Secret | Descricao |
-|--------|-----------|
-| `EVOLUTION_API_URL` | URL base da Evolution API (ex: `https://evo.seudominio.com`) |
-| `EVOLUTION_API_KEY` | API Key global da Evolution API |
+### Campos comuns:
+- Switch ativar/desativar
+- Textarea do template
+- Horario de envio principal (`send_time`)
+- **Novo: Seletor de colunas excluidas** (multi-select com checkboxes das colunas do usuario)
 
-### Componentes UI (novos)
+### Campos especificos do template `due_date`:
+- **Segundo horario de envio** (`send_time_2`) - campo time opcional
+- **Horas antes do vencimento** (`due_date_hours_before`) - input numerico
 
-| Componente | Descricao |
-|-----------|-----------|
-| `WhatsAppSettings.tsx` | Config principal com sub-abas |
-| `WhatsAppConnection.tsx` | Conectar instancia + QR Code |
-| `WhatsAppTemplates.tsx` | Editor de templates de mensagem |
-| `WhatsAppLogs.tsx` | Historico de mensagens enviadas |
-
-### Fluxo da Evolution API
-
-1. `POST /instance/create` - criar instancia com `instanceName: "boardmd-{userId}"`
-2. `GET /instance/connect/{instanceName}` - obter QR Code (retorna base64)
-3. `GET /instance/connectionState/{instanceName}` - verificar se conectou
-4. `POST /message/sendText/{instanceName}` - enviar mensagem de texto
-
-### Layout da pagina WhatsApp
-
-Dentro de NotificationsDashboard, nova aba "WhatsApp" com sub-abas:
-- **Conexao** - Status da instancia, QR Code, reconectar
-- **Templates** - Editar mensagens padrao (due_date, daily_reminder, etc.)
-- **Historico** - Log de mensagens enviadas
+### Seletor de colunas:
+- Buscar colunas do usuario via `columns` table
+- Exibir como lista de checkboxes dentro de um Popover/Collapsible
+- Colunas marcadas = EXCLUIDAS do envio
+- Texto resumo: "Enviando para todas as colunas" ou "Excluindo: Recorrente, Concluido"
 
 ---
 
-## Resumo de alteracoes
+## 5. Arquivos a Criar/Modificar
 
-| # | Area | Arquivos novos | Arquivos modificados | Complexidade |
-|---|------|---------------|---------------------|-------------|
-| 1 | VAPID Push | 3 | 3 | 6/10 |
-| 2 | WhatsApp | 5 componentes + 2 edge functions | 1 (NotificationsDashboard) | 8/10 |
-| 3 | Banco de dados | 1 migracao (3 tabelas + RLS) | 0 | 4/10 |
-
-**Pontuacao Total de Risco: 18/25** - Medio-alto (principalmente pela integracao externa Evolution API).
+| Arquivo | Acao | Descricao |
+|---------|------|-----------|
+| Migracao SQL | Criar | `send_time_2`, `due_date_hours_before`, `excluded_column_ids` |
+| `WhatsAppTemplates.tsx` | Modificar | Novos campos, seletor de colunas, template `daily_report` |
+| `whatsapp-daily-summary/index.ts` | Modificar | Suportar `daily_report` + filtro de colunas |
+| `whatsapp-due-alert/index.ts` | Criar | Edge function para alertas de vencimento |
+| `supabase/config.toml` | Modificar | Registrar nova function |
+| `whatsappNotifier.ts` | Modificar | Respeitar `excluded_column_ids` |
+| Cron SQL | Executar | Agendar `whatsapp-due-alert` a cada 30 min |
 
 ---
 
-## Checklist de Testes Manuais
+## 6. Analise de Impacto
 
-### VAPID Push:
-- [ ] Ativar VAPID Push na aba "Ativar Push"
-- [ ] Verificar que subscription foi salva no banco (`push_subscriptions`)
-- [ ] Enviar notificacao de teste VAPID - deve aparecer como notificacao do sistema
-- [ ] Fechar o app e enviar push - deve aparecer como notificacao do SO
-- [ ] Desativar VAPID e verificar que subscription foi removida
+| Item | Risco | Complexidade |
+|------|-------|-------------|
+| Novas colunas no banco | Baixo (2/10) | Apenas ADD COLUMN com defaults |
+| Refatorar daily-summary | Medio (4/10) | Adicionar logica para daily_report |
+| Nova edge function due-alert | Medio (5/10) | Logica de janelas de tempo |
+| UI multi-select colunas | Baixo (3/10) | Componente com checkboxes |
+| Cron job adicional | Baixo (2/10) | SQL simples |
 
-### OneSignal (regressao):
-- [ ] Verificar que OneSignal continua funcionando apos adicionar VAPID
-- [ ] Ativar ambos (VAPID + OneSignal) e enviar teste - ambos devem funcionar
+**Pontuacao Total: 16/25** - Medio. Dentro do limite seguro.
 
-### WhatsApp:
-- [ ] Acessar Notificacoes > WhatsApp
-- [ ] Inserir credenciais da Evolution API
-- [ ] Criar instancia e escanear QR Code
-- [ ] Verificar status "Conectado"
-- [ ] Editar template de mensagem
-- [ ] Enviar mensagem de teste
-- [ ] Verificar historico de mensagens
+---
+
+## 7. Checklist de Testes Manuais
+
+- [ ] Verificar que o template "Relatorio Diario" aparece na lista com horario 23:00
+- [ ] Verificar que o template "Tarefa Vencendo" mostra campo de segundo horario e horas antes
+- [ ] Selecionar colunas para excluir em um template e salvar -- recarregar e confirmar que persiste
+- [ ] Enviar teste do "Resumo Diario" e verificar que tarefas das colunas excluidas nao aparecem
+- [ ] Enviar teste do "Relatorio Diario" e verificar que mostra percentual correto
+- [ ] Enviar teste do "Tarefa Vencendo" e verificar formatacao
+- [ ] Verificar no Historico que os logs aparecem com template_type correto
 
