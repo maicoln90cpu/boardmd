@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2 } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
+import { UserProfileCard } from "@/components/settings/UserProfileCard";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ColumnManager } from "@/components/kanban/ColumnManager";
 import { useColumns } from "@/hooks/data/useColumns";
@@ -621,7 +622,8 @@ export default function Config() {
 
         <div className="container max-w-6xl mx-auto p-6 pb-24">
           <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="productivity">Produtividade</TabsTrigger>
@@ -630,6 +632,11 @@ export default function Config() {
             <TabsTrigger value="advanced">Avançado</TabsTrigger>
             <TabsTrigger value="data">Dados</TabsTrigger>
           </TabsList>
+
+          {/* Aba Perfil */}
+          <TabsContent value="profile" className="space-y-4">
+            <UserProfileCard />
+          </TabsContent>
 
           {/* Aba Aparência */}
           <TabsContent value="appearance" className="space-y-4">
