@@ -1,226 +1,202 @@
 
 
-# Plano de Correção - 4 Problemas no Calendário e Sistema
+# Plano de Auditoria e Correção - Configurações, Filtros e Persistência
 
 ---
 
-## Resumo dos Problemas
+## Diagnóstico Completo
 
-| # | Problema | Causa Raiz | Risco | Complexidade |
-|---|----------|------------|-------|--------------|
-| 1 | Filtros de prioridade e data quebrados no Calendário | Calendar.tsx usa valores string simples mas KanbanFiltersBar agora usa arrays (multi-select) | Medio | 5/10 |
-| 2 | Presets no Calendário | Presets ja existem mas nao funcionam corretamente com multi-select | Baixo | 3/10 |
-| 3 | Recorrencia quinta -> sexta | `recurrenceUtils.ts` (cliente) usa `new Date().getDay()` em UTC, nao no timezone local. As 21h de quinta no Brasil = sexta em UTC | Alto | 6/10 |
-| 4 | Categoria "Diario" fantasma | Categoria legada existe no banco com 37 tarefas, causando duplicidade (ex: "Igreja" em Pessoal E Diario) | Medio | 4/10 |
+### 1. Configurações Perdendo Valores (Bug de Persistência)
+
+**Causa Raiz Identificada**: Race condition no mecanismo de batching do `useSettings.ts`.
+
+O `flushPendingChanges` (linha 248) captura `settings` do estado via closure. Quando `scheduleBatchSave` cria um `setTimeout`, ele referencia a versão do `flushPendingChanges` daquele momento. Se o estado de `settings` mudar antes do timer disparar, o save usa dados ANTIGOS, sobrescrevendo configurações mais recentes.
+
+```text
+Fluxo do Bug:
+1. Usuario muda tema -> settings = {theme: "dark"} -> timer agendado (500ms)
+2. Usuario muda densidade -> settings = {density: "compact"} -> novo timer
+3. Timer 1 dispara com settings ANTIGO (sem density) -> salva no banco SEM density
+4. Timer 2 dispara -> mas banco ja foi sobrescrito
+```
+
+**Solucao**: Usar `useRef` para armazenar settings atual, garantindo que `flushPendingChanges` sempre leia o valor mais recente:
+
+```typescript
+const settingsRef = useRef<AppSettings>(settings);
+settingsRef.current = settings; // Sempre atualizado
+
+const flushPendingChanges = useCallback(async () => {
+  const currentSettings = settingsRef.current; // Sempre fresco
+  // ... merge e save
+}, [user]); // Remove 'settings' das dependencias
+```
+
+Alem disso, a subscription Realtime (linha 421) faz `pendingChangesRef.current = {}` ao receber update, descartando mudancas locais pendentes. Isso precisa ser corrigido para mergear em vez de descartar.
+
+**Risco**: 4/10 | **Complexidade**: 5/10
 
 ---
 
-## 1. Filtros de Prioridade e Data Quebrados no Calendario
+### 2. Defaults Desalinhados com Configurações do Usuário
 
-### Causa Raiz
+Os defaults no codigo NAO correspondem aos valores que o usuario usa (confirmados no banco e nos prints):
 
-O `Calendar.tsx` declara os filtros como **strings simples**:
-```typescript
-const [priorityFilter, setPriorityFilter] = useState("all");       // string
-const [dueDateFilter, setDueDateFilter] = useState("all");          // string
-```
+| Setting | Default Atual | Valor Correto (print/banco) |
+|---------|--------------|---------------------------|
+| `notifications.dueDateHours` | 24 | **4** |
+| `productivity.dailyReviewEnabled` | true | **false** |
+| `mobile.projectsGridColumns` | 2 | **1** |
 
-Mas o `KanbanFiltersBar` agora usa `MultiSelectFilter` que envia **arrays** via `onChange`. Quando o usuario seleciona "Alta", o componente envia `["high"]` (array), mas a logica de filtragem do calendario faz:
+Isso significa que se o banco falhar ao carregar, o usuario ve valores errados. Os defaults devem refletir a configuracao desejada.
 
-```typescript
-if (priorityFilter !== "all") {  // ["high"] !== "all" -> true
-  filtered = filtered.filter(task => task.priority === priorityFilter);  
-  // task.priority === ["high"] -> NUNCA MATCH! String vs Array
-}
-```
+**Arquivo**: `src/hooks/data/useSettings.ts` (linhas 103, 134, 148)
 
-Alem disso, falta o caso `"tomorrow"` no switch de datas do calendario.
-
-### Solucao
-
-Converter os estados do Calendar.tsx para arrays e refatorar a logica de filtragem:
-
-**Arquivo:** `src/pages/Calendar.tsx`
-
-1. Mudar estados para arrays:
-```typescript
-const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
-const [dueDateFilter, setDueDateFilter] = useState<string[]>([]);
-const [tagFilter, setTagFilter] = useState<string[]>([]);
-```
-
-2. Refatorar `filteredTasks` para usar logica de arrays (OR logic), incluindo caso "tomorrow":
-```typescript
-// Filtro de prioridade (OR)
-if (priorityFilter.length > 0) {
-  filtered = filtered.filter(task => priorityFilter.includes(task.priority || "medium"));
-}
-
-// Filtro de data (OR) com isTomorrow
-if (dueDateFilter.length > 0) {
-  filtered = filtered.filter(task => {
-    return dueDateFilter.some(filter => matchesSingleDateFilter(task, filter, today));
-  });
-}
-```
-
-3. Atualizar `currentFilters` e `handleApplyPreset` para compatibilidade com arrays.
-
-4. Importar `isTomorrow` do date-fns.
+**Risco**: 1/10 | **Complexidade**: 1/10
 
 ---
 
-## 2. Presets no Calendario
+### 3. Filtros do Calendário - Análise
 
-Os presets ja existem (`FilterPresetsManager` esta renderizado), mas precisam ser ajustados para funcionar com os novos tipos array. Isto sera corrigido automaticamente ao resolver o item 1, pois os presets salvam/restauram os mesmos valores de filtro.
+**Descoberta Importante**: Os filtros do calendario estao **funcionando corretamente**. Verifiquei no banco:
 
-A unica alteracao adicional e garantir que `handleApplyPreset` normalize corretamente os valores:
+- "Arrumar Alexia" tem prioridade **medium** (nao high)
+- "Missao 99Pay" tem prioridade **medium** (nao high)
+- "TP - Dnox" tem prioridade **medium**
+
+A confusao visual ocorre porque o **estilo do card usa a COR DA COLUNA** (ex: vermelha para "Urgente") como prioridade visual, fazendo parecer que sao tarefas de alta prioridade quando na verdade sao medias em colunas vermelhas.
+
+O filtro funciona no campo `priority` do banco, nao na cor visual. Ao selecionar "Media", TODAS as tarefas mostradas sao realmente de prioridade media - o que pode ser confuso quando a coluna tem cor vermelha.
+
+**Acao**: Nenhuma correcao necessaria nos filtros. Adicionar tooltip ou legenda explicativa no calendario para diferenciar "cor de prioridade" de "cor de coluna".
+
+---
+
+### 4. Filtros do Calendário NÃO Persistidos
+
+Os filtros do calendario (`priorityFilter`, `tagFilter`, `dueDateFilter`, `selectedCategories`) sao estado local (`useState`) e se perdem ao navegar para outra pagina ou trocar de dispositivo.
+
+**Solucao**: Persistir filtros do calendario no `settings.calendarFilters` (novo campo no AppSettings):
 
 ```typescript
-const handleApplyPreset = (filters: FilterPresetFilters) => {
-  if (filters.priorityFilter !== undefined) {
-    // Normalizar para array
-    const val = filters.priorityFilter;
-    setPriorityFilter(Array.isArray(val) ? val : val === "all" || val === "" ? [] : [val]);
-  }
-  // Similar para tagFilter e dueDateFilter
+// Em AppSettings
+calendarFilters?: {
+  priority: string[];
+  tag: string[];
+  dueDate: string[];
+  categories: string[];
+  columns: string[];
+  search: string;
 };
 ```
 
----
+**Arquivo Principal**: `src/pages/Calendar.tsx` - substituir `useState` por valores do `useSettings`
 
-## 3. Recorrencia Quinta -> Sexta (Bug de Timezone)
-
-### Causa Raiz
-
-No arquivo `src/lib/recurrenceUtils.ts` (usado pelo cliente quando `immediateRecurrentReset` esta ativo), o calculo usa:
-
-```typescript
-const now = new Date();           // UTC time
-const currentDay = now.getDay();  // Dia da semana em UTC!
-```
-
-**Exemplo do bug:**
-- Usuario no Brasil (UTC-3) risca tarefa na **quinta-feira as 21:00 local**
-- Em UTC: sexta-feira 00:00
-- `now.getDay()` retorna **5 (sexta)**, nao 4 (quinta)
-- O algoritmo procura proximo dia >= 5 na lista `[4]` (quinta)
-- Nao encontra, vai para proxima semana: `7 - 5 + 4 = 6 dias` -> **quarta** da proxima semana
-
-A Edge Function (`reset-recurring-tasks`) ja tem a correcao via `getNowInUserTimezone()`, mas o **cliente** nao.
-
-### Solucao
-
-**Arquivo:** `src/lib/recurrenceUtils.ts`
-
-Adicionar funcao para obter data no timezone do usuario e usar em `calculateNextRecurrenceDate`:
-
-```typescript
-function getNowInTimezone(): Date {
-  const now = new Date();
-  const tz = getTimezone(); // de dateUtils.ts
-  
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-    hour12: false,
-  });
-  
-  const parts = formatter.formatToParts(now);
-  const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
-  
-  return new Date(
-    parseInt(getValue('year')),
-    parseInt(getValue('month')) - 1,
-    parseInt(getValue('day')),
-    parseInt(getValue('hour')),
-    parseInt(getValue('minute')),
-    parseInt(getValue('second'))
-  );
-}
-```
-
-E substituir `const now = new Date()` por `const now = getNowInTimezone()` na funcao `calculateNextRecurrenceDate`.
-
-Isso alinha a logica do cliente com a Edge Function.
+**Risco**: 2/10 | **Complexidade**: 4/10
 
 ---
 
-## 4. Categoria "Diario" Fantasma
+### 5. Tarefas Órfãs
 
-### Dados no Banco
+**Resultado da auditoria**: Zero tarefas com `category_id = NULL` no banco. A validacao no `TaskModal.tsx` (linha 143) ja impede criacao de tarefas sem categoria. Nenhuma acao necessaria.
 
-A categoria "Diario" (id: `42e2fa73-d029-43e3-931a-8264c3a0eae5`) ainda existe com **37 tarefas** vinculadas. Isso causa:
+---
 
-- Duplicidade: "Igreja" aparece em "Pessoal" E "Diario" no dia 11/02
-- Contagem inflada no filtro de categorias (37 tarefas extras)
+### 6. Categoria "Diário" Fantasma
 
-### Solucao
-
-**Migracao SQL** para mover tarefas orfas e deletar a categoria:
-
-```sql
--- Mover tarefas da categoria "Diario" para "Pessoal"
--- (exceto as que ja tem duplicata em outra categoria)
-UPDATE tasks 
-SET category_id = '2544ed8d-b892-4aa4-a806-8c02a90d6773'  -- Pessoal
-WHERE category_id = '42e2fa73-d029-43e3-931a-8264c3a0eae5' -- Diario
-AND title NOT IN (
-  SELECT t2.title FROM tasks t2 
-  WHERE t2.category_id != '42e2fa73-d029-43e3-931a-8264c3a0eae5'
-  AND t2.due_date IS NOT NULL
-);
-
--- Deletar tarefas duplicadas que ficaram na categoria Diario
-DELETE FROM tasks 
-WHERE category_id = '42e2fa73-d029-43e3-931a-8264c3a0eae5';
-
--- Deletar a categoria Diario
-DELETE FROM categories 
-WHERE id = '42e2fa73-d029-43e3-931a-8264c3a0eae5';
-```
-
-**IMPORTANTE:** Antes de executar, sera apresentada a lista completa de tarefas afetadas para aprovacao.
+A categoria "Diario" ja foi removida na sessao anterior (migracao SQL deletou a categoria e moveu/removeu as 37 tarefas). Confirmado que restam apenas 4 categorias: Casa (11), MDAccula (34), Pessoal (43), Projetos (35).
 
 ---
 
 ## Arquivos a Modificar
 
-| # | Arquivo | Alteracao |
-|---|---------|-----------|
-| 1 | `src/pages/Calendar.tsx` | Converter filtros para arrays, adicionar "tomorrow", refatorar filtragem |
-| 2 | `src/lib/recurrenceUtils.ts` | Adicionar conversao de timezone no calculo de recorrencia |
-| 3 | Migracao SQL | Mover tarefas de "Diario" para "Pessoal" e deletar categoria |
+| # | Arquivo | Alteracao | Complexidade |
+|---|---------|-----------|--------------|
+| 1 | `src/hooks/data/useSettings.ts` | Fix stale closure com settingsRef + defaults | 5/10 |
+| 2 | `src/pages/Calendar.tsx` | Persistir filtros via useSettings | 4/10 |
+| 3 | `src/types/index.ts` | Adicionar tipo `calendarFilters` se necessario | 1/10 |
 
-**Pontuacao Total de Risco: 15/25** - Dentro do limite seguro.
+**Pontuacao Total de Risco: 7/25** - Baixo risco.
+
+---
+
+## Detalhamento Técnico
+
+### Fix do useSettings.ts
+
+```typescript
+// 1. Adicionar ref para settings
+const settingsRef = useRef<AppSettings>(defaultSettings);
+
+// 2. Manter ref sincronizada (apos setSettings)
+useEffect(() => {
+  settingsRef.current = settings;
+}, [settings]);
+
+// 3. flushPendingChanges usa ref em vez de state
+const flushPendingChanges = useCallback(async () => {
+  if (!user || Object.keys(pendingChangesRef.current).length === 0) return;
+  const currentSettings = settingsRef.current; // SEMPRE FRESCO
+  // ... resto igual mas usando currentSettings
+}, [user, deepMergePartial]); // SEM 'settings' nas deps
+
+// 4. Realtime: nao descartar pending changes
+.on('postgres_changes', ..., (payload) => {
+  // NAO fazer: pendingChangesRef.current = {};
+  // Apenas atualizar se nao houver mudancas pendentes
+  if (Object.keys(pendingChangesRef.current).length === 0) {
+    setSettings(deepMergeSettings(loadedSettings));
+  }
+})
+```
+
+### Persistência de Filtros do Calendário
+
+```typescript
+// Calendar.tsx - usar settings em vez de useState
+const { settings, updateSettings, saveSettings } = useSettings();
+const calendarFilters = settings.calendarFilters || defaultCalendarFilters;
+
+// Setters que salvam automaticamente
+const setPriorityFilter = (val: string[]) => {
+  updateSettings({ calendarFilters: { ...calendarFilters, priority: val } });
+};
+```
+
+### Defaults Corrigidos
+
+```typescript
+notifications: {
+  dueDateHours: 4,     // Era 24
+  // ... resto igual
+},
+productivity: {
+  dailyReviewEnabled: false,  // Era true
+  // ... resto igual
+},
+mobile: {
+  projectsGridColumns: 1,    // Era 2
+  // ... resto igual
+},
+```
 
 ---
 
 ## Checklist de Testes Manuais
 
+### Persistência de Settings:
+- [ ] Alterar tema para "Escuro" em /config
+- [ ] Navegar para outra pagina e voltar - verificar que tema permanece escuro
+- [ ] Recarregar a pagina (F5) - verificar que tema permanece escuro
+- [ ] Alterar densidade rapidamente 3x seguidas - verificar que a ultima opcao e salva
+
 ### Filtros do Calendario:
-- [ ] Abrir Calendario
-- [ ] Selecionar filtro de prioridade "Alta" - verificar que so aparecem tarefas de prioridade alta
-- [ ] Selecionar multi-prioridade "Alta" + "Media" - verificar OR logic
-- [ ] Selecionar filtro de data "Amanha" - verificar que so mostra tarefas do dia 07/02
-- [ ] Selecionar filtro de data "Hoje" - verificar que so mostra tarefas do dia 06/02
-- [ ] Verificar que categorias mostram contagem correta (sem "Diario")
+- [ ] Selecionar filtro "Media" no calendario - verificar que tarefas aparecem corretamente
+- [ ] Navegar para outra pagina e voltar ao calendario - filtro deve estar mantido
 - [ ] Limpar filtros e verificar que tudo volta ao normal
 
-### Recorrencia (Timezone):
-- [ ] Criar tarefa recorrente semanal (quinta-feira)
-- [ ] Marcar como concluida apos as 21h (horario Brasil)
-- [ ] Verificar que a proxima data e QUINTA da proxima semana (nao sexta)
-- [ ] Repetir teste com tarefa diaria - verificar que avanca 1 dia correto
-
-### Categoria Diario:
-- [ ] Verificar que "Diario" nao aparece mais no filtro de categorias
-- [ ] Verificar que "Igreja" aparece apenas 1 vez no dia 11/02
-- [ ] Verificar que tarefas que estavam em "Diario" foram movidas para "Pessoal"
-
-### Presets:
-- [ ] Salvar um preset com filtros de prioridade + data
-- [ ] Limpar filtros
-- [ ] Carregar o preset e verificar que os filtros sao restaurados corretamente
+### Defaults:
+- [ ] Verificar que "Alertar com antecedencia" mostra 4 horas (nao 24)
+- [ ] Verificar que "Revisao Diaria" esta desativada por padrao
+- [ ] Verificar que "Colunas no Grid Mobile" mostra 1 coluna
 
