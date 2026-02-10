@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     // Get all enabled due_date templates
     const { data: templates, error: tplErr } = await supabase
       .from('whatsapp_templates')
-      .select('user_id, message_template, send_time, send_time_2, due_date_hours_before, excluded_column_ids')
+      .select('user_id, message_template, due_date_hours_before, due_date_hours_before_2, excluded_column_ids')
       .eq('template_type', 'due_date')
       .eq('is_enabled', true);
 
@@ -30,25 +30,9 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date();
-    const currentHour = now.getUTCHours() - 3;
-    const adjustedHour = currentHour < 0 ? currentHour + 24 : currentHour;
-    const currentMinute = now.getUTCMinutes();
-
-    const results: { user_id: string; task_id?: string; sent: boolean; reason?: string }[] = [];
+    const results: { user_id: string; task_id?: string; sent: boolean; reason?: string; alert_type?: string }[] = [];
 
     for (const tpl of templates) {
-      // Check if current time matches send_time or send_time_2 (within 30 min window)
-      const matchesTime = (timeStr: string | null): boolean => {
-        if (!timeStr) return false;
-        const hour = parseInt((timeStr as string).split(':')[0], 10);
-        return adjustedHour === hour;
-      };
-
-      if (!matchesTime(tpl.send_time) && !matchesTime(tpl.send_time_2)) {
-        results.push({ user_id: tpl.user_id, sent: false, reason: 'time mismatch' });
-        continue;
-      }
-
       // Check WhatsApp connection
       const { data: config } = await supabase
         .from('whatsapp_config')
@@ -61,20 +45,18 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const hoursBefore = (tpl as any).due_date_hours_before || 24;
-      const excludedIds: string[] = (tpl as any).excluded_column_ids || [];
+      const hoursBefore1 = tpl.due_date_hours_before || 24;
+      const hoursBefore2 = tpl.due_date_hours_before_2 || null;
+      const excludedIds: string[] = tpl.excluded_column_ids || [];
 
-      // Find tasks with due_date within the window
-      const futureLimit = new Date(now.getTime() + hoursBefore * 60 * 60 * 1000);
-
+      // Get all non-completed tasks with due_date for this user
       let taskQuery = supabase
         .from('tasks')
-        .select('id, title, due_date')
+        .select('id, title, due_date, column_id')
         .eq('user_id', tpl.user_id)
         .eq('is_completed', false)
         .not('due_date', 'is', null)
-        .gte('due_date', now.toISOString())
-        .lte('due_date', futureLimit.toISOString());
+        .gte('due_date', now.toISOString());
 
       if (excludedIds.length > 0) {
         for (const colId of excludedIds) {
@@ -97,56 +79,76 @@ Deno.serve(async (req) => {
         phone = '55' + phone;
       }
 
+      // For each task, check if NOW is within a 30-min window of (due_date - X hours)
+      const WINDOW_MS = 30 * 60 * 1000; // 30 min window (cron interval)
+
+      const alertConfigs = [
+        { hours: hoursBefore1, label: 'alert_1' },
+        ...(hoursBefore2 ? [{ hours: hoursBefore2, label: 'alert_2' }] : []),
+      ];
+
       for (const task of tasks) {
-        // Check if already sent for this task today
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        const { data: existingLogs } = await supabase
-          .from('whatsapp_logs')
-          .select('id')
-          .eq('user_id', tpl.user_id)
-          .eq('template_type', 'due_date')
-          .eq('status', 'sent')
-          .gte('sent_at', todayStart.toISOString())
-          .ilike('message', `%${task.title}%`)
-          .limit(1);
-
-        if (existingLogs && existingLogs.length > 0) {
-          results.push({ user_id: tpl.user_id, task_id: task.id, sent: false, reason: 'already sent today' });
-          continue;
-        }
-
-        // Calculate time remaining
         const dueDate = new Date(task.due_date!);
-        const diffMs = dueDate.getTime() - now.getTime();
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const timeRemaining = diffHours > 0
-          ? `${diffHours}h${diffMins > 0 ? ` ${diffMins}min` : ''}`
-          : `${diffMins} minutos`;
 
-        let message = tpl.message_template;
-        message = message.replace(/\{\{taskTitle\}\}/g, task.title);
-        message = message.replace(/\{\{timeRemaining\}\}/g, timeRemaining);
+        for (const alertCfg of alertConfigs) {
+          // The alert should fire at: due_date - alertCfg.hours
+          const alertTime = new Date(dueDate.getTime() - alertCfg.hours * 60 * 60 * 1000);
+          const diffMs = now.getTime() - alertTime.getTime();
 
-        const res = await fetch(`${baseUrl}/message/sendText/${config.instance_name}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: apiKey },
-          body: JSON.stringify({ number: phone, text: message }),
-        });
+          // Only send if we're within the window (0 to WINDOW_MS after the alert time)
+          if (diffMs < 0 || diffMs > WINDOW_MS) {
+            continue;
+          }
 
-        const resData = await res.json();
+          // Check if already sent for this task + alert type today
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const { data: existingLogs } = await supabase
+            .from('whatsapp_logs')
+            .select('id')
+            .eq('user_id', tpl.user_id)
+            .eq('template_type', `due_date_${alertCfg.label}`)
+            .eq('status', 'sent')
+            .gte('sent_at', todayStart.toISOString())
+            .ilike('message', `%${task.title}%`)
+            .limit(1);
 
-        await supabase.from('whatsapp_logs').insert({
-          user_id: tpl.user_id,
-          template_type: 'due_date',
-          phone_number: phone,
-          message,
-          status: res.ok ? 'sent' : 'failed',
-          error_message: res.ok ? null : JSON.stringify(resData),
-        });
+          if (existingLogs && existingLogs.length > 0) {
+            results.push({ user_id: tpl.user_id, task_id: task.id, sent: false, reason: 'already sent', alert_type: alertCfg.label });
+            continue;
+          }
 
-        results.push({ user_id: tpl.user_id, task_id: task.id, sent: res.ok });
+          // Calculate time remaining
+          const remainMs = dueDate.getTime() - now.getTime();
+          const remainHours = Math.floor(remainMs / (1000 * 60 * 60));
+          const remainMins = Math.floor((remainMs % (1000 * 60 * 60)) / (1000 * 60));
+          const timeRemaining = remainHours > 0
+            ? `${remainHours}h${remainMins > 0 ? ` ${remainMins}min` : ''}`
+            : `${remainMins} minutos`;
+
+          let message = tpl.message_template;
+          message = message.replace(/\{\{taskTitle\}\}/g, task.title);
+          message = message.replace(/\{\{timeRemaining\}\}/g, timeRemaining);
+
+          const res = await fetch(`${baseUrl}/message/sendText/${config.instance_name}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: apiKey },
+            body: JSON.stringify({ number: phone, text: message }),
+          });
+
+          const resData = await res.json();
+
+          await supabase.from('whatsapp_logs').insert({
+            user_id: tpl.user_id,
+            template_type: `due_date_${alertCfg.label}`,
+            phone_number: phone,
+            message,
+            status: res.ok ? 'sent' : 'failed',
+            error_message: res.ok ? null : JSON.stringify(resData),
+          });
+
+          results.push({ user_id: tpl.user_id, task_id: task.id, sent: res.ok, alert_type: alertCfg.label });
+        }
       }
     }
 
