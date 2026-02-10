@@ -1109,6 +1109,7 @@ export type Database = {
           id: string
           is_enabled: boolean | null
           message_template: string
+          send_time: string | null
           template_type: string
           updated_at: string | null
           user_id: string
@@ -1118,6 +1119,7 @@ export type Database = {
           id?: string
           is_enabled?: boolean | null
           message_template: string
+          send_time?: string | null
           template_type: string
           updated_at?: string | null
           user_id: string
@@ -1127,6 +1129,7 @@ export type Database = {
           id?: string
           is_enabled?: boolean | null
           message_template?: string
+          send_time?: string | null
           template_type?: string
           updated_at?: string | null
           user_id?: string
