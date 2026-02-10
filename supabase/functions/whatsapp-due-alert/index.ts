@@ -30,6 +30,9 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date();
+    // Brazil is UTC-3 (no DST since 2019)
+    const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
+    const nowBRT = new Date(now.getTime() + BRT_OFFSET_MS);
     const results: { user_id: string; task_id?: string; sent: boolean; reason?: string; alert_type?: string }[] = [];
 
     for (const tpl of templates) {
@@ -101,8 +104,10 @@ Deno.serve(async (req) => {
           }
 
           // Check if already sent for this task + alert type today
-          const todayStart = new Date();
-          todayStart.setHours(0, 0, 0, 0);
+          // Use BRT midnight for "today" duplicate check
+          const todayBRT = new Date(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate());
+          const todayStartUTC = new Date(todayBRT.getTime() - BRT_OFFSET_MS);
+          const todayStart = todayStartUTC;
           const { data: existingLogs } = await supabase
             .from('whatsapp_logs')
             .select('id')

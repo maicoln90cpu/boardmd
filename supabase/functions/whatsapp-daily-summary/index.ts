@@ -30,8 +30,11 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date();
-    const currentHour = now.getUTCHours() - 3;
-    const adjustedHour = currentHour < 0 ? currentHour + 24 : currentHour;
+    // Brazil is UTC-3 (no DST since 2019)
+    const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
+    const nowBRT = new Date(now.getTime() + BRT_OFFSET_MS);
+    const currentHour = nowBRT.getUTCHours();
+    const adjustedHour = currentHour;
 
     const results: { user_id: string; template_type: string; sent: boolean; reason?: string }[] = [];
 
@@ -55,8 +58,11 @@ Deno.serve(async (req) => {
       }
 
       // Check if already sent today
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
+      // Use BRT midnight for "today" check
+      const todayBRT = new Date(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate());
+      // Convert BRT midnight back to UTC for DB query
+      const todayStartUTC = new Date(todayBRT.getTime() - BRT_OFFSET_MS);
+      const todayStart = todayStartUTC;
       const { data: existingLogs } = await supabase
         .from('whatsapp_logs')
         .select('id')
@@ -119,14 +125,19 @@ Deno.serve(async (req) => {
         const { count: pendingCount } = await taskQuery;
 
         // Completed today
-        const todayStr = new Date().toISOString().slice(0, 10);
+        // Use BRT date boundaries for "completed today" query
+        const todayBRTStart = new Date(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate());
+        const todayBRTEnd = new Date(todayBRTStart.getTime() + 24 * 60 * 60 * 1000 - 1);
+        // Convert BRT boundaries to UTC for DB query
+        const todayStartUTCReport = new Date(todayBRTStart.getTime() - BRT_OFFSET_MS);
+        const todayEndUTCReport = new Date(todayBRTEnd.getTime() - BRT_OFFSET_MS);
         let completedQuery = supabase
           .from('tasks')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', tpl.user_id)
           .eq('is_completed', true)
-          .gte('updated_at', todayStr + 'T00:00:00')
-          .lte('updated_at', todayStr + 'T23:59:59');
+          .gte('updated_at', todayStartUTCReport.toISOString())
+          .lte('updated_at', todayEndUTCReport.toISOString());
 
         if (excludedIds.length > 0) {
           for (const colId of excludedIds) {
