@@ -93,17 +93,26 @@ export interface AppSettings {
     dailySearch: string;
     recurrence: "all" | "recurring" | "non-recurring";
   };
+  // Filtros do Calendário sincronizados entre dispositivos
+  calendarFilters?: {
+    priority: string[];
+    tag: string[];
+    dueDate: string[];
+    categories: string[];
+    columns: string[];
+    search: string;
+  };
 }
 
 const defaultSettings: AppSettings = {
   theme: 'auto',
-  defaultDensity: 'compact', // ALTERADO: padrão agora é compacto
-  timezone: 'America/Sao_Paulo', // Padrão Brasil
+  defaultDensity: 'compact',
+  timezone: 'America/Sao_Paulo',
   notifications: {
     dueDate: true,
     achievements: true,
     sound: false,
-    dueDateHours: 24,
+    dueDateHours: 4, // Alertar 4h antes (era 24)
     checkInterval: 15,
     snoozeMinutes: 30,
   },
@@ -116,36 +125,36 @@ const defaultSettings: AppSettings = {
     showFavoritesPanel: true,
     dailySortOption: 'time',
     dailySortOrder: 'asc',
-    projectsSortOption: 'date_asc', // ALTERADO: padrão agora é data mais próxima
+    projectsSortOption: 'date_asc',
     projectsSortOrder: 'asc',
     simplifiedMode: false,
-    hideCompletedTasks: true, // ALTERADO: padrão agora é ocultar concluídas
+    hideCompletedTasks: true,
     dailyDueDateFilter: 'all',
     projectsDueDateFilter: 'all',
     autoMoveToCurrentWeek: false,
-    defaultView: 'projects', // ALTERADO: padrão agora é projetos (Diário removido)
+    defaultView: 'projects',
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
     columnSizes: {},
-    immediateRecurrentReset: false, // Padrão: aguardar reset (comportamento atual)
+    immediateRecurrentReset: false,
   },
   productivity: {
     dailyGoal: 5,
     pomodoroEnabled: false,
     pomodoroDuration: 25,
     autoResetDailyStats: true,
-    dailyReviewEnabled: true,
+    dailyReviewEnabled: false, // Desativado por padrão (era true)
     dailyReviewLastShown: null,
   },
   interface: {
     sidebarPosition: 'left',
     language: 'pt-BR',
-    sidebarPinned: true, // ALTERADO: menu fixo por padrão
+    sidebarPinned: true,
     sidebarExpandedWhenPinned: true,
     autoDataIntegrityMonitor: false,
   },
   hiddenColumns: [],
   mobile: {
-    projectsGridColumns: 2,
+    projectsGridColumns: 1, // 1 coluna por padrão (era 2)
     hideBadges: false,
   },
   customization: {
@@ -177,6 +186,9 @@ export function useSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Ref to always have fresh settings (fixes stale closure in batched saves)
+  const settingsRef = useRef<AppSettings>(defaultSettings);
   
   // Batching state
   const pendingChangesRef = useRef<Partial<AppSettings>>({});
@@ -267,8 +279,8 @@ export function useSettings() {
     logger.log('[useSettings] Flushing batched changes:', Object.keys(changesToSave));
 
     try {
-      // Get current settings from state
-      const currentSettings = settings;
+      // Use ref to always get fresh settings (fixes stale closure bug)
+      const currentSettings = settingsRef.current;
       
       // Merge pending changes into current settings
       const mergedSettings = {
@@ -332,7 +344,7 @@ export function useSettings() {
         setIsSaving(false);
       }
     }
-  }, [user, settings, deepMergePartial]);
+  }, [user, deepMergePartial]);
 
   // Schedule a batched save
   const scheduleBatchSave = useCallback(() => {
@@ -374,9 +386,18 @@ export function useSettings() {
   }, [flushPendingChanges]);
 
   // Load settings from database + Realtime sync
+  // Helper to set settings and keep ref in sync
+  const setSettingsWithRef = useCallback((value: AppSettings | ((prev: AppSettings) => AppSettings)) => {
+    setSettings((prev) => {
+      const next = typeof value === 'function' ? value(prev) : value;
+      settingsRef.current = next;
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (!user) {
-      setSettings(defaultSettings);
+      setSettingsWithRef(defaultSettings);
       setIsLoading(false);
       return;
     }
@@ -390,12 +411,12 @@ export function useSettings() {
 
       if (error) {
         logger.error("Error loading settings:", error);
-        setSettings(defaultSettings);
+        setSettingsWithRef(defaultSettings);
       } else if (data?.settings) {
         const loadedSettings = data.settings as Partial<AppSettings>;
-        setSettings(deepMergeSettings(loadedSettings));
+        setSettingsWithRef(deepMergeSettings(loadedSettings));
       } else {
-        setSettings(defaultSettings);
+        setSettingsWithRef(defaultSettings);
       }
       setIsLoading(false);
     };
@@ -416,10 +437,11 @@ export function useSettings() {
         (payload) => {
           if (payload.new?.settings) {
             const loadedSettings = payload.new.settings as Partial<AppSettings>;
-            setSettings(deepMergeSettings(loadedSettings));
-            setIsDirty(false);
-            // Clear pending changes since we got fresh data
-            pendingChangesRef.current = {};
+            // Only update from Realtime if there are NO pending local changes
+            if (Object.keys(pendingChangesRef.current).length === 0) {
+              setSettingsWithRef(deepMergeSettings(loadedSettings));
+              setIsDirty(false);
+            }
           }
         }
       )
@@ -428,47 +450,52 @@ export function useSettings() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, deepMergeSettings]);
+  }, [user, deepMergeSettings, setSettingsWithRef]);
 
   // Batched update function - queues changes and schedules save
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
     // Update local state immediately (optimistic update)
-    setSettings((prev) => ({
-      ...prev,
-      ...newSettings,
-      notifications: {
-        ...prev.notifications,
-        ...(newSettings.notifications || {}),
-      },
-      kanban: {
-        ...prev.kanban,
-        ...(newSettings.kanban || {}),
-      },
-      productivity: {
-        ...prev.productivity,
-        ...(newSettings.productivity || {}),
-      },
-      interface: {
-        ...prev.interface,
-        ...(newSettings.interface || {}),
-      },
-      mobile: {
-        ...prev.mobile,
-        ...(newSettings.mobile || {}),
-      },
-      customization: {
-        ...prev.customization,
-        ...(newSettings.customization || {}),
-        priorityColors: {
-          ...prev.customization?.priorityColors,
-          ...(newSettings.customization?.priorityColors || {}),
+    setSettings((prev) => {
+      const updated = {
+        ...prev,
+        ...newSettings,
+        notifications: {
+          ...prev.notifications,
+          ...(newSettings.notifications || {}),
         },
-      },
-      filters: {
-        ...prev.filters,
-        ...(newSettings.filters || {}),
-      },
-    }));
+        kanban: {
+          ...prev.kanban,
+          ...(newSettings.kanban || {}),
+        },
+        productivity: {
+          ...prev.productivity,
+          ...(newSettings.productivity || {}),
+        },
+        interface: {
+          ...prev.interface,
+          ...(newSettings.interface || {}),
+        },
+        mobile: {
+          ...prev.mobile,
+          ...(newSettings.mobile || {}),
+        },
+        customization: {
+          ...prev.customization,
+          ...(newSettings.customization || {}),
+          priorityColors: {
+            ...prev.customization?.priorityColors,
+            ...(newSettings.customization?.priorityColors || {}),
+          },
+        },
+        filters: {
+          ...prev.filters,
+          ...(newSettings.filters || {}),
+        },
+      };
+      // Keep ref in sync for flushPendingChanges
+      settingsRef.current = updated;
+      return updated;
+    });
     
     // Queue changes for batched save
     pendingChangesRef.current = deepMergePartial(pendingChangesRef.current, newSettings);
