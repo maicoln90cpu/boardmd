@@ -38,3 +38,12 @@ verify_jwt = false
 
 [functions.parse-course-modules]
 verify_jwt = false
+
+[functions.send-vapid-push]
+verify_jwt = false
+
+[functions.whatsapp-instance]
+verify_jwt = false
+
+[functions.send-whatsapp]
+verify_jwt = false
