@@ -1,5 +1,8 @@
 /* Consolidated Google Fonts - Single optimized import */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Lora:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;700&family=Source+Sans+Pro:wght@400;600;700&family=Source+Serif+Pro:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+Pro&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -43,7 +46,7 @@
     --input: 256 1.3% 92.9%;
     --ring: 257 4% 70.4%;
 
-    --radius: 0.375rem;
+    --radius: 2rem;
 
     /* Sidebar colors */
     --sidebar-background: 0 0% 98%;
@@ -76,10 +79,10 @@
        ========================================================================= */
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-sm: 0px 0px 10px 2px hsl(0, 0%, 0%);
+    --shadow: 0px 0px 20px 2px hsl(0, 0%, 0%);
+    --shadow-md: 0px 0px 30px 2px hsl(0, 0%, 0%);
+    --shadow-lg: 0px 0px 50px 2px hsl(0, 0%, 0%);
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
 
@@ -171,7 +174,7 @@
     --border: 0 0% 100% / 10%;
     --input: 0 0% 100% / 15%;
     --ring: 264 2.7% 55.1%;
-    
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 248 0.3% 98.4%;
     --sidebar-primary: 264 24.3% 48.8%;
@@ -190,9 +193,13 @@
 
     /* Shadows inherit from :root - no need to duplicate */
 
-    --radius: 0.625rem;
+    --radius: 2rem;
     --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
     --font-sans: Roboto, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+    --shadow-sm: 0px 0px 10px 2px hsl(0, 0%, 0%);
+    --shadow: 0px 0px 20px 2px hsl(0, 0%, 0%);
+    --shadow-md: 0px 0px 30px 2px hsl(0, 0%, 0%);
+    --shadow-lg: 0px 0px 50px 2px hsl(0, 0%, 0%);
   }
 }
 
@@ -259,37 +266,37 @@
   .density-comfortable {
     @apply p-3 gap-2;
   }
-  
+
   .density-compact {
     @apply p-2 gap-1.5;
   }
-  
+
   .density-ultra-compact {
     @apply p-1 gap-1;
   }
-  
+
   /* Card variants for density */
   .density-card-comfortable {
     @apply p-3 gap-2 text-sm;
   }
-  
+
   .density-card-compact {
     @apply p-2 gap-1 text-xs;
   }
-  
+
   .density-card-ultra-compact {
     @apply p-1 gap-0.5 text-xs;
   }
-  
+
   /* Header variants for density */
   .density-header-comfortable {
     @apply p-3 text-lg;
   }
-  
+
   .density-header-compact {
     @apply p-2 text-sm;
   }
-  
+
   .density-header-ultra-compact {
     @apply p-1.5 text-xs;
   }
