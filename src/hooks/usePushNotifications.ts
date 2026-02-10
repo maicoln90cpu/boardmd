@@ -1,7 +1,5 @@
 /**
- * Hook para gerenciar notificações push via OneSignal
- * Para notificações VAPID legadas, o sistema foi removido.
- * Use useOneSignal.ts para o novo sistema de push.
+ * Hook para gerenciar notificações push via OneSignal + WhatsApp
  */
 
 import { useState, useEffect } from "react";
@@ -18,6 +16,7 @@ import {
 } from "@/lib/defaultNotificationTemplates";
 import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import { useOneSignal } from "@/hooks/useOneSignal";
+import { sendWhatsAppNotification } from "@/lib/whatsappNotifier";
 import { logger } from "@/lib/logger";
 
 export function usePushNotifications(tasks: Task[]) {
@@ -90,13 +89,14 @@ export function usePushNotifications(tasks: Task[]) {
       const warningThreshold = configuredHours * 60;
       const earlyThreshold = warningThreshold * 2;
 
-      // Enviar notificações via OneSignal
+      // Enviar notificações via OneSignal + WhatsApp
       const sendPushNotification = async (templateId: string, variables: Record<string, string>) => {
         const template = getTemplateById(userTemplates, templateId);
         if (!template) return;
 
         const formatted = formatNotificationTemplate(template, variables);
 
+        // === Push notification (OneSignal / Local) ===
         if (user && isSubscribed) {
           try {
             await oneSignalNotifier.send({
@@ -109,7 +109,6 @@ export function usePushNotifications(tasks: Task[]) {
             });
           } catch (error) {
             logger.error('Error sending push notification:', error);
-            // Fallback: Local notification
             pushNotifications.scheduleLocalNotification(
               formatted.title, 
               formatted.body, 
@@ -118,7 +117,6 @@ export function usePushNotifications(tasks: Task[]) {
             );
           }
         } else {
-          // Usar notificação local se não estiver inscrito
           pushNotifications.scheduleLocalNotification(
             formatted.title, 
             formatted.body, 
@@ -126,18 +124,48 @@ export function usePushNotifications(tasks: Task[]) {
             `task-${task.id}`
           );
         }
+
+        // === WhatsApp notification ===
+        if (user) {
+          // Map push template IDs to WhatsApp template types
+          const whatsappTemplateMap: Record<string, string> = {
+            'due_overdue': 'due_date',
+            'due_urgent': 'due_date',
+            'due_warning': 'due_date',
+            'due_early': 'due_date',
+          };
+
+          const whatsappType = whatsappTemplateMap[templateId];
+          if (whatsappType) {
+            // Prevent duplicate WhatsApp sends with localStorage
+            const whatsappKey = `whatsapp-sent-${task.id}-${templateId}`;
+            const lastSent = localStorage.getItem(whatsappKey);
+            const snoozeMs = (settings.notifications.snoozeMinutes || 60) * 60 * 1000;
+
+            if (!lastSent || Date.now() - Number(lastSent) > snoozeMs) {
+              sendWhatsAppNotification({
+                userId: user.id,
+                templateType: whatsappType,
+                variables,
+              }).then((sent) => {
+                if (sent) {
+                  localStorage.setItem(whatsappKey, String(Date.now()));
+                  logger.info(`[WhatsApp] Sent ${whatsappType} for task ${task.id}`);
+                }
+              });
+            }
+          }
+        }
       };
 
       const hours = Math.floor(minutesUntilDue / 60);
 
       // Agendar notificações baseadas nos thresholds usando templates
       if (isPast(dueDate)) {
-        // Notificação imediata para tarefas atrasadas
         sendPushNotification('due_overdue', { 
           taskTitle: task.title 
         });
       } else if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
-        // Notificação urgente (1 hora antes)
         const delay = Math.max(0, (minutesUntilDue - 60) * 60 * 1000);
         setTimeout(() => {
           sendPushNotification('due_urgent', { 
@@ -146,7 +174,6 @@ export function usePushNotifications(tasks: Task[]) {
           });
         }, delay);
       } else if (minutesUntilDue <= warningThreshold) {
-        // Notificação de aviso (horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - warningThreshold) * 60 * 1000);
         setTimeout(() => {
           sendPushNotification('due_warning', { 
@@ -155,7 +182,6 @@ export function usePushNotifications(tasks: Task[]) {
           });
         }, delay);
       } else if (minutesUntilDue <= earlyThreshold) {
-        // Notificação antecipada (dobro das horas configuradas)
         const delay = Math.max(0, (minutesUntilDue - earlyThreshold) * 60 * 1000);
         setTimeout(() => {
           sendPushNotification('due_early', { 
