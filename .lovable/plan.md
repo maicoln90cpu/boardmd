@@ -1,155 +1,180 @@
 
+# Plano: Corrigir Logica dos Templates + 5 Novos Templates + Fix Entrega
 
-# Plano: Melhorar Templates WhatsApp
+## Diagnostico do Problema de Entrega
 
-## Resumo das Alteracoes
+A Edge Function `whatsapp-daily-summary` esta deployada e respondendo. O teste manual retornou:
+```
+daily_report: "hour mismatch: 20 vs 18"
+```
+Isso confirma que a logica funciona (horario BRT 18h configurado, testado as 20h BRT). O motivo de nao ter chegado as 18:51 e que:
+- O cron roda a cada hora cheia (`:00` UTC)
+- A funcao compara apenas a HORA, nao os minutos
+- Logo, `18:51` dispara as `18:00` BRT, nao as `18:51`
+- Provavelmente a function nao estava deployada quando o cron disparou as 18:00 BRT hoje
 
-5 melhorias nos templates WhatsApp: novo resumo diario (08h), relatorio de % concluidas (23h), alerta pre-vencimento com ate 2 horarios configuraveis, edge functions/triggers para automacao, e filtro de colunas por template.
+**Acao**: Re-deploy das functions e testar. Nao ha bug na logica, apenas timing de deploy.
 
 ---
 
-## 1. Alteracoes no Banco de Dados
+## 1. Classificacao Correta de Cada Template
 
-### Tabela `whatsapp_templates` - novas colunas
+| Template | Logica Correta | Justificativa |
+|----------|---------------|---------------|
+| Tarefa Vencendo | DINAMICO (X horas antes) | Ja corrigido. Baseado no `due_date` da tarefa |
+| Resumo Diario | HORARIO FIXO | Faz sentido enviar 1x/dia no horario configurado |
+| Relatorio Diario | HORARIO FIXO | Faz sentido enviar 1x/dia no horario configurado |
+| Pomodoro | EVENTO (sem horario) | Deve disparar ao iniciar/finalizar sessao |
+| Conquista | EVENTO (sem horario) | Deve disparar quando conquista e desbloqueada |
+| **Tarefa Concluida** (novo) | EVENTO (sem horario) | Dispara ao completar uma tarefa |
+| **Resumo Semanal** (novo) | HORARIO FIXO (1x/semana) | Resumo semanal com metricas |
+| **Tarefa Atrasada** (novo) | EVENTO (sem horario) | Dispara quando tarefa passa do prazo |
+| **Meta Atingida** (novo) | EVENTO (sem horario) | Dispara quando meta/goal e atingida |
+| **Bom Dia Motivacional** (novo) | HORARIO FIXO | Mensagem motivacional diaria |
 
-```sql
-ALTER TABLE whatsapp_templates
-  ADD COLUMN send_time_2 time DEFAULT NULL,        -- segundo horario de envio (due_date)
-  ADD COLUMN due_date_hours_before integer DEFAULT 24, -- horas antes do vencimento
-  ADD COLUMN excluded_column_ids uuid[] DEFAULT '{}'; -- colunas excluidas do envio
+---
+
+## 2. Cinco Novos Templates
+
+### 2.1 Tarefa Concluida (`task_completed`)
+- **Tipo**: Evento (disparado ao marcar tarefa como concluida)
+- **Variaveis**: `{{taskTitle}}`, `{{completedCount}}`, `{{pendingCount}}`
+- **Mensagem padrao**:
+```
+Parabens! Voce concluiu "{{taskTitle}}"!
+Ja sao {{completedCount}} tarefas hoje. Restam {{pendingCount}} pendentes.
+Continue assim!
 ```
 
-- `send_time_2`: segundo horario opcional (apenas para `due_date`)
-- `due_date_hours_before`: quantas horas antes do vencimento enviar (configuravel)
-- `excluded_column_ids`: array de UUIDs das colunas que o usuario NAO quer receber naquele template
+### 2.2 Resumo Semanal (`weekly_summary`)
+- **Tipo**: Horario fixo (1x/semana, configuravel qual dia)
+- **Variaveis**: `{{completedWeek}}`, `{{pendingTasks}}`, `{{streak}}`, `{{topCategory}}`
+- **Mensagem padrao**:
+```
+Resumo da Semana
 
----
+Concluidas: {{completedWeek}} tarefas
+Pendentes: {{pendingTasks}}
+Sequencia: {{streak}} dias
+Categoria mais ativa: {{topCategory}}
 
-## 2. Novos Templates Padrao
-
-### Template "Resumo Diario" (ja existe, ajustar horario padrao para 08:00)
-
-Manter o existente com `send_time = 08:00`. Melhorar a mensagem para listar tarefas pendentes por coluna.
-
-### Novo Template: "Relatorio Diario" (`daily_report`)
-
-```text
-template_type: "daily_report"
-label: "Relatorio Diario"
-send_time: "23:00"
-message_template:
-  📊 *Relatorio do Dia*
-
-  ✅ Concluidas: {{completedToday}}/{{totalTasks}} ({{completionPercent}}%)
-  📋 Pendentes: {{pendingTasks}}
-  {{overdueText}}
-
-  {{progressBar}}
-
-  Ate amanha! 🌙
-variables: [completedToday, totalTasks, completionPercent, pendingTasks, overdueText, progressBar]
+Nova semana, novas conquistas!
 ```
 
-### Template "Tarefa Vencendo" (ja existe, adicionar segundo horario)
+### 2.3 Tarefa Atrasada (`task_overdue`)
+- **Tipo**: Evento (verificado pelo cron, dispara quando due_date < now)
+- **Variaveis**: `{{taskTitle}}`, `{{overdueTime}}`, `{{totalOverdue}}`
+- **Mensagem padrao**:
+```
+Atencao! A tarefa "{{taskTitle}}" esta atrasada ha {{overdueTime}}.
+Voce tem {{totalOverdue}} tarefa(s) atrasada(s) no total.
+```
 
-Adicionar campos `send_time_2` e `due_date_hours_before` no card do template.
+### 2.4 Meta Atingida (`goal_reached`)
+- **Tipo**: Evento (disparado ao atingir target da meta)
+- **Variaveis**: `{{goalTitle}}`, `{{target}}`, `{{period}}`
+- **Mensagem padrao**:
+```
+Meta Atingida!
+"{{goalTitle}}" - {{target}} tarefas no periodo {{period}}.
+Voce e incrivel!
+```
 
----
+### 2.5 Bom Dia Motivacional (`daily_motivation`)
+- **Tipo**: Horario fixo
+- **Variaveis**: `{{pendingTasks}}`, `{{topPriority}}`, `{{streak}}`
+- **Mensagem padrao**:
+```
+Bom dia!
+Voce tem {{pendingTasks}} tarefas para hoje.
+Prioridade: {{topPriority}}
+Sequencia atual: {{streak}} dias
 
-## 3. Edge Functions
-
-### 3a. Refatorar `whatsapp-daily-summary` para suportar ambos os templates
-
-A edge function atual so processa `daily_reminder`. Sera refatorada para processar TAMBEM `daily_report`:
-
-- Buscar templates com `template_type IN ('daily_reminder', 'daily_report')` e `is_enabled = true`
-- Para cada template, verificar hora atual vs `send_time`
-- Para `daily_report`: calcular tarefas concluidas hoje, total, percentual
-- Ambos respeitam `excluded_column_ids` -- filtrar tarefas cujo `column_id` NAO esta na lista de exclusao
-
-### 3b. Nova Edge Function: `whatsapp-due-alert`
-
-Edge function agendada (cron a cada 30 min) que:
-1. Busca todos os templates `due_date` habilitados
-2. Para cada usuario, busca tarefas com `due_date` dentro do intervalo `due_date_hours_before`
-3. Respeita `excluded_column_ids`
-4. Verifica `send_time` e `send_time_2` -- so envia se hora atual bater com um dos dois
-5. Verifica se ja foi enviado (via `whatsapp_logs`) para evitar duplicatas
-6. Envia via Evolution API e registra no log
-
-### 3c. Cron Jobs (pg_cron)
-
-```sql
--- Resumo diario + relatorio: a cada hora
--- (ja existe, manter)
-
--- Alerta de vencimento: a cada 30 minutos
-SELECT cron.schedule(
-  'whatsapp-due-alert',
-  '*/30 * * * *',
-  $$ SELECT net.http_post(...) $$
-);
+Vamos com tudo!
 ```
 
 ---
 
-## 4. UI - Card de Template Melhorado
+## 3. Alteracoes na UI (WhatsAppTemplates.tsx)
 
-Cada card de template tera:
+### 3.1 Remover campo de horario para templates de EVENTO
+- Templates `pomodoro`, `achievement`, `task_completed`, `goal_reached`, `task_overdue` NAO terao campo de horario
+- Exibir label "Disparado automaticamente por evento" em vez do campo de horario
 
-### Campos comuns:
-- Switch ativar/desativar
-- Textarea do template
-- Horario de envio principal (`send_time`)
-- **Novo: Seletor de colunas excluidas** (multi-select com checkboxes das colunas do usuario)
+### 3.2 Adicionar seletor de colunas para novos templates relevantes
+- `task_completed`, `task_overdue`, `weekly_summary`, `daily_motivation` devem ter filtro de colunas
 
-### Campos especificos do template `due_date`:
-- **Segundo horario de envio** (`send_time_2`) - campo time opcional
-- **Horas antes do vencimento** (`due_date_hours_before`) - input numerico
-
-### Seletor de colunas:
-- Buscar colunas do usuario via `columns` table
-- Exibir como lista de checkboxes dentro de um Popover/Collapsible
-- Colunas marcadas = EXCLUIDAS do envio
-- Texto resumo: "Enviando para todas as colunas" ou "Excluindo: Recorrente, Concluido"
+### 3.3 Template semanal: adicionar campo de dia da semana
+- Select com opcoes: Segunda a Domingo (valor salvo como `0-6` no campo `send_time_2` reaproveitado como "dia da semana" para weekly)
 
 ---
 
-## 5. Arquivos a Criar/Modificar
+## 4. Edge Functions
+
+### 4.1 Modificar `whatsapp-daily-summary`
+- Adicionar suporte para `daily_motivation` (horario fixo, logica similar ao daily_reminder)
+- Adicionar suporte para `weekly_summary` (verificar dia da semana + horario)
+- Adicionar suporte para `task_overdue` (buscar tarefas com due_date < now que ainda nao foram notificadas)
+
+### 4.2 Triggers client-side (whatsappNotifier.ts)
+- `task_completed`: chamar ao marcar tarefa como concluida
+- `goal_reached`: chamar quando meta.current >= meta.target
+- `pomodoro`: chamar ao iniciar/finalizar sessao pomodoro
+- `achievement`: chamar ao desbloquear conquista
+
+Para esses 4 templates de evento, a logica esta no CLIENTE (nao precisa de cron). O `whatsappNotifier.ts` ja tem a funcao `sendWhatsAppNotification`. Basta chamar nos hooks correspondentes passando as variaveis.
+
+### 4.3 Re-deploy de todas as functions
+- Forcar re-deploy de `whatsapp-daily-summary` e `whatsapp-due-alert`
+
+---
+
+## 5. Integracao nos Hooks (Eventos)
+
+| Hook | Template | Quando dispara |
+|------|----------|----------------|
+| `useTasks.ts` (ao completar) | `task_completed` | Quando `is_completed = true` |
+| `useGoals.ts` (ao atingir meta) | `goal_reached` | Quando `current >= target` |
+| `usePomodoro.ts` (ao iniciar/finalizar) | `pomodoro` | Inicio e fim de sessao |
+| `useAchievements.ts` (ao desbloquear) | `achievement` | Novo achievement registrado |
+
+---
+
+## 6. Arquivos a Criar/Modificar
 
 | Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| Migracao SQL | Criar | `send_time_2`, `due_date_hours_before`, `excluded_column_ids` |
-| `WhatsAppTemplates.tsx` | Modificar | Novos campos, seletor de colunas, template `daily_report` |
-| `whatsapp-daily-summary/index.ts` | Modificar | Suportar `daily_report` + filtro de colunas |
-| `whatsapp-due-alert/index.ts` | Criar | Edge function para alertas de vencimento |
-| `supabase/config.toml` | Modificar | Registrar nova function |
-| `whatsappNotifier.ts` | Modificar | Respeitar `excluded_column_ids` |
-| Cron SQL | Executar | Agendar `whatsapp-due-alert` a cada 30 min |
+| `WhatsAppTemplates.tsx` | Modificar | 5 novos templates, remover horario de eventos, UI ajustada |
+| `whatsapp-daily-summary/index.ts` | Modificar | Suportar `daily_motivation`, `weekly_summary`, `task_overdue` |
+| `whatsappNotifier.ts` | Modificar | Funcoes helper para eventos client-side |
+| `useTasks.ts` (hook) | Modificar | Chamar notificacao ao completar tarefa |
+| `useGoals.ts` | Modificar | Chamar notificacao ao atingir meta |
+| `usePomodoro.ts` | Modificar | Chamar notificacao ao iniciar/finalizar |
+| `useAchievements.ts` | Modificar | Chamar notificacao ao desbloquear |
 
 ---
 
-## 6. Analise de Impacto
+## 7. Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Novas colunas no banco | Baixo (2/10) | Apenas ADD COLUMN com defaults |
-| Refatorar daily-summary | Medio (4/10) | Adicionar logica para daily_report |
-| Nova edge function due-alert | Medio (5/10) | Logica de janelas de tempo |
-| UI multi-select colunas | Baixo (3/10) | Componente com checkboxes |
-| Cron job adicional | Baixo (2/10) | SQL simples |
+| 5 novos templates no DEFAULT_TEMPLATES | Baixo (1/10) | Apenas dados estaticos |
+| UI condicional (evento vs horario fixo) | Baixo (2/10) | Condicional simples |
+| Novos tipos no daily-summary | Medio (4/10) | Logica de weekly + overdue |
+| Integracao em 4 hooks | Medio (5/10) | Precisa de cuidado para nao duplicar |
+| Re-deploy functions | Baixo (1/10) | Automatico |
 
-**Pontuacao Total: 16/25** - Medio. Dentro do limite seguro.
+**Pontuacao Total: 13/25** - Dentro do limite seguro.
 
 ---
 
-## 7. Checklist de Testes Manuais
+## 8. Checklist de Testes Manuais
 
-- [ ] Verificar que o template "Relatorio Diario" aparece na lista com horario 23:00
-- [ ] Verificar que o template "Tarefa Vencendo" mostra campo de segundo horario e horas antes
-- [ ] Selecionar colunas para excluir em um template e salvar -- recarregar e confirmar que persiste
-- [ ] Enviar teste do "Resumo Diario" e verificar que tarefas das colunas excluidas nao aparecem
-- [ ] Enviar teste do "Relatorio Diario" e verificar que mostra percentual correto
-- [ ] Enviar teste do "Tarefa Vencendo" e verificar formatacao
-- [ ] Verificar no Historico que os logs aparecem com template_type correto
-
+- [ ] Verificar que os 10 templates aparecem na lista
+- [ ] Templates de evento (Pomodoro, Conquista, Tarefa Concluida, Meta Atingida) NAO mostram campo de horario
+- [ ] Templates de horario fixo (Resumo, Relatorio, Motivacional) mostram campo de horario
+- [ ] Tarefa Vencendo mostra campo "horas antes" (sem horario fixo)
+- [ ] Resumo Semanal mostra campo de dia da semana
+- [ ] Enviar teste de cada template e verificar chegada no WhatsApp
+- [ ] Completar uma tarefa e verificar se chega notificacao "Tarefa Concluida" (se habilitado)
+- [ ] Verificar nos logs do WhatsApp que os novos template_types aparecem corretamente
