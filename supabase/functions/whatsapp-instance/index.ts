@@ -145,13 +145,29 @@ Deno.serve(async (req) => {
       }
 
       case 'disconnect': {
-        await fetch(`${evoUrl}/instance/logout/${instanceName}`, {
-          method: 'DELETE',
-          headers: { apikey: evoKey },
-        });
+        // 1. Logout da sessão
+        try {
+          await fetch(`${evoUrl}/instance/logout/${instanceName}`, {
+            method: 'DELETE',
+            headers: { apikey: evoKey },
+          });
+        } catch (e) {
+          console.log('[whatsapp-instance] Logout error (ignored):', e);
+        }
 
+        // 2. Deletar instância completamente da Evolution API
+        try {
+          await fetch(`${evoUrl}/instance/delete/${instanceName}`, {
+            method: 'DELETE',
+            headers: { apikey: evoKey },
+          });
+        } catch (e) {
+          console.log('[whatsapp-instance] Delete instance error (ignored):', e);
+        }
+
+        // 3. Limpar config no banco
         await supabase.from('whatsapp_config')
-          .update({ is_connected: false })
+          .update({ is_connected: false, instance_id: null })
           .eq('user_id', user.id);
 
         return new Response(JSON.stringify({ success: true }), {

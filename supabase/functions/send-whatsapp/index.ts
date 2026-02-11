@@ -10,6 +10,7 @@ interface SendPayload {
   phone_number: string;
   message: string;
   template_type?: string;
+  retry_log_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     const evoUrl = (config.api_url || Deno.env.get('EVOLUTION_API_URL') || '').replace(/\/$/, '');
     const evoKey = config.api_key || Deno.env.get('EVOLUTION_API_KEY') || '';
 
-    // Format phone number (ensure it has country code and @s.whatsapp.net)
+    // Format phone number
     let phone = payload.phone_number.replace(/\D/g, '');
     if (!phone.startsWith('55') && phone.length <= 11) {
       phone = '55' + phone;
@@ -61,15 +62,38 @@ Deno.serve(async (req) => {
 
     const data = await res.json();
 
-    // Log the message
-    await supabase.from('whatsapp_logs').insert({
-      user_id: payload.user_id,
-      template_type: payload.template_type || 'manual',
-      phone_number: phone,
-      message: payload.message,
-      status: res.ok ? 'sent' : 'failed',
-      error_message: res.ok ? null : JSON.stringify(data),
-    });
+    // If this is a retry, update existing log
+    if (payload.retry_log_id) {
+      await supabase.from('whatsapp_logs').update({
+        status: res.ok ? 'sent' : 'failed',
+        error_message: res.ok ? null : JSON.stringify(data),
+        retry_count: supabase.rpc ? undefined : 1, // fallback
+        sent_at: new Date().toISOString(),
+      }).eq('id', payload.retry_log_id);
+
+      // Increment retry_count via raw update
+      const { data: currentLog } = await supabase
+        .from('whatsapp_logs')
+        .select('retry_count')
+        .eq('id', payload.retry_log_id)
+        .single();
+
+      if (currentLog) {
+        await supabase.from('whatsapp_logs').update({
+          retry_count: (currentLog.retry_count || 0) + 1,
+        }).eq('id', payload.retry_log_id);
+      }
+    } else {
+      // Create new log
+      await supabase.from('whatsapp_logs').insert({
+        user_id: payload.user_id,
+        template_type: payload.template_type || 'manual',
+        phone_number: phone,
+        message: payload.message,
+        status: res.ok ? 'sent' : 'failed',
+        error_message: res.ok ? null : JSON.stringify(data),
+      });
+    }
 
     return new Response(JSON.stringify({
       success: res.ok,

@@ -4,21 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Wifi, WifiOff, QrCode, RefreshCw, Unplug, Save } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+
+type ConnectionPhase = "idle" | "saving" | "connecting" | "checking" | "disconnecting";
 
 export function WhatsAppConnection() {
   const { user } = useAuth();
   const [apiUrl, setApiUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [phase, setPhase] = useState<ConnectionPhase>("idle");
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState("unknown");
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [configSaved, setConfigSaved] = useState(false);
 
-  // Load saved config
+  const isLoading = phase !== "idle";
+
   useEffect(() => {
     if (!user) return;
     const load = async () => {
@@ -32,6 +36,7 @@ export function WhatsAppConnection() {
         setApiUrl(data.api_url || "");
         setApiKey(data.api_key || "");
         setIsConnected(data.is_connected || false);
+        setConnectionState(data.is_connected ? "open" : "unknown");
         setConfigSaved(true);
       }
     };
@@ -39,7 +44,6 @@ export function WhatsAppConnection() {
   }, [user]);
 
   const invokeInstance = useCallback(async (action: string, extra?: Record<string, unknown>) => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("whatsapp-instance", {
         body: { action, api_url: apiUrl, api_key: apiKey, ...extra },
@@ -49,8 +53,6 @@ export function WhatsAppConnection() {
     } catch (e: any) {
       toast.error(e.message || "Erro na operação");
       return null;
-    } finally {
-      setIsLoading(false);
     }
   }, [apiUrl, apiKey]);
 
@@ -59,14 +61,17 @@ export function WhatsAppConnection() {
       toast.error("Preencha URL e API Key");
       return;
     }
+    setPhase("saving");
     const data = await invokeInstance("save_config");
     if (data?.success) {
       setConfigSaved(true);
       toast.success("Configuração salva!");
     }
+    setPhase("idle");
   };
 
   const handleCheckStatus = async () => {
+    setPhase("checking");
     const data = await invokeInstance("status");
     if (data) {
       setConnectionState(data.state);
@@ -74,22 +79,25 @@ export function WhatsAppConnection() {
       if (data.connected) {
         toast.success("WhatsApp conectado!");
         setQrCode(null);
+      } else {
+        toast.info(`Status: ${data.state}`);
       }
     }
+    setPhase("idle");
   };
 
   const handleConnect = async () => {
-    // First try to create instance if it doesn't exist
+    setPhase("connecting");
     const check = await invokeInstance("check");
     if (!check?.exists) {
       const createResult = await invokeInstance("create");
       if (createResult?.qrcode) {
         setQrCode(createResult.qrcode);
+        setPhase("idle");
         return;
       }
     }
 
-    // Get QR code
     const data = await invokeInstance("connect");
     if (data?.qrcode) {
       setQrCode(data.qrcode);
@@ -99,16 +107,19 @@ export function WhatsAppConnection() {
       setQrCode(null);
       toast.success("Já está conectado!");
     }
+    setPhase("idle");
   };
 
   const handleDisconnect = async () => {
+    setPhase("disconnecting");
     const data = await invokeInstance("disconnect");
     if (data?.success) {
       setIsConnected(false);
       setConnectionState("disconnected");
       setQrCode(null);
-      toast.success("Desconectado");
+      toast.success("WhatsApp desconectado e instância removida");
     }
+    setPhase("idle");
   };
 
   // Auto-check status when QR is shown
@@ -126,6 +137,15 @@ export function WhatsAppConnection() {
     }, 5000);
     return () => clearInterval(interval);
   }, [qrCode, invokeInstance]);
+
+  const stateLabel = () => {
+    if (phase === "connecting") return "Conectando...";
+    if (phase === "disconnecting") return "Desconectando...";
+    if (phase === "checking") return "Verificando...";
+    if (isConnected) return "Conectado";
+    if (connectionState === "unknown") return "Desconhecido";
+    return connectionState === "disconnected" ? "Desconectado" : connectionState;
+  };
 
   return (
     <div className="space-y-4">
@@ -152,7 +172,7 @@ export function WhatsAppConnection() {
             />
           </div>
           <Button size="sm" onClick={handleSaveConfig} disabled={isLoading}>
-            <Save className="h-4 w-4 mr-2" />
+            {phase === "saving" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
             Salvar
           </Button>
         </CardContent>
@@ -174,14 +194,17 @@ export function WhatsAppConnection() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-2">
               <Badge variant={isConnected ? "default" : "secondary"}>
-                {isConnected ? "Conectado" : connectionState === "unknown" ? "Desconhecido" : connectionState}
+                {stateLabel()}
               </Badge>
+              {(phase === "connecting" || phase === "disconnecting" || phase === "checking") && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2">
               {!isConnected ? (
                 <Button size="sm" onClick={handleConnect} disabled={isLoading}>
-                  {isLoading ? (
+                  {phase === "connecting" ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
                     <QrCode className="h-4 w-4 mr-2" />
@@ -189,13 +212,36 @@ export function WhatsAppConnection() {
                   Conectar
                 </Button>
               ) : (
-                <Button size="sm" variant="destructive" onClick={handleDisconnect} disabled={isLoading}>
-                  <Unplug className="h-4 w-4 mr-2" />
-                  Desconectar
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="destructive" disabled={isLoading}>
+                      <Unplug className="h-4 w-4 mr-2" />
+                      Desconectar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Desconectar WhatsApp?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        A instância será completamente removida. Para conectar novamente, você precisará escanear um novo QR Code.
+                        Isso é útil se você deseja trocar de celular.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDisconnect}>
+                        Confirmar Desconexão
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
               <Button size="sm" variant="outline" onClick={handleCheckStatus} disabled={isLoading}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                {phase === "checking" ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
                 Verificar
               </Button>
             </div>
@@ -203,7 +249,7 @@ export function WhatsAppConnection() {
             {/* QR Code */}
             {qrCode && (
               <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-card">
-                <p className="text-sm text-center font-medium text-black">
+                <p className="text-sm text-center font-medium">
                   Escaneie com o WhatsApp
                 </p>
                 <img
