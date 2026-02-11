@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import confetti from "canvas-confetti";
+import { notifyGoalReached } from "@/lib/whatsappNotifier";
 
 export interface Goal {
   id: string;
@@ -114,6 +115,13 @@ export function useGoals() {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       if (data.justCompleted) {
         toast.success("🎉 Meta concluída! Parabéns!");
+        // WhatsApp notification
+        if (user?.id) {
+          const goal = goals.find(g => g.id === data.id);
+          if (goal) {
+            notifyGoalReached(user.id, goal.title, goal.target, goal.period);
+          }
+        }
       }
     },
   });
@@ -142,6 +150,9 @@ export function useGoals() {
           colors: ['#10B981', '#34D399', '#6EE7B7', '#FFD700'],
         });
         toast.success(`🎉 Meta "${goal.title}" concluída!`);
+        if (user?.id) {
+          notifyGoalReached(user.id, goal.title, goal.target, goal.period);
+        }
       }
     }
 

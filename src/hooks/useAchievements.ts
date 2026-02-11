@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
+import { notifyAchievement } from "@/lib/whatsappNotifier";
 
 interface Badge {
   id: string;
@@ -159,7 +160,7 @@ export const rarityNames: Record<Badge["rarity"], string> = {
 };
 
 // Hook para gerenciar conquistas
-export function useAchievements(stats: BadgeStats | null) {
+export function useAchievements(stats: BadgeStats | null, userId?: string) {
   const triggerConfetti = useCallback(() => {
     const duration = 3000;
     const animationEnd = Date.now() + duration;
@@ -219,6 +220,10 @@ export function useAchievements(stats: BadgeStats | null) {
       newUnlocked.forEach((badge, index) => {
         setTimeout(() => {
           showBadgeUnlocked(badge);
+          // WhatsApp notification
+          if (userId) {
+            notifyAchievement(userId, `${badge.icon} ${badge.name}`, badge.rarity === 'legendary' ? 500 : badge.rarity === 'epic' ? 200 : badge.rarity === 'rare' ? 100 : 50);
+          }
         }, index * 2000);
       });
     }

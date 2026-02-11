@@ -7,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Save, RotateCcw, Send, Loader2, Clock, Filter, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Save, RotateCcw, Send, Loader2, Clock, Filter, ChevronDown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -31,10 +32,31 @@ interface Column {
   name: string;
 }
 
+// Templates de evento (sem campo de horário)
+const EVENT_TEMPLATES = ["pomodoro", "achievement", "task_completed", "goal_reached"];
+// Templates de horário fixo
+const FIXED_TIME_TEMPLATES = ["daily_reminder", "daily_report", "daily_motivation", "weekly_summary"];
+// Template dinâmico (horas antes)
+const DYNAMIC_TEMPLATES = ["due_date"];
+// Templates com cron que também verificam overdue
+const CRON_EVENT_TEMPLATES = ["task_overdue"];
+// Templates com filtro de colunas
+const COLUMN_FILTER_TEMPLATES = ["due_date", "daily_reminder", "daily_report", "daily_motivation", "weekly_summary", "task_completed", "task_overdue"];
+
+const WEEKDAYS = [
+  { value: "1", label: "Segunda-feira" },
+  { value: "2", label: "Terça-feira" },
+  { value: "3", label: "Quarta-feira" },
+  { value: "4", label: "Quinta-feira" },
+  { value: "5", label: "Sexta-feira" },
+  { value: "6", label: "Sábado" },
+  { value: "0", label: "Domingo" },
+];
+
 const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   {
     template_type: "due_date",
-    label: "Tarefa Vencendo",
+    label: "⏰ Tarefa Vencendo",
     message_template: "⏰ *Alerta de Prazo*\n\nA tarefa \"{{taskTitle}}\" vence em {{timeRemaining}}.\n\nAcesse o BoardMD para gerenciar.",
     is_enabled: true,
     variables: ["taskTitle", "timeRemaining"],
@@ -46,7 +68,7 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   },
   {
     template_type: "daily_reminder",
-    label: "Resumo Diário",
+    label: "📋 Resumo Diário",
     message_template: "📋 *Resumo do Dia*\n\nVocê tem {{pendingTasks}} tarefa(s) pendente(s).\n{{overdueText}}\n\nBom trabalho! 💪",
     is_enabled: true,
     variables: ["pendingTasks", "overdueText"],
@@ -55,7 +77,7 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   },
   {
     template_type: "daily_report",
-    label: "Relatório Diário",
+    label: "📊 Relatório Diário",
     message_template: "📊 *Relatório do Dia*\n\n✅ Concluídas: {{completedToday}}/{{totalTasks}} ({{completionPercent}}%)\n📋 Pendentes: {{pendingTasks}}\n{{overdueText}}\n\n{{progressBar}}\n\nAté amanhã! 🌙",
     is_enabled: true,
     variables: ["completedToday", "totalTasks", "completionPercent", "pendingTasks", "overdueText", "progressBar"],
@@ -63,21 +85,67 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
     excluded_column_ids: [],
   },
   {
+    template_type: "daily_motivation",
+    label: "🌅 Bom Dia Motivacional",
+    message_template: "☀️ *Bom dia!*\n\nVocê tem {{pendingTasks}} tarefas para hoje.\n🎯 Prioridade: {{topPriority}}\n🔥 Sequência atual: {{streak}} dias\n\nVamos com tudo! 💪",
+    is_enabled: false,
+    variables: ["pendingTasks", "topPriority", "streak"],
+    send_time: "07:00",
+    excluded_column_ids: [],
+  },
+  {
+    template_type: "weekly_summary",
+    label: "📅 Resumo Semanal",
+    message_template: "📅 *Resumo da Semana*\n\n✅ Concluídas: {{completedWeek}} tarefas\n📋 Pendentes: {{pendingTasks}}\n🔥 Sequência: {{streak}} dias\n📁 Categoria mais ativa: {{topCategory}}\n\nNova semana, novas conquistas! 🚀",
+    is_enabled: false,
+    variables: ["completedWeek", "pendingTasks", "streak", "topCategory"],
+    send_time: "09:00",
+    send_time_2: "1",
+    excluded_column_ids: [],
+  },
+  {
+    template_type: "task_completed",
+    label: "✅ Tarefa Concluída",
+    message_template: "🎉 *Parabéns!*\n\nVocê concluiu \"{{taskTitle}}\"!\nJá são {{completedCount}} tarefas hoje. Restam {{pendingCount}} pendentes.\n\nContinue assim! 💪",
+    is_enabled: false,
+    variables: ["taskTitle", "completedCount", "pendingCount"],
+    send_time: "",
+    excluded_column_ids: [],
+  },
+  {
+    template_type: "task_overdue",
+    label: "🚨 Tarefa Atrasada",
+    message_template: "🚨 *Atenção!*\n\nA tarefa \"{{taskTitle}}\" está atrasada há {{overdueTime}}.\nVocê tem {{totalOverdue}} tarefa(s) atrasada(s) no total.\n\nAcesse o BoardMD para resolver.",
+    is_enabled: false,
+    variables: ["taskTitle", "overdueTime", "totalOverdue"],
+    send_time: "",
+    excluded_column_ids: [],
+  },
+  {
+    template_type: "goal_reached",
+    label: "🏆 Meta Atingida",
+    message_template: "🏆 *Meta Atingida!*\n\n\"{{goalTitle}}\" - {{target}} tarefas no período {{period}}.\n\nVocê é incrível! 🎉",
+    is_enabled: false,
+    variables: ["goalTitle", "target", "period"],
+    send_time: "",
+    excluded_column_ids: [],
+  },
+  {
     template_type: "pomodoro",
-    label: "Pomodoro",
+    label: "🍅 Pomodoro",
     message_template: "🍅 *Pomodoro {{sessionType}}*\n\n{{message}}\n\nContinue focado!",
     is_enabled: false,
     variables: ["sessionType", "message"],
-    send_time: "09:00",
+    send_time: "",
     excluded_column_ids: [],
   },
   {
     template_type: "achievement",
-    label: "Conquista",
+    label: "🏅 Conquista",
     message_template: "🏆 *Nova Conquista!*\n\n{{achievementTitle}}\n+{{points}} pontos\n\nParabéns! 🎉",
     is_enabled: false,
     variables: ["achievementTitle", "points"],
-    send_time: "18:00",
+    send_time: "",
     excluded_column_ids: [],
   },
 ];
@@ -148,11 +216,16 @@ export function WhatsAppTemplates() {
           message_template: tpl.message_template,
           is_enabled: tpl.is_enabled,
           send_time: tpl.send_time ? tpl.send_time + ":00" : null,
-          send_time_2: tpl.send_time_2 ? tpl.send_time_2 + ":00" : null,
+          send_time_2: tpl.send_time_2 ? tpl.send_time_2 + (tpl.template_type === "weekly_summary" ? "" : ":00") : null,
           due_date_hours_before: tpl.due_date_hours_before ?? 24,
           due_date_hours_before_2: tpl.due_date_hours_before_2 ?? null,
           excluded_column_ids: tpl.excluded_column_ids || [],
         };
+
+        // For weekly_summary, store weekday in send_time_2
+        if (tpl.template_type === "weekly_summary") {
+          payload.send_time_2 = tpl.send_time_2 || null;
+        }
 
         if (tpl.id) {
           await supabase.from("whatsapp_templates").update(payload).eq("id", tpl.id);
@@ -211,6 +284,17 @@ export function WhatsAppTemplates() {
         totalTasks: "12",
         completionPercent: "67",
         progressBar: "▓▓▓▓▓▓▓░░░ 67%",
+        completedCount: "3",
+        pendingCount: "7",
+        completedWeek: "22",
+        streak: "5",
+        topCategory: "Trabalho",
+        topPriority: "Finalizar relatório",
+        goalTitle: "Meta Semanal",
+        target: "10",
+        period: "semanal",
+        overdueTime: "3 horas",
+        totalOverdue: "2",
       };
 
       let message = tpl.message_template;
@@ -262,6 +346,12 @@ export function WhatsAppTemplates() {
     return `Excluindo: ${names.join(", ")}`;
   };
 
+  const isEventTemplate = (type: string) => EVENT_TEMPLATES.includes(type);
+  const isFixedTimeTemplate = (type: string) => FIXED_TIME_TEMPLATES.includes(type);
+  const isDynamicTemplate = (type: string) => DYNAMIC_TEMPLATES.includes(type);
+  const isCronEventTemplate = (type: string) => CRON_EVENT_TEMPLATES.includes(type);
+  const hasColumnFilter = (type: string) => COLUMN_FILTER_TEMPLATES.includes(type);
+
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-8">Carregando templates...</div>;
   }
@@ -288,7 +378,16 @@ export function WhatsAppTemplates() {
             />
 
             <div className="flex items-center gap-4 flex-wrap">
-              {tpl.template_type !== "due_date" && (
+              {/* Event templates - no time picker */}
+              {(isEventTemplate(tpl.template_type) || isCronEventTemplate(tpl.template_type)) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-1.5">
+                  <Zap className="h-4 w-4" />
+                  <span>Disparado automaticamente por evento</span>
+                </div>
+              )}
+
+              {/* Fixed time templates - time picker */}
+              {isFixedTimeTemplate(tpl.template_type) && tpl.template_type !== "weekly_summary" && (
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <Label className="text-sm text-muted-foreground">Horário:</Label>
@@ -301,7 +400,42 @@ export function WhatsAppTemplates() {
                 </div>
               )}
 
-              {tpl.template_type === "due_date" && (
+              {/* Weekly summary - time picker + day of week */}
+              {tpl.template_type === "weekly_summary" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <Label className="text-sm text-muted-foreground">Horário:</Label>
+                    <Input
+                      type="time"
+                      value={tpl.send_time}
+                      onChange={(e) => updateTemplate(idx, "send_time", e.target.value)}
+                      className="w-28 h-8 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Dia:</Label>
+                    <Select
+                      value={tpl.send_time_2 || "1"}
+                      onValueChange={(v) => updateTemplate(idx, "send_time_2", v)}
+                    >
+                      <SelectTrigger className="w-40 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WEEKDAYS.map((day) => (
+                          <SelectItem key={day.value} value={day.value}>
+                            {day.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {/* Due date template - hours before */}
+              {isDynamicTemplate(tpl.template_type) && (
                 <>
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -338,7 +472,7 @@ export function WhatsAppTemplates() {
             </div>
 
             {/* Column exclusion selector */}
-            {["due_date", "daily_reminder", "daily_report"].includes(tpl.template_type) && columns.length > 0 && (
+            {hasColumnFilter(tpl.template_type) && columns.length > 0 && (
               <Collapsible>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-full justify-between text-xs text-muted-foreground h-8">

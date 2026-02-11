@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { notifyPomodoro } from "@/lib/whatsappNotifier";
 
 export type PomodoroState = "idle" | "working" | "shortBreak" | "longBreak" | "paused";
 export type SessionType = "work" | "short_break" | "long_break";
@@ -136,6 +137,11 @@ export function usePomodoro() {
     previousState.current = newState;
     
     toast.success(type === "work" ? "🍅 Sessão de foco iniciada!" : "☕ Pausa iniciada!");
+    
+    // WhatsApp notification
+    if (user && type === "work") {
+      notifyPomodoro(user.id, "Iniciado", `Sessão de foco de ${duration} minutos iniciada!`);
+    }
   }, [user, settings]);
 
   const pauseSession = useCallback(() => {
@@ -191,6 +197,10 @@ export function usePomodoro() {
       setSessionsCompleted(newSessionsCompleted);
       await loadTodayStats();
       toast.success("🎉 Sessão de foco concluída!");
+      
+      if (user) {
+        notifyPomodoro(user.id, "Concluído", `Sessão #${newSessionsCompleted} finalizada! 🎉`);
+      }
       
       // Determine next break type
       const nextIsLongBreak = newSessionsCompleted % settings.sessionsUntilLongBreak === 0;

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { logger } from "@/lib/logger";
+import { notifyTaskCompleted } from "@/lib/whatsappNotifier";
 
 // Helper to dispatch saving state events
 const dispatchSavingEvent = (taskId: string, isSaving: boolean) => {
@@ -334,6 +335,14 @@ export function useTasks(categoryId: string | null | "all") {
         action,
         changes: JSON.parse(JSON.stringify(updates))
       }]);
+
+      // WhatsApp: notify task completed
+      if (updates.is_completed === true) {
+        const task = tasks.find(t => t.id === id);
+        const completedToday = tasks.filter(t => t.is_completed).length + 1;
+        const pendingCount = tasks.filter(t => !t.is_completed && t.id !== id).length;
+        notifyTaskCompleted(user.id, task?.title || '', completedToday, pendingCount);
+      }
 
       toast({ title: "Tarefa atualizada com sucesso" });
     } catch (e) {
