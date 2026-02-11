@@ -5,6 +5,114 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============================================================
+// MOTIVATIONAL QUOTES (30)
+// ============================================================
+const MOTIVATIONAL_QUOTES = [
+  { text: "A educação é a arma mais poderosa que você pode usar para mudar o mundo.", author: "Nelson Mandela" },
+  { text: "O sucesso nasce do querer, da determinação e persistência em se chegar a um objetivo.", author: "José de Alencar" },
+  { text: "Não é a força, mas a constância dos bons sentimentos que conduz os homens à felicidade.", author: "Friedrich Nietzsche" },
+  { text: "A única maneira de fazer um excelente trabalho é amar o que você faz.", author: "Steve Jobs" },
+  { text: "O futuro pertence àqueles que acreditam na beleza de seus sonhos.", author: "Eleanor Roosevelt" },
+  { text: "Seja a mudança que você deseja ver no mundo.", author: "Mahatma Gandhi" },
+  { text: "A persistência é o caminho do êxito.", author: "Charles Chaplin" },
+  { text: "Grandes realizações não são feitas por impulso, mas por uma soma de pequenas realizações.", author: "Vincent Van Gogh" },
+  { text: "Acredite que você pode, assim você já está no meio do caminho.", author: "Theodore Roosevelt" },
+  { text: "Cada dia é uma nova chance para mudar sua vida.", author: "Autor desconhecido" },
+  { text: "O único limite para a nossa realização de amanhã serão as nossas dúvidas de hoje.", author: "Franklin D. Roosevelt" },
+  { text: "Tudo o que um sonho precisa para ser realizado é alguém que acredite que ele possa ser realizado.", author: "Roberto Shinyashiki" },
+  { text: "Você nunca sabe que resultados virão da sua ação. Mas se você não fizer nada, não existirão resultados.", author: "Mahatma Gandhi" },
+  { text: "A disciplina é a ponte entre metas e realizações.", author: "Jim Rohn" },
+  { text: "Não espere por circunstâncias ideais. Elas nunca virão.", author: "Janet Erskine Stuart" },
+  { text: "O insucesso é apenas uma oportunidade para recomeçar com mais inteligência.", author: "Henry Ford" },
+  { text: "Quanto maior a dificuldade, maior a glória.", author: "Cícero" },
+  { text: "Coragem não é a ausência de medo, mas o triunfo sobre ele.", author: "Nelson Mandela" },
+  { text: "Somente aqueles que ousam falhar grandemente podem alcançar grandes coisas.", author: "Robert F. Kennedy" },
+  { text: "O que não nos mata nos fortalece.", author: "Friedrich Nietzsche" },
+  { text: "A melhor maneira de prever o futuro é criá-lo.", author: "Peter Drucker" },
+  { text: "Dificuldades preparam pessoas comuns para destinos extraordinários.", author: "C.S. Lewis" },
+  { text: "Você deve ser a mudança que deseja ver no mundo.", author: "Mahatma Gandhi" },
+  { text: "Nada é impossível para aqueles que persistem.", author: "Alexandre, o Grande" },
+  { text: "A vida é 10% o que acontece com você e 90% como você reage a isso.", author: "Charles R. Swindoll" },
+  { text: "Faça o que puder, com o que tiver, onde estiver.", author: "Theodore Roosevelt" },
+  { text: "O êxito da vida não se mede pelo caminho que você conquistou, mas sim pelas dificuldades que superou.", author: "Abraham Lincoln" },
+  { text: "Não tenha medo de desistir do bom para perseguir o ótimo.", author: "John D. Rockefeller" },
+  { text: "A verdadeira motivação vem de realização, desenvolvimento pessoal, satisfação no trabalho e reconhecimento.", author: "Frederick Herzberg" },
+  { text: "Sua única limitação é aquela que você impõe à sua própria mente.", author: "Napoleon Hill" },
+];
+
+// ============================================================
+// BIBLE QUOTES (30)
+// ============================================================
+const BIBLE_QUOTES = [
+  { text: "O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha. Não maltrata, não procura seus interesses, não se ira facilmente, não guarda rancor.", ref: "1 Coríntios 13:4-5" },
+  { text: "Tudo posso naquele que me fortalece.", ref: "Filipenses 4:13" },
+  { text: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", ref: "João 3:16" },
+  { text: "Confie no Senhor de todo o seu coração e não se apoie em seu próprio entendimento.", ref: "Provérbios 3:5" },
+  { text: "O Senhor é o meu pastor; nada me faltará.", ref: "Salmos 23:1" },
+  { text: "Mas os que esperam no Senhor renovarão as suas forças, subirão com asas como águias; correrão e não se cansarão; caminharão e não se fatigarão.", ref: "Isaías 40:31" },
+  { text: "Entrega o teu caminho ao Senhor; confia nele, e ele tudo fará.", ref: "Salmos 37:5" },
+  { text: "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz e não de mal, para vos dar o fim que esperais.", ref: "Jeremias 29:11" },
+  { text: "Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus; eu te fortaleço, e te ajudo, e te sustento com a minha destra fiel.", ref: "Isaías 41:10" },
+  { text: "E sabemos que todas as coisas contribuem juntamente para o bem daqueles que amam a Deus.", ref: "Romanos 8:28" },
+  { text: "Sê forte e corajoso; não temas, nem te espantes, porque o Senhor teu Deus é contigo por onde quer que andares.", ref: "Josué 1:9" },
+  { text: "Deus é o nosso refúgio e fortaleza, socorro bem presente na angústia.", ref: "Salmos 46:1" },
+  { text: "O Senhor é a minha luz e a minha salvação; a quem temerei?", ref: "Salmos 27:1" },
+  { text: "Lança o teu cuidado sobre o Senhor, e ele te susterá; nunca permitirá que o justo seja abalado.", ref: "Salmos 55:22" },
+  { text: "Bem-aventurados os que têm fome e sede de justiça, porque eles serão fartos.", ref: "Mateus 5:6" },
+  { text: "Pois onde estiver o vosso tesouro, aí estará também o vosso coração.", ref: "Mateus 6:21" },
+  { text: "A fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.", ref: "Hebreus 11:1" },
+  { text: "Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", ref: "Eclesiastes 3:1" },
+  { text: "O choro pode durar uma noite, mas a alegria vem pela manhã.", ref: "Salmos 30:5" },
+  { text: "Bendize, ó minha alma, ao Senhor, e tudo o que há em mim bendiga o seu santo nome.", ref: "Salmos 103:1" },
+  { text: "Aquele que habita no esconderijo do Altíssimo, à sombra do Onipotente descansará.", ref: "Salmos 91:1" },
+  { text: "Antes de te formar no ventre materno, eu te conheci; antes que saísses da madre, te consagrei.", ref: "Jeremias 1:5" },
+  { text: "O Senhor pelejará por vós, e vós vos calareis.", ref: "Êxodo 14:14" },
+  { text: "Não se amoldem ao padrão deste mundo, mas transformem-se pela renovação da sua mente.", ref: "Romanos 12:2" },
+  { text: "Deem graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus.", ref: "1 Tessalonicenses 5:18" },
+  { text: "Peçam e lhes será dado; busquem e encontrarão; batam e a porta lhes será aberta.", ref: "Mateus 7:7" },
+  { text: "Ainda que eu andasse pelo vale da sombra da morte, não temeria mal algum, porque tu estás comigo.", ref: "Salmos 23:4" },
+  { text: "Sede fortes e corajosos. Não temais, nem vos aterrorizeis; pois o Senhor vosso Deus está convosco por onde quer que fordes.", ref: "Deuteronômio 31:6" },
+  { text: "Eu sou a videira; vocês são os ramos. Se alguém permanecer em mim e eu nele, esse dará muitos frutos.", ref: "João 15:5" },
+  { text: "Ó Senhor, tu me sondas e me conheces. Sabes quando me sento e quando me levanto; de longe percebes os meus pensamentos.", ref: "Salmos 139:1-2" },
+];
+
+// ============================================================
+// HELPER: Format date in BRT (dd/MM HH:mm)
+// ============================================================
+function formatDateBRT(dateStr: string | null): string {
+  if (!dateStr) return 'Sem prazo';
+  const d = new Date(dateStr);
+  const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
+  const brt = new Date(d.getTime() + BRT_OFFSET_MS);
+  const dd = String(brt.getUTCDate()).padStart(2, '0');
+  const mm = String(brt.getUTCMonth() + 1).padStart(2, '0');
+  const hh = String(brt.getUTCHours()).padStart(2, '0');
+  const min = String(brt.getUTCMinutes()).padStart(2, '0');
+  return `${dd}/${mm} ${hh}:${min}`;
+}
+
+function getPriorityEmoji(priority: string | null): string {
+  switch (priority) {
+    case 'high': return '🔴';
+    case 'medium': return '🟡';
+    case 'low': return '🟢';
+    default: return '⚪';
+  }
+}
+
+function getPriorityOrder(priority: string | null): number {
+  switch (priority) {
+    case 'high': return 0;
+    case 'medium': return 1;
+    case 'low': return 2;
+    default: return 3;
+  }
+}
+
+// ============================================================
+// MAIN HANDLER
+// ============================================================
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,14 +128,13 @@ Deno.serve(async (req) => {
     const now = new Date();
     const nowBRT = new Date(now.getTime() + BRT_OFFSET_MS);
     const currentHour = nowBRT.getUTCHours();
-    const currentWeekday = nowBRT.getUTCDay(); // 0=Sun, 1=Mon...
+    const currentWeekday = nowBRT.getUTCDay();
 
     // BRT midnight boundaries
     const todayBRTMidnight = new Date(Date.UTC(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate()));
-    const todayStartUTC = new Date(todayBRTMidnight.getTime() - BRT_OFFSET_MS); // 03:00 UTC
+    const todayStartUTC = new Date(todayBRTMidnight.getTime() - BRT_OFFSET_MS);
     const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-    // Supported template types for this cron function
     const supportedTypes = ['daily_reminder', 'daily_report', 'daily_motivation', 'weekly_summary', 'task_overdue'];
 
     const { data: templates, error: tplErr } = await supabase
@@ -79,7 +186,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // === DEDUP CHECK (skip for task_overdue which dedupes per-task) ===
+      // === DEDUP CHECK ===
       if (tpl.template_type !== 'task_overdue') {
         const { data: existingLogs } = await supabase
           .from('whatsapp_logs')
@@ -163,6 +270,9 @@ function getDefaultHour(templateType: string): number {
   }
 }
 
+// ============================================================
+// BUILD TEMPLATE MESSAGE
+// ============================================================
 async function buildTemplateMessage(
   supabase: any, tpl: any, excludedIds: string[],
   now: Date, todayStartUTC: Date, todayEndUTC: Date
@@ -170,88 +280,184 @@ async function buildTemplateMessage(
   let message = tpl.message_template;
   const userId = tpl.user_id;
 
-  // Pending tasks query builder
-  const buildPendingQuery = () => {
-    let q = supabase.from('tasks').select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('is_completed', false);
+  // Helper: add column exclusions to query
+  const applyExclusions = (q: any) => {
     for (const colId of excludedIds) q = q.neq('column_id', colId);
     return q;
   };
 
-  // Overdue query builder
-  const buildOverdueQuery = () => {
-    let q = supabase.from('tasks').select('id', { count: 'exact', head: true })
+  // =============================================
+  // DAILY MOTIVATION — random quotes only
+  // =============================================
+  if (tpl.template_type === 'daily_motivation') {
+    const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+    const bible = BIBLE_QUOTES[Math.floor(Math.random() * BIBLE_QUOTES.length)];
+
+    const motivationalQuote = `"${quote.text}"\n— ${quote.author}`;
+    const bibleQuote = `"${bible.text}"\n${bible.ref}`;
+
+    message = message.replace(/\{\{motivationalQuote\}\}/g, motivationalQuote);
+    message = message.replace(/\{\{bibleQuote\}\}/g, bibleQuote);
+
+    // Also replace legacy variables with empty string so old templates don't break
+    message = message.replace(/\{\{pendingTasks\}\}/g, '');
+    message = message.replace(/\{\{topPriority\}\}/g, '');
+    message = message.replace(/\{\{streak\}\}/g, '');
+    message = message.replace(/\{\{overdueText\}\}/g, '');
+
+    return message;
+  }
+
+  // =============================================
+  // DAILY REMINDER — list all tasks by name
+  // =============================================
+  if (tpl.template_type === 'daily_reminder') {
+    // Fetch pending tasks with details
+    let pendingQ = supabase.from('tasks').select('title, due_date')
       .eq('user_id', userId).eq('is_completed', false)
-      .lt('due_date', now.toISOString()).not('due_date', 'is', null);
-    for (const colId of excludedIds) q = q.neq('column_id', colId);
-    return q;
-  };
+      .order('due_date', { ascending: true, nullsFirst: false });
+    pendingQ = applyExclusions(pendingQ);
+    const { data: pendingTasks } = await pendingQ.limit(50);
 
-  if (tpl.template_type === 'daily_reminder' || tpl.template_type === 'daily_motivation') {
-    const { count: pendingCount } = await buildPendingQuery();
-    const { count: overdueCount } = await buildOverdueQuery();
+    // Fetch overdue tasks
+    let overdueQ = supabase.from('tasks').select('title, due_date')
+      .eq('user_id', userId).eq('is_completed', false)
+      .lt('due_date', now.toISOString()).not('due_date', 'is', null)
+      .order('due_date', { ascending: true });
+    overdueQ = applyExclusions(overdueQ);
+    const { data: overdueTasks } = await overdueQ.limit(50);
 
-    const overdueText = overdueCount && overdueCount > 0
-      ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)` : '✅ Nenhuma tarefa atrasada!';
+    // Non-overdue pending (exclude overdue from pending list)
+    const overdueIds = new Set((overdueTasks || []).map((t: any) => t.title + t.due_date));
+    const nonOverdue = (pendingTasks || []).filter((t: any) => !overdueIds.has(t.title + t.due_date));
 
-    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount || 0));
-    message = message.replace(/\{\{overdueText\}\}/g, overdueText);
-
-    // daily_motivation extras
-    if (tpl.template_type === 'daily_motivation') {
-      // Top priority task
-      let topQ = supabase.from('tasks').select('title, priority')
-        .eq('user_id', userId).eq('is_completed', false)
-        .order('priority', { ascending: true }).limit(1);
-      for (const colId of excludedIds) topQ = topQ.neq('column_id', colId);
-      const { data: topTask } = await topQ;
-      const topPriority = topTask?.[0]?.title || 'Nenhuma tarefa prioritária';
-
-      // Streak
-      const { data: statsData } = await supabase.from('user_stats')
-        .select('current_streak').eq('user_id', userId).single();
-      const streak = statsData?.current_streak || 0;
-
-      message = message.replace(/\{\{topPriority\}\}/g, topPriority);
-      message = message.replace(/\{\{streak\}\}/g, String(streak));
+    // Format pending list
+    const pendingCount = nonOverdue.length;
+    let tasksList = '';
+    if (pendingCount > 0) {
+      tasksList = nonOverdue.map((t: any) => {
+        const dateStr = t.due_date ? `Vence: ${formatDateBRT(t.due_date)}` : 'Sem prazo';
+        return `• ${t.title} | ${dateStr}`;
+      }).join('\n');
+    } else {
+      tasksList = '✅ Nenhuma tarefa pendente!';
     }
 
-  } else if (tpl.template_type === 'daily_report') {
-    const { count: pendingCount } = await buildPendingQuery();
+    // Format overdue list
+    const overdueCount = (overdueTasks || []).length;
+    let overdueList = '';
+    if (overdueCount > 0) {
+      overdueList = (overdueTasks || []).map((t: any) => {
+        return `• ${t.title} | Desde: ${formatDateBRT(t.due_date)}`;
+      }).join('\n');
+    } else {
+      overdueList = '✅ Nenhuma tarefa atrasada!';
+    }
 
+    const overdueText = overdueCount > 0
+      ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)` : '✅ Nenhuma tarefa atrasada!';
+
+    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount));
+    message = message.replace(/\{\{overdueText\}\}/g, overdueText);
+    message = message.replace(/\{\{tasksList\}\}/g, tasksList);
+    message = message.replace(/\{\{overdueList\}\}/g, overdueList);
+
+    return message;
+  }
+
+  // =============================================
+  // DAILY REPORT — tasks by priority
+  // =============================================
+  if (tpl.template_type === 'daily_report') {
+    // Completed today
     let completedQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
       .eq('user_id', userId).eq('is_completed', true)
       .gte('updated_at', todayStartUTC.toISOString())
       .lte('updated_at', todayEndUTC.toISOString());
-    for (const colId of excludedIds) completedQuery = completedQuery.neq('column_id', colId);
+    completedQuery = applyExclusions(completedQuery);
     const { count: completedToday } = await completedQuery;
 
-    const total = (pendingCount || 0) + (completedToday || 0);
+    // Pending tasks with details
+    let pendingQ = supabase.from('tasks').select('title, priority, due_date')
+      .eq('user_id', userId).eq('is_completed', false);
+    pendingQ = applyExclusions(pendingQ);
+    const { data: pendingTasks } = await pendingQ.limit(100);
+
+    // Overdue tasks
+    let overdueQ = supabase.from('tasks').select('title, due_date')
+      .eq('user_id', userId).eq('is_completed', false)
+      .lt('due_date', now.toISOString()).not('due_date', 'is', null)
+      .order('due_date', { ascending: true });
+    overdueQ = applyExclusions(overdueQ);
+    const { data: overdueTasks } = await overdueQ.limit(50);
+
+    // Separate non-overdue pending
+    const overdueIds = new Set((overdueTasks || []).map((t: any) => t.title + (t.due_date || '')));
+    const nonOverduePending = (pendingTasks || []).filter((t: any) => !overdueIds.has(t.title + (t.due_date || '')));
+
+    // Sort by priority
+    nonOverduePending.sort((a: any, b: any) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
+
+    const pendingCount = nonOverduePending.length;
+    const total = pendingCount + (completedToday || 0);
     const percent = total > 0 ? Math.round(((completedToday || 0) / total) * 100) : 0;
     const filled = Math.round(percent / 10);
     const progressBar = '▓'.repeat(filled) + '░'.repeat(10 - filled) + ` ${percent}%`;
 
-    const { count: overdueCount } = await buildOverdueQuery();
-    const overdueText = overdueCount && overdueCount > 0
+    // Format pending list by priority
+    let pendingList = '';
+    if (pendingCount > 0) {
+      pendingList = nonOverduePending.map((t: any) => {
+        const emoji = getPriorityEmoji(t.priority);
+        const dateStr = t.due_date ? `Vence: ${formatDateBRT(t.due_date)}` : 'Sem prazo';
+        return `${emoji} ${t.title} | ${dateStr}`;
+      }).join('\n');
+    } else {
+      pendingList = '✅ Nenhuma tarefa pendente!';
+    }
+
+    // Format overdue list
+    const overdueCount = (overdueTasks || []).length;
+    let overdueList = '';
+    if (overdueCount > 0) {
+      overdueList = (overdueTasks || []).map((t: any) => {
+        return `• ${t.title} | Desde: ${formatDateBRT(t.due_date)}`;
+      }).join('\n');
+    } else {
+      overdueList = '✅ Nenhuma tarefa atrasada!';
+    }
+
+    const overdueText = overdueCount > 0
       ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)` : '✅ Nenhuma tarefa atrasada!';
 
     message = message.replace(/\{\{completedToday\}\}/g, String(completedToday || 0));
     message = message.replace(/\{\{totalTasks\}\}/g, String(total));
     message = message.replace(/\{\{completionPercent\}\}/g, String(percent));
-    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount || 0));
+    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount));
     message = message.replace(/\{\{overdueText\}\}/g, overdueText);
     message = message.replace(/\{\{progressBar\}\}/g, progressBar);
+    message = message.replace(/\{\{pendingList\}\}/g, pendingList);
+    message = message.replace(/\{\{overdueList\}\}/g, overdueList);
 
-  } else if (tpl.template_type === 'weekly_summary') {
-    // Completed this week (last 7 days)
+    return message;
+  }
+
+  // =============================================
+  // WEEKLY SUMMARY
+  // =============================================
+  if (tpl.template_type === 'weekly_summary') {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     let weekQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
       .eq('user_id', userId).eq('is_completed', true)
       .gte('updated_at', weekAgo.toISOString());
-    for (const colId of excludedIds) weekQuery = weekQuery.neq('column_id', colId);
+    weekQuery = applyExclusions(weekQuery);
     const { count: completedWeek } = await weekQuery;
 
-    const { count: pendingCount } = await buildPendingQuery();
+    // Pending count
+    let pendingQ = supabase.from('tasks').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('is_completed', false);
+    pendingQ = applyExclusions(pendingQ);
+    const { count: pendingCount } = await pendingQ;
 
     // Streak
     const { data: statsData } = await supabase.from('user_stats')
@@ -279,13 +485,15 @@ async function buildTemplateMessage(
   return message;
 }
 
+// ============================================================
+// BUILD OVERDUE MESSAGES
+// ============================================================
 async function buildOverdueMessages(
   supabase: any, tpl: any, excludedIds: string[],
   now: Date, todayStartUTC: Date
 ): Promise<{ message: string; logType: string }[]> {
   const userId = tpl.user_id;
 
-  // Find overdue tasks
   let q = supabase.from('tasks').select('id, title, due_date')
     .eq('user_id', userId).eq('is_completed', false)
     .lt('due_date', now.toISOString()).not('due_date', 'is', null)
@@ -295,12 +503,10 @@ async function buildOverdueMessages(
 
   if (!overdueTasks || overdueTasks.length === 0) return [];
 
-  // Total overdue count
   const totalOverdue = overdueTasks.length;
   const messages: { message: string; logType: string }[] = [];
 
   for (const task of overdueTasks) {
-    // Dedup: check if already notified today for this task
     const { data: logs } = await supabase.from('whatsapp_logs')
       .select('id').eq('user_id', userId)
       .eq('template_type', `task_overdue_${task.id}`)
@@ -310,7 +516,6 @@ async function buildOverdueMessages(
 
     if (logs && logs.length > 0) continue;
 
-    // Calculate overdue time
     const overdueMs = now.getTime() - new Date(task.due_date).getTime();
     const overdueHours = Math.floor(overdueMs / (1000 * 60 * 60));
     const overdueDays = Math.floor(overdueHours / 24);
@@ -326,6 +531,5 @@ async function buildOverdueMessages(
     messages.push({ message: msg, logType: `task_overdue_${task.id}` });
   }
 
-  // Limit to 3 messages per run to avoid spam
   return messages.slice(0, 3);
 }
