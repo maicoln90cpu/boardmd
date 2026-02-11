@@ -1076,6 +1076,7 @@ export type Database = {
           id: string
           message: string | null
           phone_number: string | null
+          retry_count: number | null
           sent_at: string | null
           status: string | null
           template_type: string | null
@@ -1086,6 +1087,7 @@ export type Database = {
           id?: string
           message?: string | null
           phone_number?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: string | null
           template_type?: string | null
@@ -1096,6 +1098,7 @@ export type Database = {
           id?: string
           message?: string | null
           phone_number?: string | null
+          retry_count?: number | null
           sent_at?: string | null
           status?: string | null
           template_type?: string | null
