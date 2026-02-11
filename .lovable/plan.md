@@ -1,111 +1,143 @@
 
 
-# Plano: Desconexao Completa + Reenvio de Mensagens
+# Plano: Ajustar Templates WhatsApp (Motivacional, Resumo, Relatorio, Due Date)
 
-## Resumo
-
-Duas melhorias: (1) ao desconectar, deletar a instancia na Evolution API e limpar dados locais para permitir novo dispositivo; (2) adicionar reenvio automatico e manual de mensagens com erro.
-
----
-
-## 1. Desconexao Completa (Deletar Instancia)
+## 1. Bom Dia Motivacional - Frases Aleatorias (sem tarefas)
 
 ### Problema Atual
-O action `disconnect` apenas faz `logout` da instancia. A instancia continua existindo na Evolution API, e ao clicar em "Conectar" ela reconecta automaticamente no mesmo dispositivo sem pedir QR Code.
+O template `daily_motivation` mostra tarefas pendentes e prioridade. O usuario quer apenas frases motivacionais.
 
 ### Solucao
+- Criar um array de ~30 frases motivacionais + ~30 citacoes biblicas hardcoded na Edge Function `whatsapp-daily-summary`
+- A cada execucao, selecionar 1 frase motivacional aleatoria + 1 citacao biblica aleatoria
+- Formato da mensagem:
 
-**Edge Function `whatsapp-instance`** - Modificar action `disconnect`:
+```
+"A frase motivacional aqui." - Autor
 
-```text
-Atual:
-  1. POST logout/{instanceName}
-  2. Update is_connected = false
+"Citacao biblica aqui."
+Referencia Biblica
 
-Novo:
-  1. POST logout/{instanceName}        (deslogar sessao)
-  2. DELETE instance/delete/{instanceName}  (deletar instancia)
-  3. Update whatsapp_config: is_connected = false, instance_id = null
+Tenha um otimo dia!
 ```
 
-Isso garante que a instancia e completamente removida da Evolution API. Ao clicar em "Conectar" novamente, uma nova instancia sera criada com novo QR Code.
+- Remover as variaveis `{{pendingTasks}}`, `{{topPriority}}`, `{{streak}}` do template `daily_motivation`
+- Novo template padrao sem nenhuma referencia a tarefas
+- Novas variaveis: `{{motivationalQuote}}`, `{{bibleQuote}}`
+- Na Edge Function, substituir as variaveis automaticamente com frases aleatorias
 
-**UI `WhatsAppConnection.tsx`** - Melhorar feedback:
-
-- Adicionar dialog de confirmacao antes de desconectar ("Tem certeza? A instancia sera removida e voce precisara escanear o QR Code novamente")
-- Mostrar loading state durante desconexao
-- Exibir estado mais detalhado: "Conectado", "Desconectado", "Conectando...", "Desconectando..."
-- Apos desconectar com sucesso, limpar o estado visual completamente
+### Alteracoes
+- **`whatsapp-daily-summary/index.ts`**: Adicionar arrays de frases e logica de selecao aleatoria no bloco `daily_motivation`
+- **`WhatsAppTemplates.tsx`**: Atualizar template padrao e variaveis disponiveis
 
 ---
 
-## 2. Reenvio de Mensagens com Erro
+## 2. Tarefa Vencendo - Verificar 2 Alertas
 
-### 2a. Botao Reenviar Manual (UI)
+### Analise Atual
+A Edge Function `whatsapp-due-alert` ja suporta 2 alertas (`due_date_hours_before` e `due_date_hours_before_2`). A logica usa uma janela de 30 minutos apos o horario calculado (`due_date - X horas`). O cron roda a cada 30 minutos.
 
-**`WhatsAppLogs.tsx`** - Adicionar botao "Reenviar" ao lado de mensagens com status `failed`:
+### Verificacao
+- O codigo ja esta correto: calcula `alertTime = dueDate - hours * 3600000` e verifica se `now` esta dentro da janela de 30min
+- A deduplicacao usa `template_type = due_date_alert_1` e `due_date_alert_2` separadamente
+- **Nenhuma alteracao necessaria** - a logica ja respeita os 2 horarios salvos
 
-- Chamar `send-whatsapp` com os mesmos dados (message, phone_number, template_type)
-- Atualizar o status do log original ou criar novo log
-- Exibir feedback de sucesso/erro
+---
 
-Requer: adicionar RLS policy de UPDATE na tabela `whatsapp_logs` (atualmente nao permite update).
+## 3. Resumo Diario - Listar Todas as Tarefas por Nome
 
-### 2b. Reenvio Automatico (Edge Function)
+### Problema Atual
+O template `daily_reminder` mostra apenas `{{pendingTasks}}` (numero) e `{{overdueText}}` (numero de atrasadas).
 
-**Nova logica no `whatsapp-daily-summary`** ou **nova Edge Function `retry-whatsapp`**:
+### Solucao
+- Na Edge Function, buscar todas as tarefas pendentes com `title`, `due_date` (nao apenas count)
+- Buscar separadamente tarefas atrasadas com `title`, `due_date`
+- Formatar em bullet points, ordenadas da mais antiga para a mais nova
+- Novas variaveis: `{{tasksList}}` (tarefas do dia) e `{{overdueList}}` (atrasadas)
 
-- Verificar mensagens com `status = 'failed'` nas ultimas 24h
-- Tentar reenviar automaticamente (maximo 3 tentativas)
-- Precisa de coluna `retry_count` na tabela `whatsapp_logs`
+Formato:
+```
+Resumo do Dia
 
-### Migracao SQL necessaria:
+Tarefas pendentes (5):
+- Tarefa A | Vence: 11/02 14:00
+- Tarefa B | Vence: 12/02 09:00
+- Tarefa C | Sem prazo
+...
 
-```sql
--- Permitir update nos logs (para reenvio)
-CREATE POLICY "Users can update own whatsapp logs"
-  ON whatsapp_logs FOR UPDATE
-  USING (auth.uid() = user_id);
-
--- Coluna de contagem de tentativas
-ALTER TABLE whatsapp_logs ADD COLUMN retry_count integer DEFAULT 0;
+Tarefas atrasadas (2):
+- Tarefa X | Atrasada desde: 09/02 18:00
+- Tarefa Y | Atrasada desde: 10/02 10:00
 ```
 
----
-
-## 3. Arquivos a Criar/Modificar
-
-| Arquivo | Acao | Descricao |
-|---------|------|-----------|
-| `whatsapp-instance/index.ts` | Modificar | Action `disconnect` deleta instancia |
-| `WhatsAppConnection.tsx` | Modificar | Dialog de confirmacao, feedback melhorado |
-| `WhatsAppLogs.tsx` | Modificar | Botao reenviar manual |
-| `send-whatsapp/index.ts` | Modificar | Suportar reenvio (atualizar log existente) |
-| Migracao SQL | Criar | RLS update + retry_count |
+### Alteracoes
+- **`whatsapp-daily-summary/index.ts`**: No bloco `daily_reminder`, buscar tarefas completas (title, due_date) em vez de apenas count. Formatar listas em bullet points ordenadas por due_date ASC
+- **`WhatsAppTemplates.tsx`**: Atualizar template padrao e variaveis
 
 ---
 
-## 4. Analise de Impacto
+## 4. Relatorio Diario - Tarefas Pendentes em Bullet Points por Prioridade
+
+### Problema Atual
+O template `daily_report` mostra apenas `{{pendingTasks}}` como numero.
+
+### Solucao
+- Na Edge Function, buscar tarefas pendentes com `title`, `priority`, `due_date`
+- Ordenar por prioridade (high > medium > low)
+- Formatar em bullet points com indicador de prioridade
+
+Formato:
+```
+Relatorio do Dia
+
+Concluidas: 8/12 (67%)
+[barra de progresso]
+
+Pendentes (4):
+🔴 Tarefa urgente | Vence: 12/02
+🟡 Tarefa media | Vence: 13/02
+🟢 Tarefa baixa | Sem prazo
+...
+
+Atrasadas (1):
+- Tarefa X | Desde: 09/02
+```
+
+### Alteracoes
+- **`whatsapp-daily-summary/index.ts`**: No bloco `daily_report`, buscar tarefas com detalhes e formatar lista
+- **`WhatsAppTemplates.tsx`**: Atualizar template padrao e variaveis
+
+---
+
+## 5. Arquivos a Modificar
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `supabase/functions/whatsapp-daily-summary/index.ts` | Logica de frases aleatorias, listas de tarefas detalhadas |
+| `src/components/whatsapp/WhatsAppTemplates.tsx` | Templates padrao atualizados |
+
+---
+
+## 6. Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Deletar instancia no disconnect | Baixo (2/10) | Apenas adicionar chamada DELETE |
-| Dialog de confirmacao | Baixo (1/10) | UI simples |
-| Botao reenviar manual | Baixo (2/10) | Chamar edge function existente |
-| RLS policy update | Baixo (1/10) | SQL simples |
-| Retry automatico | Medio (4/10) | Logica de tentativas |
+| Frases motivacionais aleatorias | Baixo (1/10) | Array estatico + Math.random |
+| Lista de tarefas no resumo diario | Baixo (3/10) | Query com detalhes + formatacao |
+| Lista de tarefas no relatorio | Baixo (3/10) | Query com detalhes + formatacao |
+| Verificar due_date 2 alertas | Nenhum (0/10) | Ja funciona corretamente |
 
-**Pontuacao Total: 10/25** - Baixo risco.
+**Pontuacao Total: 7/25** - Risco muito baixo.
 
 ---
 
-## 5. Checklist de Testes Manuais
+## 7. Checklist de Testes Manuais
 
-- [ ] Clicar em Desconectar e confirmar que aparece dialog de confirmacao
-- [ ] Confirmar desconexao e verificar que o status muda para "Desconectado"
-- [ ] Clicar em Conectar e verificar que um NOVO QR Code aparece (nao reconecta automatico)
-- [ ] Escanear o QR Code com novo celular e verificar conexao
-- [ ] Na aba Historico, verificar que mensagens com erro mostram botao "Reenviar"
-- [ ] Clicar em Reenviar e verificar que a mensagem e reenviada
-- [ ] Verificar que mensagens enviadas com sucesso NAO mostram botao Reenviar
+- [ ] Enviar teste do Bom Dia Motivacional e verificar que mostra frase + citacao biblica (sem tarefas)
+- [ ] Enviar teste novamente e verificar que a frase e DIFERENTE (aleatoria)
+- [ ] Enviar teste do Resumo Diario e verificar que lista todas as tarefas por nome com data
+- [ ] Verificar que tarefas atrasadas aparecem separadas no resumo
+- [ ] Enviar teste do Relatorio Diario e verificar bullet points por prioridade
+- [ ] Verificar que o template Tarefa Vencendo dispara nos 2 horarios configurados
+- [ ] Verificar formatacao das mensagens no WhatsApp (quebras de linha, emojis)
 
