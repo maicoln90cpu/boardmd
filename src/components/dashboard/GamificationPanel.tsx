@@ -3,6 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { UserStats } from "@/hooks/useUserStats";
 import { useAchievements, rarityColors, rarityNames, allBadges } from "@/hooks/useAchievements";
+import { useAuth } from "@/contexts/AuthContext";
 import { Trophy, Flame, Star, Award, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -17,6 +18,7 @@ interface GamificationPanelProps {
 }
 
 export function GamificationPanel({ stats, progress }: GamificationPanelProps) {
+  const { user } = useAuth();
   const level = stats?.level || 1;
   const currentPoints = stats?.total_points || 0;
   const pointsInLevel = currentPoints % 100;
@@ -32,7 +34,7 @@ export function GamificationPanel({ stats, progress }: GamificationPanelProps) {
     totalTasksCompleted: 0, // Não temos essa info direta
   } : null;
 
-  const { getUnlockedBadges, getNextBadges } = useAchievements(badgeStats);
+  const { getUnlockedBadges, getNextBadges } = useAchievements(badgeStats, user?.id);
 
   const unlockedBadges = getUnlockedBadges();
   const nextBadges = getNextBadges();

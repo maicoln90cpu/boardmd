@@ -9,7 +9,8 @@ interface WhatsAppNotifyParams {
 
 /**
  * Sends a WhatsApp notification using the user's configured templates.
- * Checks if template is enabled and WhatsApp is connected before sending.
+ * For EVENT templates (no send_time), it sends immediately.
+ * For FIXED TIME templates, it checks the hour before sending.
  */
 export async function sendWhatsAppNotification({
   userId,
@@ -41,25 +42,19 @@ export async function sendWhatsAppNotification({
       return false;
     }
 
-    // Check send_time - only send if current hour matches template hour
-    if (template.send_time) {
-      const now = new Date();
-      const [templateHour] = (template.send_time as string).split(":").map(Number);
-      const currentHour = now.getHours();
-      
-      // For due_date alerts, also check send_time_2
+    // EVENT templates: no time check needed (pomodoro, achievement, task_completed, goal_reached)
+    const eventTemplates = ["pomodoro", "achievement", "task_completed", "goal_reached"];
+    
+    // FIXED TIME templates: check send_time (handled by cron, skip client-side)
+    // Only event templates should be sent from client-side
+    if (!eventTemplates.includes(templateType)) {
+      // For due_date, check hours_before logic
       if (templateType === "due_date") {
-        const sendTime2 = (template as any).send_time_2;
-        if (sendTime2) {
-          const [hour2] = (sendTime2 as string).split(":").map(Number);
-          if (currentHour !== templateHour && currentHour !== hour2) {
-            return false;
-          }
-        }
-        // due_date without send_time_2: skip time check (urgent)
-      } else if (currentHour !== templateHour) {
+        // due_date is handled by whatsapp-due-alert edge function
         return false;
       }
+      // Other fixed-time templates are handled by whatsapp-daily-summary cron
+      return false;
     }
 
     // Replace variables in template
@@ -88,4 +83,77 @@ export async function sendWhatsAppNotification({
     logger.error("[WhatsApp] Notification error:", err);
     return false;
   }
+}
+
+/**
+ * Helper: Send task completed notification
+ */
+export async function notifyTaskCompleted(
+  userId: string,
+  taskTitle: string,
+  completedCount: number,
+  pendingCount: number
+): Promise<void> {
+  sendWhatsAppNotification({
+    userId,
+    templateType: "task_completed",
+    variables: {
+      taskTitle,
+      completedCount: String(completedCount),
+      pendingCount: String(pendingCount),
+    },
+  }).catch(() => {}); // Fire and forget
+}
+
+/**
+ * Helper: Send goal reached notification
+ */
+export async function notifyGoalReached(
+  userId: string,
+  goalTitle: string,
+  target: number,
+  period: string
+): Promise<void> {
+  sendWhatsAppNotification({
+    userId,
+    templateType: "goal_reached",
+    variables: {
+      goalTitle,
+      target: String(target),
+      period,
+    },
+  }).catch(() => {});
+}
+
+/**
+ * Helper: Send pomodoro notification
+ */
+export async function notifyPomodoro(
+  userId: string,
+  sessionType: string,
+  message: string
+): Promise<void> {
+  sendWhatsAppNotification({
+    userId,
+    templateType: "pomodoro",
+    variables: { sessionType, message },
+  }).catch(() => {});
+}
+
+/**
+ * Helper: Send achievement notification
+ */
+export async function notifyAchievement(
+  userId: string,
+  achievementTitle: string,
+  points: number
+): Promise<void> {
+  sendWhatsAppNotification({
+    userId,
+    templateType: "achievement",
+    variables: {
+      achievementTitle,
+      points: String(points),
+    },
+  }).catch(() => {});
 }
