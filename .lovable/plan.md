@@ -1,180 +1,111 @@
 
-# Plano: Corrigir Logica dos Templates + 5 Novos Templates + Fix Entrega
 
-## Diagnostico do Problema de Entrega
+# Plano: Desconexao Completa + Reenvio de Mensagens
 
-A Edge Function `whatsapp-daily-summary` esta deployada e respondendo. O teste manual retornou:
-```
-daily_report: "hour mismatch: 20 vs 18"
-```
-Isso confirma que a logica funciona (horario BRT 18h configurado, testado as 20h BRT). O motivo de nao ter chegado as 18:51 e que:
-- O cron roda a cada hora cheia (`:00` UTC)
-- A funcao compara apenas a HORA, nao os minutos
-- Logo, `18:51` dispara as `18:00` BRT, nao as `18:51`
-- Provavelmente a function nao estava deployada quando o cron disparou as 18:00 BRT hoje
+## Resumo
 
-**Acao**: Re-deploy das functions e testar. Nao ha bug na logica, apenas timing de deploy.
+Duas melhorias: (1) ao desconectar, deletar a instancia na Evolution API e limpar dados locais para permitir novo dispositivo; (2) adicionar reenvio automatico e manual de mensagens com erro.
 
 ---
 
-## 1. Classificacao Correta de Cada Template
+## 1. Desconexao Completa (Deletar Instancia)
 
-| Template | Logica Correta | Justificativa |
-|----------|---------------|---------------|
-| Tarefa Vencendo | DINAMICO (X horas antes) | Ja corrigido. Baseado no `due_date` da tarefa |
-| Resumo Diario | HORARIO FIXO | Faz sentido enviar 1x/dia no horario configurado |
-| Relatorio Diario | HORARIO FIXO | Faz sentido enviar 1x/dia no horario configurado |
-| Pomodoro | EVENTO (sem horario) | Deve disparar ao iniciar/finalizar sessao |
-| Conquista | EVENTO (sem horario) | Deve disparar quando conquista e desbloqueada |
-| **Tarefa Concluida** (novo) | EVENTO (sem horario) | Dispara ao completar uma tarefa |
-| **Resumo Semanal** (novo) | HORARIO FIXO (1x/semana) | Resumo semanal com metricas |
-| **Tarefa Atrasada** (novo) | EVENTO (sem horario) | Dispara quando tarefa passa do prazo |
-| **Meta Atingida** (novo) | EVENTO (sem horario) | Dispara quando meta/goal e atingida |
-| **Bom Dia Motivacional** (novo) | HORARIO FIXO | Mensagem motivacional diaria |
+### Problema Atual
+O action `disconnect` apenas faz `logout` da instancia. A instancia continua existindo na Evolution API, e ao clicar em "Conectar" ela reconecta automaticamente no mesmo dispositivo sem pedir QR Code.
+
+### Solucao
+
+**Edge Function `whatsapp-instance`** - Modificar action `disconnect`:
+
+```text
+Atual:
+  1. POST logout/{instanceName}
+  2. Update is_connected = false
+
+Novo:
+  1. POST logout/{instanceName}        (deslogar sessao)
+  2. DELETE instance/delete/{instanceName}  (deletar instancia)
+  3. Update whatsapp_config: is_connected = false, instance_id = null
+```
+
+Isso garante que a instancia e completamente removida da Evolution API. Ao clicar em "Conectar" novamente, uma nova instancia sera criada com novo QR Code.
+
+**UI `WhatsAppConnection.tsx`** - Melhorar feedback:
+
+- Adicionar dialog de confirmacao antes de desconectar ("Tem certeza? A instancia sera removida e voce precisara escanear o QR Code novamente")
+- Mostrar loading state durante desconexao
+- Exibir estado mais detalhado: "Conectado", "Desconectado", "Conectando...", "Desconectando..."
+- Apos desconectar com sucesso, limpar o estado visual completamente
 
 ---
 
-## 2. Cinco Novos Templates
+## 2. Reenvio de Mensagens com Erro
 
-### 2.1 Tarefa Concluida (`task_completed`)
-- **Tipo**: Evento (disparado ao marcar tarefa como concluida)
-- **Variaveis**: `{{taskTitle}}`, `{{completedCount}}`, `{{pendingCount}}`
-- **Mensagem padrao**:
-```
-Parabens! Voce concluiu "{{taskTitle}}"!
-Ja sao {{completedCount}} tarefas hoje. Restam {{pendingCount}} pendentes.
-Continue assim!
-```
+### 2a. Botao Reenviar Manual (UI)
 
-### 2.2 Resumo Semanal (`weekly_summary`)
-- **Tipo**: Horario fixo (1x/semana, configuravel qual dia)
-- **Variaveis**: `{{completedWeek}}`, `{{pendingTasks}}`, `{{streak}}`, `{{topCategory}}`
-- **Mensagem padrao**:
-```
-Resumo da Semana
+**`WhatsAppLogs.tsx`** - Adicionar botao "Reenviar" ao lado de mensagens com status `failed`:
 
-Concluidas: {{completedWeek}} tarefas
-Pendentes: {{pendingTasks}}
-Sequencia: {{streak}} dias
-Categoria mais ativa: {{topCategory}}
+- Chamar `send-whatsapp` com os mesmos dados (message, phone_number, template_type)
+- Atualizar o status do log original ou criar novo log
+- Exibir feedback de sucesso/erro
 
-Nova semana, novas conquistas!
-```
+Requer: adicionar RLS policy de UPDATE na tabela `whatsapp_logs` (atualmente nao permite update).
 
-### 2.3 Tarefa Atrasada (`task_overdue`)
-- **Tipo**: Evento (verificado pelo cron, dispara quando due_date < now)
-- **Variaveis**: `{{taskTitle}}`, `{{overdueTime}}`, `{{totalOverdue}}`
-- **Mensagem padrao**:
-```
-Atencao! A tarefa "{{taskTitle}}" esta atrasada ha {{overdueTime}}.
-Voce tem {{totalOverdue}} tarefa(s) atrasada(s) no total.
-```
+### 2b. Reenvio Automatico (Edge Function)
 
-### 2.4 Meta Atingida (`goal_reached`)
-- **Tipo**: Evento (disparado ao atingir target da meta)
-- **Variaveis**: `{{goalTitle}}`, `{{target}}`, `{{period}}`
-- **Mensagem padrao**:
-```
-Meta Atingida!
-"{{goalTitle}}" - {{target}} tarefas no periodo {{period}}.
-Voce e incrivel!
-```
+**Nova logica no `whatsapp-daily-summary`** ou **nova Edge Function `retry-whatsapp`**:
 
-### 2.5 Bom Dia Motivacional (`daily_motivation`)
-- **Tipo**: Horario fixo
-- **Variaveis**: `{{pendingTasks}}`, `{{topPriority}}`, `{{streak}}`
-- **Mensagem padrao**:
-```
-Bom dia!
-Voce tem {{pendingTasks}} tarefas para hoje.
-Prioridade: {{topPriority}}
-Sequencia atual: {{streak}} dias
+- Verificar mensagens com `status = 'failed'` nas ultimas 24h
+- Tentar reenviar automaticamente (maximo 3 tentativas)
+- Precisa de coluna `retry_count` na tabela `whatsapp_logs`
 
-Vamos com tudo!
+### Migracao SQL necessaria:
+
+```sql
+-- Permitir update nos logs (para reenvio)
+CREATE POLICY "Users can update own whatsapp logs"
+  ON whatsapp_logs FOR UPDATE
+  USING (auth.uid() = user_id);
+
+-- Coluna de contagem de tentativas
+ALTER TABLE whatsapp_logs ADD COLUMN retry_count integer DEFAULT 0;
 ```
 
 ---
 
-## 3. Alteracoes na UI (WhatsAppTemplates.tsx)
-
-### 3.1 Remover campo de horario para templates de EVENTO
-- Templates `pomodoro`, `achievement`, `task_completed`, `goal_reached`, `task_overdue` NAO terao campo de horario
-- Exibir label "Disparado automaticamente por evento" em vez do campo de horario
-
-### 3.2 Adicionar seletor de colunas para novos templates relevantes
-- `task_completed`, `task_overdue`, `weekly_summary`, `daily_motivation` devem ter filtro de colunas
-
-### 3.3 Template semanal: adicionar campo de dia da semana
-- Select com opcoes: Segunda a Domingo (valor salvo como `0-6` no campo `send_time_2` reaproveitado como "dia da semana" para weekly)
-
----
-
-## 4. Edge Functions
-
-### 4.1 Modificar `whatsapp-daily-summary`
-- Adicionar suporte para `daily_motivation` (horario fixo, logica similar ao daily_reminder)
-- Adicionar suporte para `weekly_summary` (verificar dia da semana + horario)
-- Adicionar suporte para `task_overdue` (buscar tarefas com due_date < now que ainda nao foram notificadas)
-
-### 4.2 Triggers client-side (whatsappNotifier.ts)
-- `task_completed`: chamar ao marcar tarefa como concluida
-- `goal_reached`: chamar quando meta.current >= meta.target
-- `pomodoro`: chamar ao iniciar/finalizar sessao pomodoro
-- `achievement`: chamar ao desbloquear conquista
-
-Para esses 4 templates de evento, a logica esta no CLIENTE (nao precisa de cron). O `whatsappNotifier.ts` ja tem a funcao `sendWhatsAppNotification`. Basta chamar nos hooks correspondentes passando as variaveis.
-
-### 4.3 Re-deploy de todas as functions
-- Forcar re-deploy de `whatsapp-daily-summary` e `whatsapp-due-alert`
-
----
-
-## 5. Integracao nos Hooks (Eventos)
-
-| Hook | Template | Quando dispara |
-|------|----------|----------------|
-| `useTasks.ts` (ao completar) | `task_completed` | Quando `is_completed = true` |
-| `useGoals.ts` (ao atingir meta) | `goal_reached` | Quando `current >= target` |
-| `usePomodoro.ts` (ao iniciar/finalizar) | `pomodoro` | Inicio e fim de sessao |
-| `useAchievements.ts` (ao desbloquear) | `achievement` | Novo achievement registrado |
-
----
-
-## 6. Arquivos a Criar/Modificar
+## 3. Arquivos a Criar/Modificar
 
 | Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| `WhatsAppTemplates.tsx` | Modificar | 5 novos templates, remover horario de eventos, UI ajustada |
-| `whatsapp-daily-summary/index.ts` | Modificar | Suportar `daily_motivation`, `weekly_summary`, `task_overdue` |
-| `whatsappNotifier.ts` | Modificar | Funcoes helper para eventos client-side |
-| `useTasks.ts` (hook) | Modificar | Chamar notificacao ao completar tarefa |
-| `useGoals.ts` | Modificar | Chamar notificacao ao atingir meta |
-| `usePomodoro.ts` | Modificar | Chamar notificacao ao iniciar/finalizar |
-| `useAchievements.ts` | Modificar | Chamar notificacao ao desbloquear |
+| `whatsapp-instance/index.ts` | Modificar | Action `disconnect` deleta instancia |
+| `WhatsAppConnection.tsx` | Modificar | Dialog de confirmacao, feedback melhorado |
+| `WhatsAppLogs.tsx` | Modificar | Botao reenviar manual |
+| `send-whatsapp/index.ts` | Modificar | Suportar reenvio (atualizar log existente) |
+| Migracao SQL | Criar | RLS update + retry_count |
 
 ---
 
-## 7. Analise de Impacto
+## 4. Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| 5 novos templates no DEFAULT_TEMPLATES | Baixo (1/10) | Apenas dados estaticos |
-| UI condicional (evento vs horario fixo) | Baixo (2/10) | Condicional simples |
-| Novos tipos no daily-summary | Medio (4/10) | Logica de weekly + overdue |
-| Integracao em 4 hooks | Medio (5/10) | Precisa de cuidado para nao duplicar |
-| Re-deploy functions | Baixo (1/10) | Automatico |
+| Deletar instancia no disconnect | Baixo (2/10) | Apenas adicionar chamada DELETE |
+| Dialog de confirmacao | Baixo (1/10) | UI simples |
+| Botao reenviar manual | Baixo (2/10) | Chamar edge function existente |
+| RLS policy update | Baixo (1/10) | SQL simples |
+| Retry automatico | Medio (4/10) | Logica de tentativas |
 
-**Pontuacao Total: 13/25** - Dentro do limite seguro.
+**Pontuacao Total: 10/25** - Baixo risco.
 
 ---
 
-## 8. Checklist de Testes Manuais
+## 5. Checklist de Testes Manuais
 
-- [ ] Verificar que os 10 templates aparecem na lista
-- [ ] Templates de evento (Pomodoro, Conquista, Tarefa Concluida, Meta Atingida) NAO mostram campo de horario
-- [ ] Templates de horario fixo (Resumo, Relatorio, Motivacional) mostram campo de horario
-- [ ] Tarefa Vencendo mostra campo "horas antes" (sem horario fixo)
-- [ ] Resumo Semanal mostra campo de dia da semana
-- [ ] Enviar teste de cada template e verificar chegada no WhatsApp
-- [ ] Completar uma tarefa e verificar se chega notificacao "Tarefa Concluida" (se habilitado)
-- [ ] Verificar nos logs do WhatsApp que os novos template_types aparecem corretamente
+- [ ] Clicar em Desconectar e confirmar que aparece dialog de confirmacao
+- [ ] Confirmar desconexao e verificar que o status muda para "Desconectado"
+- [ ] Clicar em Conectar e verificar que um NOVO QR Code aparece (nao reconecta automatico)
+- [ ] Escanear o QR Code com novo celular e verificar conexao
+- [ ] Na aba Historico, verificar que mensagens com erro mostram botao "Reenviar"
+- [ ] Clicar em Reenviar e verificar que a mensagem e reenviada
+- [ ] Verificar que mensagens enviadas com sucesso NAO mostram botao Reenviar
+
