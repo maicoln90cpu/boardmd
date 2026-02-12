@@ -34,6 +34,8 @@ interface Column {
 
 // Templates de evento (sem campo de horário)
 const EVENT_TEMPLATES = ["pomodoro", "achievement", "task_completed", "goal_reached"];
+// Templates where the edge function builds the message directly (ignores saved template text)
+const AUTO_GENERATED_TEMPLATES = ["daily_motivation", "daily_reminder", "daily_report"];
 // Templates de horário fixo
 const FIXED_TIME_TEMPLATES = ["daily_reminder", "daily_report", "daily_motivation", "weekly_summary"];
 // Template dinâmico (horas antes)
@@ -186,10 +188,12 @@ export function WhatsAppTemplates() {
     if (data && data.length > 0) {
       const merged = DEFAULT_TEMPLATES.map((def) => {
         const saved = data.find((d: any) => d.template_type === def.template_type);
+        // For auto-generated templates, always use the default message_template
+        const useDefaultMessage = AUTO_GENERATED_TEMPLATES.includes(def.template_type);
         return {
           ...def,
           id: saved?.id,
-          message_template: saved?.message_template || def.message_template,
+          message_template: useDefaultMessage ? def.message_template : (saved?.message_template || def.message_template),
           is_enabled: saved?.is_enabled ?? def.is_enabled,
           send_time: saved?.send_time ? (saved.send_time as string).slice(0, 5) : def.send_time,
           send_time_2: saved?.send_time_2 ? (saved.send_time_2 as string).slice(0, 5) : (def.send_time_2 || ""),
@@ -371,7 +375,11 @@ export function WhatsAppTemplates() {
               <Switch checked={tpl.is_enabled} onCheckedChange={(v) => updateTemplate(idx, "is_enabled", v)} />
             </div>
             <CardDescription className="text-xs">
-              Variáveis: {tpl.variables.map((v) => `{{${v}}}`).join(", ")}
+              {AUTO_GENERATED_TEMPLATES.includes(tpl.template_type) ? (
+                <span className="text-amber-500">⚡ Mensagem gerada automaticamente pelo sistema (modelo ilustrativo abaixo)</span>
+              ) : (
+                <>Variáveis: {tpl.variables.map((v) => `{{${v}}}`).join(", ")}</>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -380,6 +388,8 @@ export function WhatsAppTemplates() {
               onChange={(e) => updateTemplate(idx, "message_template", e.target.value)}
               rows={4}
               className="font-mono text-sm"
+              readOnly={AUTO_GENERATED_TEMPLATES.includes(tpl.template_type)}
+              disabled={AUTO_GENERATED_TEMPLATES.includes(tpl.template_type)}
             />
 
             <div className="flex items-center gap-4 flex-wrap">

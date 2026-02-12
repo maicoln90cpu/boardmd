@@ -298,17 +298,15 @@ async function buildTemplateMessage(
   }
 
   // =============================================
-  // DAILY REMINDER — list all tasks by name
+  // DAILY REMINDER — build directly with task details
   // =============================================
   if (tpl.template_type === 'daily_reminder') {
-    // Fetch pending tasks with details
     let pendingQ = supabase.from('tasks').select('title, due_date')
       .eq('user_id', userId).eq('is_completed', false)
       .order('due_date', { ascending: true, nullsFirst: false });
     pendingQ = applyExclusions(pendingQ);
     const { data: pendingTasks } = await pendingQ.limit(50);
 
-    // Fetch overdue tasks
     let overdueQ = supabase.from('tasks').select('title, due_date')
       .eq('user_id', userId).eq('is_completed', false)
       .lt('due_date', now.toISOString()).not('due_date', 'is', null)
@@ -316,11 +314,9 @@ async function buildTemplateMessage(
     overdueQ = applyExclusions(overdueQ);
     const { data: overdueTasks } = await overdueQ.limit(50);
 
-    // Non-overdue pending (exclude overdue from pending list)
-    const overdueIds = new Set((overdueTasks || []).map((t: any) => t.title + t.due_date));
-    const nonOverdue = (pendingTasks || []).filter((t: any) => !overdueIds.has(t.title + t.due_date));
+    const overdueSet = new Set((overdueTasks || []).map((t: any) => t.title + t.due_date));
+    const nonOverdue = (pendingTasks || []).filter((t: any) => !overdueSet.has(t.title + t.due_date));
 
-    // Format pending list
     const pendingCount = nonOverdue.length;
     let tasksList = '';
     if (pendingCount > 0) {
@@ -332,7 +328,6 @@ async function buildTemplateMessage(
       tasksList = '✅ Nenhuma tarefa pendente!';
     }
 
-    // Format overdue list
     const overdueCount = (overdueTasks || []).length;
     let overdueList = '';
     if (overdueCount > 0) {
@@ -343,22 +338,14 @@ async function buildTemplateMessage(
       overdueList = '✅ Nenhuma tarefa atrasada!';
     }
 
-    const overdueText = overdueCount > 0
-      ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)` : '✅ Nenhuma tarefa atrasada!';
-
-    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount));
-    message = message.replace(/\{\{overdueText\}\}/g, overdueText);
-    message = message.replace(/\{\{tasksList\}\}/g, tasksList);
-    message = message.replace(/\{\{overdueList\}\}/g, overdueList);
-
-    return message;
+    // Build message directly — ignore saved template to avoid old format issues
+    return `📋 *Resumo do Dia*\n\n📌 *Tarefas pendentes (${pendingCount}):*\n${tasksList}\n\n⚠️ *Tarefas atrasadas (${overdueCount}):*\n${overdueList}\n\nBom trabalho! 💪`;
   }
 
   // =============================================
-  // DAILY REPORT — tasks by priority
+  // DAILY REPORT — build directly with priority details
   // =============================================
   if (tpl.template_type === 'daily_report') {
-    // Completed today
     let completedQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
       .eq('user_id', userId).eq('is_completed', true)
       .gte('updated_at', todayStartUTC.toISOString())
@@ -366,13 +353,11 @@ async function buildTemplateMessage(
     completedQuery = applyExclusions(completedQuery);
     const { count: completedToday } = await completedQuery;
 
-    // Pending tasks with details
     let pendingQ = supabase.from('tasks').select('title, priority, due_date')
       .eq('user_id', userId).eq('is_completed', false);
     pendingQ = applyExclusions(pendingQ);
     const { data: pendingTasks } = await pendingQ.limit(100);
 
-    // Overdue tasks
     let overdueQ = supabase.from('tasks').select('title, due_date')
       .eq('user_id', userId).eq('is_completed', false)
       .lt('due_date', now.toISOString()).not('due_date', 'is', null)
@@ -380,11 +365,8 @@ async function buildTemplateMessage(
     overdueQ = applyExclusions(overdueQ);
     const { data: overdueTasks } = await overdueQ.limit(50);
 
-    // Separate non-overdue pending
-    const overdueIds = new Set((overdueTasks || []).map((t: any) => t.title + (t.due_date || '')));
-    const nonOverduePending = (pendingTasks || []).filter((t: any) => !overdueIds.has(t.title + (t.due_date || '')));
-
-    // Sort by priority
+    const overdueSet = new Set((overdueTasks || []).map((t: any) => t.title + (t.due_date || '')));
+    const nonOverduePending = (pendingTasks || []).filter((t: any) => !overdueSet.has(t.title + (t.due_date || '')));
     nonOverduePending.sort((a: any, b: any) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
 
     const pendingCount = nonOverduePending.length;
@@ -393,7 +375,6 @@ async function buildTemplateMessage(
     const filled = Math.round(percent / 10);
     const progressBar = '▓'.repeat(filled) + '░'.repeat(10 - filled) + ` ${percent}%`;
 
-    // Format pending list by priority
     let pendingList = '';
     if (pendingCount > 0) {
       pendingList = nonOverduePending.map((t: any) => {
@@ -405,7 +386,6 @@ async function buildTemplateMessage(
       pendingList = '✅ Nenhuma tarefa pendente!';
     }
 
-    // Format overdue list
     const overdueCount = (overdueTasks || []).length;
     let overdueList = '';
     if (overdueCount > 0) {
@@ -416,19 +396,8 @@ async function buildTemplateMessage(
       overdueList = '✅ Nenhuma tarefa atrasada!';
     }
 
-    const overdueText = overdueCount > 0
-      ? `⚠️ ${overdueCount} tarefa(s) atrasada(s)` : '✅ Nenhuma tarefa atrasada!';
-
-    message = message.replace(/\{\{completedToday\}\}/g, String(completedToday || 0));
-    message = message.replace(/\{\{totalTasks\}\}/g, String(total));
-    message = message.replace(/\{\{completionPercent\}\}/g, String(percent));
-    message = message.replace(/\{\{pendingTasks\}\}/g, String(pendingCount));
-    message = message.replace(/\{\{overdueText\}\}/g, overdueText);
-    message = message.replace(/\{\{progressBar\}\}/g, progressBar);
-    message = message.replace(/\{\{pendingList\}\}/g, pendingList);
-    message = message.replace(/\{\{overdueList\}\}/g, overdueList);
-
-    return message;
+    // Build message directly — ignore saved template
+    return `📊 *Relatório do Dia*\n\n✅ Concluídas: ${completedToday || 0}/${total} (${percent}%)\n${progressBar}\n\n📋 *Pendentes (${pendingCount}):*\n${pendingList}\n\n⚠️ *Atrasadas (${overdueCount}):*\n${overdueList}\n\nAté amanhã! 🌙`;
   }
 
   // =============================================
