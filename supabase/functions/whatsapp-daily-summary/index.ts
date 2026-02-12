@@ -119,6 +119,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Parse request body for force/type params
+    let bodyParams: any = {};
+    try { bodyParams = await req.json(); } catch { /* no body */ }
+    const forceMode = bodyParams.force === true;
+    const filterType = bodyParams.type as string | undefined;
+    const filterUserId = bodyParams.user_id as string | undefined;
+
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -137,11 +144,22 @@ Deno.serve(async (req) => {
 
     const supportedTypes = ['daily_reminder', 'daily_report', 'daily_motivation', 'weekly_summary', 'task_overdue'];
 
-    const { data: templates, error: tplErr } = await supabase
+    let tplQuery = supabase
       .from('whatsapp_templates')
       .select('user_id, template_type, message_template, send_time, send_time_2, excluded_column_ids')
-      .in('template_type', supportedTypes)
       .eq('is_enabled', true);
+
+    // Filter by specific type and user if provided
+    if (filterType && supportedTypes.includes(filterType)) {
+      tplQuery = tplQuery.eq('template_type', filterType);
+    } else {
+      tplQuery = tplQuery.in('template_type', supportedTypes);
+    }
+    if (filterUserId) {
+      tplQuery = tplQuery.eq('user_id', filterUserId);
+    }
+
+    const { data: templates, error: tplErr } = await tplQuery;
 
     if (tplErr) throw tplErr;
     if (!templates || templates.length === 0) {
@@ -153,8 +171,8 @@ Deno.serve(async (req) => {
     const results: { user_id: string; template_type: string; sent: boolean; reason?: string }[] = [];
 
     for (const tpl of templates) {
-      // === HOUR CHECK ===
-      if (tpl.template_type !== 'task_overdue') {
+      // === HOUR CHECK (skip in force mode) ===
+      if (!forceMode && tpl.template_type !== 'task_overdue') {
         const sendTimeHour = tpl.send_time
           ? parseInt((tpl.send_time as string).split(':')[0], 10)
           : getDefaultHour(tpl.template_type);
@@ -165,8 +183,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // === WEEKLY: DAY CHECK ===
-      if (tpl.template_type === 'weekly_summary') {
+      // === WEEKLY: DAY CHECK (skip in force mode) ===
+      if (!forceMode && tpl.template_type === 'weekly_summary') {
         const targetDay = tpl.send_time_2 ? parseInt(tpl.send_time_2 as string, 10) : 1;
         if (currentWeekday !== targetDay) {
           results.push({ user_id: tpl.user_id, template_type: tpl.template_type, sent: false, reason: `weekday mismatch: ${currentWeekday} vs ${targetDay}` });
@@ -186,8 +204,8 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // === DEDUP CHECK ===
-      if (tpl.template_type !== 'task_overdue') {
+      // === DEDUP CHECK (skip in force mode) ===
+      if (!forceMode && tpl.template_type !== 'task_overdue') {
         const { data: existingLogs } = await supabase
           .from('whatsapp_logs')
           .select('id')
