@@ -293,19 +293,8 @@ async function buildTemplateMessage(
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const bible = BIBLE_QUOTES[Math.floor(Math.random() * BIBLE_QUOTES.length)];
 
-    const motivationalQuote = `"${quote.text}"\n— ${quote.author}`;
-    const bibleQuote = `"${bible.text}"\n${bible.ref}`;
-
-    message = message.replace(/\{\{motivationalQuote\}\}/g, motivationalQuote);
-    message = message.replace(/\{\{bibleQuote\}\}/g, bibleQuote);
-
-    // Also replace legacy variables with empty string so old templates don't break
-    message = message.replace(/\{\{pendingTasks\}\}/g, '');
-    message = message.replace(/\{\{topPriority\}\}/g, '');
-    message = message.replace(/\{\{streak\}\}/g, '');
-    message = message.replace(/\{\{overdueText\}\}/g, '');
-
-    return message;
+    // Always build the message directly — ignore saved template to avoid old format issues
+    return `☀️ *Bom dia!*\n\n💡 *Frase do dia:*\n"${quote.text}"\n— ${quote.author}\n\n📖 *Palavra de Deus:*\n"${bible.text}"\n${bible.ref}\n\nTenha um ótimo dia! 🙏`;
   }
 
   // =============================================
