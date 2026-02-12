@@ -70,19 +70,19 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   },
   {
     template_type: "daily_reminder",
-    label: "📋 Resumo Diário",
-    message_template: "📋 *Resumo do Dia*\n\n📌 *Tarefas pendentes ({{pendingTasks}}):*\n{{tasksList}}\n\n⚠️ *Tarefas atrasadas:*\n{{overdueList}}\n\nBom trabalho! 💪",
+    label: "📋 Resumo Diário (manhã)",
+    message_template: "📋 *Tarefas de Hoje*\n\n• Tarefa A | 09:00\n• Tarefa B | 14:00\n\n⚠️ *Tarefas Atrasadas*\n🔴 Tarefa X | Desde: 09/02\n\nEnviado em 2 blocos separados: tarefas do dia + atrasadas",
     is_enabled: true,
-    variables: ["pendingTasks", "tasksList", "overdueText", "overdueList"],
+    variables: [],
     send_time: "08:00",
     excluded_column_ids: [],
   },
   {
     template_type: "daily_report",
-    label: "📊 Relatório Diário",
-    message_template: "📊 *Relatório do Dia*\n\n✅ Concluídas: {{completedToday}}/{{totalTasks}} ({{completionPercent}}%)\n{{progressBar}}\n\n📋 *Pendentes ({{pendingTasks}}):*\n{{pendingList}}\n\n⚠️ *Atrasadas:*\n{{overdueList}}\n\nAté amanhã! 🌙",
+    label: "📊 Relatório de Produtividade (noite)",
+    message_template: "📊 *Relatório do Dia*\n\n✅ Concluídas: 8\n❌ Não concluídas: 4\n📈 Taxa: 67%\n▓▓▓▓▓▓▓░░░ 67%\n\n🏆 Streak: 5 dias\n⭐ Pontos: 120\n\n🔥 *Destaques concluídos:*\n• ...\n\n💤 *Ficaram para amanhã:*\n• ...\n\nDescanse bem! 🌙",
     is_enabled: true,
-    variables: ["completedToday", "totalTasks", "completionPercent", "pendingTasks", "overdueText", "progressBar", "pendingList", "overdueList"],
+    variables: [],
     send_time: "23:00",
     excluded_column_ids: [],
   },
@@ -275,51 +275,57 @@ export function WhatsAppTemplates() {
         return;
       }
 
-      const sampleVars: Record<string, string> = {
-        taskTitle: "Tarefa de Exemplo",
-        timeRemaining: "2 horas",
-        pendingTasks: "5",
-        overdueText: "⚠️ 2 tarefa(s) atrasada(s)",
-        sessionType: "Foco",
-        message: "Hora de voltar ao trabalho!",
-        achievementTitle: "Mestre da Produtividade",
-        points: "100",
-        completedToday: "8",
-        totalTasks: "12",
-        completionPercent: "67",
-        progressBar: "▓▓▓▓▓▓▓░░░ 67%",
-        completedCount: "3",
-        pendingCount: "7",
-        completedWeek: "22",
-        streak: "5",
-        topCategory: "Trabalho",
-        topPriority: "Finalizar relatório",
-        goalTitle: "Meta Semanal",
-        target: "10",
-        period: "semanal",
-        overdueTime: "3 horas",
-        totalOverdue: "2",
-        tasksList: "• Finalizar relatório | Vence: 11/02 14:00\n• Reunião equipe | Vence: 12/02 09:00\n• Revisar documentação | Sem prazo",
-        overdueList: "• Enviar proposta | Desde: 09/02 18:00\n• Atualizar planilha | Desde: 10/02 10:00",
-        pendingList: "🔴 Tarefa urgente | Vence: 12/02\n🟡 Tarefa média | Vence: 13/02\n🟢 Tarefa baixa | Sem prazo",
-        motivationalQuote: "\"A educação é a arma mais poderosa que você pode usar para mudar o mundo.\"\n— Nelson Mandela",
-        bibleQuote: "\"Tudo posso naquele que me fortalece.\"\nFilipenses 4:13",
-      };
+      // Auto-generated templates: use edge function directly
+      if (AUTO_GENERATED_TEMPLATES.includes(tpl.template_type)) {
+        const { data, error } = await supabase.functions.invoke("whatsapp-daily-summary", {
+          body: { force: true, type: tpl.template_type, user_id: user.id },
+        });
 
-      let message = tpl.message_template;
-      for (const [key, value] of Object.entries(sampleVars)) {
-        message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
-      }
-
-      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
-        body: { user_id: user.id, phone_number: config.phone_number, message, template_type: `test_${tpl.template_type}` },
-      });
-
-      if (error) throw error;
-      if (data?.success) {
-        toast.success(`Teste "${tpl.label}" enviado!`);
+        if (error) throw error;
+        if (data?.success) {
+          const sentCount = (data.results || []).filter((r: any) => r.sent).length;
+          toast.success(`Teste "${tpl.label}" enviado! (${sentCount} mensagem(ns))`);
+        } else {
+          toast.error("Falha: " + (data?.error || "Erro desconhecido"));
+        }
       } else {
-        toast.error("Falha: " + (data?.error || "Erro desconhecido"));
+        // Regular templates: substitute variables and send
+        const sampleVars: Record<string, string> = {
+          taskTitle: "Tarefa de Exemplo",
+          timeRemaining: "2 horas",
+          pendingTasks: "5",
+          overdueText: "⚠️ 2 tarefa(s) atrasada(s)",
+          sessionType: "Foco",
+          message: "Hora de voltar ao trabalho!",
+          achievementTitle: "Mestre da Produtividade",
+          points: "100",
+          completedCount: "3",
+          pendingCount: "7",
+          completedWeek: "22",
+          streak: "5",
+          topCategory: "Trabalho",
+          goalTitle: "Meta Semanal",
+          target: "10",
+          period: "semanal",
+          overdueTime: "3 horas",
+          totalOverdue: "2",
+        };
+
+        let message = tpl.message_template;
+        for (const [key, value] of Object.entries(sampleVars)) {
+          message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+        }
+
+        const { data, error } = await supabase.functions.invoke("send-whatsapp", {
+          body: { user_id: user.id, phone_number: config.phone_number, message, template_type: `test_${tpl.template_type}` },
+        });
+
+        if (error) throw error;
+        if (data?.success) {
+          toast.success(`Teste "${tpl.label}" enviado!`);
+        } else {
+          toast.error("Falha: " + (data?.error || "Erro desconhecido"));
+        }
       }
     } catch (e: any) {
       toast.error("Erro: " + (e.message || "Erro desconhecido"));

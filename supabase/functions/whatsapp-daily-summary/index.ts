@@ -92,6 +92,15 @@ function formatDateBRT(dateStr: string | null): string {
   return `${dd}/${mm} ${hh}:${min}`;
 }
 
+function formatTimeBRT(dateStr: string): string {
+  const d = new Date(dateStr);
+  const BRT_OFFSET_MS = -3 * 60 * 60 * 1000;
+  const brt = new Date(d.getTime() + BRT_OFFSET_MS);
+  const hh = String(brt.getUTCHours()).padStart(2, '0');
+  const min = String(brt.getUTCMinutes()).padStart(2, '0');
+  return `${hh}:${min}`;
+}
+
 function getPriorityEmoji(priority: string | null): string {
   switch (priority) {
     case 'high': return '🔴';
@@ -141,6 +150,11 @@ Deno.serve(async (req) => {
     const todayBRTMidnight = new Date(Date.UTC(nowBRT.getUTCFullYear(), nowBRT.getUTCMonth(), nowBRT.getUTCDate()));
     const todayStartUTC = new Date(todayBRTMidnight.getTime() - BRT_OFFSET_MS);
     const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+    // Format today's date in BRT for display
+    const todayDD = String(nowBRT.getUTCDate()).padStart(2, '0');
+    const todayMM = String(nowBRT.getUTCMonth() + 1).padStart(2, '0');
+    const todayDateStr = `${todayDD}/${todayMM}`;
 
     const supportedTypes = ['daily_reminder', 'daily_report', 'daily_motivation', 'weekly_summary', 'task_overdue'];
 
@@ -229,8 +243,8 @@ Deno.serve(async (req) => {
       if (tpl.template_type === 'task_overdue') {
         messages = await buildOverdueMessages(supabase, tpl, excludedIds, now, todayStartUTC);
       } else {
-        const msg = await buildTemplateMessage(supabase, tpl, excludedIds, now, todayStartUTC, todayEndUTC);
-        if (msg) messages = [{ message: msg, logType: tpl.template_type }];
+        const msgs = await buildTemplateMessages(supabase, tpl, excludedIds, now, todayStartUTC, todayEndUTC, todayDateStr);
+        messages = msgs;
       }
 
       if (messages.length === 0) {
@@ -262,6 +276,11 @@ Deno.serve(async (req) => {
         });
 
         results.push({ user_id: tpl.user_id, template_type: logType, sent: res.ok });
+
+        // Small delay between messages to avoid rate limiting
+        if (messages.length > 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
       }
     }
 
@@ -289,12 +308,12 @@ function getDefaultHour(templateType: string): number {
 }
 
 // ============================================================
-// BUILD TEMPLATE MESSAGE
+// BUILD TEMPLATE MESSAGES (returns array for multi-message support)
 // ============================================================
-async function buildTemplateMessage(
+async function buildTemplateMessages(
   supabase: any, tpl: any, excludedIds: string[],
-  now: Date, todayStartUTC: Date, todayEndUTC: Date
-): Promise<string | null> {
+  now: Date, todayStartUTC: Date, todayEndUTC: Date, todayDateStr: string
+): Promise<{ message: string; logType: string }[]> {
   let message = tpl.message_template;
   const userId = tpl.user_id;
 
@@ -311,111 +330,134 @@ async function buildTemplateMessage(
     const quote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
     const bible = BIBLE_QUOTES[Math.floor(Math.random() * BIBLE_QUOTES.length)];
 
-    // Always build the message directly — ignore saved template to avoid old format issues
-    return `☀️ *Bom dia!*\n\n💡 *Frase do dia:*\n"${quote.text}"\n— ${quote.author}\n\n📖 *Palavra de Deus:*\n"${bible.text}"\n${bible.ref}\n\nTenha um ótimo dia! 🙏`;
+    const msg = `☀️ *Bom dia!*\n\n💡 *Frase do dia:*\n"${quote.text}"\n— ${quote.author}\n\n📖 *Palavra de Deus:*\n"${bible.text}"\n${bible.ref}\n\nTenha um ótimo dia! 🙏`;
+    return [{ message: msg, logType: 'daily_motivation' }];
   }
 
   // =============================================
-  // DAILY REMINDER — build directly with task details
+  // DAILY REMINDER — 2 blocks: today's tasks + overdue
   // =============================================
   if (tpl.template_type === 'daily_reminder') {
-    let pendingQ = supabase.from('tasks').select('title, due_date')
-      .eq('user_id', userId).eq('is_completed', false)
-      .order('due_date', { ascending: true, nullsFirst: false });
-    pendingQ = applyExclusions(pendingQ);
-    const { data: pendingTasks } = await pendingQ.limit(50);
+    const messages: { message: string; logType: string }[] = [];
 
-    let overdueQ = supabase.from('tasks').select('title, due_date')
+    // BLOCK 1: Today's tasks (due_date within today, sorted by time ASC)
+    let todayQ = supabase.from('tasks').select('title, due_date, priority')
       .eq('user_id', userId).eq('is_completed', false)
-      .lt('due_date', now.toISOString()).not('due_date', 'is', null)
+      .gte('due_date', todayStartUTC.toISOString())
+      .lte('due_date', todayEndUTC.toISOString())
       .order('due_date', { ascending: true });
+    todayQ = applyExclusions(todayQ);
+    const { data: todayTasks } = await todayQ.limit(50);
+
+    // Also get tasks with no due_date (show separately)
+    let noDueDateQ = supabase.from('tasks').select('title, priority')
+      .eq('user_id', userId).eq('is_completed', false)
+      .is('due_date', null);
+    noDueDateQ = applyExclusions(noDueDateQ);
+    const { data: noDueDateTasks } = await noDueDateQ.limit(30);
+
+    const todayCount = (todayTasks || []).length;
+    let todayList = '';
+    if (todayCount > 0) {
+      todayList = (todayTasks || []).map((t: any) => {
+        const time = formatTimeBRT(t.due_date);
+        return `• ${t.title} | ${time}`;
+      }).join('\n');
+    } else {
+      todayList = '✅ Nenhuma tarefa para hoje!';
+    }
+
+    // Add no-due-date tasks as a subsection if any
+    let noDueDateSection = '';
+    const noDueDateCount = (noDueDateTasks || []).length;
+    if (noDueDateCount > 0) {
+      const noDueDateList = (noDueDateTasks || []).slice(0, 10).map((t: any) => {
+        return `• ${t.title}`;
+      }).join('\n');
+      noDueDateSection = `\n\n📝 *Sem prazo definido (${noDueDateCount}):*\n${noDueDateList}`;
+      if (noDueDateCount > 10) noDueDateSection += `\n... e mais ${noDueDateCount - 10}`;
+    }
+
+    const block1 = `📋 *Tarefas de Hoje (${todayDateStr})*\n\n${todayList}${noDueDateSection}\n\nTotal: ${todayCount} tarefa(s) agendada(s)`;
+    messages.push({ message: block1, logType: 'daily_reminder' });
+
+    // BLOCK 2: Overdue tasks (due_date < today, sorted by priority)
+    let overdueQ = supabase.from('tasks').select('title, due_date, priority')
+      .eq('user_id', userId).eq('is_completed', false)
+      .lt('due_date', todayStartUTC.toISOString())
+      .not('due_date', 'is', null);
     overdueQ = applyExclusions(overdueQ);
     const { data: overdueTasks } = await overdueQ.limit(50);
 
-    const overdueSet = new Set((overdueTasks || []).map((t: any) => t.title + t.due_date));
-    const nonOverdue = (pendingTasks || []).filter((t: any) => !overdueSet.has(t.title + t.due_date));
-
-    const pendingCount = nonOverdue.length;
-    let tasksList = '';
-    if (pendingCount > 0) {
-      tasksList = nonOverdue.map((t: any) => {
-        const dateStr = t.due_date ? `Vence: ${formatDateBRT(t.due_date)}` : 'Sem prazo';
-        return `• ${t.title} | ${dateStr}`;
-      }).join('\n');
-    } else {
-      tasksList = '✅ Nenhuma tarefa pendente!';
-    }
-
     const overdueCount = (overdueTasks || []).length;
-    let overdueList = '';
     if (overdueCount > 0) {
-      overdueList = (overdueTasks || []).map((t: any) => {
-        return `• ${t.title} | Desde: ${formatDateBRT(t.due_date)}`;
+      // Sort by priority (high first)
+      const sorted = (overdueTasks || []).sort((a: any, b: any) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
+      const overdueList = sorted.map((t: any) => {
+        const emoji = getPriorityEmoji(t.priority);
+        return `${emoji} ${t.title} | Desde: ${formatDateBRT(t.due_date)}`;
       }).join('\n');
-    } else {
-      overdueList = '✅ Nenhuma tarefa atrasada!';
+
+      const block2 = `⚠️ *Tarefas Atrasadas (${overdueCount})*\n\n${overdueList}\n\nCuide dessas pendências! 💪`;
+      messages.push({ message: block2, logType: 'daily_reminder_overdue' });
     }
 
-    // Build message directly — ignore saved template to avoid old format issues
-    return `📋 *Resumo do Dia*\n\n📌 *Tarefas pendentes (${pendingCount}):*\n${tasksList}\n\n⚠️ *Tarefas atrasadas (${overdueCount}):*\n${overdueList}\n\nBom trabalho! 💪`;
+    return messages;
   }
 
   // =============================================
-  // DAILY REPORT — build directly with priority details
+  // DAILY REPORT — productivity balance (evening)
   // =============================================
   if (tpl.template_type === 'daily_report') {
-    let completedQuery = supabase.from('tasks').select('id', { count: 'exact', head: true })
+    // Completed today
+    let completedQ = supabase.from('tasks').select('title')
       .eq('user_id', userId).eq('is_completed', true)
       .gte('updated_at', todayStartUTC.toISOString())
       .lte('updated_at', todayEndUTC.toISOString());
-    completedQuery = applyExclusions(completedQuery);
-    const { count: completedToday } = await completedQuery;
+    completedQ = applyExclusions(completedQ);
+    const { data: completedTasks } = await completedQ.limit(50);
+    const completedToday = (completedTasks || []).length;
 
-    let pendingQ = supabase.from('tasks').select('title, priority, due_date')
+    // Not completed (still pending, were due today or have no date)
+    let pendingTodayQ = supabase.from('tasks').select('title, priority')
       .eq('user_id', userId).eq('is_completed', false);
-    pendingQ = applyExclusions(pendingQ);
-    const { data: pendingTasks } = await pendingQ.limit(100);
+    pendingTodayQ = applyExclusions(pendingTodayQ);
+    const { data: allPending } = await pendingTodayQ.limit(100);
+    const pendingCount = (allPending || []).length;
 
-    let overdueQ = supabase.from('tasks').select('title, due_date')
-      .eq('user_id', userId).eq('is_completed', false)
-      .lt('due_date', now.toISOString()).not('due_date', 'is', null)
-      .order('due_date', { ascending: true });
-    overdueQ = applyExclusions(overdueQ);
-    const { data: overdueTasks } = await overdueQ.limit(50);
-
-    const overdueSet = new Set((overdueTasks || []).map((t: any) => t.title + (t.due_date || '')));
-    const nonOverduePending = (pendingTasks || []).filter((t: any) => !overdueSet.has(t.title + (t.due_date || '')));
-    nonOverduePending.sort((a: any, b: any) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
-
-    const pendingCount = nonOverduePending.length;
-    const total = pendingCount + (completedToday || 0);
-    const percent = total > 0 ? Math.round(((completedToday || 0) / total) * 100) : 0;
+    // Total for today = completed + pending
+    const total = completedToday + pendingCount;
+    const percent = total > 0 ? Math.round((completedToday / total) * 100) : 0;
     const filled = Math.round(percent / 10);
     const progressBar = '▓'.repeat(filled) + '░'.repeat(10 - filled) + ` ${percent}%`;
 
-    let pendingList = '';
+    // Streak & points
+    const { data: statsData } = await supabase.from('user_stats')
+      .select('current_streak, total_points, tasks_completed_today').eq('user_id', userId).single();
+    const streak = statsData?.current_streak || 0;
+    const pointsToday = statsData?.tasks_completed_today ? statsData.tasks_completed_today * 15 : 0;
+
+    // Completed highlights (max 5)
+    let completedHighlights = '';
+    if (completedToday > 0) {
+      completedHighlights = (completedTasks || []).slice(0, 5).map((t: any) => `• ${t.title}`).join('\n');
+      if (completedToday > 5) completedHighlights += `\n... e mais ${completedToday - 5}`;
+    } else {
+      completedHighlights = '• Nenhuma tarefa concluída hoje';
+    }
+
+    // Pending for tomorrow (max 5, by priority)
+    let tomorrowList = '';
     if (pendingCount > 0) {
-      pendingList = nonOverduePending.map((t: any) => {
-        const emoji = getPriorityEmoji(t.priority);
-        const dateStr = t.due_date ? `Vence: ${formatDateBRT(t.due_date)}` : 'Sem prazo';
-        return `${emoji} ${t.title} | ${dateStr}`;
-      }).join('\n');
+      const sorted = (allPending || []).sort((a: any, b: any) => getPriorityOrder(a.priority) - getPriorityOrder(b.priority));
+      tomorrowList = sorted.slice(0, 5).map((t: any) => `• ${t.title}`).join('\n');
+      if (pendingCount > 5) tomorrowList += `\n... e mais ${pendingCount - 5}`;
     } else {
-      pendingList = '✅ Nenhuma tarefa pendente!';
+      tomorrowList = '✅ Tudo concluído!';
     }
 
-    const overdueCount = (overdueTasks || []).length;
-    let overdueList = '';
-    if (overdueCount > 0) {
-      overdueList = (overdueTasks || []).map((t: any) => {
-        return `• ${t.title} | Desde: ${formatDateBRT(t.due_date)}`;
-      }).join('\n');
-    } else {
-      overdueList = '✅ Nenhuma tarefa atrasada!';
-    }
-
-    // Build message directly — ignore saved template
-    return `📊 *Relatório do Dia*\n\n✅ Concluídas: ${completedToday || 0}/${total} (${percent}%)\n${progressBar}\n\n📋 *Pendentes (${pendingCount}):*\n${pendingList}\n\n⚠️ *Atrasadas (${overdueCount}):*\n${overdueList}\n\nAté amanhã! 🌙`;
+    const msg = `📊 *Relatório do Dia - ${todayDateStr}*\n\n✅ Concluídas hoje: ${completedToday}\n❌ Não concluídas: ${pendingCount}\n📈 Taxa de conclusão: ${percent}%\n${progressBar}\n\n🏆 Streak atual: ${streak} dias\n⭐ Pontos ganhos hoje: ${pointsToday}\n\n🔥 *Destaques concluídos:*\n${completedHighlights}\n\n💤 *Ficaram para amanhã:*\n${tomorrowList}\n\nDescanse bem! 🌙`;
+    return [{ message: msg, logType: 'daily_report' }];
   }
 
   // =============================================
@@ -458,7 +500,7 @@ async function buildTemplateMessage(
     message = message.replace(/\{\{topCategory\}\}/g, topCategory);
   }
 
-  return message;
+  return [{ message, logType: tpl.template_type }];
 }
 
 // ============================================================
