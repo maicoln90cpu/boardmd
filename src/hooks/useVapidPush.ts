@@ -34,7 +34,7 @@ export function useVapidPush() {
 
         try {
           const registration = await navigator.serviceWorker.ready;
-          const subscription = await registration.pushManager.getSubscription();
+          const subscription = await (registration as any).pushManager?.getSubscription();
           setIsSubscribed(!!subscription);
         } catch (e) {
           logger.error("[useVapidPush] Error checking subscription:", e);
@@ -67,7 +67,7 @@ export function useVapidPush() {
       // Use the Workbox SW (main SW), not the OneSignal one
       const registration = await navigator.serviceWorker.ready;
 
-      const subscription = await registration.pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
@@ -111,7 +111,7 @@ export function useVapidPush() {
       setIsLoading(true);
 
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
+      const subscription = await (registration as any).pushManager?.getSubscription();
       if (subscription) {
         const endpoint = subscription.endpoint;
         await subscription.unsubscribe();
