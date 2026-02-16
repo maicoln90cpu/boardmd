@@ -1,105 +1,246 @@
 
+# Plano: Documentacao Completa - onedoc.md e pwapush.md
 
-# Plano: Corrigir Vinculacao external_id no iOS e Melhorar Edge Function
+## Objetivo
 
-## Diagnostico
+Criar dois documentos completos:
 
-### Problema confirmado pelo suporte OneSignal
-
-O `external_id` NAO esta sendo vinculado aos subscribers iOS. Nos logs da edge function, TODAS as tentativas mostram `recipients: 0` tanto por `external_id` quanto por tag `user_id`.
-
-### Causa raiz no codigo
-
-No `useOneSignal.ts`, o fluxo de subscribe faz:
-
-```text
-1. setExternalUserId(user.id)  ← linha 72 - ANTES da permissao
-2. requestPermission()          ← linha 75 - subscription ainda nao existe
-3. addTags(...)                 ← linha 84 - DEPOIS, mas pode ser tarde demais no iOS
-```
-
-No iOS, o `OneSignal.login(userId)` chamado ANTES da subscription existir nao vincula nada, porque o subscriber ainda nao foi criado. O login precisa ser chamado DEPOIS que a permissao e concedida e a subscription esta ativa.
-
-### Problema adicional na edge function
-
-O fallback usa `included_segments: ['All']` junto com `filters`, e o OneSignal retorna warning: "included_segments are ignored since filters are set". Isso nao causa erro, mas e incorreto.
+1. **onedoc.md** - Atualizar com documentacao completa do sistema atual (OneSignal, fluxos, edge function, diagnostico, troubleshooting, e tudo que foi corrigido)
+2. **pwapush.md** - Documento tecnico completo para recriar TODO o sistema PWA + Push do zero em um projeto Lovable limpo
 
 ---
 
-## Correcoes
+## 1. onedoc.md - Atualizacoes
 
-### 1. useOneSignal.ts - Reordenar fluxo de subscribe
+O documento atual tem 530 linhas com secoes 1-7. Sera reescrito completamente para incluir:
 
-Mover `setExternalUserId` e `addTags` para DEPOIS da permissao ser concedida e aguardar a subscription ficar ativa:
+### Secoes existentes (manter e melhorar):
+- Secao 1: Web Push Setup
+- Secao 2: Web SDK Setup
+- Secao 3: iOS Web Push
+- Secao 4: Checklist de Implementacao
+- Secao 5: Referencias Rapidas
+- Secao 6: Custom Events
+- Secao 7: Referencias Rapidas (atualizada)
 
-```text
-ANTES (bugado):
-  1. login(userId)         ← subscriber nao existe ainda
-  2. requestPermission()
-  3. wait 1500ms
-  4. addTags()
+### Novas secoes a adicionar:
 
-DEPOIS (corrigido):
-  1. requestPermission()   ← cria o subscriber
-  2. wait 2000ms           ← aguardar subscription ativar (iOS e mais lento)
-  3. login(userId)         ← agora o subscriber existe
-  4. addTags()             ← tags vinculam ao subscriber correto
-```
+**Secao 8: Arquitetura do Sistema Atual**
+- Diagrama de componentes (provider, hook, notifier, edge function)
+- Fluxo de dados completo: usuario -> subscribe -> OneSignal -> edge function -> entrega
+- Arquivos envolvidos e suas responsabilidades
 
-### 2. useOneSignal.ts - Re-login apos subscription change
+**Secao 9: Edge Function send-onesignal - Especificacao Completa**
+- Payload de entrada completo
+- Estrutura da requisicao para API OneSignal
+- Estrategia de entrega dupla (external_id + fallback por tag)
+- Formato da resposta
+- Log no push_logs
+- Campos: `target_channel: "push"`, `include_aliases`, `filters`
 
-Adicionar um listener de `subscriptionChange` que re-chama `login(userId)` sempre que a subscription muda. Isso garante que se o iOS criar a subscription com atraso, o external_id sera vinculado.
+**Secao 10: Fluxo de Identificacao (external_id)**
+- Problema original: external_id null
+- Solucao: ordem correta do fluxo
+- Fluxo correto: permission -> wait 2s -> login(userId) -> addTags
+- Re-login automatico via subscriptionChange listener
+- Login automatico em cada carregamento de pagina
 
-### 3. Edge function - Remover included_segments do fallback
+**Secao 11: Diagnostico e Troubleshooting**
+- Tabela de problemas comuns e solucoes
+- Como verificar vinculacao do external_id
+- getDiagnostics() - campos retornados
+- Logs da edge function - o que procurar
 
-Remover `included_segments: ['All']` do fallback e usar apenas `filters`. Isso elimina o warning do OneSignal.
-
-### 4. Diagnostico - Mostrar external_id real
-
-No diagnostico, tentar obter o external_id real via `OneSignal.User.getIdentity()` ou similar para confirmar a vinculacao.
+**Secao 12: API OneSignal - Formato da Requisicao**
+- Formato correto para iOS web push
+- Campos obrigatorios: `target_channel: "push"`, `headings`, `contents`
+- Diferenca entre `include_aliases` e `include_subscription_ids`
+- Diferenca entre `included_segments` e `filters` (NAO misturar)
+- Exemplos de payloads reais
 
 ---
 
-## Arquivos a Modificar
+## 2. pwapush.md - Documento Completo de Replicacao
 
-| Arquivo | Alteracao |
-|---------|----------|
-| `src/hooks/useOneSignal.ts` | Reordenar subscribe: permissao primeiro, login depois; adicionar re-login em subscription change |
-| `src/lib/push/oneSignalProvider.ts` | Adicionar callback de subscription change que re-faz login; melhorar getDiagnostics |
-| `supabase/functions/send-onesignal/index.ts` | Remover `included_segments` do fallback |
+Documento tecnico exaustivo com TODOS os passos para recriar o sistema inteiro em um projeto Lovable limpo. Sera organizado em ordem cronologica de implementacao.
+
+### Estrutura do documento:
+
+**Parte 1: Fundacao PWA**
+- Dependencias necessarias (vite-plugin-pwa)
+- vite.config.ts - configuracao completa do VitePWA
+  - workbox settings (globPatterns, runtimeCaching, importScripts)
+  - manifest inline vs arquivo separado
+  - devOptions
+- public/manifest.json - todos os campos, tamanhos de icones
+- index.html - meta tags obrigatorias (apple-mobile-web-app-capable, theme-color, etc)
+- Icones necessarios: 512, 384, 256, 192, 180, 152, 120, 96
+
+**Parte 2: Service Worker**
+- sw-push.js completo (push handler, notification click, task actions)
+- Estrategia de importScripts no workbox
+- Foreground vs background notification handling
+- OneSignalSDKWorker.js
+
+**Parte 3: Registro e Atualizacao do SW**
+- main.tsx - registerSW com onNeedRefresh, onOfflineReady
+- usePWAUpdate hook - verificar atualizacoes, limpar cache, reinstalar
+- UpdateNotification component
+
+**Parte 4: Offline First**
+- offlineSync.ts - fila de operacoes no localStorage
+- backgroundSync.ts - sincronizacao com retry exponencial
+- Suporte a Background Sync API + fallback polling
+
+**Parte 5: Install Prompts**
+- InstallPrompt.tsx (Chrome/Android - beforeinstallprompt)
+- AddToHomeScreenBanner.tsx (iOS - instrucoes visuais)
+- Logica de dismissal com localStorage
+
+**Parte 6: OneSignal Web Push - Setup**
+- Criar conta e app no OneSignal dashboard
+- Configurar Site URL, Auto Resubscribe, Default Icon
+- CDN script no index.html com OneSignalDeferred
+- Protecao de dominio (ALLOWED_DOMAINS)
+- OneSignalSDKWorker.js no public/
+
+**Parte 7: OneSignal Provider (oneSignalProvider.ts)**
+- Codigo completo com explicacao linha a linha
+- initOneSignal() - aguardar SDK carregar (5s timeout)
+- setupEventListeners() - push click, foreground, permission, subscription change
+- oneSignalUtils - todas as funcoes: requestPermission, isSubscribed, setExternalUserId, addTags, getDiagnostics, etc
+- subscriptionChangeCallbacks - pattern de callback externo
+
+**Parte 8: Hook useOneSignal**
+- Codigo completo com explicacao
+- Init automatico com login em cada carregamento
+- Fluxo de subscribe CORRETO (ordem critica):
+  1. requestPermission() - cria subscriber
+  2. await 2000ms - iOS e mais lento
+  3. isSubscribed() - confirmar
+  4. setExternalUserId(userId) - vincular DEPOIS
+  5. addTags() - redundancia para fallback
+- Listener de subscription change para re-login
+
+**Parte 9: Edge Function send-onesignal**
+- Codigo completo
+- Secrets necessarios: ONESIGNAL_APP_ID, ONESIGNAL_REST_API_KEY
+- Payload de entrada (NotificationPayload)
+- Construcao do baseData
+- Estrategia de entrega:
+  1. Tentar por include_aliases.external_id
+  2. Se recipients === 0, fallback por filters com tag user_id
+  3. NUNCA misturar included_segments com filters
+- Log no push_logs com recipients, used_fallback, status
+- Formato EXATO da requisicao para API OneSignal
+
+**Parte 10: Notificador Automatico (oneSignalNotifier.ts)**
+- Tipos de notificacao: due_date, daily_reminder, achievement, pomodoro
+- Funcao send() generica via supabase.functions.invoke
+- Funcoes especificas com logica de urgencia
+
+**Parte 11: Alertas de Due Date (useDueDateAlerts)**
+- 3 niveis progressivos: early, warning, urgent, overdue
+- Persistencia de estado no localStorage
+- Snooze configuravel
+- getTaskUrgency() como funcao pura
+
+**Parte 12: Foreground Push Handler**
+- useForegroundPushHandler hook
+- Comunicacao SW -> client via postMessage
+- Toast customizado em vez de notificacao do sistema
+
+**Parte 13: Tabela push_logs (banco de dados)**
+- Schema completo da tabela
+- Campos: user_id, title, body, data, notification_type, status, error_message, device_name
+- RLS policies
+
+**Parte 14: iOS Especifico**
+- Limitacoes de background push (SW suspenso quando fechado)
+- Fluxo obrigatorio: Safari -> Add to Home Screen -> Abrir PWA -> Aceitar permissao
+- Meta tags Apple no head
+- Banner instrutivo (AddToHomeScreenBanner)
+- Race condition no subscribe: esperar 2s apos permission
+
+**Parte 15: Checklist Final de Implementacao**
+- Ordem exata de implementacao (numerada)
+- Verificacoes pos-implementacao
+- Testes manuais por plataforma (Android, iOS, Desktop)
+
+**Parte 16: Troubleshooting Completo**
+- Tabela de erros comuns com solucoes
+- Como debugar external_id null
+- Como verificar entrega nos logs
+- Como testar fallback por tag
+
+---
+
+## Arquivos a Criar/Modificar
+
+| Arquivo | Acao |
+|---------|------|
+| `onedoc.md` | Reescrever completamente (~800 linhas) |
+| `pwapush.md` | Criar novo (~1500+ linhas) |
 
 ---
 
 ## Detalhes Tecnicos
 
-### useOneSignal.ts - Novo fluxo subscribe
+### Formato do pwapush.md
+
+O documento sera formatado como um **prompt tecnico para o Lovable**, com blocos de codigo completos, explicacoes em PT-BR, e instrucoes passo a passo. Cada secao tera:
+
+1. **O que fazer** (instrucao clara)
+2. **Por que** (justificativa tecnica)
+3. **Codigo completo** (copiar e colar)
+4. **Ordem de execucao** (dependencias entre passos)
+
+### Formato da requisicao API OneSignal (sera documentado em ambos os arquivos)
 
 ```text
-subscribe():
-  1. requestPermission() + optIn()
-  2. await 2000ms (iOS precisa mais tempo)
-  3. verificar isSubscribed()
-  4. SE subscribed:
-     a. login(userId) — vincula external_id
-     b. addTags({ user_id, platform, app_version })
-  5. retornar resultado
-```
+POST https://onesignal.com/api/v1/notifications
+Headers:
+  Content-Type: application/json
+  Authorization: Basic <REST_API_KEY>
 
-### oneSignalProvider.ts - Listener de subscription
+Body (targeting por external_id):
+{
+  "app_id": "<APP_ID>",
+  "headings": { "en": "Titulo", "pt": "Titulo" },
+  "contents": { "en": "Corpo", "pt": "Corpo" },
+  "include_aliases": { "external_id": ["<USER_UUID>"] },
+  "target_channel": "push",
+  "url": "/",
+  "data": { ... },
+  "chrome_web_icon": "/pwa-icon.png",
+  "ttl": 86400
+}
 
-No `setupEventListeners`, o listener de `PushSubscription.change` ja existe mas so faz log. Adicionar logica para:
-- Quando `optedIn` muda para `true`, chamar um callback registrado externamente
-- O `useOneSignal` registra esse callback para re-fazer `login(userId)`
+Body (fallback por tag - SEM included_segments):
+{
+  "app_id": "<APP_ID>",
+  "headings": { ... },
+  "contents": { ... },
+  "filters": [
+    { "field": "tag", "key": "user_id", "relation": "=", "value": "<USER_UUID>" }
+  ],
+  "target_channel": "push",
+  ...
+}
 
-### send-onesignal - Fallback limpo
+Resposta esperada (sucesso):
+{
+  "id": "notification-uuid",
+  "recipients": 1,
+  "external_id": "<USER_UUID>"
+}
 
-```text
-ANTES:
-  included_segments: ['All'],
-  filters: [{ field: 'tag', key: 'user_id', ... }]
-
-DEPOIS:
-  filters: [{ field: 'tag', key: 'user_id', ... }]
+Resposta com problema:
+{
+  "id": "notification-uuid",
+  "external_id": null
+  // SEM campo recipients = 0 destinatarios
+}
 ```
 
 ---
@@ -108,22 +249,8 @@ DEPOIS:
 
 | Item | Risco | Complexidade (0-10) |
 |------|-------|---------------------|
-| Reordenar subscribe | Baixo | 3 |
-| Re-login em subscription change | Baixo | 2 |
-| Remover included_segments | Zero | 1 |
-| Melhorar diagnostico | Zero | 1 |
-| **Total** | | **7/40 - Abaixo do limite seguro** |
+| Reescrever onedoc.md | Zero (documentacao) | 4 |
+| Criar pwapush.md | Zero (documentacao) | 6 |
+| **Total** | **Zero risco** | **10/20** |
 
----
-
-## Checklist de Testes Manuais
-
-- [ ] No iOS: adicionar site a tela inicial, abrir como PWA
-- [ ] Clicar "Ativar" no card OneSignal
-- [ ] Aceitar permissao de notificacao
-- [ ] Verificar no diagnostico se "External User ID" mostra valor (nao "N/A")
-- [ ] Clicar "Testar" e verificar se a notificacao chega no iOS
-- [ ] Verificar nos logs da edge function se `recipients > 0`
-- [ ] Verificar que o warning "included_segments are ignored" desapareceu dos logs
-- [ ] No Android/Desktop: confirmar que o fluxo continua funcionando normalmente
-
+Nenhuma alteracao de codigo. Apenas documentacao.
