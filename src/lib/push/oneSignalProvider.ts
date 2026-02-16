@@ -4,7 +4,6 @@ import { logger, prodLogger } from '@/lib/logger';
 let initPromise: Promise<boolean> | null = null;
 
 export const initOneSignal = async (): Promise<boolean> => {
-  // Se já existe uma promessa de inicialização, aguardar ela
   if (initPromise) {
     logger.log('[OneSignal] Returning existing init promise');
     return initPromise;
@@ -19,30 +18,67 @@ export const initOneSignal = async (): Promise<boolean> => {
         appId,
         allowLocalhostAsSecureOrigin: true,
         serviceWorkerParam: {
-          scope: '/',
+          scope: '/onesignal/',
         },
         serviceWorkerPath: '/OneSignalSDKWorker.js',
       });
+
+      // Register SDK event listeners
+      setupEventListeners();
 
       logger.log('[OneSignal] Initialized successfully');
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // Se o SDK já foi inicializado, tratamos como sucesso
       if (errorMessage.includes('already initialized')) {
         logger.log('[OneSignal] SDK was already initialized (OK)');
         return true;
       }
 
       prodLogger.error('[OneSignal] Init error:', error);
-      initPromise = null; // Reset para permitir retry
+      initPromise = null;
       return false;
     }
   })();
 
   return initPromise;
 };
+
+/**
+ * Setup OneSignal SDK event listeners for better observability
+ */
+function setupEventListeners() {
+  try {
+    // Notification click event
+    OneSignal.Notifications.addEventListener('click', (event: any) => {
+      logger.log('[OneSignal] Notification clicked:', event?.notification?.title);
+    });
+
+    // Foreground notification display
+    OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
+      logger.log('[OneSignal] Foreground notification:', event?.notification?.title);
+      // Let it display normally (don't preventDefault)
+    });
+
+    // Permission change
+    OneSignal.Notifications.addEventListener('permissionChange', (permission: boolean) => {
+      logger.log('[OneSignal] Permission changed:', permission);
+    });
+
+    // Push subscription change
+    OneSignal.User.PushSubscription.addEventListener('change', (subscription: any) => {
+      logger.log('[OneSignal] Subscription changed:', {
+        optedIn: subscription?.current?.optedIn,
+        id: subscription?.current?.id,
+      });
+    });
+
+    logger.log('[OneSignal] Event listeners registered');
+  } catch (error) {
+    prodLogger.error('[OneSignal] Error setting up event listeners:', error);
+  }
+}
 
 export const oneSignalUtils = {
   // Verificar se está inicializado

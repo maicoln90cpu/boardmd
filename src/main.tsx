@@ -3,6 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { registerSW } from 'virtual:pwa-register';
 import { backgroundSync } from '@/lib/sync/backgroundSync';
+import { registerPushServiceWorker } from '@/lib/push/swPushRegistration';
 import { toast } from 'sonner';
 import { logger, prodLogger } from './lib/logger';
 
@@ -45,6 +46,11 @@ const updateSW = registerSW({
     prodLogger.error('SW registration error:', error);
   },
   immediate: true
+});
+
+// Register dedicated push service worker independently from Workbox
+registerPushServiceWorker().then((reg) => {
+  if (reg) logger.log('Dedicated Push SW registered:', reg.scope);
 });
 
 // Initialize background sync
