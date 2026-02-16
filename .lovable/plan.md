@@ -1,43 +1,79 @@
 
-# Plano: Corrigir VAPID, Refresh Loop e Integracoes OneSignal
+# Plano: Corrigir Entrega de Notificacoes OneSignal via API
 
-## Diagnostico
+## Diagnostico Principal
 
-### Problema 1: Site piscando (refresh loop)
-O script OneSignal no `index.html` executa `OneSignal.init()` incondicionalmente em TODAS as paginas. No dominio de preview (que nao e `board.infoprolab.com.br`), o SDK lanca um erro nao-capturado que causa instabilidade e reloads constantes.
+### Por que as notificacoes do dashboard chegam mas as da plataforma nao?
 
-### Problema 2: VAPID "nao foi possivel ativar"
-Dois Service Workers estao competindo pelo mesmo scope `/`:
-- O Workbox SW (gerado pelo VitePWA) que ja faz `importScripts('/sw-push.js')` na linha 51 do `vite.config.ts`
-- O `sw-push.js` registrado SEPARADAMENTE pelo `swPushRegistration.ts`
+**Causa raiz identificada nos logs da edge function:**
 
-Resultado: conflito de scopes, o `pushManager.subscribe()` falha porque o navegador nao sabe qual SW controla a pagina.
+A resposta do OneSignal mostra:
+```
+{"id":"ee9c90d9-...","external_id":null}
+```
 
-### Problema 3: Integracao OneSignal com templates
-A edge function `send-onesignal` ja existe e envia notificacoes programaticamente via API REST do OneSignal, sem precisar criar templates no dashboard. Todos os templates pre-cadastrados no app (meta batida, lembrete, pomodoro, etc.) ja usam essa edge function automaticamente via `oneSignalNotifier.ts`.
+- `external_id: null` = OneSignal NAO encontrou nenhum subscriber com aquele external_id
+- Sem campo `recipients` = 0 destinatarios = notificacao criada mas NAO entregue a ninguem
+
+**Por que isso acontece:**
+
+O `OneSignal.login(userId)` (que vincula o Supabase user ID como external_id no OneSignal) so e chamado quando o usuario clica "Ativar" no card do OneSignal (`useOneSignal.ts` linha 62). Ele NAO e chamado em cada carregamento da pagina. Se o usuario:
+- Ativou o OneSignal antes dessa funcionalidade existir
+- Limpou cache do navegador
+- O SDK reiniciou
+
+...a vinculacao se perde. O OneSignal sabe que existe um subscriber (por isso o dashboard consegue enviar para "All Subscribers"), mas NAO sabe qual external_id pertence a ele.
+
+**Dashboard funciona** porque envia para segmentos ("Subscribed Users") que usa o subscription ID interno do OneSignal.
+
+**API nao funciona** porque usa `include_aliases.external_id` que requer `OneSignal.login()` ativo.
 
 ---
 
 ## Correcoes
 
-### 1. index.html - Proteger init do OneSignal com verificacao de dominio
+### 1. Chamar OneSignal.login(userId) em CADA carregamento de pagina
 
-Envolver o `OneSignalDeferred.push` com verificacao de dominio para que o SDK so inicialize em `board.infoprolab.com.br` ou `localhost`. Em outros dominios, nao tenta inicializar (evita o erro que causa o refresh loop).
+Adicionar no `useOneSignal.ts`: apos a inicializacao bem-sucedida, verificar se o usuario esta autenticado no Supabase e chamar `OneSignal.login(userId)` automaticamente. Isso garante que o external_id esteja SEMPRE vinculado.
 
-### 2. swPushRegistration.ts - Eliminar registro separado do sw-push.js
+Atualmente (linhas 33-37):
+```typescript
+} else {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const subscribed = await oneSignalUtils.isSubscribed();
+  setIsSubscribed(subscribed);
+  setPermission(Notification.permission);
+}
+```
 
-O Workbox SW ja importa `sw-push.js` via `importScripts`. Registrar um segundo SW no mesmo scope causa conflito. A correcao e:
-- Remover o `navigator.serviceWorker.register('/sw-push.js')` separado
-- Usar `navigator.serviceWorker.ready` (que retorna o Workbox SW que ja tem o codigo do sw-push.js embutido)
-- Simplificar o `getPushSWRegistration()` para sempre usar o SW principal
+Proposta - adicionar login automatico:
+```typescript
+} else {
+  // Vincular external_id em cada carregamento
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    await oneSignalUtils.setExternalUserId(user.id);
+  }
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const subscribed = await oneSignalUtils.isSubscribed();
+  setIsSubscribed(subscribed);
+  setPermission(Notification.permission);
+}
+```
 
-### 3. main.tsx - Remover chamada ao registerPushServiceWorker
+### 2. Adicionar log de recipients na edge function
 
-Remover a chamada separada que registra o SW de push, ja que o Workbox ja cuida disso.
+O `send-onesignal` loga a resposta mas nao verifica o campo `recipients`. Adicionar verificacao:
+- Se `recipients === 0`: logar warning e retornar erro claro ("Nenhum dispositivo encontrado para este usuario")
+- Salvar `recipients` no push_logs para facilitar debug
 
-### 4. useVapidPush.ts - Melhorar error handling
+### 3. Adicionar fallback para segmento com filtro
 
-Adicionar try/catch mais descritivo para que o toast mostre a causa exata do erro em vez de mensagem generica.
+Se `include_aliases` resultar em 0 recipients, a edge function pode tentar um fallback usando `included_segments: ['All']` com filtro por tag `user_id`. Isso funciona se as tags foram definidas no subscribe.
+
+### 4. Atualizar onedoc.md com documentacao de Custom Events
+
+Anexar toda a documentacao de Custom Events fornecida ao arquivo onedoc.md.
 
 ---
 
@@ -45,21 +81,34 @@ Adicionar try/catch mais descritivo para que o toast mostre a causa exata do err
 
 | Arquivo | Alteracao |
 |---------|----------|
-| `index.html` | Adicionar verificacao de dominio antes do `OneSignal.init()` |
-| `src/lib/push/swPushRegistration.ts` | Remover registro separado; usar `navigator.serviceWorker.ready` |
-| `src/main.tsx` | Remover chamada a `registerPushServiceWorker()` |
-| `src/hooks/useVapidPush.ts` | Melhorar mensagens de erro |
+| `src/hooks/useOneSignal.ts` | Chamar `OneSignal.login(userId)` no init automatico |
+| `supabase/functions/send-onesignal/index.ts` | Verificar `recipients`, log de warning, fallback |
+| `onedoc.md` | Adicionar secao de Custom Events |
 
 ---
 
-## Sobre a Integracao OneSignal com Templates
+## Detalhes Tecnicos
 
-A edge function `send-onesignal` ja permite enviar qualquer notificacao programaticamente via API REST, sem precisar criar nada no dashboard do OneSignal. O fluxo atual:
+### send-onesignal - Verificacao de recipients e fallback
 
-1. Template e definido no app (meta batida, lembrete, pomodoro, etc.)
-2. O `oneSignalNotifier.ts` chama a edge function `send-onesignal` passando titulo, corpo e user_id
-3. A edge function usa a REST API v1 do OneSignal com `include_aliases.external_id` para entregar ao usuario correto
-4. Nao precisa subir templates manualmente no dashboard - tudo e automatizado pelo codigo
+Apos receber a resposta do OneSignal, verificar:
+
+```text
+1. Se result.recipients === 0 ou result.recipients undefined:
+   - Logar warning: "0 recipients com external_id, tentando fallback por tag"
+   - Tentar novamente com:
+     included_segments: ['All']
+     filters: [{ field: 'tag', key: 'user_id', relation: '=', value: payload.user_id }]
+   - Se fallback tambem falhar, retornar erro claro
+2. Salvar recipients no push_logs
+```
+
+### useOneSignal.ts - Login automatico
+
+No init (useEffect), apos confirmar que o SDK inicializou:
+1. Buscar usuario do Supabase via `supabase.auth.getUser()`
+2. Chamar `oneSignalUtils.setExternalUserId(user.id)` (que faz `OneSignal.login()`)
+3. Isso garante que o external_id esteja sempre atualizado
 
 ---
 
@@ -67,19 +116,19 @@ A edge function `send-onesignal` ja permite enviar qualquer notificacao programa
 
 | Item | Risco | Complexidade (0-10) |
 |------|-------|---------------------|
-| Proteger init OneSignal no HTML | Baixo | 1 |
-| Simplificar registro SW | Baixo | 2 |
-| Remover chamada em main.tsx | Baixo | 1 |
-| Melhorar erro VAPID | Baixo | 1 |
-| **Total** | | **5/40 - Muito abaixo do limite seguro** |
+| Login automatico no init | Baixo (ja existe a funcao) | 2 |
+| Verificacao de recipients | Baixo | 2 |
+| Fallback por tag | Baixo | 3 |
+| Atualizar onedoc.md | Zero | 1 |
+| **Total** | | **8/40 - Muito abaixo do limite seguro** |
 
 ---
 
 ## Checklist de Testes Manuais
 
-- [ ] Site NAO pisca/recarrega mais no preview
-- [ ] Console sem erros de OneSignal no preview (mostra apenas log de dominio ignorado)
-- [ ] VAPID ativa com sucesso ao clicar "Ativar"
-- [ ] Botao "Testar" VAPID envia notificacao
-- [ ] Em producao (board.infoprolab.com.br): OneSignal inicializa e ativa
-- [ ] Templates automaticos (meta batida, lembrete) continuam funcionando via edge function
+- [ ] Abrir o site em board.infoprolab.com.br e verificar no console se `[OneSignal] External user ID set:` aparece automaticamente
+- [ ] Clicar "Testar" no card OneSignal e verificar se a notificacao chega no celular/desktop
+- [ ] Verificar nos logs da edge function se `recipients` agora mostra valor > 0
+- [ ] Verificar na tabela push_logs se o status mostra "sent" com recipients
+- [ ] Testar envio de notificacao automatica (ex: criar tarefa com prazo vencido) e confirmar entrega
+- [ ] Verificar que o fallback por tag funciona caso external_id falhe
