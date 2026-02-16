@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { oneSignalUtils, initOneSignal } from '@/lib/push/oneSignalProvider';
+import { initOneSignal, oneSignalUtils } from '@/lib/push/oneSignalProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
@@ -58,6 +58,29 @@ export function useOneSignal() {
     init();
   }, []);
 
+  // Register subscription change callback to re-link external_id on iOS
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const handleSubscriptionChange = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        logger.log('[useOneSignal] Subscription changed, re-linking external_id');
+        await oneSignalUtils.setExternalUserId(user.id);
+        await oneSignalUtils.addTags({
+          app_version: '1.1',
+          platform: 'web',
+          user_id: user.id,
+        });
+        const subscribed = await oneSignalUtils.isSubscribed();
+        setIsSubscribed(subscribed);
+      }
+    };
+
+    oneSignalUtils.onSubscriptionChange(handleSubscriptionChange);
+    return () => oneSignalUtils.offSubscriptionChange(handleSubscriptionChange);
+  }, [isInitialized]);
+
   const subscribe = useCallback(async () => {
     if (!isInitialized) {
       const initialized = await initOneSignal();
@@ -67,20 +90,22 @@ export function useOneSignal() {
     try {
       setIsLoading(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await oneSignalUtils.setExternalUserId(user.id);
-      }
-      
+      // 1. Request permission FIRST — creates the subscriber on iOS
       const permissionGranted = await oneSignalUtils.requestPermission();
       if (!permissionGranted) {
         setPermission(Notification.permission);
         return false;
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 2. Wait for iOS PWA subscription to activate (iOS is slower)
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      if (user) {
+      const subscribed = await oneSignalUtils.isSubscribed();
+      
+      // 3. AFTER subscription exists, link external_id and tags
+      const { data: { user } } = await supabase.auth.getUser();
+      if (subscribed && user) {
+        await oneSignalUtils.setExternalUserId(user.id);
         await oneSignalUtils.addTags({
           app_version: '1.1',
           platform: 'web',
@@ -88,7 +113,6 @@ export function useOneSignal() {
         });
       }
       
-      const subscribed = await oneSignalUtils.isSubscribed();
       setIsSubscribed(subscribed);
       setPermission(Notification.permission);
       return subscribed;

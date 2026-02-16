@@ -90,7 +90,6 @@ Deno.serve(async (req) => {
 
         const fallbackData = {
           ...baseData,
-          included_segments: ['All'],
           filters: [
             { field: 'tag', key: 'user_id', relation: '=', value: payload.user_id },
           ],

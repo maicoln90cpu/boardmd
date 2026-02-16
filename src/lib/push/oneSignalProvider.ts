@@ -13,6 +13,7 @@ declare global {
 const ALLOWED_DOMAINS = ['board.infoprolab.com.br', 'localhost'];
 
 let initialized = false;
+const subscriptionChangeCallbacks: Set<() => void> = new Set();
 
 /**
  * Wait for OneSignal SDK to be ready (loaded via CDN in index.html)
@@ -75,6 +76,12 @@ function setupEventListeners() {
         optedIn: subscription?.current?.optedIn,
         id: subscription?.current?.id,
       });
+      // Notify all registered callbacks (used to re-link external_id on iOS)
+      if (subscription?.current?.optedIn) {
+        subscriptionChangeCallbacks.forEach(cb => {
+          try { cb(); } catch (e) { prodLogger.error('[OneSignal] Subscription callback error:', e); }
+        });
+      }
     });
 
     logger.log('[OneSignal] Event listeners registered');
@@ -90,6 +97,14 @@ function getOS() {
 export const oneSignalUtils = {
   isInitialized(): boolean {
     return initialized;
+  },
+
+  onSubscriptionChange(callback: () => void): void {
+    subscriptionChangeCallbacks.add(callback);
+  },
+
+  offSubscriptionChange(callback: () => void): void {
+    subscriptionChangeCallbacks.delete(callback);
   },
 
   async requestPermission(): Promise<boolean> {
@@ -201,8 +216,9 @@ export const oneSignalUtils = {
     let externalId = 'N/A';
     try {
       subscriptionId = OS?.User?.PushSubscription?.id || 'N/A';
-      // No direct getter for externalId, use onesignalId
-      externalId = OS?.User?.onesignalId || 'N/A';
+      // Try to get external_id from User identity
+      const identity = OS?.User?.getIdentity?.();
+      externalId = identity?.external_id || OS?.User?.onesignalId || 'N/A';
     } catch {}
 
     return {
