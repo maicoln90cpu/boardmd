@@ -31,6 +31,16 @@ export function useOneSignal() {
             setInitError('Falha ao carregar SDK OneSignal');
           }
         } else {
+          // Vincular external_id em cada carregamento para garantir entrega via API
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await oneSignalUtils.setExternalUserId(user.id);
+            await oneSignalUtils.addTags({
+              app_version: '1.1',
+              platform: 'web',
+              user_id: user.id,
+            });
+          }
           await new Promise(resolve => setTimeout(resolve, 500));
           const subscribed = await oneSignalUtils.isSubscribed();
           setIsSubscribed(subscribed);

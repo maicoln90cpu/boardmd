@@ -5,6 +5,7 @@
 > - https://documentation.onesignal.com/docs/en/web-push-setup
 > - https://documentation.onesignal.com/docs/en/web-sdk-setup
 > - https://documentation.onesignal.com/docs/en/web-push-for-ios
+> - https://documentation.onesignal.com/docs/en/custom-events
 
 ---
 
@@ -320,5 +321,210 @@ OneSignal.setConsentGiven(true);
 | API Base | `https://api.onesignal.com/notifications` |
 | Dashboard | `https://dashboard.onesignal.com` |
 | Docs | `https://documentation.onesignal.com/docs/en/web-push-setup` |
+| SDK Reference | `https://documentation.onesignal.com/docs/en/web-sdk-reference` |
+| iOS Guide | `https://documentation.onesignal.com/docs/en/web-push-for-ios` |
+
+---
+
+## 6. Custom Events — Documentação Completa
+
+> Fonte: https://documentation.onesignal.com/docs/en/custom-events
+
+### O que são Custom Events?
+
+Custom Events são ações de usuário (ou inação) nomeadas que você envia ao OneSignal. Eventos são enviados do seu app, website ou sistemas externos para acionar automações, controlar fluxos de Journey e personalizar experiências em tempo real.
+
+**Exemplos:**
+- Completed onboarding
+- Made a purchase
+- Abandoned a cart
+- Canceled a subscription
+- Reached a new game level
+
+**Quando o OneSignal recebe um Custom Event, você pode:**
+- Iniciar um Journey
+- Continuar um Journey com step "Wait Until"
+- Remover usuários de um Journey
+- Personalizar mensagens usando propriedades do evento
+- Segmentar usuários por comportamento (Early Access)
+
+### Quando usar Custom Events?
+
+**Use quando:**
+- Mensagens devem responder a comportamento do usuário em tempo real
+- Os dados representam algo que aconteceu (não estado permanente)
+- Você precisa de propriedades do evento para personalização ou lógica de Journey
+
+**NÃO use quando:**
+- Você quer armazenar atributos de usuário de longo prazo (use Tags)
+
+> Custom Events representam algo que aconteceu em um ponto específico no tempo. Diferente de Tags, eles NÃO atualizam permanentemente o perfil do usuário — eles registram comportamento.
+
+### Estrutura do Custom Event
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|------------|-----------|
+| `name` | string | Sim | Nome do evento. Máximo 128 caracteres |
+| `properties` | object | Não | Parâmetros que descrevem o evento (ex: nome do plano, ID do produto, preço) |
+| `external_id` | string | Sim* | External ID do usuário. *Obrigatório via API (external_id OU onesignal_id) |
+| `timestamp` | string | Não | Horário do evento em ISO 8601 |
+| `idempotency_key` | string | Não | UUID único para prevenir processamento duplicado |
+
+**Limites de tamanho:**
+- Payload máximo por evento: 2024 bytes
+- Tamanho máximo da request (múltiplos eventos): 1 MB
+
+### Como enviar Custom Events
+
+#### 1. Create Custom Events API
+
+```json
+POST https://api.onesignal.com/apps/{app_id}/events
+{
+  "events": [
+    {
+      "name": "purchase",
+      "properties": {
+        "item": "T-shirt",
+        "size": "small",
+        "color": "blue",
+        "price": 24.99
+      },
+      "external_id": "user_12345",
+      "timestamp": "2025-10-21T19:09:32.263Z",
+      "idempotency_key": "123e4567-e89b-12d3-a456-426614174000"
+    }
+  ]
+}
+```
+
+#### 2. trackEvent() via SDK (Mobile e Web)
+
+```typescript
+// Web SDK
+OneSignal.trackEvent("purchase", {
+  item: "T-shirt",
+  price: 24.99,
+});
+```
+
+#### 3. Integrações externas
+
+Todos os eventos são tratados igualmente para fins de billing, independente da fonte.
+
+### Verificar que eventos foram recebidos
+
+Após enviar eventos, confirme no dashboard: **Data > Custom Events**
+
+#### Aba Event List
+- Visão geral de todos os Custom Events organizados por nome
+- Para cada tipo de evento: total ingerido, evento mais recente (JSON completo), fonte (SDK, API, integração), timestamp
+- Clique em um evento para ver detalhes: Source Breakdown, Activities (10 mais recentes), Usage (Journeys ou segmentos)
+
+#### Aba Event Activity
+- Feed ao vivo dos eventos mais recentes
+- Filtrar por nome, fonte ou external ID
+- Inspecionar payloads JSON completos
+- Útil para debug de integrações
+- **Não atualiza automaticamente** — refresh manual necessário
+
+### Usar Custom Events no OneSignal
+
+#### 1. Trigger de entrada/saída de Journey
+Defina um Custom Event como regra de entrada ou saída de Journey.
+
+**Exemplo:**
+- `signup_completed` → Iniciar onboarding ou remover de Journey de trial
+- `purchase` → Enviar confirmação e cross-sell ou remover de Journey de carrinho abandonado
+
+#### 2. Controlar fluxo de Journey (Wait Until)
+Use step "Wait Until" para segurar usuários até um Custom Event ocorrer.
+
+**Exemplo:**
+- Esperar `purchase` após `added_to_cart`
+- Definir janela de expiração: se o evento não ocorrer a tempo, enviar mensagem de fallback ou sair do Journey
+
+#### 3. Personalizar Journeys com propriedades do evento
+Referenciar propriedades usando Liquid nos templates:
+
+```liquid
+Thanks for purchasing {{ journey.first_event.properties.item }}!
+```
+
+#### 4. Segmentar usuários com Custom Events (Early Access)
+Criar segmento baseado na ocorrência de um Custom Event.
+
+**Limitações atuais:**
+- Não suportado com Email Warm Up ou A/B tests
+- Não pode acionar Journeys
+- Não pode ser combinado com outros filtros de segmento
+
+Para solicitar acesso: email support@onesignal.com com nome da empresa e App ID(s).
+
+### Disponibilidade e custos de retenção
+
+Custom Events estão disponíveis em todos os planos pagos.
+
+### Tags vs Custom Events
+
+| Feature | Tags | Custom Events |
+|---------|------|---------------|
+| Uso de dados | Segmentação e personalização | Trigger Journeys, Wait Until, personalização em Journeys |
+| Retenção | Lifetime | 30+ dias (lifetime disponível) |
+| Formato | Key-value (strings ou números) | JSON |
+| Fonte | SDK, API ou integrações (limitado) | SDK, API ou integrações |
+| Acesso | Segmentação e personalização de mensagens | Journeys e personalização em templates de Journey, Segmentação (Coming soon) |
+
+**Distinção chave:**
+- **Tags** são propriedades do usuário (Nome, Status da Conta, Localização) — estáticas
+- **Events** são coisas que o usuário fez (Compra, Completar Nível, Convidar Amigo) — dinâmicas
+
+**Na prática, use ambos:**
+- Tags para propriedades estáticas que não mudam frequentemente
+- Custom Events para cenários em tempo real, segmentação complexa e workflows sofisticados de Journey
+
+### Exemplo de integração no nosso sistema
+
+A edge function `send-onesignal` pode ser estendida para também enviar Custom Events via API:
+
+```typescript
+// Enviar Custom Event via API
+const eventPayload = {
+  events: [{
+    name: "task_completed",
+    properties: {
+      task_title: "Minha tarefa",
+      category: "trabalho",
+    },
+    external_id: userId,
+    timestamp: new Date().toISOString(),
+    idempotency_key: crypto.randomUUID(),
+  }]
+};
+
+await fetch(`https://api.onesignal.com/apps/${APP_ID}/events`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Basic ${REST_API_KEY}`,
+  },
+  body: JSON.stringify(eventPayload),
+});
+```
+
+---
+
+## 7. Referências Rápidas (Atualizada)
+
+| Item | Valor/URL |
+|------|-----------|
+| SDK CDN | `https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js` |
+| SW CDN | `https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js` |
+| React Package | `react-onesignal` v3.4.6 |
+| Notifications API | `https://api.onesignal.com/notifications` |
+| Custom Events API | `https://api.onesignal.com/apps/{app_id}/events` |
+| Dashboard | `https://dashboard.onesignal.com` |
+| Docs | `https://documentation.onesignal.com/docs/en/web-push-setup` |
+| Custom Events Docs | `https://documentation.onesignal.com/docs/en/custom-events` |
 | SDK Reference | `https://documentation.onesignal.com/docs/en/web-sdk-reference` |
 | iOS Guide | `https://documentation.onesignal.com/docs/en/web-push-for-ios` |
