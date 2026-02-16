@@ -7,10 +7,11 @@ export function useOneSignal() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isLoading, setIsLoading] = useState(true);
+  const [diagnostics, setDiagnostics] = useState<Record<string, string>>({});
 
-  // Verificar status inicial
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
@@ -22,14 +23,23 @@ export function useOneSignal() {
         const initialized = await initOneSignal();
         setIsInitialized(initialized);
         
-        if (initialized) {
-          // Aguardar um momento para o SDK estar totalmente pronto
+        if (!initialized) {
+          const hostname = window.location.hostname;
+          if (hostname !== 'board.infoprolab.com.br' && hostname !== 'localhost') {
+            setInitError(`Disponível apenas em board.infoprolab.com.br (atual: ${hostname})`);
+          } else {
+            setInitError('Falha ao carregar SDK OneSignal');
+          }
+        } else {
           await new Promise(resolve => setTimeout(resolve, 500));
-          
           const subscribed = await oneSignalUtils.isSubscribed();
           setIsSubscribed(subscribed);
           setPermission(Notification.permission);
         }
+
+        // Load diagnostics
+        const diag = await oneSignalUtils.getDiagnostics();
+        setDiagnostics(diag);
       }
       
       setIsLoading(false);
@@ -38,55 +48,39 @@ export function useOneSignal() {
     init();
   }, []);
 
-  // Solicitar permissão e inscrever
   const subscribe = useCallback(async () => {
     if (!isInitialized) {
-      logger.warn('[useOneSignal] Not initialized, trying to initialize...');
       const initialized = await initOneSignal();
-      if (!initialized) {
-        logger.error('[useOneSignal] Failed to initialize');
-        return false;
-      }
+      if (!initialized) return false;
     }
 
     try {
       setIsLoading(true);
       
-      // 1. Vincular usuário ANTES de solicitar permissão
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        logger.log('[useOneSignal] Linking user:', user.id);
         await oneSignalUtils.setExternalUserId(user.id);
       }
       
-      // 2. Solicitar permissão E fazer opt-in
       const permissionGranted = await oneSignalUtils.requestPermission();
-      
       if (!permissionGranted) {
-        logger.warn('[useOneSignal] Permission not granted');
         setPermission(Notification.permission);
         return false;
       }
       
-      // 3. Aguardar propagação
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // 4. Adicionar tags
       if (user) {
         await oneSignalUtils.addTags({
           app_version: '1.1',
           platform: 'web',
           user_id: user.id,
         });
-        logger.log('[useOneSignal] Tags added for user:', user.id);
       }
       
-      // 5. Verificar inscrição final
       const subscribed = await oneSignalUtils.isSubscribed();
       setIsSubscribed(subscribed);
       setPermission(Notification.permission);
-      
-      logger.log('[useOneSignal] Subscribe complete. Subscribed:', subscribed);
       return subscribed;
     } catch (error) {
       logger.error('[useOneSignal] Subscribe error:', error);
@@ -96,10 +90,8 @@ export function useOneSignal() {
     }
   }, [isInitialized]);
 
-  // Cancelar inscrição
   const unsubscribe = useCallback(async () => {
     if (!isInitialized) return false;
-
     try {
       setIsLoading(true);
       await oneSignalUtils.unsubscribe();
@@ -113,16 +105,12 @@ export function useOneSignal() {
     }
   }, [isInitialized]);
 
-  // Enviar notificação de teste
   const sendTestNotification = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        logger.warn('[useOneSignal] No user for test notification');
-        return false;
-      }
+      if (!user) return false;
 
-      const { data, error } = await supabase.functions.invoke('send-onesignal', {
+      const { error } = await supabase.functions.invoke('send-onesignal', {
         body: {
           user_id: user.id,
           title: '🔔 Teste OneSignal',
@@ -132,15 +120,9 @@ export function useOneSignal() {
         },
       });
 
-      if (error) {
-        logger.error('[useOneSignal] Test notification error:', error);
-        return false;
-      }
-
-      logger.log('[useOneSignal] Test notification sent:', data);
+      if (error) return false;
       return true;
-    } catch (error) {
-      logger.error('[useOneSignal] Test notification error:', error);
+    } catch {
       return false;
     }
   }, []);
@@ -149,8 +131,10 @@ export function useOneSignal() {
     isSupported,
     isSubscribed,
     isInitialized,
+    initError,
     permission,
     isLoading,
+    diagnostics,
     subscribe,
     unsubscribe,
     sendTestNotification,
