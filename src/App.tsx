@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
+import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import { useGoalTaskIntegration } from "@/hooks/useGoalTaskIntegration";
 import { useNotificationActions } from "@/hooks/useNotificationActions";
@@ -206,6 +207,7 @@ const App = () => (
                     <Sonner />
                     <OnlineStatusIndicator />
                     <KeyboardShortcutsModal />
+                    <AddToHomeScreenBanner />
                     <AppContent />
                   </SavingTasksProvider>
                 </SwipeProvider>

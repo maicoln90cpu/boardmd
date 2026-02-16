@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDeviceName } from "@/lib/push/pushNotifications";
+import { getPushSWRegistration } from "@/lib/push/swPushRegistration";
 import { logger } from "@/lib/logger";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -33,7 +34,7 @@ export function useVapidPush() {
         setPermission(Notification.permission);
 
         try {
-          const registration = await navigator.serviceWorker.ready;
+          const registration = await getPushSWRegistration();
           const subscription = await (registration as any).pushManager?.getSubscription();
           setIsSubscribed(!!subscription);
         } catch (e) {
@@ -64,8 +65,8 @@ export function useVapidPush() {
         return false;
       }
 
-      // Use the Workbox SW (main SW), not the OneSignal one
-      const registration = await navigator.serviceWorker.ready;
+      // Use the dedicated push SW for VAPID subscriptions
+      const registration = await getPushSWRegistration();
 
       const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
@@ -110,7 +111,7 @@ export function useVapidPush() {
     try {
       setIsLoading(true);
 
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getPushSWRegistration();
       const subscription = await (registration as any).pushManager?.getSubscription();
       if (subscription) {
         const endpoint = subscription.endpoint;
