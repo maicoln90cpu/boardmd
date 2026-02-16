@@ -1,79 +1,62 @@
 
-# Plano: Corrigir Entrega de Notificacoes OneSignal via API
 
-## Diagnostico Principal
+# Plano: Corrigir Vinculacao external_id no iOS e Melhorar Edge Function
 
-### Por que as notificacoes do dashboard chegam mas as da plataforma nao?
+## Diagnostico
 
-**Causa raiz identificada nos logs da edge function:**
+### Problema confirmado pelo suporte OneSignal
 
-A resposta do OneSignal mostra:
+O `external_id` NAO esta sendo vinculado aos subscribers iOS. Nos logs da edge function, TODAS as tentativas mostram `recipients: 0` tanto por `external_id` quanto por tag `user_id`.
+
+### Causa raiz no codigo
+
+No `useOneSignal.ts`, o fluxo de subscribe faz:
+
+```text
+1. setExternalUserId(user.id)  ← linha 72 - ANTES da permissao
+2. requestPermission()          ← linha 75 - subscription ainda nao existe
+3. addTags(...)                 ← linha 84 - DEPOIS, mas pode ser tarde demais no iOS
 ```
-{"id":"ee9c90d9-...","external_id":null}
-```
 
-- `external_id: null` = OneSignal NAO encontrou nenhum subscriber com aquele external_id
-- Sem campo `recipients` = 0 destinatarios = notificacao criada mas NAO entregue a ninguem
+No iOS, o `OneSignal.login(userId)` chamado ANTES da subscription existir nao vincula nada, porque o subscriber ainda nao foi criado. O login precisa ser chamado DEPOIS que a permissao e concedida e a subscription esta ativa.
 
-**Por que isso acontece:**
+### Problema adicional na edge function
 
-O `OneSignal.login(userId)` (que vincula o Supabase user ID como external_id no OneSignal) so e chamado quando o usuario clica "Ativar" no card do OneSignal (`useOneSignal.ts` linha 62). Ele NAO e chamado em cada carregamento da pagina. Se o usuario:
-- Ativou o OneSignal antes dessa funcionalidade existir
-- Limpou cache do navegador
-- O SDK reiniciou
-
-...a vinculacao se perde. O OneSignal sabe que existe um subscriber (por isso o dashboard consegue enviar para "All Subscribers"), mas NAO sabe qual external_id pertence a ele.
-
-**Dashboard funciona** porque envia para segmentos ("Subscribed Users") que usa o subscription ID interno do OneSignal.
-
-**API nao funciona** porque usa `include_aliases.external_id` que requer `OneSignal.login()` ativo.
+O fallback usa `included_segments: ['All']` junto com `filters`, e o OneSignal retorna warning: "included_segments are ignored since filters are set". Isso nao causa erro, mas e incorreto.
 
 ---
 
 ## Correcoes
 
-### 1. Chamar OneSignal.login(userId) em CADA carregamento de pagina
+### 1. useOneSignal.ts - Reordenar fluxo de subscribe
 
-Adicionar no `useOneSignal.ts`: apos a inicializacao bem-sucedida, verificar se o usuario esta autenticado no Supabase e chamar `OneSignal.login(userId)` automaticamente. Isso garante que o external_id esteja SEMPRE vinculado.
+Mover `setExternalUserId` e `addTags` para DEPOIS da permissao ser concedida e aguardar a subscription ficar ativa:
 
-Atualmente (linhas 33-37):
-```typescript
-} else {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const subscribed = await oneSignalUtils.isSubscribed();
-  setIsSubscribed(subscribed);
-  setPermission(Notification.permission);
-}
+```text
+ANTES (bugado):
+  1. login(userId)         ← subscriber nao existe ainda
+  2. requestPermission()
+  3. wait 1500ms
+  4. addTags()
+
+DEPOIS (corrigido):
+  1. requestPermission()   ← cria o subscriber
+  2. wait 2000ms           ← aguardar subscription ativar (iOS e mais lento)
+  3. login(userId)         ← agora o subscriber existe
+  4. addTags()             ← tags vinculam ao subscriber correto
 ```
 
-Proposta - adicionar login automatico:
-```typescript
-} else {
-  // Vincular external_id em cada carregamento
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await oneSignalUtils.setExternalUserId(user.id);
-  }
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const subscribed = await oneSignalUtils.isSubscribed();
-  setIsSubscribed(subscribed);
-  setPermission(Notification.permission);
-}
-```
+### 2. useOneSignal.ts - Re-login apos subscription change
 
-### 2. Adicionar log de recipients na edge function
+Adicionar um listener de `subscriptionChange` que re-chama `login(userId)` sempre que a subscription muda. Isso garante que se o iOS criar a subscription com atraso, o external_id sera vinculado.
 
-O `send-onesignal` loga a resposta mas nao verifica o campo `recipients`. Adicionar verificacao:
-- Se `recipients === 0`: logar warning e retornar erro claro ("Nenhum dispositivo encontrado para este usuario")
-- Salvar `recipients` no push_logs para facilitar debug
+### 3. Edge function - Remover included_segments do fallback
 
-### 3. Adicionar fallback para segmento com filtro
+Remover `included_segments: ['All']` do fallback e usar apenas `filters`. Isso elimina o warning do OneSignal.
 
-Se `include_aliases` resultar em 0 recipients, a edge function pode tentar um fallback usando `included_segments: ['All']` com filtro por tag `user_id`. Isso funciona se as tags foram definidas no subscribe.
+### 4. Diagnostico - Mostrar external_id real
 
-### 4. Atualizar onedoc.md com documentacao de Custom Events
-
-Anexar toda a documentacao de Custom Events fornecida ao arquivo onedoc.md.
+No diagnostico, tentar obter o external_id real via `OneSignal.User.getIdentity()` ou similar para confirmar a vinculacao.
 
 ---
 
@@ -81,34 +64,43 @@ Anexar toda a documentacao de Custom Events fornecida ao arquivo onedoc.md.
 
 | Arquivo | Alteracao |
 |---------|----------|
-| `src/hooks/useOneSignal.ts` | Chamar `OneSignal.login(userId)` no init automatico |
-| `supabase/functions/send-onesignal/index.ts` | Verificar `recipients`, log de warning, fallback |
-| `onedoc.md` | Adicionar secao de Custom Events |
+| `src/hooks/useOneSignal.ts` | Reordenar subscribe: permissao primeiro, login depois; adicionar re-login em subscription change |
+| `src/lib/push/oneSignalProvider.ts` | Adicionar callback de subscription change que re-faz login; melhorar getDiagnostics |
+| `supabase/functions/send-onesignal/index.ts` | Remover `included_segments` do fallback |
 
 ---
 
 ## Detalhes Tecnicos
 
-### send-onesignal - Verificacao de recipients e fallback
-
-Apos receber a resposta do OneSignal, verificar:
+### useOneSignal.ts - Novo fluxo subscribe
 
 ```text
-1. Se result.recipients === 0 ou result.recipients undefined:
-   - Logar warning: "0 recipients com external_id, tentando fallback por tag"
-   - Tentar novamente com:
-     included_segments: ['All']
-     filters: [{ field: 'tag', key: 'user_id', relation: '=', value: payload.user_id }]
-   - Se fallback tambem falhar, retornar erro claro
-2. Salvar recipients no push_logs
+subscribe():
+  1. requestPermission() + optIn()
+  2. await 2000ms (iOS precisa mais tempo)
+  3. verificar isSubscribed()
+  4. SE subscribed:
+     a. login(userId) — vincula external_id
+     b. addTags({ user_id, platform, app_version })
+  5. retornar resultado
 ```
 
-### useOneSignal.ts - Login automatico
+### oneSignalProvider.ts - Listener de subscription
 
-No init (useEffect), apos confirmar que o SDK inicializou:
-1. Buscar usuario do Supabase via `supabase.auth.getUser()`
-2. Chamar `oneSignalUtils.setExternalUserId(user.id)` (que faz `OneSignal.login()`)
-3. Isso garante que o external_id esteja sempre atualizado
+No `setupEventListeners`, o listener de `PushSubscription.change` ja existe mas so faz log. Adicionar logica para:
+- Quando `optedIn` muda para `true`, chamar um callback registrado externamente
+- O `useOneSignal` registra esse callback para re-fazer `login(userId)`
+
+### send-onesignal - Fallback limpo
+
+```text
+ANTES:
+  included_segments: ['All'],
+  filters: [{ field: 'tag', key: 'user_id', ... }]
+
+DEPOIS:
+  filters: [{ field: 'tag', key: 'user_id', ... }]
+```
 
 ---
 
@@ -116,19 +108,22 @@ No init (useEffect), apos confirmar que o SDK inicializou:
 
 | Item | Risco | Complexidade (0-10) |
 |------|-------|---------------------|
-| Login automatico no init | Baixo (ja existe a funcao) | 2 |
-| Verificacao de recipients | Baixo | 2 |
-| Fallback por tag | Baixo | 3 |
-| Atualizar onedoc.md | Zero | 1 |
-| **Total** | | **8/40 - Muito abaixo do limite seguro** |
+| Reordenar subscribe | Baixo | 3 |
+| Re-login em subscription change | Baixo | 2 |
+| Remover included_segments | Zero | 1 |
+| Melhorar diagnostico | Zero | 1 |
+| **Total** | | **7/40 - Abaixo do limite seguro** |
 
 ---
 
 ## Checklist de Testes Manuais
 
-- [ ] Abrir o site em board.infoprolab.com.br e verificar no console se `[OneSignal] External user ID set:` aparece automaticamente
-- [ ] Clicar "Testar" no card OneSignal e verificar se a notificacao chega no celular/desktop
-- [ ] Verificar nos logs da edge function se `recipients` agora mostra valor > 0
-- [ ] Verificar na tabela push_logs se o status mostra "sent" com recipients
-- [ ] Testar envio de notificacao automatica (ex: criar tarefa com prazo vencido) e confirmar entrega
-- [ ] Verificar que o fallback por tag funciona caso external_id falhe
+- [ ] No iOS: adicionar site a tela inicial, abrir como PWA
+- [ ] Clicar "Ativar" no card OneSignal
+- [ ] Aceitar permissao de notificacao
+- [ ] Verificar no diagnostico se "External User ID" mostra valor (nao "N/A")
+- [ ] Clicar "Testar" e verificar se a notificacao chega no iOS
+- [ ] Verificar nos logs da edge function se `recipients > 0`
+- [ ] Verificar que o warning "included_segments are ignored" desapareceu dos logs
+- [ ] No Android/Desktop: confirmar que o fluxo continua funcionando normalmente
+
