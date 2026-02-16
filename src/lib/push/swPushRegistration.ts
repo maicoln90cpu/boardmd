@@ -18,10 +18,8 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
     }
 
     try {
-      // Register sw-push.js with a dedicated scope
-      const registration = await navigator.serviceWorker.register('/sw-push.js', {
-        scope: '/push/',
-      });
+      // Register sw-push.js without restrictive scope so it controls all pages
+      const registration = await navigator.serviceWorker.register('/sw-push.js');
 
       pushSWRegistration = registration;
       logger.log('[swPushRegistration] Push SW registered with scope:', registration.scope);

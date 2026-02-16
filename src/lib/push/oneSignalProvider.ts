@@ -1,73 +1,76 @@
-import OneSignal from 'react-onesignal';
 import { logger, prodLogger } from '@/lib/logger';
 
-let initPromise: Promise<boolean> | null = null;
+// OneSignal is initialized via CDN script in index.html
+// We use window.OneSignal directly instead of react-onesignal package
 
-export const initOneSignal = async (): Promise<boolean> => {
-  if (initPromise) {
-    logger.log('[OneSignal] Returning existing init promise');
-    return initPromise;
+declare global {
+  interface Window {
+    OneSignal?: any;
+    OneSignalDeferred?: any[];
   }
+}
 
-  // App ID é público e seguro de expor no frontend
-  const appId = '36035405-9aa5-4e4f-b6cf-237d873bcd47';
+const ALLOWED_DOMAINS = ['board.infoprolab.com.br', 'localhost'];
 
-  initPromise = (async () => {
-    try {
-      await OneSignal.init({
-        appId,
-        allowLocalhostAsSecureOrigin: true,
-        serviceWorkerParam: {
-          scope: '/onesignal/',
-        },
-        serviceWorkerPath: '/OneSignalSDKWorker.js',
-      });
-
-      // Register SDK event listeners
-      setupEventListeners();
-
-      logger.log('[OneSignal] Initialized successfully');
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-
-      if (errorMessage.includes('already initialized')) {
-        logger.log('[OneSignal] SDK was already initialized (OK)');
-        return true;
-      }
-
-      prodLogger.error('[OneSignal] Init error:', error);
-      initPromise = null;
-      return false;
-    }
-  })();
-
-  return initPromise;
-};
+let initialized = false;
 
 /**
- * Setup OneSignal SDK event listeners for better observability
+ * Wait for OneSignal SDK to be ready (loaded via CDN in index.html)
  */
+export const initOneSignal = async (): Promise<boolean> => {
+  if (initialized) return true;
+
+  const hostname = window.location.hostname;
+  const isAllowed = ALLOWED_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`));
+
+  if (!isAllowed) {
+    logger.warn(`[OneSignal] Domain "${hostname}" not allowed. OneSignal only works on: ${ALLOWED_DOMAINS.join(', ')}`);
+    return false;
+  }
+
+  try {
+    // Wait up to 5s for the SDK to load from CDN
+    let attempts = 0;
+    while (!window.OneSignal && attempts < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+
+    if (!window.OneSignal) {
+      prodLogger.error('[OneSignal] SDK not loaded after 5s. Check CDN script in index.html');
+      return false;
+    }
+
+    // SDK is already initialized by the script in index.html via OneSignalDeferred
+    // Just set up event listeners
+    setupEventListeners();
+    initialized = true;
+    logger.log('[OneSignal] SDK ready');
+    return true;
+  } catch (error) {
+    prodLogger.error('[OneSignal] Init error:', error);
+    return false;
+  }
+};
+
 function setupEventListeners() {
   try {
-    // Notification click event
-    OneSignal.Notifications.addEventListener('click', (event: any) => {
+    const OS = window.OneSignal;
+    if (!OS?.Notifications) return;
+
+    OS.Notifications.addEventListener('click', (event: any) => {
       logger.log('[OneSignal] Notification clicked:', event?.notification?.title);
     });
 
-    // Foreground notification display
-    OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
+    OS.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
       logger.log('[OneSignal] Foreground notification:', event?.notification?.title);
-      // Let it display normally (don't preventDefault)
     });
 
-    // Permission change
-    OneSignal.Notifications.addEventListener('permissionChange', (permission: boolean) => {
+    OS.Notifications.addEventListener('permissionChange', (permission: boolean) => {
       logger.log('[OneSignal] Permission changed:', permission);
     });
 
-    // Push subscription change
-    OneSignal.User.PushSubscription.addEventListener('change', (subscription: any) => {
+    OS.User?.PushSubscription?.addEventListener('change', (subscription: any) => {
       logger.log('[OneSignal] Subscription changed:', {
         optedIn: subscription?.current?.optedIn,
         id: subscription?.current?.id,
@@ -80,27 +83,24 @@ function setupEventListeners() {
   }
 }
 
+function getOS() {
+  return window.OneSignal;
+}
+
 export const oneSignalUtils = {
-  // Verificar se está inicializado
   isInitialized(): boolean {
-    return initPromise !== null;
+    return initialized;
   },
 
-  // Solicitar permissão de notificação E fazer opt-in
   async requestPermission(): Promise<boolean> {
     try {
-      // 1. Solicitar permissão nativa do navegador
       const permission = await Notification.requestPermission();
-      
       if (permission !== 'granted') {
         logger.warn('[OneSignal] Permission denied by user');
         return false;
       }
-      
-      // 2. Fazer opt-in no OneSignal (CRÍTICO!)
-      await OneSignal.User.PushSubscription.optIn();
+      await getOS()?.User?.PushSubscription?.optIn();
       logger.log('[OneSignal] Permission granted and opted in');
-      
       return true;
     } catch (error) {
       prodLogger.error('[OneSignal] Permission request error:', error);
@@ -108,100 +108,111 @@ export const oneSignalUtils = {
     }
   },
 
-  // Verificar se está inscrito
   async isSubscribed(): Promise<boolean> {
     try {
-      const subscription = OneSignal.User.PushSubscription;
-      return subscription.optedIn ?? false;
+      return getOS()?.User?.PushSubscription?.optedIn ?? false;
     } catch (error) {
-      prodLogger.error('[OneSignal] Subscription check error:', error);
       return false;
     }
   },
 
-  // Obter ID do push subscription
   async getSubscriptionId(): Promise<string | null> {
     try {
-      const subscription = OneSignal.User.PushSubscription;
-      return subscription.id ?? null;
-    } catch (error) {
-      prodLogger.error('[OneSignal] Get subscription ID error:', error);
+      return getOS()?.User?.PushSubscription?.id ?? null;
+    } catch {
       return null;
     }
   },
 
-  // Vincular usuário Supabase ao OneSignal
   async setExternalUserId(userId: string): Promise<void> {
     try {
-      await OneSignal.login(userId);
+      await getOS()?.login(userId);
       logger.log('[OneSignal] External user ID set:', userId);
     } catch (error) {
       prodLogger.error('[OneSignal] Set external user ID error:', error);
     }
   },
 
-  // Adicionar tags para segmentação
   async addTags(tags: Record<string, string>): Promise<void> {
     try {
-      await OneSignal.User.addTags(tags);
+      await getOS()?.User?.addTags(tags);
       logger.log('[OneSignal] Tags added:', tags);
     } catch (error) {
       prodLogger.error('[OneSignal] Add tags error:', error);
     }
   },
 
-  // Remover tags
   async removeTags(tagKeys: string[]): Promise<void> {
     try {
-      await OneSignal.User.removeTags(tagKeys);
-      logger.log('[OneSignal] Tags removed:', tagKeys);
+      await getOS()?.User?.removeTags(tagKeys);
     } catch (error) {
       prodLogger.error('[OneSignal] Remove tags error:', error);
     }
   },
 
-  // Cancelar inscrição
   async unsubscribe(): Promise<void> {
     try {
-      await OneSignal.User.PushSubscription.optOut();
+      await getOS()?.User?.PushSubscription?.optOut();
       logger.log('[OneSignal] Unsubscribed');
     } catch (error) {
       prodLogger.error('[OneSignal] Unsubscribe error:', error);
     }
   },
 
-  // Reinscrever
   async resubscribe(): Promise<void> {
     try {
-      await OneSignal.User.PushSubscription.optIn();
-      logger.log('[OneSignal] Resubscribed');
+      await getOS()?.User?.PushSubscription?.optIn();
     } catch (error) {
       prodLogger.error('[OneSignal] Resubscribe error:', error);
     }
   },
 
-  // Obter permissão atual
   getPermissionStatus(): NotificationPermission {
-    if (!('Notification' in window)) {
-      return 'denied';
-    }
+    if (!('Notification' in window)) return 'denied';
     return Notification.permission;
   },
 
-  // Verificar suporte
   isSupported(): boolean {
     return 'Notification' in window && 'serviceWorker' in navigator;
   },
 
-  // Logout (remover external user ID)
   async logout(): Promise<void> {
     try {
-      await OneSignal.logout();
-      logger.log('[OneSignal] Logged out');
+      await getOS()?.logout();
     } catch (error) {
       prodLogger.error('[OneSignal] Logout error:', error);
     }
   },
-};
 
-export default OneSignal;
+  /** Diagnostic info for UI */
+  async getDiagnostics(): Promise<Record<string, string>> {
+    const OS = getOS();
+    const hostname = window.location.hostname;
+    const isAllowed = ALLOWED_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`));
+
+    let swStatus = 'N/A';
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      const osSW = regs.find(r => r.active?.scriptURL?.includes('OneSignal'));
+      swStatus = osSW ? 'Encontrado' : 'Não encontrado';
+    } catch { swStatus = 'Erro'; }
+
+    let subscriptionId = 'N/A';
+    let externalId = 'N/A';
+    try {
+      subscriptionId = OS?.User?.PushSubscription?.id || 'N/A';
+      // No direct getter for externalId, use onesignalId
+      externalId = OS?.User?.onesignalId || 'N/A';
+    } catch {}
+
+    return {
+      'App ID': '36035...47',
+      'Domínio': isAllowed ? `✅ ${hostname}` : `❌ ${hostname} (esperado: board.infoprolab.com.br)`,
+      'SDK Carregado': OS ? '✅ Sim' : '❌ Não',
+      'Permissão': Notification.permission,
+      'Service Worker': swStatus,
+      'Subscription ID': subscriptionId,
+      'External User ID': externalId,
+    };
+  },
+};
