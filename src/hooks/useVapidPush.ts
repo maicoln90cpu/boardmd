@@ -99,8 +99,9 @@ export function useVapidPush() {
       setIsSubscribed(true);
       logger.log("[useVapidPush] Subscribed successfully");
       return true;
-    } catch (e) {
-      logger.error("[useVapidPush] Subscribe error:", e);
+    } catch (e: any) {
+      const msg = e?.message || String(e);
+      logger.error("[useVapidPush] Subscribe error:", msg);
       return false;
     } finally {
       setIsLoading(false);
