@@ -338,28 +338,21 @@ Deno.serve(async (req: Request) => {
           .in("user_id", users.map(u => u.id));
         
         if (subscriptions && subscriptions.length > 0) {
-          // Chamar a função send-push para cada subscription
-          const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
-          const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-          const vapidEmail = Deno.env.get("VAPID_EMAIL");
+          console.log(`[health-check] Sending push alerts to ${subscriptions.length} devices`);
           
-          if (vapidPublicKey && vapidPrivateKey && vapidEmail) {
-            console.log(`[health-check] Sending push alerts to ${subscriptions.length} devices`);
-            
-            // Criar logs de push para cada envio
-            const pushLogs = subscriptions.map(sub => ({
-              user_id: sub.user_id,
-              title: "⚠️ Alerta do Sistema",
-              body: `Módulos críticos detectados: ${criticalNames}`,
-              status: "pending",
-              notification_type: "health_alert",
-              data: { modules: criticalModules, summary },
-            }));
-            
-            await supabase.from("push_logs").insert(pushLogs);
-            
-            alerts_sent = true;
-          }
+          // Criar logs de push para cada envio
+          const pushLogs = subscriptions.map(sub => ({
+            user_id: sub.user_id,
+            title: "⚠️ Alerta do Sistema",
+            body: `Módulos críticos detectados: ${criticalNames}`,
+            status: "pending",
+            notification_type: "health_alert",
+            data: { modules: criticalModules, summary },
+          }));
+          
+          await supabase.from("push_logs").insert(pushLogs);
+          
+          alerts_sent = true;
         }
       }
     } catch (alertError) {

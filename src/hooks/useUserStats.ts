@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 
 export interface UserStats {
   id: string;
@@ -96,6 +97,11 @@ export function useUserStats() {
         title: "🎉 Nível Aumentado!",
         description: `Parabéns! Você chegou ao nível ${newLevel}`,
       });
+
+      // Push notification de nível
+      if (user?.id) {
+        oneSignalNotifier.sendAchievement(user.id, `Nível ${newLevel} alcançado!`, points);
+      }
     }
   };
 
@@ -108,6 +114,11 @@ export function useUserStats() {
         current_streak: newStreak,
         best_streak: Math.max(newStreak, stats.best_streak),
       });
+
+      // Push notification de streak a cada 5 dias
+      if (newStreak > 0 && newStreak % 5 === 0 && user?.id) {
+        oneSignalNotifier.sendAchievement(user.id, `Sequência de ${newStreak} dias!`, newStreak * 5);
+      }
     } else {
       updateStatsMutation.mutate({
         current_streak: 0,
