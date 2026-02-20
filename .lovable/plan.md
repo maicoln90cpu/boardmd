@@ -1,256 +1,134 @@
 
-# Plano: Documentacao Completa - onedoc.md e pwapush.md
+# Plano: 3 Correcoes - Tarefas Recorrentes, Templates Push, Remover VAPID
 
-## Objetivo
+## 1. Corrigir tarefas recorrentes sumindo ao riscar (filtro de data)
 
-Criar dois documentos completos:
+### Diagnostico
+O problema esta no filtro de data em `KanbanBoard.tsx` (linhas 219 e 222). Quando o filtro "atrasadas" ou "hoje + atrasadas" esta ativo:
 
-1. **onedoc.md** - Atualizar com documentacao completa do sistema atual (OneSignal, fluxos, edge function, diagnostico, troubleshooting, e tudo que foi corrigido)
-2. **pwapush.md** - Documento tecnico completo para recriar TODO o sistema PWA + Push do zero em um projeto Lovable limpo
-
----
-
-## 1. onedoc.md - Atualizacoes
-
-O documento atual tem 530 linhas com secoes 1-7. Sera reescrito completamente para incluir:
-
-### Secoes existentes (manter e melhorar):
-- Secao 1: Web Push Setup
-- Secao 2: Web SDK Setup
-- Secao 3: iOS Web Push
-- Secao 4: Checklist de Implementacao
-- Secao 5: Referencias Rapidas
-- Secao 6: Custom Events
-- Secao 7: Referencias Rapidas (atualizada)
-
-### Novas secoes a adicionar:
-
-**Secao 8: Arquitetura do Sistema Atual**
-- Diagrama de componentes (provider, hook, notifier, edge function)
-- Fluxo de dados completo: usuario -> subscribe -> OneSignal -> edge function -> entrega
-- Arquivos envolvidos e suas responsabilidades
-
-**Secao 9: Edge Function send-onesignal - Especificacao Completa**
-- Payload de entrada completo
-- Estrutura da requisicao para API OneSignal
-- Estrategia de entrega dupla (external_id + fallback por tag)
-- Formato da resposta
-- Log no push_logs
-- Campos: `target_channel: "push"`, `include_aliases`, `filters`
-
-**Secao 10: Fluxo de Identificacao (external_id)**
-- Problema original: external_id null
-- Solucao: ordem correta do fluxo
-- Fluxo correto: permission -> wait 2s -> login(userId) -> addTags
-- Re-login automatico via subscriptionChange listener
-- Login automatico em cada carregamento de pagina
-
-**Secao 11: Diagnostico e Troubleshooting**
-- Tabela de problemas comuns e solucoes
-- Como verificar vinculacao do external_id
-- getDiagnostics() - campos retornados
-- Logs da edge function - o que procurar
-
-**Secao 12: API OneSignal - Formato da Requisicao**
-- Formato correto para iOS web push
-- Campos obrigatorios: `target_channel: "push"`, `headings`, `contents`
-- Diferenca entre `include_aliases` e `include_subscription_ids`
-- Diferenca entre `included_segments` e `filters` (NAO misturar)
-- Exemplos de payloads reais
-
----
-
-## 2. pwapush.md - Documento Completo de Replicacao
-
-Documento tecnico exaustivo com TODOS os passos para recriar o sistema inteiro em um projeto Lovable limpo. Sera organizado em ordem cronologica de implementacao.
-
-### Estrutura do documento:
-
-**Parte 1: Fundacao PWA**
-- Dependencias necessarias (vite-plugin-pwa)
-- vite.config.ts - configuracao completa do VitePWA
-  - workbox settings (globPatterns, runtimeCaching, importScripts)
-  - manifest inline vs arquivo separado
-  - devOptions
-- public/manifest.json - todos os campos, tamanhos de icones
-- index.html - meta tags obrigatorias (apple-mobile-web-app-capable, theme-color, etc)
-- Icones necessarios: 512, 384, 256, 192, 180, 152, 120, 96
-
-**Parte 2: Service Worker**
-- sw-push.js completo (push handler, notification click, task actions)
-- Estrategia de importScripts no workbox
-- Foreground vs background notification handling
-- OneSignalSDKWorker.js
-
-**Parte 3: Registro e Atualizacao do SW**
-- main.tsx - registerSW com onNeedRefresh, onOfflineReady
-- usePWAUpdate hook - verificar atualizacoes, limpar cache, reinstalar
-- UpdateNotification component
-
-**Parte 4: Offline First**
-- offlineSync.ts - fila de operacoes no localStorage
-- backgroundSync.ts - sincronizacao com retry exponencial
-- Suporte a Background Sync API + fallback polling
-
-**Parte 5: Install Prompts**
-- InstallPrompt.tsx (Chrome/Android - beforeinstallprompt)
-- AddToHomeScreenBanner.tsx (iOS - instrucoes visuais)
-- Logica de dismissal com localStorage
-
-**Parte 6: OneSignal Web Push - Setup**
-- Criar conta e app no OneSignal dashboard
-- Configurar Site URL, Auto Resubscribe, Default Icon
-- CDN script no index.html com OneSignalDeferred
-- Protecao de dominio (ALLOWED_DOMAINS)
-- OneSignalSDKWorker.js no public/
-
-**Parte 7: OneSignal Provider (oneSignalProvider.ts)**
-- Codigo completo com explicacao linha a linha
-- initOneSignal() - aguardar SDK carregar (5s timeout)
-- setupEventListeners() - push click, foreground, permission, subscription change
-- oneSignalUtils - todas as funcoes: requestPermission, isSubscribed, setExternalUserId, addTags, getDiagnostics, etc
-- subscriptionChangeCallbacks - pattern de callback externo
-
-**Parte 8: Hook useOneSignal**
-- Codigo completo com explicacao
-- Init automatico com login em cada carregamento
-- Fluxo de subscribe CORRETO (ordem critica):
-  1. requestPermission() - cria subscriber
-  2. await 2000ms - iOS e mais lento
-  3. isSubscribed() - confirmar
-  4. setExternalUserId(userId) - vincular DEPOIS
-  5. addTags() - redundancia para fallback
-- Listener de subscription change para re-login
-
-**Parte 9: Edge Function send-onesignal**
-- Codigo completo
-- Secrets necessarios: ONESIGNAL_APP_ID, ONESIGNAL_REST_API_KEY
-- Payload de entrada (NotificationPayload)
-- Construcao do baseData
-- Estrategia de entrega:
-  1. Tentar por include_aliases.external_id
-  2. Se recipients === 0, fallback por filters com tag user_id
-  3. NUNCA misturar included_segments com filters
-- Log no push_logs com recipients, used_fallback, status
-- Formato EXATO da requisicao para API OneSignal
-
-**Parte 10: Notificador Automatico (oneSignalNotifier.ts)**
-- Tipos de notificacao: due_date, daily_reminder, achievement, pomodoro
-- Funcao send() generica via supabase.functions.invoke
-- Funcoes especificas com logica de urgencia
-
-**Parte 11: Alertas de Due Date (useDueDateAlerts)**
-- 3 niveis progressivos: early, warning, urgent, overdue
-- Persistencia de estado no localStorage
-- Snooze configuravel
-- getTaskUrgency() como funcao pura
-
-**Parte 12: Foreground Push Handler**
-- useForegroundPushHandler hook
-- Comunicacao SW -> client via postMessage
-- Toast customizado em vez de notificacao do sistema
-
-**Parte 13: Tabela push_logs (banco de dados)**
-- Schema completo da tabela
-- Campos: user_id, title, body, data, notification_type, status, error_message, device_name
-- RLS policies
-
-**Parte 14: iOS Especifico**
-- Limitacoes de background push (SW suspenso quando fechado)
-- Fluxo obrigatorio: Safari -> Add to Home Screen -> Abrir PWA -> Aceitar permissao
-- Meta tags Apple no head
-- Banner instrutivo (AddToHomeScreenBanner)
-- Race condition no subscribe: esperar 2s apos permission
-
-**Parte 15: Checklist Final de Implementacao**
-- Ordem exata de implementacao (numerada)
-- Verificacoes pos-implementacao
-- Testes manuais por plataforma (Android, iOS, Desktop)
-
-**Parte 16: Troubleshooting Completo**
-- Tabela de erros comuns com solucoes
-- Como debugar external_id null
-- Como verificar entrega nos logs
-- Como testar fallback por tag
-
----
-
-## Arquivos a Criar/Modificar
-
-| Arquivo | Acao |
-|---------|------|
-| `onedoc.md` | Reescrever completamente (~800 linhas) |
-| `pwapush.md` | Criar novo (~1500+ linhas) |
-
----
-
-## Detalhes Tecnicos
-
-### Formato do pwapush.md
-
-O documento sera formatado como um **prompt tecnico para o Lovable**, com blocos de codigo completos, explicacoes em PT-BR, e instrucoes passo a passo. Cada secao tera:
-
-1. **O que fazer** (instrucao clara)
-2. **Por que** (justificativa tecnica)
-3. **Codigo completo** (copiar e colar)
-4. **Ordem de execucao** (dependencias entre passos)
-
-### Formato da requisicao API OneSignal (sera documentado em ambos os arquivos)
-
-```text
-POST https://onesignal.com/api/v1/notifications
-Headers:
-  Content-Type: application/json
-  Authorization: Basic <REST_API_KEY>
-
-Body (targeting por external_id):
-{
-  "app_id": "<APP_ID>",
-  "headings": { "en": "Titulo", "pt": "Titulo" },
-  "contents": { "en": "Corpo", "pt": "Corpo" },
-  "include_aliases": { "external_id": ["<USER_UUID>"] },
-  "target_channel": "push",
-  "url": "/",
-  "data": { ... },
-  "chrome_web_icon": "/pwa-icon.png",
-  "ttl": 86400
-}
-
-Body (fallback por tag - SEM included_segments):
-{
-  "app_id": "<APP_ID>",
-  "headings": { ... },
-  "contents": { ... },
-  "filters": [
-    { "field": "tag", "key": "user_id", "relation": "=", "value": "<USER_UUID>" }
-  ],
-  "target_channel": "push",
-  ...
-}
-
-Resposta esperada (sucesso):
-{
-  "id": "notification-uuid",
-  "recipients": 1,
-  "external_id": "<USER_UUID>"
-}
-
-Resposta com problema:
-{
-  "id": "notification-uuid",
-  "external_id": null
-  // SEM campo recipients = 0 destinatarios
-}
+```
+case "overdue":
+  return taskDueDate && isBefore(...) && !t.is_completed;  // linha 219
+case "overdue_today":
+  const isOverdueTask = isBefore(...) && !t.is_completed;  // linha 222
 ```
 
+O `!t.is_completed` exclui tarefas concluidas do filtro de data. A protecao para recorrentes (linha 257) so e avaliada DEPOIS, no bloco `hideCompletedTasks` - mas a tarefa ja foi eliminada pelo filtro de data antes de chegar la.
+
+**Fluxo atual (bugado):**
+1. Tarefa recorrente atrasada, `is_completed = true`
+2. Filtro "overdue" verifica: `!t.is_completed` = `false` -> tarefa EXCLUIDA
+3. Nunca chega ao bloco de protecao de recorrentes na linha 257
+
+**Fluxo corrigido:**
+1. Tarefa recorrente atrasada, `is_completed = true`
+2. Filtro "overdue" verifica: tem `recurrence_rule`? Sim -> incluir mesmo concluida
+3. Tarefa aparece riscada ate o reset
+
+### Alteracao
+No `KanbanBoard.tsx`, nos cases "overdue" e "overdue_today", permitir tarefas recorrentes concluidas:
+
+```
+case "overdue":
+  return taskDueDate && isBefore(startOfDay(taskDueDate), today) && (!t.is_completed || !!t.recurrence_rule);
+case "overdue_today":
+  const isOverdueTask = isBefore(startOfDay(taskDueDate), today) && (!t.is_completed || !!t.recurrence_rule);
+```
+
+### Risco: Baixo | Complexidade: 1/10
+
 ---
 
-## Analise de Impacto
+## 2. Conectar templates de push ao OneSignal
 
-| Item | Risco | Complexidade (0-10) |
-|------|-------|---------------------|
-| Reescrever onedoc.md | Zero (documentacao) | 4 |
-| Criar pwapush.md | Zero (documentacao) | 6 |
-| **Total** | **Zero risco** | **10/20** |
+### Diagnostico
+Dos 12 templates em `defaultNotificationTemplates.ts`, apenas 4 (due_overdue, due_urgent, due_warning, due_early) sao disparados via `usePushNotifications.ts`. Os outros 8 templates existem mas NUNCA sao chamados.
 
-Nenhuma alteracao de codigo. Apenas documentacao.
+O `oneSignalNotifier.ts` ja tem funcoes prontas (`sendAchievement`, `sendPomodoroComplete`, `sendDailyReminder`) mas nenhum hook as invoca.
+
+### Templates a conectar
+
+| Template | Onde conectar | Hook/Arquivo |
+|----------|--------------|--------------|
+| `task_completed` | Ao marcar tarefa como concluida | `src/hooks/tasks/useTasks.ts` |
+| `achievement_streak` | Ao incrementar streak | `src/hooks/useUserStats.ts` |
+| `achievement_milestone` | Ao atingir marco | `src/hooks/useUserStats.ts` |
+| `achievement_level` | Ao subir de nivel | `src/hooks/useUserStats.ts` |
+
+### Templates que NAO faz sentido conectar (manter como editaveis apenas)
+- `task_created` - o usuario acabou de criar, nao precisa push
+- `task_assigned` - sistema single-user
+- `system_backup` / `system_sync` - operacoes silenciosas
+- `system_update` - ja tem `UpdateNotification` visual
+
+### Alteracoes
+- `src/hooks/tasks/useTasks.ts` - ao completar tarefa, chamar `oneSignalNotifier.send()` com template `task_completed`
+- `src/hooks/useUserStats.ts` - ao registrar conquista, chamar `oneSignalNotifier.sendAchievement()`
+- Cada chamada verificara `settings.notifications` antes de enviar
+
+### Risco: Baixo | Complexidade: 3/10
+
+---
+
+## 3. Remover VAPID Push
+
+### Diagnostico
+VAPID nao e usado e nao funciona. Esta isolado e nao interfere com OneSignal.
+
+### Arquivos a REMOVER completamente
+- `src/hooks/useVapidPush.ts`
+- `supabase/functions/send-vapid-push/index.ts`
+- `scripts/generate-vapid-keys.js`
+
+### Arquivos a MODIFICAR
+- `src/components/PushProviderSelector.tsx` - remover todo o card VAPID (linhas 90-129), remover import e uso de `useVapidPush`, remover handlers VAPID. Manter apenas o card OneSignal
+- `supabase/functions/health-check/index.ts` - remover referencias a VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
+
+### Arquivos que NAO serao tocados
+- `public/manifest.json` - intacto
+- `public/sw-push.js` - intacto
+- `src/hooks/useOneSignal.ts` - intacto
+- `src/lib/push/oneSignalProvider.ts` - intacto
+- `supabase/functions/send-onesignal/index.ts` - intacto
+- `.env` (VITE_VAPID_PUBLIC_KEY pode permanecer, nao causa problema)
+
+### Risco: Zero | Complexidade: 2/10
+
+---
+
+## Ordem de Execucao
+
+1. Corrigir filtro de tarefas recorrentes (mais critico)
+2. Remover VAPID (simples, zero risco)
+3. Conectar templates ao OneSignal
+
+---
+
+## Analise de Impacto Total
+
+| Item | Risco | Complexidade |
+|------|-------|-------------|
+| Filtro recorrentes | Baixo | 1 |
+| Remover VAPID | Zero | 2 |
+| Conectar templates | Baixo | 3 |
+| **Total** | **Baixo** | **6/30 - Abaixo do limite seguro** |
+
+---
+
+## Checklist de Testes Manuais
+
+### Filtro de tarefas recorrentes:
+- [ ] Com filtro "hoje + atrasadas" ativo, riscar tarefa recorrente atrasada
+- [ ] Confirmar que a tarefa permanece visivel e riscada (nao some)
+- [ ] Usar botao "desmarcar tarefas" na coluna para resetar
+- [ ] Confirmar que apos reset a tarefa volta ao estado normal (nao riscada, nova data)
+- [ ] Riscar tarefa NAO recorrente atrasada - confirmar que some normalmente (comportamento existente)
+
+### VAPID removido:
+- [ ] Abrir configuracoes de push - so deve aparecer card OneSignal
+- [ ] Testar notificacao push via OneSignal - deve funcionar normalmente
+- [ ] Verificar que nenhum erro no console relacionado a VAPID
+
+### Templates conectados:
+- [ ] Completar uma tarefa e verificar se push "Tarefa Concluida" chega (se push ativo)
+- [ ] Verificar que templates respeitam preferencias do usuario
