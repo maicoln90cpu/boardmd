@@ -216,10 +216,10 @@ export function KanbanBoard({
             case "no_date":
               return taskDueDate === null;
             case "overdue":
-              return taskDueDate && isBefore(startOfDay(taskDueDate), today) && !t.is_completed;
+              return taskDueDate && isBefore(startOfDay(taskDueDate), today) && (!t.is_completed || !!t.recurrence_rule);
             case "overdue_today": {
               if (!taskDueDate) return false;
-              const isOverdueTask = isBefore(startOfDay(taskDueDate), today) && !t.is_completed;
+              const isOverdueTask = isBefore(startOfDay(taskDueDate), today) && (!t.is_completed || !!t.recurrence_rule);
               const isTodayTask = isToday(taskDueDate);
               return isOverdueTask || isTodayTask;
             }

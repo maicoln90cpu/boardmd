@@ -8,6 +8,7 @@ import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { logger } from "@/lib/logger";
 import { notifyTaskCompleted } from "@/lib/whatsappNotifier";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 
 // Helper to dispatch saving state events
 const dispatchSavingEvent = (taskId: string, isSaving: boolean) => {
@@ -336,12 +337,22 @@ export function useTasks(categoryId: string | null | "all") {
         changes: JSON.parse(JSON.stringify(updates))
       }]);
 
-      // WhatsApp: notify task completed
+      // Notify task completed (WhatsApp + OneSignal)
       if (updates.is_completed === true) {
         const task = tasks.find(t => t.id === id);
         const completedToday = tasks.filter(t => t.is_completed).length + 1;
         const pendingCount = tasks.filter(t => !t.is_completed && t.id !== id).length;
         notifyTaskCompleted(user.id, task?.title || '', completedToday, pendingCount);
+        
+        // Push notification via OneSignal
+        oneSignalNotifier.send({
+          user_id: user.id,
+          title: '✅ Tarefa Concluída!',
+          body: `"${task?.title || ''}" foi concluída`,
+          notification_type: 'task_completed',
+          url: '/',
+          data: { completedToday, pendingCount },
+        });
       }
 
       toast({ title: "Tarefa atualizada com sucesso" });

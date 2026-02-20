@@ -1,38 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellOff, CheckCircle, XCircle, Loader2, Send, Shield, Radio, Info } from "lucide-react";
+import { Bell, BellOff, CheckCircle, XCircle, Loader2, Send, Radio, Info } from "lucide-react";
 import { useOneSignal } from "@/hooks/useOneSignal";
-import { useVapidPush } from "@/hooks/useVapidPush";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
 export function PushProviderSelector() {
   const oneSignal = useOneSignal();
-  const vapid = useVapidPush();
-
-  const handleVapidSubscribe = async () => {
-    const success = await vapid.subscribe();
-    toast[success ? "success" : "error"](
-      success ? "Push direto ativado!" : "Não foi possível ativar o push direto"
-    );
-  };
-
-  const handleVapidUnsubscribe = async () => {
-    const success = await vapid.unsubscribe();
-    toast[success ? "success" : "error"](
-      success ? "Push direto desativado" : "Erro ao desativar"
-    );
-  };
-
-  const handleVapidTest = async () => {
-    toast.loading("Enviando teste VAPID...");
-    const success = await vapid.sendTestNotification();
-    toast.dismiss();
-    toast[success ? "success" : "error"](
-      success ? "Notificação VAPID enviada!" : "Erro ao enviar teste"
-    );
-  };
 
   const handleOneSignalSubscribe = async () => {
     const success = await oneSignal.subscribe();
@@ -57,7 +32,7 @@ export function PushProviderSelector() {
     );
   };
 
-  if (!vapid.isSupported && !oneSignal.isSupported) {
+  if (!oneSignal.isSupported) {
     return (
       <Card>
         <CardHeader>
@@ -86,47 +61,6 @@ export function PushProviderSelector() {
           </CardContent>
         </Card>
       )}
-
-      {/* VAPID Push */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Shield className="h-5 w-5 text-primary" />
-            Push Direto (VAPID)
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Notificações sem dependência externa, direto do servidor
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={vapid.isSubscribed ? "default" : "outline"}>
-              {vapid.isSubscribed ? (
-                <><CheckCircle className="h-3 w-3 mr-1" /> Ativo</>
-              ) : (
-                <><XCircle className="h-3 w-3 mr-1" /> Inativo</>
-              )}
-            </Badge>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {!vapid.isSubscribed ? (
-              <Button size="sm" onClick={handleVapidSubscribe} disabled={vapid.isLoading || permDenied}>
-                {vapid.isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Bell className="h-4 w-4 mr-2" />}
-                Ativar
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={handleVapidUnsubscribe} disabled={vapid.isLoading}>
-                <BellOff className="h-4 w-4 mr-2" />
-                Desativar
-              </Button>
-            )}
-            <Button size="sm" variant="secondary" onClick={handleVapidTest} disabled={vapid.isLoading || !vapid.isSubscribed}>
-              <Send className="h-4 w-4 mr-2" />
-              Testar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* OneSignal */}
       <Card>
