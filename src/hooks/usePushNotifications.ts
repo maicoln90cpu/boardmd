@@ -85,9 +85,13 @@ export function usePushNotifications(tasks: Task[]) {
 
       // Configurações do /config
       const configuredHours = settings.notifications.dueDateHours || 24;
+      const configuredHours2 = settings.notifications.dueDateHours2;
       const urgentThreshold = 60; // 1 hora
       const warningThreshold = configuredHours * 60;
       const earlyThreshold = warningThreshold * 2;
+      // Second alert thresholds
+      const warningThreshold2 = configuredHours2 ? configuredHours2 * 60 : null;
+      const earlyThreshold2 = warningThreshold2 ? warningThreshold2 * 2 : null;
 
       // Enviar notificações via OneSignal + WhatsApp
       const sendPushNotification = async (templateId: string, variables: Record<string, string>) => {
@@ -189,6 +193,32 @@ export function usePushNotifications(tasks: Task[]) {
             timeRemaining: `${hours} horas`
           });
         }, delay);
+      }
+
+      // === Second alert (dueDateHours2) ===
+      if (warningThreshold2 && earlyThreshold2 && !isPast(dueDate) && minutesUntilDue > 0) {
+        const snoozeKey2 = `push-sent-2nd-${task.id}`;
+        const lastSent2 = localStorage.getItem(snoozeKey2);
+        const snoozeMs = (settings.notifications.snoozeMinutes || 30) * 60 * 1000;
+        const shouldSend2 = !lastSent2 || Date.now() - Number(lastSent2) > snoozeMs;
+
+        if (shouldSend2) {
+          if (minutesUntilDue <= warningThreshold2) {
+            const h2 = Math.floor(minutesUntilDue / 60);
+            sendPushNotification('due_warning', {
+              taskTitle: task.title,
+              timeRemaining: `${h2} hora${h2 > 1 ? 's' : ''}`,
+            });
+            localStorage.setItem(snoozeKey2, String(Date.now()));
+          } else if (minutesUntilDue <= earlyThreshold2) {
+            const h2 = Math.floor(minutesUntilDue / 60);
+            sendPushNotification('due_early', {
+              taskTitle: task.title,
+              timeRemaining: `${h2} horas`,
+            });
+            localStorage.setItem(snoozeKey2, String(Date.now()));
+          }
+        }
       }
     });
   };

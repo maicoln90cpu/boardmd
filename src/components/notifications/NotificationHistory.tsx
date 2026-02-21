@@ -54,10 +54,13 @@ export function NotificationHistory() {
     switch (status) {
       case 'sent':
       case 'delivered':
+      case 'sent_fallback':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'failed':
       case 'error':
         return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'no_recipients':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
       default:
         return <Clock className="h-4 w-4 text-yellow-500" />;
     }
@@ -67,8 +70,12 @@ export function NotificationHistory() {
     switch (status) {
       case 'sent':
         return <Badge variant="outline" className="bg-green-500/10 text-green-700">Enviado</Badge>;
+      case 'sent_fallback':
+        return <Badge variant="outline" className="bg-green-500/10 text-green-700">Enviado (fallback)</Badge>;
       case 'delivered':
         return <Badge variant="outline" className="bg-green-500/10 text-green-700">Entregue</Badge>;
+      case 'no_recipients':
+        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700">Sem destinatário</Badge>;
       case 'failed':
       case 'error':
         return <Badge variant="destructive">Falhou</Badge>;

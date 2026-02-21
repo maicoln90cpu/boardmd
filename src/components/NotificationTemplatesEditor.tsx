@@ -7,7 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { RotateCcw, Save, TestTube2 } from "lucide-react";
+import { RotateCcw, Save, TestTube2, Wifi, WifiOff } from "lucide-react";
+
+const ACTIVE_PUSH_TEMPLATES = [
+  'task_completed',
+  'due_overdue',
+  'due_urgent',
+  'due_warning',
+  'due_early',
+  'achievement_streak',
+  'achievement_level',
+];
 import { useSettings } from "@/hooks/data/useSettings";
 import { 
   defaultNotificationTemplates, 
@@ -175,12 +185,25 @@ export function NotificationTemplatesEditor() {
                             {template.title}
                           </p>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={`text-[9px] h-5 ${getCategoryColor(template.category)}`}
-                        >
-                          {template.category}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] h-5 ${getCategoryColor(template.category)}`}
+                          >
+                            {template.category}
+                          </Badge>
+                          {ACTIVE_PUSH_TEMPLATES.includes(template.id) ? (
+                            <Badge variant="outline" className="text-[9px] h-5 bg-green-500/10 text-green-600 border-green-500/20">
+                              <Wifi className="h-2.5 w-2.5 mr-0.5" />
+                              Push Ativo
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[9px] h-5 bg-muted text-muted-foreground">
+                              <WifiOff className="h-2.5 w-2.5 mr-0.5" />
+                              Apenas local
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </button>
                   ))}

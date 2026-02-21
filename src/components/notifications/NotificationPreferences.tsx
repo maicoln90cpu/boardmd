@@ -90,6 +90,32 @@ export function NotificationPreferences() {
               </div>
 
               <div className="flex items-center justify-between">
+                <Label htmlFor="dueDateHours2" className="flex flex-col gap-1">
+                  <span>2º Alerta (opcional)</span>
+                  <span className="font-normal text-muted-foreground text-sm">
+                    Segundo alerta com antecedência diferente
+                  </span>
+                </Label>
+                <Select
+                  value={String(settings.notifications.dueDateHours2 ?? 'off')}
+                  onValueChange={(value) => handleNotificationChange('dueDateHours2', value === 'off' ? null as any : Number(value))}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="off">Desativado</SelectItem>
+                    <SelectItem value="1">1 hora</SelectItem>
+                    <SelectItem value="2">2 horas</SelectItem>
+                    <SelectItem value="6">6 horas</SelectItem>
+                    <SelectItem value="12">12 horas</SelectItem>
+                    <SelectItem value="24">24 horas</SelectItem>
+                    <SelectItem value="48">48 horas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
                 <Label htmlFor="checkInterval" className="flex flex-col gap-1">
                   <span>Frequência de verificação</span>
                   <span className="font-normal text-muted-foreground text-sm">

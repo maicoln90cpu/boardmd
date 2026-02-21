@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2, Bell } from "lucide-react";
 import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
 import { UserProfileCard } from "@/components/settings/UserProfileCard";
 import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
@@ -1075,75 +1075,17 @@ export default function Config() {
           <TabsContent value="productivity" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>⏰ Notificações de Prazo</CardTitle>
-                <CardDescription>Configure alertas para tarefas próximas do vencimento</CardDescription>
+                <CardTitle>🔔 Notificações</CardTitle>
+                <CardDescription>Gerencie todas as configurações de notificações em um só lugar</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Ativar Notificações de Prazo</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba alertas quando tarefas estiverem próximas do vencimento
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.notifications.dueDate}
-                    onCheckedChange={(checked) => updateSettings({ notifications: { ...settings.notifications, dueDate: checked } })}
-                  />
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label htmlFor="alertHours">Alertar com antecedência de (horas)</Label>
-                  <Input
-                    id="alertHours"
-                    type="number"
-                    min="1"
-                    max="72"
-                    value={settings.notifications.dueDateHours}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, dueDateHours: Number(e.target.value) } })}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Você receberá notificações quando faltar esse tempo para o prazo
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="checkInterval">Verificar a cada (minutos)</Label>
-                  <Select 
-                    value={String(settings.notifications.checkInterval)} 
-                    onValueChange={(value) => updateSettings({ notifications: { ...settings.notifications, checkInterval: Number(value) as 5 | 15 | 30 | 60 } })}
-                  >
-                    <SelectTrigger id="checkInterval">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5 minutos</SelectItem>
-                      <SelectItem value="15">15 minutos</SelectItem>
-                      <SelectItem value="30">30 minutos</SelectItem>
-                      <SelectItem value="60">60 minutos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Frequência de verificação de tarefas próximas do vencimento
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="snoozeMinutes">Soneca (minutos)</Label>
-                  <Input
-                    id="snoozeMinutes"
-                    type="number"
-                    min="5"
-                    max="120"
-                    value={settings.notifications.snoozeMinutes}
-                    onChange={(e) => updateSettings({ notifications: { ...settings.notifications, snoozeMinutes: Number(e.target.value) } })}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Tempo para adiar uma notificação antes de ser lembrado novamente
-                  </p>
-                </div>
+              <CardContent>
+                <a
+                  href="/notifications"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm"
+                >
+                  <Bell className="h-4 w-4" />
+                  Configurar Notificações
+                </a>
               </CardContent>
             </Card>
 

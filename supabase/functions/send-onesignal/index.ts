@@ -115,14 +115,30 @@ Deno.serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const recipients = (result as any).recipients ?? 0;
 
-        await supabase.from('push_logs').insert({
+      // Determine status: if we have an id, it was accepted by OneSignal
+      let logStatus = 'failed';
+      let logError: string | null = result.errors ? JSON.stringify(result.errors) : null;
+
+      if (result.id) {
+        if (recipients > 0) {
+          logStatus = 'sent';
+        } else if (usedFallback) {
+          logStatus = 'sent_fallback';
+          logError = null; // Clear error since fallback succeeded
+        } else {
+          logStatus = 'no_recipients';
+          logError = 'Nenhum dispositivo encontrado — a notificação pode ter sido entregue via cache do OneSignal';
+        }
+      }
+
+      await supabase.from('push_logs').insert({
           user_id: payload.user_id,
           title: payload.title,
           body: payload.body,
           data: { ...payload.data, recipients, used_fallback: usedFallback },
           notification_type: payload.notification_type || 'onesignal',
-          status: result.id ? (recipients > 0 ? 'sent' : 'no_recipients') : 'failed',
-          error_message: result.errors ? JSON.stringify(result.errors) : (recipients === 0 ? 'Nenhum dispositivo encontrado para este usuário' : null),
+          status: logStatus,
+          error_message: logError,
           device_name: 'OneSignal',
         });
 
