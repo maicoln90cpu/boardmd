@@ -12,6 +12,7 @@ import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -84,6 +85,21 @@ export const MobileKanbanView = memo(function MobileKanbanView({
         // Gamificação
         if (newCompleted && onAddPoints) {
           onAddPoints();
+        }
+
+        // Push notification via OneSignal para task_completed
+        if (newCompleted) {
+          supabase.auth.getUser().then(({ data }) => {
+            if (data?.user) {
+              oneSignalNotifier.send({
+                user_id: data.user.id,
+                title: '✅ Tarefa Concluída!',
+                body: `"${task.title}" foi concluída`,
+                notification_type: 'task_completed',
+                url: '/',
+              });
+            }
+          });
         }
 
         window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));

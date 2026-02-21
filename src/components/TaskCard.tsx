@@ -15,6 +15,8 @@ import { logger } from "@/lib/logger";
 import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
 import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Import subcomponents
 import {
@@ -203,6 +205,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const urgency = getTaskUrgency(task);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const cardRef = React.useRef<HTMLDivElement>(null);
   const { isTaskSaving } = useSavingTasks();
   const isSaving = isTaskSaving(task.id);
@@ -293,8 +296,19 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           
         if (error) throw error;
         
-        if (onAddPoints) {
+      if (onAddPoints) {
           onAddPoints();
+        }
+
+        // Push notification via OneSignal para task_completed (recorrente)
+        if (user) {
+          oneSignalNotifier.send({
+            user_id: user.id,
+            title: '✅ Tarefa Concluída!',
+            body: `"${task.title}" foi concluída`,
+            notification_type: 'task_completed',
+            url: '/',
+          });
         }
         
         toast({
@@ -341,6 +355,17 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
 
       if (checked && onAddPoints) {
         onAddPoints();
+      }
+
+      // Push notification via OneSignal para task_completed
+      if (checked && user) {
+        oneSignalNotifier.send({
+          user_id: user.id,
+          title: '✅ Tarefa Concluída!',
+          body: `"${task.title}" foi concluída`,
+          notification_type: 'task_completed',
+          url: '/',
+        });
       }
 
       // Bidirectional sync for mirrored tasks
