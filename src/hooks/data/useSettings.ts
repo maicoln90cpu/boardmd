@@ -19,6 +19,7 @@ export interface AppSettings {
     dueDateHours2: number | null;
     checkInterval: 5 | 15 | 30 | 60;
     snoozeMinutes: number;
+    excludedPushColumnIds: string[];
   };
   kanban: {
     autoReset: boolean;
@@ -117,6 +118,7 @@ const defaultSettings: AppSettings = {
     dueDateHours2: null,
     checkInterval: 15,
     snoozeMinutes: 30,
+    excludedPushColumnIds: [],
   },
   kanban: {
     autoReset: false,

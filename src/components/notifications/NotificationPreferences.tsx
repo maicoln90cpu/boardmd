@@ -1,18 +1,35 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Clock, Trophy, Timer, Calendar } from "lucide-react";
-import { useSettings } from "@/hooks/data/useSettings";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Bell, Clock, Trophy, Columns } from "lucide-react";
+import { useSettings, AppSettings } from "@/hooks/data/useSettings";
+import { useColumns } from "@/hooks/data/useColumns";
 import { useToast } from "@/hooks/ui/useToast";
 
 export function NotificationPreferences() {
-  const { settings, updateSettings, saveSettings, isDirty } = useSettings();
+  const { settings, updateSettings, saveSettings } = useSettings();
+  const { columns } = useColumns();
   const { toast } = useToast();
+
+  // Local state for pending changes (avoids auto-save stealing the Save button)
+  const [localNotifications, setLocalNotifications] = useState(settings.notifications);
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
+
+  // Sync local state when settings load from DB (but not if user has pending changes)
+  useEffect(() => {
+    if (!hasLocalChanges) {
+      setLocalNotifications(settings.notifications);
+    }
+  }, [settings.notifications, hasLocalChanges]);
 
   const handleSave = async () => {
     try {
+      updateSettings({ notifications: localNotifications });
       await saveSettings();
+      setHasLocalChanges(false);
       toast({
         title: "Preferências salvas",
         description: "Suas configurações de notificação foram atualizadas.",
@@ -26,13 +43,20 @@ export function NotificationPreferences() {
     }
   };
 
-  const handleNotificationChange = (key: keyof typeof settings.notifications, value: boolean | number) => {
-    updateSettings({
-      notifications: {
-        ...settings.notifications,
-        [key]: value,
-      },
-    });
+  const handleNotificationChange = (key: keyof typeof localNotifications, value: boolean | number | string[] | null) => {
+    setLocalNotifications(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+    setHasLocalChanges(true);
+  };
+
+  const toggleExcludedColumn = (columnId: string) => {
+    const current = localNotifications.excludedPushColumnIds || [];
+    const updated = current.includes(columnId)
+      ? current.filter(id => id !== columnId)
+      : [...current, columnId];
+    handleNotificationChange('excludedPushColumnIds', updated);
   };
 
   return (
@@ -57,12 +81,12 @@ export function NotificationPreferences() {
             </Label>
             <Switch
               id="dueDate"
-              checked={settings.notifications.dueDate}
+              checked={localNotifications.dueDate}
               onCheckedChange={(checked) => handleNotificationChange('dueDate', checked)}
             />
           </div>
 
-          {settings.notifications.dueDate && (
+          {localNotifications.dueDate && (
             <>
               <div className="flex items-center justify-between">
                 <Label htmlFor="dueDateHours" className="flex flex-col gap-1">
@@ -72,7 +96,7 @@ export function NotificationPreferences() {
                   </span>
                 </Label>
                 <Select
-                  value={String(settings.notifications.dueDateHours)}
+                  value={String(localNotifications.dueDateHours)}
                   onValueChange={(value) => handleNotificationChange('dueDateHours', Number(value))}
                 >
                   <SelectTrigger className="w-32">
@@ -97,7 +121,7 @@ export function NotificationPreferences() {
                   </span>
                 </Label>
                 <Select
-                  value={String(settings.notifications.dueDateHours2 ?? 'off')}
+                  value={String(localNotifications.dueDateHours2 ?? 'off')}
                   onValueChange={(value) => handleNotificationChange('dueDateHours2', value === 'off' ? null as any : Number(value))}
                 >
                   <SelectTrigger className="w-32">
@@ -123,7 +147,7 @@ export function NotificationPreferences() {
                   </span>
                 </Label>
                 <Select
-                  value={String(settings.notifications.checkInterval)}
+                  value={String(localNotifications.checkInterval)}
                   onValueChange={(value) => handleNotificationChange('checkInterval', Number(value) as 5 | 15 | 30 | 60)}
                 >
                   <SelectTrigger className="w-32">
@@ -146,7 +170,7 @@ export function NotificationPreferences() {
                   </span>
                 </Label>
                 <Select
-                  value={String(settings.notifications.snoozeMinutes)}
+                  value={String(localNotifications.snoozeMinutes)}
                   onValueChange={(value) => handleNotificationChange('snoozeMinutes', Number(value))}
                 >
                   <SelectTrigger className="w-32">
@@ -160,6 +184,42 @@ export function NotificationPreferences() {
                     <SelectItem value="240">4 horas</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Column filter for push notifications */}
+              <div className="border-t pt-4 mt-4">
+                <Label className="flex items-center gap-2 mb-3">
+                  <Columns className="h-4 w-4" />
+                  <span className="flex flex-col gap-1">
+                    <span>Colunas excluídas dos alertas</span>
+                    <span className="font-normal text-muted-foreground text-sm">
+                      Tarefas nestas colunas NÃO gerarão notificações push
+                    </span>
+                  </span>
+                </Label>
+                <div className="space-y-2 ml-1">
+                  {columns.map(col => {
+                    const excluded = (localNotifications.excludedPushColumnIds || []).includes(col.id);
+                    return (
+                      <div key={col.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`exclude-col-${col.id}`}
+                          checked={excluded}
+                          onCheckedChange={() => toggleExcludedColumn(col.id)}
+                        />
+                        <Label
+                          htmlFor={`exclude-col-${col.id}`}
+                          className="font-normal text-sm cursor-pointer"
+                        >
+                          {col.name}
+                        </Label>
+                      </div>
+                    );
+                  })}
+                  {columns.length === 0 && (
+                    <span className="text-xs text-muted-foreground">Nenhuma coluna encontrada</span>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -186,7 +246,7 @@ export function NotificationPreferences() {
             </Label>
             <Switch
               id="achievements"
-              checked={settings.notifications.achievements}
+              checked={localNotifications.achievements}
               onCheckedChange={(checked) => handleNotificationChange('achievements', checked)}
             />
           </div>
@@ -213,14 +273,14 @@ export function NotificationPreferences() {
             </Label>
             <Switch
               id="sound"
-              checked={settings.notifications.sound}
+              checked={localNotifications.sound}
               onCheckedChange={(checked) => handleNotificationChange('sound', checked)}
             />
           </div>
         </CardContent>
       </Card>
 
-      {isDirty && (
+      {hasLocalChanges && (
         <div className="flex justify-end">
           <button
             onClick={handleSave}
