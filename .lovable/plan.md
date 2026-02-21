@@ -1,160 +1,69 @@
 
-# Plano: Corrigir Todas as Integrações Push do Sistema
 
-## Diagnóstico Completo
+# Plano: 3 Correções no Sistema de Notificações
 
-### Tabela de Disparos por Tipo de Notificação
+## Problema 1: Filtro de Colunas nas Notificações Push
 
-| Template | Disparos iOS | Disparos Local | Disparos Browser | Status |
-|----------|-------------|---------------|-----------------|--------|
-| `due_early` | 1 (sent_fallback) | Sim | Sim | FUNCIONANDO |
-| `due_warning` | 0 | Sim | Sim | FUNCIONANDO (recém-conectado) |
-| `due_urgent` | 0 | Sim | Sim | FUNCIONANDO (recém-conectado) |
-| `due_overdue` | 0 | Sim | Sim | FUNCIONANDO (recém-conectado) |
-| `task_completed` | 0 | 0 | 0 | QUEBRADO - nunca dispara |
-| `achievement_level` | 0 | 0 | 0 | RARO mas funcional |
-| `achievement_streak` | 0 | 0 | 0 | QUEBRADO - streak nunca atualiza |
-| `achievement_milestone` | 0 | 0 | 0 | NAO CONECTADO |
-| `task_created` | 0 | 0 | 0 | NAO CONECTADO (por design) |
-| `task_assigned` | 0 | 0 | 0 | NAO CONECTADO (single-user) |
-| `system_update` | 0 | 0 | 0 | NAO CONECTADO (visual) |
-| `system_backup` | 0 | 0 | 0 | NAO CONECTADO |
-| `system_sync` | 0 | 0 | 0 | NAO CONECTADO |
-| `test` | 4 sent + 1 fallback | - | - | FUNCIONANDO |
+### Situação Atual
+Todas as tarefas com prazo recebem notificações push, independentemente da coluna em que estão. Não existe configuração para filtrar quais colunas devem gerar alertas.
 
-### Causa Raiz de Cada Falha
+### Solução
+Adicionar campo `excludedPushColumnIds` (array de UUIDs) em `settings.notifications`, similar ao `excluded_column_ids` já usado nos templates de WhatsApp. Na UI de Preferências de Notificações, exibir multiselect com as colunas do usuário para que ele escolha quais colunas NÃO devem gerar alertas push. No `useDueDateAlerts.ts`, verificar se a coluna da tarefa está na lista de excluídas antes de disparar qualquer notificação.
 
-**1. `task_completed` - NUNCA DISPARA**
-O código OneSignal está em `useTasks.ts` linha 348, dentro de `updateTask()`. Porém, ao clicar no checkbox da tarefa, o `TaskCard.tsx` (linha 336) e o `MobileKanbanView.tsx` (linha 77) fazem update DIRETO ao Supabase (`supabase.from("tasks").update()`), contornando completamente `updateTask()`. O OneSignal nunca é chamado.
-
-**2. `achievement_streak` - STREAK SEMPRE 0**
-A função `updateStreak()` existe em `useUserStats.ts` (linha 108) mas é exportada e NUNCA importada ou chamada em nenhum componente. O campo `current_streak` no banco está em 0 desde sempre. Logo, a condição `newStreak % 5 === 0` nunca é atingida.
-
-**3. `achievement_level` - FUNCIONAL MAS RARO**
-Esse funciona quando ocorre. O usuário está no nível 36 (3550 pontos). A notificação só dispara quando `newLevel > stats.level`, ou seja, ao atingir um novo múltiplo de 100 pontos. Como `addTaskCompletion()` é chamada via `onAddPoints`, funciona - mas só a cada 10 tarefas completas.
-
----
-
-## Solução
-
-### Correção 1: `task_completed` no TaskCard.tsx
-
-Adicionar chamada ao `oneSignalNotifier.send()` diretamente no `executeToggleCompleted()` após o update bem-sucedido ao Supabase:
-
-**Arquivo:** `src/components/TaskCard.tsx`
-
-No bloco de "comportamento padrão" (linha 328-377), após `if (checked && onAddPoints)` (linha 342), adicionar:
-
-```typescript
-if (checked && onAddPoints) {
-  onAddPoints();
-}
-
-// Push notification via OneSignal para task_completed
-if (checked) {
-  import("@/lib/notifications/oneSignalNotifier").then(({ oneSignalNotifier }) => {
-    // Pegar user_id da sessão
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        oneSignalNotifier.send({
-          user_id: data.user.id,
-          title: '✅ Tarefa Concluída!',
-          body: `"${task.title}" foi concluída`,
-          notification_type: 'task_completed',
-          url: '/',
-        });
-      }
-    });
-  });
-}
-```
-
-Também adicionar no bloco de recorrente com reset imediato (linha 274-326), após o `onAddPoints()`.
-
-### Correção 2: `task_completed` no MobileKanbanView.tsx
-
-Mesmo fix no `handleSwipeComplete` (linha 73-104):
-
-```typescript
-if (newCompleted && onAddPoints) {
-  onAddPoints();
-}
-
-// Push via OneSignal
-if (newCompleted) {
-  supabase.auth.getUser().then(({ data }) => {
-    if (data?.user) {
-      oneSignalNotifier.send({
-        user_id: data.user.id,
-        title: '✅ Tarefa Concluída!',
-        body: `"${task.title}" foi concluída`,
-        notification_type: 'task_completed',
-        url: '/',
-      });
-    }
-  });
-}
-```
-
-### Correção 3: Conectar `updateStreak` ao fluxo de conclusão
-
-Chamar `updateStreak(true)` no `KanbanBoard.tsx` junto com `addTaskCompletion`. Como `addTaskCompletion` já é passado como `onAddPoints`, criar uma função wrapper que chama ambos:
-
-**Arquivo:** `src/components/KanbanBoard.tsx`
-
-Onde hoje tem:
-```typescript
-const { addTaskCompletion } = useUserStats();
-```
-
-Mudar para:
-```typescript
-const { addTaskCompletion, updateStreak } = useUserStats();
-
-const handleTaskCompleted = useCallback(() => {
-  addTaskCompletion();
-  updateStreak(true);
-}, [addTaskCompletion, updateStreak]);
-```
-
-E substituir todas as referências `addTaskCompletion` por `handleTaskCompleted` no JSX.
-
-### Correção 4: Simplificar - import direto no TaskCard
-
-Em vez de dynamic import, importar `oneSignalNotifier` no topo do `TaskCard.tsx` e `useAuth` para obter o user:
-
-```typescript
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
-import { useAuth } from "@/contexts/AuthContext";
-```
-
-E no componente:
-```typescript
-const { user } = useAuth();
-```
-
-Assim a chamada fica limpa:
-```typescript
-if (checked && user) {
-  oneSignalNotifier.send({
-    user_id: user.id,
-    title: '✅ Tarefa Concluída!',
-    body: `"${task.title}" foi concluída`,
-    notification_type: 'task_completed',
-    url: '/',
-  });
-}
-```
-
----
-
-## Arquivos a Modificar
-
+### Arquivos a modificar
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/components/TaskCard.tsx` | Importar `oneSignalNotifier` + `useAuth`, adicionar push nos 2 caminhos de conclusão |
-| `src/components/kanban/MobileKanbanView.tsx` | Importar `oneSignalNotifier`, adicionar push no swipe complete |
-| `src/components/KanbanBoard.tsx` | Extrair `updateStreak` do `useUserStats`, criar wrapper `handleTaskCompleted` |
+| `src/hooks/data/useSettings.ts` | Adicionar `excludedPushColumnIds: string[]` ao tipo `notifications` com default `[]` |
+| `src/components/notifications/NotificationPreferences.tsx` | Adicionar multiselect de colunas usando `useColumns()` dentro do card "Alertas de Prazo" |
+| `src/hooks/useDueDateAlerts.ts` | No início do `forEach`, verificar se `task.column_id` está em `settings.notifications.excludedPushColumnIds` e pular se estiver |
+
+---
+
+## Problema 2: Botão "Salvar" Some em 500ms
+
+### Causa Raiz
+Em `NotificationPreferences.tsx`, o botão "Salvar" aparece quando `isDirty === true`. Porém, `updateSettings()` no `useSettings.ts` chama `scheduleBatchSave()` automaticamente, que após 500ms executa `flushPendingChanges()` e seta `isDirty = false`. Resultado: o botão aparece por ~500ms e desaparece sozinho.
+
+### Solução
+Nas Preferências de Notificações, NÃO usar o `updateSettings()` com auto-save. Em vez disso, manter um estado local das alterações e só chamar `saveSettings()` (save imediato) quando o usuário clicar em "Salvar". Isso garante que o botão permanece visível até o clique.
+
+### Arquivos a modificar
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/components/notifications/NotificationPreferences.tsx` | Usar `useState` local para mudanças pendentes, exibir botão baseado no estado local (não em `isDirty`), chamar `updateSettings()` + `saveSettings()` apenas no clique do botão |
+
+---
+
+## Problema 3: Notificações Duplicadas via OneSignal
+
+### Causa Raiz
+O `useEffect` em `useDueDateAlerts.ts` tem dependência `[tasks, toast, settings.notifications]`. Como `toast` é uma referência nova a cada render e `tasks` muda frequentemente (realtime, eventos customizados), o efeito re-executa constantemente. Cada execução chama `checkDueDates()` imediatamente. Embora o sistema de snooze via `localStorage` deveria prevenir duplicatas, há uma race condition: quando duas execuções do efeito iniciam quase simultaneamente, ambas carregam o mesmo estado do `localStorage` (sem a key da tarefa), ambas enviam o push, e ambas salvam a key depois.
+
+Evidência: a tarefa "Correr" recebeu 6 pushes `due_overdue` hoje, incluindo dois com apenas 2 minutos de diferença (13:58 e 14:00).
+
+Adicionalmente, 137 registros de `due_overdue` foram criados em apenas um dia - claramente multiplicado por cada re-render.
+
+### Solução
+1. Remover `toast` da dependência do `useEffect` (usar ref)
+2. Mover a verificação de snooze para ANTES do envio push, e usar o `notifiedTasksRef` como fonte primária (memória) com localStorage apenas como persistência secundária
+3. Adicionar guard de envio: usar um `Set` de "pushes em andamento" para evitar que duas chamadas simultâneas enviem para a mesma task/nível
+4. Separar o toast local do push OneSignal: o toast local é controlado pelo snooze normalmente; o push OneSignal deve ter um controle independente mais conservador (ex: não reenviar se já enviou nas últimas 4 horas para o mesmo task+nível)
+
+### Arquivos a modificar
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/useDueDateAlerts.ts` | (1) Usar `useRef` para `toast` e remover da dep array, (2) Adicionar `pendingPushesRef` (Set) para evitar race condition, (3) Adicionar dedup por timestamp no localStorage para push OneSignal (mínimo 4h entre reenvios do mesmo nível), (4) Verificar dedup ANTES de chamar `sendOneSignalPush` |
+
+### Detalhe técnico da correção de race condition
+```text
+ANTES (bugado):
+  Effect re-run -> loadNotifiedSet() -> forEach tasks -> has(key)? NO -> send push -> add(key) -> save
+  Effect re-run (simultâneo) -> loadNotifiedSet() -> forEach tasks -> has(key)? NO -> send push -> add(key) -> save
+
+DEPOIS (corrigido):
+  Effect re-run -> loadNotifiedSet() (apenas 1x no mount) -> forEach tasks -> 
+    has(key)? NO -> pendingPushes.has(key)? NO -> add to pendingPushes -> send push -> add(key) -> save -> remove from pendingPushes
+```
 
 ---
 
@@ -162,32 +71,44 @@ if (checked && user) {
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Push no TaskCard.tsx | Baixo | 2/10 |
-| Push no MobileKanbanView.tsx | Baixo | 1/10 |
-| Conectar updateStreak | Baixo | 2/10 |
-| **Total** | **Baixo** | **5/30 - Abaixo do limite seguro** |
+| Filtro de colunas nas notificações | Baixo | 3/10 |
+| Botão salvar persistente | Baixo | 2/10 |
+| Correção de duplicatas OneSignal | Médio | 5/10 |
+| **Total** | **Médio** | **10/30 - Dentro do limite seguro** |
 
-- Nenhuma lógica existente é alterada
-- Apenas ADICIONA chamadas OneSignal em caminhos que já funcionam
-- Streak passa a ser atualizado quando era ignorado
+### Vantagens
+- Controle granular sobre quais colunas geram push
+- UX corrigida no salvamento de preferências
+- Redução drástica de pushes duplicados (de 137/dia para ~15 estimados)
+
+### Desvantagens
+- Nenhuma funcionalidade existente é removida
+- Complexidade adicional mínima no controle de dedup
 
 ---
 
 ## Checklist de Testes Manuais
 
-### task_completed:
-- [ ] No desktop, clicar checkbox de uma tarefa para concluir
-- [ ] Verificar se push "Tarefa Concluída!" chega no iOS
-- [ ] Verificar na tabela `push_logs` se aparece registro com `notification_type: task_completed`
-- [ ] No mobile, fazer swipe para concluir tarefa
-- [ ] Verificar se push também chega via swipe
-- [ ] Desmarcar tarefa e confirmar que push NÃO é enviado ao desmarcar
+### Filtro de colunas:
+- [ ] Ir em Notificações > Preferências > Alertas de Prazo
+- [ ] Verificar se aparece lista de colunas para excluir
+- [ ] Excluir uma coluna (ex: "Recorrente")
+- [ ] Criar tarefa com prazo nessa coluna excluída
+- [ ] Confirmar que NÃO recebe push para essa tarefa
+- [ ] Criar tarefa com prazo em coluna não excluída
+- [ ] Confirmar que recebe push normalmente
 
-### achievement_streak:
-- [ ] Concluir uma tarefa hoje (streak deve ir para 1)
-- [ ] Verificar no banco `user_stats` se `current_streak` foi atualizado
-- [ ] Após 5 dias consecutivos, verificar se push "Sequência de 5 dias!" chega
+### Botão Salvar:
+- [ ] Ir em Notificações > Preferências
+- [ ] Alterar qualquer configuração (ex: desativar som)
+- [ ] Verificar que o botão "Salvar" aparece e PERMANECE visível
+- [ ] Clicar em "Salvar" e confirmar toast de sucesso
+- [ ] Recarregar a página e verificar que a alteração foi persistida
 
-### achievement_level:
-- [ ] Concluir 10 tarefas para acumular 100 pontos e subir de nível
-- [ ] Verificar se push "Nível X alcançado!" chega no iOS
+### Duplicatas:
+- [ ] Recarregar a página principal
+- [ ] Aguardar 5 minutos
+- [ ] Verificar na tabela `push_logs` se cada tarefa tem NO MÁXIMO 1 registro por nível (overdue/warning/etc) nesse período
+- [ ] Navegar entre páginas e voltar ao kanban
+- [ ] Confirmar que não gera novos registros duplicados no `push_logs`
+
