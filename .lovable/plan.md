@@ -1,157 +1,101 @@
 
-# Plano: Consolidar Notificacoes, Indicadores de Templates e Correcao do Historico
+# Plano: Conectar Alertas de Prazo ao OneSignal
 
-## Resumo dos 4 Problemas
+## Diagnostico Completo
 
-1. **Configuracoes de notificacao duplicadas** em `/config` (Produtividade) e `/notifications` (Preferencias)
-2. **Templates sem indicador** de quais estao conectados ao OneSignal
-3. **Templates de prazo** sem opcao de multiplos horarios de envio
-4. **Historico mostrando erro** (`no_recipients`) para notificacoes que foram entregues com sucesso
+### Causa Raiz
+O hook `usePushNotifications.ts` que contem toda a logica de envio via OneSignal para templates de prazo (due_overdue, due_urgent, due_warning, due_early) **nunca e importado ou usado** em nenhum lugar da aplicacao. E codigo morto.
 
----
+O hook que REALMENTE roda e o `useDueDateAlerts.ts`, chamado em `Index.tsx` linha 50. Este hook:
+- Usa `new Notification()` (notificacao local do navegador) — so aparece no browser atual
+- Usa `toast()` para feedback visual
+- **Nunca chama** `oneSignalNotifier.send()` nem a edge function `send-onesignal`
 
-## 1. Remover Notificacoes Duplicadas do /config
+### Por que o teste funciona mas automaticos nao
+| Fluxo | Caminho | Resultado |
+|-------|---------|-----------|
+| Botao "Testar" | `useOneSignal.sendTestNotification()` -> edge function -> OneSignal API | Chega no iOS |
+| Due date alerts | `useDueDateAlerts` -> `new Notification()` | So browser local |
+| Task completed | `useTasks.ts` -> `oneSignalNotifier.send()` -> edge function | Deveria funcionar |
+| Achievements | `useUserStats.ts` -> `oneSignalNotifier.sendAchievement()` -> edge function | Deveria funcionar |
 
-### Diagnostico
-A aba "Produtividade" em `/config` (linhas 1074-1148) tem um card "Notificacoes de Prazo" identico ao card "Alertas de Prazo" em `/notifications` > Preferencias. Ambos controlam as mesmas settings: `dueDate`, `dueDateHours`, `checkInterval`, `snoozeMinutes`.
-
-### Solucao
-Remover o card "Notificacoes de Prazo" da aba Produtividade em `Config.tsx` (linhas 1076-1148). Manter apenas "Revisao Diaria" e "Gamificacao" nessa aba. Adicionar um link/botao "Configurar Notificacoes" que redireciona para `/notifications`.
-
-### Arquivos
-- `src/pages/Config.tsx` - remover card de notificacoes da aba Produtividade, adicionar link para /notifications
-
-### Risco: Zero | Complexidade: 1/10
-
----
-
-## 2. Indicador de Templates Conectados ao OneSignal
-
-### Diagnostico
-Dos 12 templates, os seguintes estao EFETIVAMENTE conectados ao OneSignal:
-
-| Template | Conectado? | Onde |
-|----------|-----------|------|
-| `task_created` | NAO | - |
-| `task_completed` | SIM | `useTasks.ts` (chamada direta, nao usa template) |
-| `task_assigned` | NAO | - |
-| `due_overdue` | SIM | `usePushNotifications.ts` |
-| `due_urgent` | SIM | `usePushNotifications.ts` |
-| `due_warning` | SIM | `usePushNotifications.ts` |
-| `due_early` | SIM | `usePushNotifications.ts` |
-| `system_update` | NAO | - |
-| `system_backup` | NAO | - |
-| `system_sync` | NAO | - |
-| `achievement_streak` | SIM | `useUserStats.ts` (chamada direta) |
-| `achievement_milestone` | NAO | - |
-| `achievement_level` | SIM | `useUserStats.ts` (chamada direta) |
-
-### Solucao
-Adicionar um badge/indicador visual na lista de templates do `NotificationTemplatesEditor.tsx`. Para cada template, mostrar um icone verde "Push Ativo" ou cinza "Apenas local" ao lado do badge de categoria.
-
-Criar uma constante `ACTIVE_PUSH_TEMPLATES` com os IDs dos templates que estao conectados:
-```
-['task_completed', 'due_overdue', 'due_urgent', 'due_warning', 'due_early', 'achievement_streak', 'achievement_level']
-```
-
-### Arquivos
-- `src/components/NotificationTemplatesEditor.tsx` - adicionar indicador visual de push ativo
-
-### Risco: Zero | Complexidade: 1/10
+### Evidencia no banco
+A tabela `push_logs` contem APENAS registros do tipo `test` e `test_task_created`. Zero registros de `due_overdue`, `due_urgent`, `due_warning` ou `due_early` — confirmando que a edge function nunca e chamada para alertas de prazo.
 
 ---
 
-## 3. Multiplos Horarios para Templates de Prazo
+## Solucao
 
-### Diagnostico
-Atualmente o sistema envia UMA notificacao por threshold (overdue, urgent, warning, early). O usuario quer poder configurar ate 2 notificacoes em horarios diferentes para os templates de prazo.
+Modificar o `useDueDateAlerts.ts` para chamar `oneSignalNotifier.send()` quando o usuario estiver inscrito no OneSignal, ALEM da notificacao local e toast que ja existem.
 
-### Solucao
-Adicionar nas preferencias de notificacao (`NotificationPreferences.tsx`) uma opcao para configurar um segundo alerta de prazo com antecedencia diferente. Isso sera armazenado em `settings.notifications.dueDateHours2` (segundo alerta).
+### Alteracoes no `src/hooks/useDueDateAlerts.ts`
 
-No `usePushNotifications.ts`, ao processar tarefas, verificar se o segundo alerta esta configurado e agendar notificacao adicional nesse horario.
+1. Importar `oneSignalNotifier` e `supabase`
+2. Buscar o `user` atual uma vez no inicio do check
+3. Em cada nivel de alerta (overdue, urgent, warning, early), APOS o toast e a notificacao local, chamar `oneSignalNotifier.send()` com o template correto e dados da tarefa
+4. Usar `formatNotificationTemplate()` para respeitar os templates editados pelo usuario
 
-### Modelo de dados (settings)
+### Codigo atual vs proposto (para cada nivel de alerta)
+
+**Atual (apenas local):**
+```typescript
+toast({ title: "Tarefa Atrasada!", description: "..." });
+showBrowserNotification("Tarefa Atrasada!", "...", true);
 ```
-notifications: {
-  ...existentes,
-  dueDateHours2: number | null,  // ex: 6 (horas antes), null = desativado
+
+**Proposto (local + OneSignal):**
+```typescript
+toast({ title: "Tarefa Atrasada!", description: "..." });
+showBrowserNotification("Tarefa Atrasada!", "...", true);
+
+// Push via OneSignal (chega em todos os dispositivos incluindo iOS)
+if (user) {
+  const template = getTemplateById(userTemplates, 'due_overdue');
+  if (template) {
+    const formatted = formatNotificationTemplate(template, { taskTitle: task.title });
+    oneSignalNotifier.send({
+      user_id: user.id,
+      title: formatted.title,
+      body: formatted.body,
+      notification_type: 'due_overdue',
+      url: '/',
+      data: { taskId: task.id },
+    });
+  }
 }
 ```
 
-### Arquivos
-- `src/hooks/data/useSettings.ts` - adicionar campo `dueDateHours2` no tipo `NotificationSettings`
-- `src/components/notifications/NotificationPreferences.tsx` - adicionar campo para segundo alerta
-- `src/hooks/usePushNotifications.ts` - agendar segundo alerta quando configurado
+### Aplicar para todos os 4 niveis:
+- `overdue` -> template `due_overdue`
+- `urgent` -> template `due_urgent`
+- `warning` -> template `due_warning`
+- `early` -> template `due_early`
 
-### Risco: Baixo | Complexidade: 3/10
-
----
-
-## 4. Corrigir Historico Mostrando Erro Falso
-
-### Diagnostico
-Os logs no banco mostram `status: 'no_recipients'` com `error_message: 'Nenhum dispositivo encontrado para este usuario'` para TODAS as notificacoes de teste. Isso acontece porque:
-
-1. A edge function `send-onesignal` salva `no_recipients` quando `recipients === 0`
-2. Mas a notificacao pode ter sido entregue com sucesso via fallback (tag) ou o OneSignal reporta recipients=0 mesmo quando entregou (bug conhecido no iOS)
-3. O historico mostra TODAS as `no_recipients` como erro vermelho
-
-### Solucao
-Duas correcoes:
-
-**a) Na edge function:** Quando o fallback por tag funcionar (result.id existe), marcar como `sent_fallback` em vez de `no_recipients`.
-
-**b) No componente de historico:** Tratar `no_recipients` de forma diferente - mostrar como "aviso" (amarelo) em vez de "erro" (vermelho). Tambem:
-- Se o `data` do log contiver `used_fallback: true` e tiver `id`, mostrar como "Enviado (fallback)"
-- Alterar a mensagem de erro para algo menos alarmante
-
-### Arquivos
-- `supabase/functions/send-onesignal/index.ts` - ajustar logica de status no log
-- `src/components/notifications/NotificationHistory.tsx` - tratar `no_recipients` como aviso, nao erro
-
-### Risco: Baixo | Complexidade: 2/10
+### Arquivo `usePushNotifications.ts`
+Manter como esta (nao deletar ainda), pois contem logica de WhatsApp que pode ser reaproveitada futuramente. Mas o envio OneSignal agora sera feito pelo `useDueDateAlerts`.
 
 ---
 
-## Analise de Impacto Total
+## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Remover duplicata /config | Zero | 1 |
-| Indicador push nos templates | Zero | 1 |
-| Segundo alerta de prazo | Baixo | 3 |
-| Corrigir historico | Baixo | 2 |
-| **Total** | **Baixo** | **7/40 - Abaixo do limite seguro** |
+| Adicionar OneSignal ao useDueDateAlerts | Baixo | 3/10 |
+| **Total** | **Baixo** | **3/30 - Abaixo do limite seguro** |
 
----
-
-## Ordem de Execucao
-
-1. Corrigir historico (edge function + componente)
-2. Remover duplicata do /config
-3. Adicionar indicadores nos templates
-4. Implementar segundo alerta de prazo
+- Nenhuma logica existente e removida (toast e notificacao local continuam)
+- Apenas ADICIONA a chamada ao OneSignal
+- Templates editados pelo usuario serao respeitados
+- Dedup existente (notifiedTasksRef + snooze) continua funcionando e previne chamadas duplicadas ao OneSignal
 
 ---
 
 ## Checklist de Testes Manuais
 
-### Duplicata removida:
-- [ ] Abrir /config > Produtividade - nao deve ter card "Notificacoes de Prazo"
-- [ ] Deve ter link/botao para ir a /notifications
-- [ ] Abrir /notifications > Preferencias - card "Alertas de Prazo" com todas as opcoes
-
-### Indicadores nos templates:
-- [ ] Abrir /notifications > Templates
-- [ ] Templates conectados (due_overdue, due_urgent, etc) devem ter badge verde "Push Ativo"
-- [ ] Templates nao conectados (task_created, system_backup) devem ter badge cinza
-
-### Segundo alerta:
-- [ ] Em Preferencias, ativar segundo alerta com horario diferente
-- [ ] Verificar que 2 notificacoes sao enviadas em horarios distintos
-
-### Historico corrigido:
-- [ ] Enviar notificacao de teste
-- [ ] Verificar no historico - se entregue, nao deve mostrar erro vermelho
-- [ ] `no_recipients` deve aparecer como aviso amarelo, nao erro
+- [ ] Criar tarefa com prazo para daqui a 30 minutos
+- [ ] Aguardar alerta de "Prazo Proximo" aparecer como toast no browser
+- [ ] Verificar se a mesma notificacao chega no iOS via push
+- [ ] Verificar na tabela `push_logs` se aparece registro com `notification_type: 'due_warning'`
+- [ ] Criar tarefa com prazo ja passado e recarregar a pagina
+- [ ] Verificar se push "Tarefa Atrasada" chega no iOS
+- [ ] Confirmar que o snooze funciona (nao envia duplicata dentro do periodo configurado)
