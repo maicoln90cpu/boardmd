@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
 import { Column, useColumns } from "@/hooks/data/useColumns";
 import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter, isToday, isTomorrow, startOfDay } from "date-fns";
 import { Task, useTasks } from "@/hooks/tasks/useTasks";
@@ -84,7 +84,12 @@ export function KanbanBoard({
   const completedColumnId = allColumns.find((c) => c.name.toLowerCase() === "concluído")?.id;
   const { settings } = useSettings();
   const { getTagColor } = useTags();
-  const { addTaskCompletion } = useUserStats();
+  const { addTaskCompletion, updateStreak } = useUserStats();
+
+  const handleTaskCompleted = useCallback(() => {
+    addTaskCompletion();
+    updateStreak(true);
+  }, [addTaskCompletion, updateStreak]);
   const {
     isSelectionMode,
     isSelected,
@@ -135,7 +140,7 @@ export function KanbanBoard({
     columns,
     tasks,
     updateTask,
-    onTaskCompleted: addTaskCompletion,
+    onTaskCompleted: handleTaskCompleted,
   });
 
   // Task Actions hook
@@ -160,7 +165,7 @@ export function KanbanBoard({
     tasks,
     updateTask,
     deleteTask,
-    onTaskCompleted: addTaskCompletion,
+    onTaskCompleted: handleTaskCompleted,
   });
 
   const handleSaveTask = useCallback(async (taskData: Partial<Task>) => {
@@ -312,7 +317,7 @@ export function KanbanBoard({
           priorityColors={settings.customization?.priorityColors}
           originalCategoriesMap={originalCategoriesMap}
           getTagColor={getTagColor}
-          onAddPoints={addTaskCompletion}
+           onAddPoints={handleTaskCompleted}
         />
 
         {modalOpen && (
@@ -374,7 +379,7 @@ export function KanbanBoard({
           showCategoryBadge={showCategoryBadge}
           priorityColors={settings.customization?.priorityColors}
           getTagColor={getTagColor}
-          onAddPoints={addTaskCompletion}
+          onAddPoints={handleTaskCompleted}
           originalCategoriesMap={originalCategoriesMap}
           completedColumnId={completedColumnId}
         />
