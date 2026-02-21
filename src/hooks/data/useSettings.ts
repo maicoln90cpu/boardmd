@@ -16,6 +16,7 @@ export interface AppSettings {
     achievements: boolean;
     sound: boolean;
     dueDateHours: number;
+    dueDateHours2: number | null;
     checkInterval: 5 | 15 | 30 | 60;
     snoozeMinutes: number;
   };
@@ -112,7 +113,8 @@ const defaultSettings: AppSettings = {
     dueDate: true,
     achievements: true,
     sound: false,
-    dueDateHours: 4, // Alertar 4h antes (era 24)
+    dueDateHours: 4,
+    dueDateHours2: null,
     checkInterval: 15,
     snoozeMinutes: 30,
   },
