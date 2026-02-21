@@ -5,6 +5,12 @@ import { differenceInHours, differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/hooks/data/useSettings";
 import { logger } from "@/lib/logger";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
+import {
+  defaultNotificationTemplates,
+  formatNotificationTemplate,
+  getTemplateById,
+} from "@/lib/defaultNotificationTemplates";
 
 // Request browser notification permission on first call
 let permissionRequested = false;
@@ -125,6 +131,24 @@ export function useDueDateAlerts(tasks: Task[]) {
 
     const checkDueDates = async () => {
       const now = new Date();
+      const { data: { user } } = await supabase.auth.getUser();
+      const userTemplates = settings.notificationTemplates || defaultNotificationTemplates;
+
+      const sendOneSignalPush = async (templateId: string, taskTitle: string, taskId: string) => {
+        if (!user) return;
+        const template = getTemplateById(userTemplates, templateId);
+        if (!template) return;
+        const formatted = formatNotificationTemplate(template, { taskTitle });
+        oneSignalNotifier.send({
+          user_id: user.id,
+          title: formatted.title,
+          body: formatted.body,
+          notification_type: templateId,
+          url: '/',
+          data: { taskId },
+        });
+      };
+
       const columnMap = await getColumnMap();
 
       tasks.forEach((task) => {
@@ -137,7 +161,6 @@ export function useDueDateAlerts(tasks: Task[]) {
         const isCompleted = task.is_completed === true || isInDoneColumn;
         
         if (!task.due_date || task.column_id?.includes("done") || isCompleted) {
-          // Limpar notificações antigas quando tarefa está concluída
           const taskId = task.id;
           notifiedTasksRef.current.delete(`${taskId}-early`);
           notifiedTasksRef.current.delete(`${taskId}-warning`);
@@ -151,11 +174,10 @@ export function useDueDateAlerts(tasks: Task[]) {
         const taskId = task.id;
         const minutesUntilDue = differenceInMinutes(dueDate, now);
 
-        // Configurações
         const configuredHours = settings.notifications.dueDateHours || 24;
-        const urgentThreshold = 60; // Fixo: 1 hora em minutos
-        const warningThreshold = configuredHours * 60; // Configurável em minutos
-        const earlyThreshold = warningThreshold * 2; // Dobro do configurado
+        const urgentThreshold = 60;
+        const warningThreshold = configuredHours * 60;
+        const earlyThreshold = warningThreshold * 2;
 
         // Verifica se está atrasada
         if (isPast(dueDate)) {
@@ -165,11 +187,8 @@ export function useDueDateAlerts(tasks: Task[]) {
               description: `"${task.title}" já passou do prazo`,
               variant: "destructive",
             });
-            showBrowserNotification(
-              "⏰ Tarefa Atrasada!",
-              `"${task.title}" já passou do prazo`,
-              true
-            );
+            showBrowserNotification("⏰ Tarefa Atrasada!", `"${task.title}" já passou do prazo`, true);
+            sendOneSignalPush('due_overdue', task.title, task.id);
             notifiedTasksRef.current.add(`${taskId}-overdue`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -184,11 +203,8 @@ export function useDueDateAlerts(tasks: Task[]) {
               description: `"${task.title}" vence em menos de 1 hora`,
               variant: "destructive",
             });
-            showBrowserNotification(
-              "🔥 Prazo Urgente!",
-              `"${task.title}" vence em menos de 1 hora`,
-              true
-            );
+            showBrowserNotification("🔥 Prazo Urgente!", `"${task.title}" vence em menos de 1 hora`, true);
+            sendOneSignalPush('due_urgent', task.title, task.id);
             notifiedTasksRef.current.add(`${taskId}-urgent`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -203,11 +219,8 @@ export function useDueDateAlerts(tasks: Task[]) {
               title: "⚠️ Prazo Próximo",
               description: `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`,
             });
-            showBrowserNotification(
-              "⚠️ Prazo Próximo",
-              `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`,
-              false
-            );
+            showBrowserNotification("⚠️ Prazo Próximo", `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`, false);
+            sendOneSignalPush('due_warning', task.title, task.id);
             notifiedTasksRef.current.add(`${taskId}-warning`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -222,11 +235,8 @@ export function useDueDateAlerts(tasks: Task[]) {
               title: "📅 Prazo se Aproximando",
               description: `"${task.title}" vence em ${hoursUntilDue} horas`,
             });
-            showBrowserNotification(
-              "📅 Prazo se Aproximando",
-              `"${task.title}" vence em ${hoursUntilDue} horas`,
-              false
-            );
+            showBrowserNotification("📅 Prazo se Aproximando", `"${task.title}" vence em ${hoursUntilDue} horas`, false);
+            sendOneSignalPush('due_early', task.title, task.id);
             notifiedTasksRef.current.add(`${taskId}-early`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
