@@ -59,7 +59,7 @@ const Logo = () => {
       >
         <img
           alt="TaskFlow"
-          className="h-12 object-contain"
+          className="h-10 object-contain"
           src="/lovable-uploads/5b8c2541-276c-4613-9bd7-2a0ad7efa01b.png"
         />
       </motion.div>
