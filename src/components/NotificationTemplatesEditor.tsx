@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { RotateCcw, Save, TestTube2, Wifi, WifiOff } from "lucide-react";
 
 const ACTIVE_PUSH_TEMPLATES = [
@@ -36,7 +37,7 @@ export function NotificationTemplatesEditor() {
   );
   const [hasChanges, setHasChanges] = useState(false);
 
-  const handleTemplateChange = (field: keyof NotificationTemplate, value: string) => {
+  const handleTemplateChange = (field: keyof NotificationTemplate, value: string | boolean) => {
     if (!selectedTemplate) return;
 
     const updatedTemplate = { ...selectedTemplate, [field]: value };
@@ -46,6 +47,17 @@ export function NotificationTemplatesEditor() {
 
     setTemplates(updatedTemplates);
     setSelectedTemplate(updatedTemplate);
+    setHasChanges(true);
+  };
+
+  const handleToggleEnabled = (templateId: string, enabled: boolean) => {
+    const updatedTemplates = templates.map((t) =>
+      t.id === templateId ? { ...t, enabled } : t
+    );
+    setTemplates(updatedTemplates);
+    if (selectedTemplate?.id === templateId) {
+      setSelectedTemplate({ ...selectedTemplate, enabled });
+    }
     setHasChanges(true);
   };
 
@@ -89,7 +101,6 @@ export function NotificationTemplatesEditor() {
 
     const formatted = formatNotificationTemplate(selectedTemplate, testVariables);
 
-    // Try to send via OneSignal notification system
     try {
       const { oneSignalNotifier } = await import("@/lib/notifications/oneSignalNotifier");
       const { supabase } = await import("@/integrations/supabase/client");
@@ -113,7 +124,6 @@ export function NotificationTemplatesEditor() {
         throw new Error("User not logged in");
       }
     } catch (error) {
-      // Fallback to local notification
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification(formatted.title, {
           body: formatted.body,
@@ -144,6 +154,8 @@ export function NotificationTemplatesEditor() {
     }
   };
 
+  const isTemplateEnabled = (template: NotificationTemplate) => template.enabled !== false;
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
@@ -163,50 +175,73 @@ export function NotificationTemplatesEditor() {
               <Label className="text-xs">Templates Disponíveis</Label>
               <ScrollArea className="h-[400px] border rounded-md">
                 <div className="p-2 space-y-1">
-                  {templates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`w-full text-left p-3 rounded-md transition-colors ${
-                        selectedTemplate?.id === template.id
-                          ? "bg-primary/10 border border-primary/20"
-                          : "bg-muted/50 hover:bg-muted"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-base">{template.emoji}</span>
-                            <span className="text-xs font-medium truncate">
-                              {template.name}
-                            </span>
+                  {templates.map((template) => {
+                    const enabled = isTemplateEnabled(template);
+                    return (
+                      <div
+                        key={template.id}
+                        className={`relative rounded-md transition-all ${!enabled ? "opacity-50" : ""}`}
+                      >
+                        <button
+                          onClick={() => setSelectedTemplate(template)}
+                          className={`w-full text-left p-3 rounded-md transition-colors ${
+                            selectedTemplate?.id === template.id
+                              ? "bg-primary/10 border border-primary/20"
+                              : "bg-muted/50 hover:bg-muted"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-base">{template.emoji}</span>
+                                <span className="text-xs font-medium truncate">
+                                  {template.name}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">
+                                {template.title}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[9px] h-5 ${getCategoryColor(template.category)}`}
+                                >
+                                  {template.category}
+                                </Badge>
+                                <Switch
+                                  checked={enabled}
+                                  onCheckedChange={(checked) => {
+                                    handleToggleEnabled(template.id, checked);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="scale-75"
+                                />
+                              </div>
+                              {enabled ? (
+                                ACTIVE_PUSH_TEMPLATES.includes(template.id) ? (
+                                  <Badge variant="outline" className="text-[9px] h-5 bg-green-500/10 text-green-600 border-green-500/20">
+                                    <Wifi className="h-2.5 w-2.5 mr-0.5" />
+                                    Push Ativo
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] h-5 bg-muted text-muted-foreground">
+                                    <WifiOff className="h-2.5 w-2.5 mr-0.5" />
+                                    Apenas local
+                                  </Badge>
+                                )
+                              ) : (
+                                <Badge variant="outline" className="text-[9px] h-5 bg-muted text-muted-foreground">
+                                  Desativado
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">
-                            {template.title}
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge
-                            variant="outline"
-                            className={`text-[9px] h-5 ${getCategoryColor(template.category)}`}
-                          >
-                            {template.category}
-                          </Badge>
-                          {ACTIVE_PUSH_TEMPLATES.includes(template.id) ? (
-                            <Badge variant="outline" className="text-[9px] h-5 bg-green-500/10 text-green-600 border-green-500/20">
-                              <Wifi className="h-2.5 w-2.5 mr-0.5" />
-                              Push Ativo
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[9px] h-5 bg-muted text-muted-foreground">
-                              <WifiOff className="h-2.5 w-2.5 mr-0.5" />
-                              Apenas local
-                            </Badge>
-                          )}
-                        </div>
+                        </button>
                       </div>
-                    </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </ScrollArea>
             </div>
@@ -223,6 +258,7 @@ export function NotificationTemplatesEditor() {
                         variant="outline"
                         size="sm"
                         className="h-7"
+                        disabled={!isTemplateEnabled(selectedTemplate)}
                       >
                         <TestTube2 className="h-3 w-3 mr-1" />
                         Testar

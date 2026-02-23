@@ -5,6 +5,7 @@ export interface NotificationTemplate {
   body: string;
   emoji: string;
   category: 'task' | 'reminder' | 'system' | 'achievement';
+  enabled?: boolean;
 }
 
 export const defaultNotificationTemplates: NotificationTemplate[] = [
