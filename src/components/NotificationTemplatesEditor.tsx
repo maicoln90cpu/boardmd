@@ -237,7 +237,7 @@ export function NotificationTemplatesEditor() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-0.5">
                                 <span className="text-base">{template.emoji}</span>
                                 <span className="text-xs font-medium truncate">
                                   {template.name}
@@ -246,6 +246,11 @@ export function NotificationTemplatesEditor() {
                               <p className="text-[10px] text-muted-foreground line-clamp-1">
                                 {template.title}
                               </p>
+                              {template.description && (
+                                <p className="text-[9px] text-muted-foreground/70 line-clamp-2 mt-0.5 italic">
+                                  {template.description}
+                                </p>
+                              )}
                             </div>
                             <div className="flex flex-col items-end gap-1">
                               <div className="flex items-center gap-1.5">

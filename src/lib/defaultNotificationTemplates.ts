@@ -6,6 +6,7 @@ export interface NotificationTemplate {
   emoji: string;
   category: 'task' | 'reminder' | 'system' | 'achievement';
   enabled?: boolean;
+  description?: string;
 }
 
 export const defaultNotificationTemplates: NotificationTemplate[] = [
@@ -17,6 +18,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Tarefa "{{taskTitle}}" foi adicionada ao {{columnName}}',
     emoji: '✨',
     category: 'task',
+    description: 'Disparado ao criar uma nova tarefa no kanban.',
   },
   {
     id: 'task_completed',
@@ -25,6 +27,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Parabéns! Você completou "{{taskTitle}}"',
     emoji: '🎉',
     category: 'task',
+    description: 'Disparado ao marcar uma tarefa como concluída.',
   },
   {
     id: 'task_assigned',
@@ -33,6 +36,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Nova tarefa "{{taskTitle}}" foi atribuída a você',
     emoji: '📋',
     category: 'task',
+    description: 'Disparado quando uma tarefa é atribuída a você.',
   },
   
   // Reminder notifications
@@ -43,6 +47,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: '"{{taskTitle}}" já passou do prazo',
     emoji: '⏰',
     category: 'reminder',
+    description: 'Disparado quando o prazo da tarefa já expirou. Aparece como alerta urgente.',
   },
   {
     id: 'due_urgent',
@@ -51,6 +56,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: '"{{taskTitle}}" vence em menos de 1 hora! Ação imediata necessária.',
     emoji: '🔥',
     category: 'reminder',
+    description: 'Disparado quando faltam menos de 1 hora para o vencimento. Alerta de ação imediata.',
   },
   {
     id: 'due_warning',
@@ -59,6 +65,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: '"{{taskTitle}}" vence em {{timeRemaining}}. Organize-se para concluir.',
     emoji: '⚠️',
     category: 'reminder',
+    description: 'Disparado quando faltam X horas para o vencimento (configurável em Preferências). Alerta moderado.',
   },
   {
     id: 'due_early',
@@ -67,6 +74,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: '"{{taskTitle}}" vence em {{timeRemaining}}. Planeje com antecedência.',
     emoji: '📅',
     category: 'reminder',
+    description: 'Disparado quando faltam o dobro das horas configuradas. Alerta preventivo de planejamento.',
   },
   
   // System notifications
@@ -77,6 +85,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Uma nova versão do app está disponível. Clique para atualizar.',
     emoji: '🔄',
     category: 'system',
+    description: 'Disparado quando uma nova versão do app está disponível.',
   },
   {
     id: 'system_backup',
@@ -85,6 +94,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Seus dados foram salvos com sucesso.',
     emoji: '💾',
     category: 'system',
+    description: 'Disparado após backup automático dos dados.',
   },
   {
     id: 'system_sync',
@@ -93,6 +103,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Suas tarefas foram sincronizadas em todos os dispositivos.',
     emoji: '🔄',
     category: 'system',
+    description: 'Disparado após sincronização entre dispositivos.',
   },
   
   // Achievement notifications
@@ -103,6 +114,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Continue assim! Você está em uma sequência incrível.',
     emoji: '🔥',
     category: 'achievement',
+    description: 'Disparado ao manter uma sequência de dias consecutivos completando tarefas.',
   },
   {
     id: 'achievement_milestone',
@@ -111,6 +123,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Você completou {{totalTasks}} tarefas! Parabéns!',
     emoji: '🏆',
     category: 'achievement',
+    description: 'Disparado ao atingir um marco de tarefas completadas (ex: 50, 100).',
   },
   {
     id: 'achievement_level',
@@ -119,6 +132,7 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     body: 'Você alcançou o nível {{level}}! Continue evoluindo.',
     emoji: '⬆️',
     category: 'achievement',
+    description: 'Disparado ao subir de nível no sistema de gamificação.',
   },
 ];
 
