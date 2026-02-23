@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,20 @@ export function NotificationTemplatesEditor() {
     templates[0] || null
   );
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Sync local state when settings load/change from server
+  useEffect(() => {
+    if (settings.notificationTemplates) {
+      setTemplates(settings.notificationTemplates);
+      const currentId = selectedTemplate?.id;
+      if (currentId) {
+        const updated = settings.notificationTemplates.find(t => t.id === currentId);
+        if (updated) setSelectedTemplate(updated);
+      } else {
+        setSelectedTemplate(settings.notificationTemplates[0] || null);
+      }
+    }
+  }, [settings.notificationTemplates]);
 
   const handleTemplateChange = (field: keyof NotificationTemplate, value: string | boolean) => {
     if (!selectedTemplate) return;
