@@ -1,86 +1,120 @@
 
-# Plano: 4 Melhorias - Templates, Categoria, Sync e Indices
+# Plano: Correção de Notificações + Descrições de Templates + Auditoria Completa
 
-## 1. Templates de Notificacao - Consolidacao de Redundancias
+## Problema 1: Notificações disparam mesmo com alertas desativados (CRITICO)
 
-### Analise dos templates atuais (categoria "reminder"):
+### Causa raiz (2 bugs):
 
-| ID | Nome | Quando dispara | Mensagem |
-|---|---|---|---|
-| `due_overdue` | Tarefa Atrasada | Ja passou do prazo | "ja passou do prazo" |
-| `due_urgent` | Prazo Urgente | <= 1 hora antes | "vence em {{timeRemaining}}" |
-| `due_warning` | Prazo Proximo | <= X horas (configuravel) | "vence em {{timeRemaining}}" |
-| `due_early` | Prazo se Aproximando | <= 2x horas configuradas | "vence em {{timeRemaining}}" |
+**Bug A:** O efeito principal em `useDueDateAlerts.ts` (linha 160) tem dependencias `[tasks, settings.notificationTemplates]` mas NAO inclui `settings.notifications.dueDate`. Quando o usuario desativa os alertas, o efeito NAO re-executa, e o `setInterval` antigo continua rodando e disparando notificacoes.
 
-**Veredicto:** NAO sao redundantes. Cada um dispara em um momento diferente (overdue, 1h, Xh, 2Xh). Porem `due_urgent`, `due_warning` e `due_early` tem mensagens IDENTICAS, o que confunde o usuario. A solucao e diferenciar melhor as mensagens de cada um.
+**Bug B:** Dentro de `checkDueDates` (linha 189), o codigo le `settingsRef.current` mas NUNCA verifica `currentSettings.dueDate` novamente. Mesmo que o ref esteja atualizado, a funcao nao checa se deve parar.
 
-### Alteracoes propostas em `src/lib/defaultNotificationTemplates.ts`:
+### Correcao em `src/hooks/useDueDateAlerts.ts`:
 
-| Template | Antes | Depois |
+1. Adicionar `settings.notifications.dueDate` ao array de dependencias do efeito (linha 400)
+2. Adicionar guard `if (!currentSettings.dueDate) return;` dentro de `checkDueDates` como seguranca extra
+
+**Antes (linha 400):**
+```
+}, [tasks, settings.notificationTemplates]);
+```
+**Depois:**
+```
+}, [tasks, settings.notificationTemplates, settings.notifications.dueDate]);
+```
+
+**Antes (dentro de checkDueDates, ~linha 191):**
+```
+const currentSettings = settingsRef.current;
+const excludedColumns = currentSettings.excludedPushColumnIds || [];
+```
+**Depois:**
+```
+const currentSettings = settingsRef.current;
+if (!currentSettings.dueDate) return;
+const excludedColumns = currentSettings.excludedPushColumnIds || [];
+```
+
+---
+
+## Problema 2: Variavel `{{timeRemaining}}` vazia nas notificacoes push
+
+### Causa raiz:
+A funcao `sendOneSignalPush` (linha 196) chama `formatNotificationTemplate(template, { taskTitle })` passando APENAS `taskTitle`. A variavel `timeRemaining` nunca e passada, resultando em mensagens como "vence em" sem completar o texto.
+
+### Correcao em `src/hooks/useDueDateAlerts.ts`:
+
+Alterar a assinatura de `sendOneSignalPush` para aceitar `timeRemaining` e passa-lo ao `formatNotificationTemplate`.
+
+**Antes:**
+```typescript
+const sendOneSignalPush = async (templateId, taskTitle, taskId, level) => {
+  ...
+  const formatted = formatNotificationTemplate(template, { taskTitle });
+```
+**Depois:**
+```typescript
+const sendOneSignalPush = async (templateId, taskTitle, taskId, level, timeRemaining?: string) => {
+  ...
+  const vars: Record<string, string> = { taskTitle };
+  if (timeRemaining) vars.timeRemaining = timeRemaining;
+  const formatted = formatNotificationTemplate(template, vars);
+```
+
+Todas as chamadas de `sendOneSignalPush` serao atualizadas para passar o `timeRemaining` correto:
+- `overdue`: sem timeRemaining (nao usa)
+- `urgent`: "menos de 1 hora"
+- `warning`: "X hora(s)"
+- `early`: "X horas"
+
+---
+
+## Problema 3: Templates sem descricao da logica de disparo
+
+### Correcao em `src/lib/defaultNotificationTemplates.ts`:
+
+Adicionar campo `description` na interface `NotificationTemplate` com texto explicativo para cada template:
+
+| Template | Descricao |
+|---|---|
+| `task_created` | "Disparado ao criar uma nova tarefa no kanban." |
+| `task_completed` | "Disparado ao marcar uma tarefa como concluida." |
+| `task_assigned` | "Disparado quando uma tarefa e atribuida a voce." |
+| `due_overdue` | "Disparado quando o prazo da tarefa ja expirou. Aparece como alerta urgente." |
+| `due_urgent` | "Disparado quando faltam menos de 1 hora para o vencimento. Alerta de acao imediata." |
+| `due_warning` | "Disparado quando faltam X horas para o vencimento (configuravel em Preferencias). Alerta moderado." |
+| `due_early` | "Disparado quando faltam o dobro das horas configuradas. Alerta preventivo de planejamento." |
+| `system_update` | "Disparado quando uma nova versao do app esta disponivel." |
+| `system_backup` | "Disparado apos backup automatico dos dados." |
+| `system_sync` | "Disparado apos sincronizacao entre dispositivos." |
+| `achievement_streak` | "Disparado ao manter uma sequencia de dias consecutivos completando tarefas." |
+| `achievement_milestone` | "Disparado ao atingir um marco de tarefas completadas (ex: 50, 100)." |
+| `achievement_level` | "Disparado ao subir de nivel no sistema de gamificacao." |
+
+### Correcao em `src/components/NotificationTemplatesEditor.tsx`:
+
+Exibir o campo `description` abaixo do nome de cada template na lista, como texto explicativo em cinza.
+
+---
+
+## Auditoria Completa da Pagina de Notificacoes
+
+### Problemas encontrados e correcoes:
+
+| Item | Status | Acao |
 |---|---|---|
-| `due_overdue` | "ja passou do prazo" | Manter (unico, claro) |
-| `due_urgent` | "vence em {{timeRemaining}}" | "vence em menos de 1 hora! Acao imediata necessaria." |
-| `due_warning` | "vence em {{timeRemaining}}" | "vence em {{timeRemaining}}. Organize-se para concluir." |
-| `due_early` | "vence em {{timeRemaining}}" | "vence em {{timeRemaining}}. Planeje com antecedencia." |
-
-Isso torna cada template visualmente e semanticamente distinto sem eliminar nenhum (todos sao usados pelo `useDueDateAlerts.ts` em niveis diferentes).
-
----
-
-## 2. Validacao de Categoria no TaskModal
-
-### Estado atual:
-- O `TaskModal` ja tem validacao visual (label vermelha, borda vermelha) e bloqueia no `handleSave` com toast de erro
-- A query confirmou: **zero tarefas orfas** no banco (sem category_id nulo ou invalido)
-- O botao "Salvar" nao esta desabilitado visualmente quando categoria esta vazia
-
-### Alteracao proposta em `src/components/TaskModal.tsx`:
-- Adicionar `disabled={!title.trim() || !selectedCategory}` no botao "Salvar"
-- Isso impede o clique e da feedback visual imediato (botao fica cinza/opaco)
-
----
-
-## 3. Sincronizacao entre App/PWA/Navegadores
-
-### Analise do sistema atual:
-- **IndexedDB (`indexedDB.ts`):** Cache local + fila de operacoes pendentes - OK
-- **SyncManager (`syncManager.ts`):** Sync periodico (30s) + listener de `online` - OK
-- **OfflineSync (`offlineSync.ts`):** Fila em localStorage como fallback - OK
-- **BackgroundSync (`backgroundSync.ts`):** Usa Background Sync API quando disponivel - OK
-- **Realtime:** Supabase channels para atualizacoes em tempo real - ja implementado nos hooks
-
-### Diagnostico:
-O sistema de sincronizacao esta **funcionalmente correto**. A arquitetura cobre:
-- Offline -> Online (fila + retry automatico)
-- Multi-aba (Supabase Realtime via WebSocket)
-- PWA (Service Worker + Background Sync API)
-
-**Nenhuma alteracao necessaria neste item.** O sistema ja esta robusto.
-
----
-
-## 4. Indices de Performance no Banco de Dados
-
-### Indices existentes vs necessarios:
-
-**Tasks:** Ja bem indexada (user_id, column_id, category_id, due_date, is_completed, is_favorite, linked_note_id, updated_at + compostos).
-
-**Tabelas sem indices adequados:**
-
-| Tabela | Indice faltante | Justificativa |
-|---|---|---|
-| `goals` | `user_id` | Toda query filtra por user_id (RLS + codigo) |
-| `goals` | `(user_id, is_completed)` | Dashboard filtra metas ativas |
-| `pomodoro_sessions` | `user_id` | Toda query filtra por user_id |
-| `pomodoro_sessions` | `(user_id, started_at DESC)` | Listagem ordenada por data |
-| `task_history` | `user_id` | RLS e queries filtram por user_id |
-| `whatsapp_logs` | `user_id` | Listagem de logs por usuario |
-| `whatsapp_logs` | `(user_id, sent_at DESC)` | Ordenacao cronologica |
-| `activity_log` | `(user_id, created_at DESC)` | Listagem de atividades recentes |
-| `tasks` | `(user_id, due_date)` composto | Alertas de prazo filtram por user + due_date |
-| `tasks` | `(user_id, position)` composto | Ordenacao no kanban |
-| `tags` | `user_id` | Listagem de tags do usuario |
-| `tools` | `user_id` | Listagem de ferramentas |
+| Alertas disparam com toggle OFF | BUG CRITICO | Corrigir deps do useEffect + guard |
+| `{{timeRemaining}}` vazio em push | BUG | Passar variavel ao formatar |
+| Templates sem descricao | MELHORIA | Adicionar campo description |
+| OneSignal: dominio antigo no Firefox | CACHE | Usuario deve limpar cache do Firefox (a notificacao mostra "board.infoprolab.com.br" porque foi cacheada antes da mudanca) |
+| NotificationPreferences: save funciona | OK | Nenhuma alteracao |
+| NotificationHistory: carrega logs | OK | Nenhuma alteracao |
+| PushProviderSelector: diagnostico | OK | Nenhuma alteracao |
+| Templates editor: toggle on/off | OK | Nenhuma alteracao |
+| Templates editor: teste push | OK | Nenhuma alteracao |
+| WhatsApp tab | OK | Nenhuma alteracao |
+| Chamadas duplicadas | OK | useDueDateAlerts so e chamado em Index.tsx (1 vez) |
+| Tabs sobrepostas | OK | Layout correto |
 
 ---
 
@@ -88,44 +122,42 @@ O sistema de sincronizacao esta **funcionalmente correto**. A arquitetura cobre:
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/lib/defaultNotificationTemplates.ts` | Diferenciar mensagens dos 3 templates de prazo |
-| `src/components/TaskModal.tsx` | Adicionar `disabled` no botao Salvar quando categoria vazia |
-| Migration SQL | Criar ~12 indices para tabelas sem cobertura adequada |
+| `src/hooks/useDueDateAlerts.ts` | Corrigir deps, guard interno, passar timeRemaining |
+| `src/lib/defaultNotificationTemplates.ts` | Adicionar campo `description` a interface e a cada template |
+| `src/components/NotificationTemplatesEditor.tsx` | Exibir `description` na lista de templates |
 
 ## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |---|---|---|
-| Diferenciar mensagens dos templates | Baixo | 1/10 |
-| Desabilitar botao Salvar | Baixo | 1/10 |
-| Sync (nenhuma alteracao) | N/A | 0/10 |
-| Criar indices no banco | Baixo | 2/10 |
-| **Total** | **Baixo** | **4/30 - Bem abaixo do limite seguro** |
+| Corrigir deps do useEffect | Baixo | 2/10 |
+| Guard interno em checkDueDates | Baixo | 1/10 |
+| Passar timeRemaining ao push | Baixo | 2/10 |
+| Adicionar description aos templates | Baixo | 2/10 |
+| Exibir description no editor | Baixo | 1/10 |
+| **Total** | **Baixo** | **8/50 - Bem abaixo do limite seguro** |
 
 ### Vantagens
-- Templates ficam semanticamente distintos, eliminando confusao
-- Botao Salvar desabilitado da feedback visual imediato
-- Indices aceleram queries em tabelas que crescem com o uso
+- Corrige bug critico de notificacoes disparando quando desabilitadas
+- Corrige texto incompleto "vence em" nas push notifications
+- Cada template agora explica exatamente quando e disparado
+- Nota sobre Firefox: o dominio antigo e cache do SW - orientar usuario a limpar
 
 ### Desvantagens
-- Indices ocupam espaco em disco (minimo, desprezivel)
-- Usuarios que personalizaram templates manualmente nao serao afetados (templates sao salvos em settings)
+- Nenhuma significativa
+
+## Nota sobre "board.infoprolab.com.br" no Firefox
+
+A notificacao do Firefox mostra "via board.infoprolab.com.br" porque o Service Worker antigo ainda esta cacheado naquele navegador. A correcao do dominio ja foi aplicada no codigo. O usuario deve:
+1. Abrir `board.infoprolab.com.br` no Firefox
+2. Ir em Configuracoes do Site > Limpar dados
+3. Ou desregistrar o Service Worker em `about:serviceworkers`
 
 ## Checklist de Testes Manuais
 
-### Templates:
-- [ ] Abrir `/notifications` > Templates
-- [ ] Verificar que "Prazo Urgente", "Prazo Proximo" e "Prazo se Aproximando" tem mensagens DIFERENTES entre si
-- [ ] Clicar em cada um e confirmar que o corpo da mensagem e unico
-
-### Categoria obrigatoria:
-- [ ] Abrir modal "Nova Tarefa"
-- [ ] Nao selecionar categoria
-- [ ] Verificar que o botao "Salvar" esta DESABILITADO (cinza/opaco)
-- [ ] Selecionar uma categoria
-- [ ] Verificar que o botao "Salvar" fica HABILITADO
-- [ ] Preencher titulo e salvar normalmente
-
-### Performance:
-- [ ] Verificar que o app carrega normalmente apos criacao dos indices
-- [ ] Navegar pelo kanban, notas e dashboard sem lentidao
+- [ ] Desativar "Notificacoes de prazo" em Preferencias e salvar
+- [ ] Aguardar 1 minuto - NAO devem aparecer notificacoes de prazo
+- [ ] Reativar e verificar que voltam a funcionar
+- [ ] Verificar que notificacoes push mostram texto completo (ex: "vence em 2 horas" em vez de "vence em")
+- [ ] Abrir Templates e verificar que cada um tem descricao explicativa abaixo do nome
+- [ ] Limpar cache do Firefox em board.infoprolab.com.br para resolver dominio antigo
