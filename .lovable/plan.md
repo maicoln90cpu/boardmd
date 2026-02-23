@@ -1,126 +1,104 @@
 
+# Auditoria Completa: Central de Notificacoes
 
-# Plano: Corrigir Salvamento de Preferencias + Toggle por Template
+## Diagnostico
 
-## Problema 1: Preferencias nao salvam (dados voltam ao reiniciar)
+### Causa Raiz do Flicker (afeta Preferencias E Templates)
 
-### Causa Raiz
+Ambos os componentes inicializam seu estado local com os valores **padrao** do sistema (todos os toggles ON) porque `settings` comeca como `defaultSettings` enquanto os dados do banco ainda estao carregando.
 
-Em `NotificationPreferences.tsx` linha 28-31, o `handleSave` faz:
+**Fluxo atual (problematico):**
+1. Componente monta -> `useState(settings.notifications)` -> usa `defaultSettings` (tudo ON)
+2. ~200-500ms depois -> banco retorna dados reais -> `useEffect` sincroniza -> toggles mudam para OFF
+3. Usuario ve: tudo ligado -> "pisca" -> muda para o estado salvo
 
-```typescript
-updateSettings({ notifications: localNotifications }); // linha 30
-await saveSettings(); // linha 31
+### Por que a persistencia parece falhar
+
+Na verdade a persistencia FUNCIONA (o `saveSettings` foi corrigido). O problema visual e que ao recarregar a pagina, o estado padrao (tudo ON) e mostrado primeiro, dando a impressao de que nada foi salvo. So depois de alguns milissegundos o estado correto aparece.
+
+## Solucao
+
+### 1. Guardar renderizacao ate settings carregar (`isLoading`)
+
+Ambos os componentes devem usar `isLoading` do `useSettings` para evitar mostrar dados padrao. Enquanto `isLoading === true`, exibir um skeleton/placeholder ao inves dos toggles.
+
+**NotificationPreferences.tsx:**
+- Importar `isLoading` do `useSettings()`
+- Antes do `return`, verificar `if (isLoading)` e retornar um skeleton simples
+- Isso elimina completamente o flash de "tudo ligado"
+
+**NotificationTemplatesEditor.tsx:**
+- Mesmo tratamento: guardar renderizacao com `isLoading`
+- Inicializar `templates` com array vazio enquanto carregando, so popular quando `settings.notificationTemplates` estiver disponivel
+
+### 2. Inicializacao inteligente do estado local
+
+**NotificationPreferences.tsx (linha 18):**
+```
+// ANTES (bugado):
+const [localNotifications, setLocalNotifications] = useState(settings.notifications);
+
+// DEPOIS (correto):
+// Nao mudar o useState, mas guardar o render com isLoading
 ```
 
-O problema esta em `saveSettings()` (useSettings.ts linha 513-542). Apos chamar `flushPendingChanges()`, ele faz um **segundo** save usando `settings` da closure (linha 529):
+**NotificationTemplatesEditor.tsx (linhas 32-34):**
+```
+// ANTES (bugado):
+const [templates, setTemplates] = useState(
+  settings.notificationTemplates || defaultNotificationTemplates
+);
 
-```typescript
-.update({ settings: settings as any }) // settings = valor ANTIGO da closure
+// DEPOIS:
+// Manter o useState, mas so renderizar a lista quando isLoading === false
 ```
 
-Isso sobrescreve as alteracoes que acabaram de ser salvas por `flushPendingChanges()` com o estado antigo. Resultado: as mudancas sao gravadas por 1 instante e imediatamente revertidas.
+### 3. Evitar re-sync desnecessario do realtime apos save proprio
 
-### Solucao
+No `useEffect` de sync do `NotificationTemplatesEditor` (linhas 41-52), adicionar uma flag `isSaving` para ignorar atualizacoes do realtime que sao eco do proprio save. Isso evita um segundo "flash" apos salvar.
 
-Remover o save duplicado de `saveSettings()`. A funcao so precisa chamar `flushPendingChanges()`, que ja usa `settingsRef.current` (sempre atualizado). O segundo save com `settings` da closure e redundante e destrutivo.
-
-### Arquivos a modificar
+## Arquivos a modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/hooks/data/useSettings.ts` | Simplificar `saveSettings` para apenas chamar `flushPendingChanges()` sem o save duplicado (linhas 519-541 removidas) |
-
-### Codigo atual vs sugerido
-
-**Atual (bugado):**
-```typescript
-const saveSettings = useCallback(async () => {
-  if (!user) return;
-  await flushPendingChanges(); // salva com settingsRef (correto)
-  // ... segundo save com settings da closure (SOBRESCREVE com dado antigo)
-  .update({ settings: settings as any }) // settings = stale!
-}, [user, settings, flushPendingChanges]);
-```
-
-**Sugerido (corrigido):**
-```typescript
-const saveSettings = useCallback(async () => {
-  if (!user) return;
-  // Garante que updateSettings ja atualizou o ref
-  await flushPendingChanges(); // usa settingsRef.current (sempre fresco)
-  setIsDirty(false);
-}, [user, flushPendingChanges]);
-```
-
----
-
-## Problema 2 (duvida - respondida): Desativar alertas globais vs cards individuais
-
-Desativar "Alertas de Prazo" no menu `/notifications` **NAO** afeta lembretes configurados dentro dos cards individuais. O sistema ja implementa a logica de prioridade: `task.notification_settings` tem precedencia sobre configuracoes globais. Se a tarefa nao tem configuracao propria, ai sim usa o global. Se o global esta desativado e a tarefa nao tem config propria, nenhuma notificacao e enviada para ela.
-
----
-
-## Problema 3: Toggle ativar/desativar cada template individualmente
-
-### Situacao Atual
-
-Os templates de notificacao nao tem campo de ativacao. Todos estao sempre ativos (se conectados ao OneSignal) ou inativos (se apenas locais). Nao ha como desativar um template especifico.
-
-### Solucao
-
-Adicionar campo `enabled` (boolean, default `true`) na interface `NotificationTemplate`. Na UI do editor de templates, adicionar um Switch ao lado de cada template na lista. Nos locais que disparam notificacoes, verificar `template.enabled !== false` antes de enviar.
-
-### Arquivos a modificar
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/lib/defaultNotificationTemplates.ts` | Adicionar `enabled?: boolean` na interface `NotificationTemplate` (default true) |
-| `src/components/NotificationTemplatesEditor.tsx` | Adicionar Switch de ativar/desativar por template na lista lateral; mostrar badge "Desativado" quando off |
-| `src/lib/notifications/oneSignalNotifier.ts` | Antes de enviar, verificar se o template do tipo esta enabled |
-| `src/hooks/useDueDateAlerts.ts` | Verificar `template.enabled !== false` antes de disparar push/toast |
-
-### Detalhe da UI
-
-Na lista de templates (ScrollArea), adicionar um Switch compacto no canto direito de cada item. Quando desativado:
-- O item fica com opacidade reduzida
-- Badge muda para "Desativado" (cinza)
-- O template nao e usado para enviar notificacoes
-
----
+| `src/components/notifications/NotificationPreferences.tsx` | Adicionar `isLoading` do useSettings; mostrar skeleton enquanto carrega |
+| `src/components/NotificationTemplatesEditor.tsx` | Adicionar `isLoading` do useSettings; mostrar skeleton enquanto carrega; ajustar useEffect de sync para ignorar durante save |
 
 ## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Corrigir saveSettings (stale closure) | Baixo | 2/10 |
-| Toggle por template | Baixo | 3/10 |
-| **Total** | **Baixo** | **5/20 - Abaixo do limite seguro** |
+| Guard com isLoading nas Preferencias | Baixo | 1/10 |
+| Guard com isLoading nos Templates | Baixo | 1/10 |
+| Ajuste no sync do realtime | Baixo | 2/10 |
+| **Total** | **Baixo** | **4/30 - Bem abaixo do limite seguro** |
 
 ### Vantagens
-- Preferencias finalmente persistem corretamente entre dispositivos e recarregamentos
-- Controle granular sobre quais tipos de notificacao estao ativos
-- Zero alteracao destrutiva: templates existentes mantem `enabled: true` por padrao
+- Elimina completamente o flicker visual (toggles nunca mostram estado errado)
+- Zero risco de regressao: apenas adiciona loading guard, nao altera logica de save
+- Persistencia ja funciona; so precisamos garantir que o usuario veja o estado correto desde o inicio
 
 ### Desvantagens
-- Nenhuma funcionalidade removida
-- Complexidade adicional minima
+- Nenhuma desvantagem significativa
+- Pode haver um breve skeleton (~200ms) antes dos dados carregarem, mas e muito melhor que mostrar dados errados
 
 ## Checklist de Testes Manuais
 
-### Salvamento de preferencias:
-- [ ] Ir em /notifications > Preferencias
-- [ ] Alterar qualquer configuracao (ex: Antecedencia do alerta para 6 horas)
-- [ ] Clicar em "Salvar Preferencias"
-- [ ] Recarregar a pagina (F5)
-- [ ] Verificar que a alteracao foi mantida (6 horas, nao voltou para valor antigo)
-- [ ] Testar em outro dispositivo e confirmar sincronizacao
+### Preferencias:
+- [ ] Desativar "Notificacoes de prazo" e "Som de notificacao"
+- [ ] Salvar
+- [ ] Recarregar pagina (F5)
+- [ ] Verificar que os toggles JA APARECEM desativados (sem flicker)
+- [ ] Nao deve haver momento em que aparecem ativados e depois desativam
 
-### Toggle de templates:
-- [ ] Ir em /notifications > Templates
-- [ ] Desativar um template (ex: "Nova Tarefa")
-- [ ] Salvar alteracoes
-- [ ] Criar uma nova tarefa
-- [ ] Verificar que a notificacao "Nova Tarefa" NAO foi disparada
-- [ ] Reativar o template e verificar que volta a funcionar
+### Templates:
+- [ ] Desativar 2 templates (ex: "Nova Tarefa" e "Tarefa Concluida")
+- [ ] Salvar
+- [ ] Recarregar pagina (F5)
+- [ ] Verificar que os templates JA APARECEM desativados (sem flicker)
+- [ ] Verificar que os badges mostram "Desativado" imediatamente
 
+### Persistencia entre dispositivos:
+- [ ] Fazer alteracoes em um dispositivo
+- [ ] Abrir em outro dispositivo
+- [ ] Verificar que os dados estao sincronizados corretamente
