@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 
 export function NotificationTemplatesEditor() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, saveSettings } = useSettings();
   const [templates, setTemplates] = useState<NotificationTemplate[]>(
     settings.notificationTemplates || defaultNotificationTemplates
   );
@@ -77,7 +77,8 @@ export function NotificationTemplatesEditor() {
 
   const handleSave = async () => {
     try {
-      await updateSettings({ notificationTemplates: templates });
+      updateSettings({ notificationTemplates: templates });
+      await saveSettings();
       setHasChanges(false);
       toast.success("Templates salvos com sucesso!");
     } catch (error) {
