@@ -82,9 +82,10 @@ Deno.serve(async (req) => {
       result = await sendToOneSignal(primaryData, ONESIGNAL_REST_API_KEY);
       console.log('[send-onesignal] Attempt 1 response:', JSON.stringify(result));
 
-      // Check if 0 recipients — fallback to tag filter
+      // Check if 0 recipients or invalid_aliases — fallback to tag filter
       const recipients = (result as any).recipients;
-      if ((recipients === 0 || recipients === undefined) && !result.errors) {
+      const hasInvalidAliases = result.errors && (result.errors as any).invalid_aliases;
+      if (recipients === 0 || recipients === undefined || hasInvalidAliases) {
         console.warn('[send-onesignal] 0 recipients via external_id, trying fallback by tag user_id');
         usedFallback = true;
 
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (result.errors) {
+    if (result.errors && !usedFallback) {
       console.error('[send-onesignal] OneSignal errors:', result.errors);
       return new Response(
         JSON.stringify({ success: false, errors: result.errors }),
