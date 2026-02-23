@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { RotateCcw, Save, TestTube2, Wifi, WifiOff } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ACTIVE_PUSH_TEMPLATES = [
   'task_completed',
@@ -28,7 +29,7 @@ import {
 import { toast } from "sonner";
 
 export function NotificationTemplatesEditor() {
-  const { settings, updateSettings, saveSettings } = useSettings();
+  const { settings, updateSettings, saveSettings, isLoading } = useSettings();
   const [templates, setTemplates] = useState<NotificationTemplate[]>(
     settings.notificationTemplates || defaultNotificationTemplates
   );
@@ -170,6 +171,35 @@ export function NotificationTemplatesEditor() {
   };
 
   const isTemplateEnabled = (template: NotificationTemplate) => template.enabled !== false;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div>
+              <Skeleton className="h-5 w-56 mb-2" />
+              <Skeleton className="h-4 w-80" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <div className="border rounded-md p-2 space-y-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded-md" />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-[300px] w-full rounded-md" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

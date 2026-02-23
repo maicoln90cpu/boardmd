@@ -5,12 +5,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Bell, Clock, Trophy, Columns } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings, AppSettings } from "@/hooks/data/useSettings";
 import { useColumns } from "@/hooks/data/useColumns";
 import { useToast } from "@/hooks/ui/useToast";
 
 export function NotificationPreferences() {
-  const { settings, updateSettings, saveSettings } = useSettings();
+  const { settings, updateSettings, saveSettings, isLoading } = useSettings();
   const { columns } = useColumns();
   const { toast } = useToast();
 
@@ -58,6 +59,27 @@ export function NotificationPreferences() {
       : [...current, columnId];
     handleNotificationChange('excludedPushColumnIds', updated);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-4 w-72 mt-2" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-5 w-10 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
