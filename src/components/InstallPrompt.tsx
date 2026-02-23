@@ -92,7 +92,7 @@ export function InstallPrompt() {
         <div className="flex-1">
           <h3 className="font-semibold text-sm mb-1">Instalar App</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Instale o To do Tasks para acesso rápido e uso offline
+            Instale o TaskFlow para acesso rápido e uso offline
           </p>
           <Button onClick={handleInstall} size="sm" className="w-full">
             Instalar agora

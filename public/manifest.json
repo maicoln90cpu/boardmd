@@ -1,7 +1,7 @@
 {
-  "name": "To do Tasks - Gerenciador de Tarefas e Notas",
-  "short_name": "Tasks",
-  "description": "Gerenciador completo de tarefas com Kanban, notas e produtividade. Funciona offline com sincronização automática.",
+  "name": "TaskFlow - Gerenciador de Tarefas e Notas",
+  "short_name": "TaskFlow",
+  "description": "Gerenciador inteligente de tarefas com Kanban, notas e produtividade. Funciona offline com sincronização automática.",
   "theme_color": "#000000",
   "background_color": "#ffffff",
   "display": "standalone",
@@ -18,7 +18,7 @@
       "src": "/pwa-icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "label": "To do Tasks Dashboard"
+      "label": "TaskFlow Dashboard"
     }
   ],
   "icons": [

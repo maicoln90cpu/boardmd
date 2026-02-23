@@ -695,7 +695,7 @@ export default function Landing() {
         <div className="container mx-auto px-4">
           <div className="text-center text-muted-foreground">
             <p className="text-sm">
-              © 2025 To do Tasks. Transformando intenção em realização.
+              © 2025 TaskFlow. Transformando intenção em realização.
             </p>
           </div>
         </div>
