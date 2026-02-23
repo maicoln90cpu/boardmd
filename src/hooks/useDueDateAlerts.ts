@@ -241,6 +241,9 @@ export function useDueDateAlerts(tasks: Task[]) {
           notifiedTasksRef.current.delete(`${taskId}-warning`);
           notifiedTasksRef.current.delete(`${taskId}-urgent`);
           notifiedTasksRef.current.delete(`${taskId}-overdue`);
+          // Clean custom reminder keys
+          notifiedTasksRef.current.delete(`${taskId}-custom-0`);
+          notifiedTasksRef.current.delete(`${taskId}-custom-1`);
           saveNotifiedSet(notifiedTasksRef.current);
           return;
         }
@@ -254,6 +257,68 @@ export function useDueDateAlerts(tasks: Task[]) {
         const taskId = task.id;
         const minutesUntilDue = differenceInMinutes(dueDate, now);
 
+        // === Per-task custom reminders ===
+        const taskReminders = (task as any).notification_settings?.reminders as Array<{ hours_before: number; channel: 'push' | 'whatsapp' | 'both' }> | undefined;
+        
+        if (taskReminders && taskReminders.length > 0) {
+          // Use task-specific reminders instead of global thresholds
+          
+          // Still handle overdue with global logic
+          if (isPast(dueDate)) {
+            if (!notifiedTasksRef.current.has(`${taskId}-overdue`)) {
+              toastRef.current({
+                title: "⏰ Tarefa Atrasada!",
+                description: `"${task.title}" já passou do prazo`,
+                variant: "destructive",
+              });
+              showBrowserNotification("⏰ Tarefa Atrasada!", `"${task.title}" já passou do prazo`, true);
+              sendOneSignalPush('due_overdue', task.title, task.id, 'overdue');
+              notifiedTasksRef.current.add(`${taskId}-overdue`);
+              saveNotifiedSet(notifiedTasksRef.current);
+            }
+            return;
+          }
+
+          // Check each custom reminder
+          taskReminders.forEach((reminder, idx) => {
+            const reminderMinutes = reminder.hours_before * 60;
+            const reminderKey = `${taskId}-custom-${idx}`;
+            
+            if (minutesUntilDue <= reminderMinutes && minutesUntilDue > 0 && !notifiedTasksRef.current.has(reminderKey)) {
+              const hoursUntilDue = Math.floor(minutesUntilDue / 60);
+              const timeText = hoursUntilDue > 0 ? `${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}` : `${minutesUntilDue} minutos`;
+              
+              // Send push if channel is push or both
+              if (reminder.channel === 'push' || reminder.channel === 'both') {
+                toastRef.current({
+                  title: "🔔 Lembrete de Tarefa",
+                  description: `"${task.title}" vence em ${timeText}`,
+                });
+                showBrowserNotification("🔔 Lembrete de Tarefa", `"${task.title}" vence em ${timeText}`, reminder.hours_before <= 1);
+                sendOneSignalPush('due_warning', task.title, task.id, `custom-${idx}`);
+              }
+              
+              // Send WhatsApp if channel is whatsapp or both
+              if (reminder.channel === 'whatsapp' || reminder.channel === 'both') {
+                import("@/lib/whatsappNotifier").then(({ sendWhatsAppNotification }) => {
+                  if (user) {
+                    sendWhatsAppNotification({
+                      userId: user.id,
+                      templateType: 'due_date',
+                      variables: { taskTitle: task.title, timeRemaining: timeText },
+                    });
+                  }
+                });
+              }
+              
+              notifiedTasksRef.current.add(reminderKey);
+              saveNotifiedSet(notifiedTasksRef.current);
+            }
+          });
+          return; // Skip global thresholds for tasks with custom reminders
+        }
+
+        // === Global thresholds (fallback) ===
         const configuredHours = currentSettings.dueDateHours || 24;
         const urgentThreshold = 60;
         const warningThreshold = configuredHours * 60;

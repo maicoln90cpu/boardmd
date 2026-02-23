@@ -742,6 +742,7 @@ export type Database = {
           linked_note_id: string | null
           metric_type: string | null
           mirror_task_id: string | null
+          notification_settings: Json | null
           position: number
           priority: string | null
           recurrence_rule: Json | null
@@ -766,6 +767,7 @@ export type Database = {
           linked_note_id?: string | null
           metric_type?: string | null
           mirror_task_id?: string | null
+          notification_settings?: Json | null
           position?: number
           priority?: string | null
           recurrence_rule?: Json | null
@@ -790,6 +792,7 @@ export type Database = {
           linked_note_id?: string | null
           metric_type?: string | null
           mirror_task_id?: string | null
+          notification_settings?: Json | null
           position?: number
           priority?: string | null
           recurrence_rule?: Json | null
