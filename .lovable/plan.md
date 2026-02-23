@@ -1,114 +1,148 @@
 
+# Plano: Notificações Personalizadas por Tarefa
 
-# Plano: 3 Correções no Sistema de Notificações
+## Resumo
 
-## Problema 1: Filtro de Colunas nas Notificações Push
+Cada tarefa podera ter ate 2 lembretes proprios (com horas antes do prazo e canal: push/whatsapp). Se a tarefa nao tiver lembretes configurados, o sistema usa os horarios globais das configuracoes.
 
-### Situação Atual
-Todas as tarefas com prazo recebem notificações push, independentemente da coluna em que estão. Não existe configuração para filtrar quais colunas devem gerar alertas.
+## O que muda
 
-### Solução
-Adicionar campo `excludedPushColumnIds` (array de UUIDs) em `settings.notifications`, similar ao `excluded_column_ids` já usado nos templates de WhatsApp. Na UI de Preferências de Notificações, exibir multiselect com as colunas do usuário para que ele escolha quais colunas NÃO devem gerar alertas push. No `useDueDateAlerts.ts`, verificar se a coluna da tarefa está na lista de excluídas antes de disparar qualquer notificação.
+### 1. Banco de dados
 
-### Arquivos a modificar
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/hooks/data/useSettings.ts` | Adicionar `excludedPushColumnIds: string[]` ao tipo `notifications` com default `[]` |
-| `src/components/notifications/NotificationPreferences.tsx` | Adicionar multiselect de colunas usando `useColumns()` dentro do card "Alertas de Prazo" |
-| `src/hooks/useDueDateAlerts.ts` | No início do `forEach`, verificar se `task.column_id` está em `settings.notifications.excludedPushColumnIds` e pular se estiver |
+Adicionar coluna `notification_settings` (JSONB, nullable) na tabela `tasks`:
 
----
-
-## Problema 2: Botão "Salvar" Some em 500ms
-
-### Causa Raiz
-Em `NotificationPreferences.tsx`, o botão "Salvar" aparece quando `isDirty === true`. Porém, `updateSettings()` no `useSettings.ts` chama `scheduleBatchSave()` automaticamente, que após 500ms executa `flushPendingChanges()` e seta `isDirty = false`. Resultado: o botão aparece por ~500ms e desaparece sozinho.
-
-### Solução
-Nas Preferências de Notificações, NÃO usar o `updateSettings()` com auto-save. Em vez disso, manter um estado local das alterações e só chamar `saveSettings()` (save imediato) quando o usuário clicar em "Salvar". Isso garante que o botão permanece visível até o clique.
-
-### Arquivos a modificar
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/components/notifications/NotificationPreferences.tsx` | Usar `useState` local para mudanças pendentes, exibir botão baseado no estado local (não em `isDirty`), chamar `updateSettings()` + `saveSettings()` apenas no clique do botão |
-
----
-
-## Problema 3: Notificações Duplicadas via OneSignal
-
-### Causa Raiz
-O `useEffect` em `useDueDateAlerts.ts` tem dependência `[tasks, toast, settings.notifications]`. Como `toast` é uma referência nova a cada render e `tasks` muda frequentemente (realtime, eventos customizados), o efeito re-executa constantemente. Cada execução chama `checkDueDates()` imediatamente. Embora o sistema de snooze via `localStorage` deveria prevenir duplicatas, há uma race condition: quando duas execuções do efeito iniciam quase simultaneamente, ambas carregam o mesmo estado do `localStorage` (sem a key da tarefa), ambas enviam o push, e ambas salvam a key depois.
-
-Evidência: a tarefa "Correr" recebeu 6 pushes `due_overdue` hoje, incluindo dois com apenas 2 minutos de diferença (13:58 e 14:00).
-
-Adicionalmente, 137 registros de `due_overdue` foram criados em apenas um dia - claramente multiplicado por cada re-render.
-
-### Solução
-1. Remover `toast` da dependência do `useEffect` (usar ref)
-2. Mover a verificação de snooze para ANTES do envio push, e usar o `notifiedTasksRef` como fonte primária (memória) com localStorage apenas como persistência secundária
-3. Adicionar guard de envio: usar um `Set` de "pushes em andamento" para evitar que duas chamadas simultâneas enviem para a mesma task/nível
-4. Separar o toast local do push OneSignal: o toast local é controlado pelo snooze normalmente; o push OneSignal deve ter um controle independente mais conservador (ex: não reenviar se já enviou nas últimas 4 horas para o mesmo task+nível)
-
-### Arquivos a modificar
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/hooks/useDueDateAlerts.ts` | (1) Usar `useRef` para `toast` e remover da dep array, (2) Adicionar `pendingPushesRef` (Set) para evitar race condition, (3) Adicionar dedup por timestamp no localStorage para push OneSignal (mínimo 4h entre reenvios do mesmo nível), (4) Verificar dedup ANTES de chamar `sendOneSignalPush` |
-
-### Detalhe técnico da correção de race condition
-```text
-ANTES (bugado):
-  Effect re-run -> loadNotifiedSet() -> forEach tasks -> has(key)? NO -> send push -> add(key) -> save
-  Effect re-run (simultâneo) -> loadNotifiedSet() -> forEach tasks -> has(key)? NO -> send push -> add(key) -> save
-
-DEPOIS (corrigido):
-  Effect re-run -> loadNotifiedSet() (apenas 1x no mount) -> forEach tasks -> 
-    has(key)? NO -> pendingPushes.has(key)? NO -> add to pendingPushes -> send push -> add(key) -> save -> remove from pendingPushes
+```sql
+ALTER TABLE tasks ADD COLUMN notification_settings jsonb DEFAULT NULL;
 ```
 
----
+Estrutura do JSON:
+```json
+{
+  "reminders": [
+    { "hours_before": 24, "channel": "push" },
+    { "hours_before": 2, "channel": "whatsapp" }
+  ]
+}
+```
 
-## Análise de Impacto
+- `reminders`: array de ate 2 objetos
+- `hours_before`: numero de horas antes do prazo (1-168)
+- `channel`: "push", "whatsapp" ou "both"
+- Se `notification_settings` for `null`, usa os horarios globais do sistema
+
+### 2. Validacao (validations.ts)
+
+Adicionar `notification_settings` ao `taskSchema`:
+
+```typescript
+notification_settings: z.object({
+  reminders: z.array(z.object({
+    hours_before: z.number().min(0.5).max(168),
+    channel: z.enum(['push', 'whatsapp', 'both'])
+  })).max(2)
+}).nullable().optional()
+```
+
+### 3. Interface Task (useTasks.ts)
+
+Adicionar campo na interface `Task`:
+
+```typescript
+notification_settings?: {
+  reminders: Array<{
+    hours_before: number;
+    channel: 'push' | 'whatsapp' | 'both';
+  }>;
+} | null;
+```
+
+### 4. Modal de Tarefa (TaskModal.tsx)
+
+Adicionar nova secao "Lembretes" no modal, logo apos o campo de Data e Horario:
+
+- Switch "Lembretes personalizados" (desativado por padrao)
+- Quando ativado, mostra ate 2 linhas de configuracao:
+  - Input numerico "Horas antes" (default 24)
+  - Select de canal: "Push", "WhatsApp", "Ambos"
+  - Botao "+" para adicionar segundo lembrete
+  - Botao "X" para remover lembrete
+- Texto informativo: "Se vazio, usa as configuracoes globais do sistema"
+- Secao so aparece se a tarefa tem data/horario definido
+
+### 5. Logica de alertas (useDueDateAlerts.ts)
+
+Alterar o calculo de thresholds no `forEach` de tarefas:
+
+```text
+ANTES:
+  configuredHours = settings.notifications.dueDateHours (global)
+  warningThreshold = configuredHours * 60
+
+DEPOIS:
+  SE task.notification_settings?.reminders existe e tem itens:
+    Usar os horarios do task.notification_settings.reminders
+    Para cada reminder, verificar se minutesUntilDue <= reminder.hours_before * 60
+    Respeitar o canal configurado (push, whatsapp ou both)
+  SENAO:
+    Usar configuredHours global (comportamento atual)
+```
+
+A logica de dedup (pendingPushesRef, pushTimestampsRef) permanece identica.
+
+### 6. Hook usePushNotifications.ts (legado)
+
+Mesma alteracao: verificar `task.notification_settings` antes de usar thresholds globais.
+
+## Arquivos a modificar
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| Migracao SQL | Adicionar coluna `notification_settings` jsonb na tabela `tasks` |
+| `src/lib/validations.ts` | Adicionar `notification_settings` ao `taskSchema` |
+| `src/hooks/tasks/useTasks.ts` | Adicionar campo na interface `Task` |
+| `src/components/TaskModal.tsx` | Nova secao "Lembretes" com ate 2 configuracoes |
+| `src/hooks/useDueDateAlerts.ts` | Usar `task.notification_settings` quando disponivel, senao fallback global |
+| `src/hooks/usePushNotifications.ts` | Mesma logica de fallback |
+
+## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Filtro de colunas nas notificações | Baixo | 3/10 |
-| Botão salvar persistente | Baixo | 2/10 |
-| Correção de duplicatas OneSignal | Médio | 5/10 |
-| **Total** | **Médio** | **10/30 - Dentro do limite seguro** |
+| Nova coluna JSONB nullable | Baixo | 1/10 |
+| Validacao Zod | Baixo | 1/10 |
+| UI no TaskModal | Baixo | 3/10 |
+| Logica condicional no useDueDateAlerts | Medio | 4/10 |
+| **Total** | **Baixo** | **9/40 - Abaixo do limite seguro** |
 
 ### Vantagens
-- Controle granular sobre quais colunas geram push
-- UX corrigida no salvamento de preferências
-- Redução drástica de pushes duplicados (de 137/dia para ~15 estimados)
+- Controle granular por tarefa sem afetar as demais
+- Fallback automatico para configuracoes globais
+- Suporte a canais diferentes por lembrete (push vs whatsapp)
+- Nenhuma alteracao destrutiva: tarefas existentes continuam com `null` e usam sistema global
 
 ### Desvantagens
-- Nenhuma funcionalidade existente é removida
-- Complexidade adicional mínima no controle de dedup
-
----
+- Complexidade adicional mınima na logica de thresholds
+- Campo JSONB pode crescer, mas com limite de 2 reminders e impacto minimo
 
 ## Checklist de Testes Manuais
 
-### Filtro de colunas:
-- [ ] Ir em Notificações > Preferências > Alertas de Prazo
-- [ ] Verificar se aparece lista de colunas para excluir
-- [ ] Excluir uma coluna (ex: "Recorrente")
-- [ ] Criar tarefa com prazo nessa coluna excluída
-- [ ] Confirmar que NÃO recebe push para essa tarefa
-- [ ] Criar tarefa com prazo em coluna não excluída
-- [ ] Confirmar que recebe push normalmente
+### Criacao com lembrete personalizado:
+- [ ] Criar tarefa com data/hora e ativar "Lembretes personalizados"
+- [ ] Configurar 1 lembrete: 2 horas antes, canal Push
+- [ ] Verificar que a notificacao chega 2h antes (e NAO nos horarios globais)
+- [ ] Verificar na tabela `tasks` que `notification_settings` foi salvo corretamente
 
-### Botão Salvar:
-- [ ] Ir em Notificações > Preferências
-- [ ] Alterar qualquer configuração (ex: desativar som)
-- [ ] Verificar que o botão "Salvar" aparece e PERMANECE visível
-- [ ] Clicar em "Salvar" e confirmar toast de sucesso
-- [ ] Recarregar a página e verificar que a alteração foi persistida
+### Fallback para global:
+- [ ] Criar tarefa com data/hora SEM lembretes personalizados
+- [ ] Verificar que usa os horarios das configuracoes globais normalmente
 
-### Duplicatas:
-- [ ] Recarregar a página principal
-- [ ] Aguardar 5 minutos
-- [ ] Verificar na tabela `push_logs` se cada tarefa tem NO MÁXIMO 1 registro por nível (overdue/warning/etc) nesse período
-- [ ] Navegar entre páginas e voltar ao kanban
-- [ ] Confirmar que não gera novos registros duplicados no `push_logs`
+### Edicao:
+- [ ] Editar tarefa existente e adicionar lembretes personalizados
+- [ ] Salvar e verificar que os lembretes foram persistidos
+- [ ] Editar novamente e remover os lembretes (desativar switch)
+- [ ] Verificar que volta a usar configuracoes globais
 
+### Canal WhatsApp:
+- [ ] Criar tarefa com lembrete canal "WhatsApp"
+- [ ] Verificar que a notificacao chega via WhatsApp e NAO via push
+- [ ] Criar tarefa com canal "Ambos" e verificar ambos os canais
