@@ -1,104 +1,42 @@
 
-# Auditoria Completa: Central de Notificacoes
 
-## Diagnostico
-
-### Causa Raiz do Flicker (afeta Preferencias E Templates)
-
-Ambos os componentes inicializam seu estado local com os valores **padrao** do sistema (todos os toggles ON) porque `settings` comeca como `defaultSettings` enquanto os dados do banco ainda estao carregando.
-
-**Fluxo atual (problematico):**
-1. Componente monta -> `useState(settings.notifications)` -> usa `defaultSettings` (tudo ON)
-2. ~200-500ms depois -> banco retorna dados reais -> `useEffect` sincroniza -> toggles mudam para OFF
-3. Usuario ve: tudo ligado -> "pisca" -> muda para o estado salvo
-
-### Por que a persistencia parece falhar
-
-Na verdade a persistencia FUNCIONA (o `saveSettings` foi corrigido). O problema visual e que ao recarregar a pagina, o estado padrao (tudo ON) e mostrado primeiro, dando a impressao de que nada foi salvo. So depois de alguns milissegundos o estado correto aparece.
-
-## Solucao
-
-### 1. Guardar renderizacao ate settings carregar (`isLoading`)
-
-Ambos os componentes devem usar `isLoading` do `useSettings` para evitar mostrar dados padrao. Enquanto `isLoading === true`, exibir um skeleton/placeholder ao inves dos toggles.
-
-**NotificationPreferences.tsx:**
-- Importar `isLoading` do `useSettings()`
-- Antes do `return`, verificar `if (isLoading)` e retornar um skeleton simples
-- Isso elimina completamente o flash de "tudo ligado"
-
-**NotificationTemplatesEditor.tsx:**
-- Mesmo tratamento: guardar renderizacao com `isLoading`
-- Inicializar `templates` com array vazio enquanto carregando, so popular quando `settings.notificationTemplates` estiver disponivel
-
-### 2. Inicializacao inteligente do estado local
-
-**NotificationPreferences.tsx (linha 18):**
-```
-// ANTES (bugado):
-const [localNotifications, setLocalNotifications] = useState(settings.notifications);
-
-// DEPOIS (correto):
-// Nao mudar o useState, mas guardar o render com isLoading
-```
-
-**NotificationTemplatesEditor.tsx (linhas 32-34):**
-```
-// ANTES (bugado):
-const [templates, setTemplates] = useState(
-  settings.notificationTemplates || defaultNotificationTemplates
-);
-
-// DEPOIS:
-// Manter o useState, mas so renderizar a lista quando isLoading === false
-```
-
-### 3. Evitar re-sync desnecessario do realtime apos save proprio
-
-No `useEffect` de sync do `NotificationTemplatesEditor` (linhas 41-52), adicionar uma flag `isSaving` para ignorar atualizacoes do realtime que sao eco do proprio save. Isso evita um segundo "flash" apos salvar.
+# Plano: Substituir "boardmd" e "board.infoprolab" por "taskflow"
 
 ## Arquivos a modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/components/notifications/NotificationPreferences.tsx` | Adicionar `isLoading` do useSettings; mostrar skeleton enquanto carrega |
-| `src/components/NotificationTemplatesEditor.tsx` | Adicionar `isLoading` do useSettings; mostrar skeleton enquanto carrega; ajustar useEffect de sync para ignorar durante save |
+| `index.html` (linha 40) | `board.infoprolab.com.br` -> `taskflow.infoprolab.com.br` |
+| `src/lib/push/oneSignalProvider.ts` (linhas 13, 226) | Dominio permitido e diagnostico: `board.infoprolab.com.br` -> `taskflow.infoprolab.com.br` |
+| `src/hooks/useOneSignal.ts` (linhas 28-29) | Mensagem de erro e verificacao: `board.infoprolab.com.br` -> `taskflow.infoprolab.com.br` |
+| `src/lib/sync/indexedDB.ts` (linha 1) | `boardmd_offline` -> `taskflow_offline` |
+| `src/components/whatsapp/WhatsAppTemplates.tsx` (linhas 62, 120) | "Acesse o BoardMD" -> "Acesse o TaskFlow" |
+| `supabase/functions/whatsapp-instance/index.ts` (linha 63) | `boardmd-${user.id}` -> `taskflow-${user.id}` |
+| `onedoc.md` (linha 615) | Referencia de diagnostico: `board.infoprolab.com.br` -> `taskflow.infoprolab.com.br` |
 
 ## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Guard com isLoading nas Preferencias | Baixo | 1/10 |
-| Guard com isLoading nos Templates | Baixo | 1/10 |
-| Ajuste no sync do realtime | Baixo | 2/10 |
-| **Total** | **Baixo** | **4/30 - Bem abaixo do limite seguro** |
+| OneSignal: trocar dominio em 3 arquivos | Baixo | 1/10 |
+| IndexedDB: renomear banco local | Medio | 3/10 |
+| WhatsApp templates: texto | Baixo | 1/10 |
+| WhatsApp instance: nome da instancia | Medio | 3/10 |
+| Documentacao (onedoc.md) | Baixo | 1/10 |
+| **Total** | **Baixo-Medio** | **9/50 - Abaixo do limite seguro** |
 
-### Vantagens
-- Elimina completamente o flicker visual (toggles nunca mostram estado errado)
-- Zero risco de regressao: apenas adiciona loading guard, nao altera logica de save
-- Persistencia ja funciona; so precisamos garantir que o usuario veja o estado correto desde o inicio
+### Nota sobre IndexedDB
 
-### Desvantagens
-- Nenhuma desvantagem significativa
-- Pode haver um breve skeleton (~200ms) antes dos dados carregarem, mas e muito melhor que mostrar dados errados
+Renomear `boardmd_offline` para `taskflow_offline` significa que o banco local antigo ficara orfao. Usuarios existentes perderao dados offline em cache (nao dados do servidor). Risco real e baixo pois os dados sao sincronizados com o backend.
+
+### Nota sobre WhatsApp Instance
+
+Alterar o prefixo de `boardmd-` para `taskflow-` afeta o nome da instancia na Evolution API. Instancias existentes continuarao com o nome antigo; novas instancias usarao o novo prefixo. Nao ha impacto funcional pois o ID do usuario garante unicidade.
 
 ## Checklist de Testes Manuais
 
-### Preferencias:
-- [ ] Desativar "Notificacoes de prazo" e "Som de notificacao"
-- [ ] Salvar
-- [ ] Recarregar pagina (F5)
-- [ ] Verificar que os toggles JA APARECEM desativados (sem flicker)
-- [ ] Nao deve haver momento em que aparecem ativados e depois desativam
-
-### Templates:
-- [ ] Desativar 2 templates (ex: "Nova Tarefa" e "Tarefa Concluida")
-- [ ] Salvar
-- [ ] Recarregar pagina (F5)
-- [ ] Verificar que os templates JA APARECEM desativados (sem flicker)
-- [ ] Verificar que os badges mostram "Desativado" imediatamente
-
-### Persistencia entre dispositivos:
-- [ ] Fazer alteracoes em um dispositivo
-- [ ] Abrir em outro dispositivo
-- [ ] Verificar que os dados estao sincronizados corretamente
+- [ ] Abrir o app em `taskflow.infoprolab.com.br` e verificar que OneSignal inicializa
+- [ ] Verificar diagnosticos OneSignal: dominio deve mostrar `taskflow.infoprolab.com.br`
+- [ ] Abrir `/notifications` e verificar que nao ha referencias a "BoardMD"
+- [ ] Verificar templates de WhatsApp: textos devem mencionar "TaskFlow"
+- [ ] Verificar que dados offline continuam funcionando (sincronizacao com backend)
