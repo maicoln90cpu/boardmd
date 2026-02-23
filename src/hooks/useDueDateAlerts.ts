@@ -209,7 +209,7 @@ export function useDueDateAlerts(tasks: Task[]) {
         
         try {
           const template = getTemplateById(userTemplates, templateId);
-          if (!template) return;
+          if (!template || template.enabled === false) return;
           const formatted = formatNotificationTemplate(template, { taskTitle });
           await oneSignalNotifier.send({
             user_id: user.id,

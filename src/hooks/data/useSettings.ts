@@ -513,33 +513,10 @@ export function useSettings() {
   const saveSettings = useCallback(async () => {
     if (!user) return;
 
-    // Flush any pending changes first
+    // flushPendingChanges uses settingsRef.current (always fresh)
     await flushPendingChanges();
-
-    // Then do immediate save
-    const { data: existingSettings } = await supabase
-      .from("user_settings")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (existingSettings) {
-      const { error } = await supabase
-        .from("user_settings")
-        .update({ settings: settings as any })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from("user_settings")
-        .insert({ user_id: user.id, settings: settings as any });
-
-      if (error) throw error;
-    }
-
     setIsDirty(false);
-  }, [user, settings, flushPendingChanges]);
+  }, [user, flushPendingChanges]);
 
   const resetSettings = useCallback(() => {
     setSettings(defaultSettings);
