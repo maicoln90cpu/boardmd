@@ -189,11 +189,12 @@ export function useDueDateAlerts(tasks: Task[]) {
     const checkDueDates = async () => {
       const now = new Date();
       const currentSettings = settingsRef.current;
+      if (!currentSettings.dueDate) return; // Guard: não executar se desabilitado
       const excludedColumns = currentSettings.excludedPushColumnIds || [];
       const { data: { user } } = await supabase.auth.getUser();
       const userTemplates = settings.notificationTemplates || defaultNotificationTemplates;
 
-      const sendOneSignalPush = async (templateId: string, taskTitle: string, taskId: string, level: string) => {
+      const sendOneSignalPush = async (templateId: string, taskTitle: string, taskId: string, level: string, timeRemaining?: string) => {
         if (!user) return;
         
         // Dedup guard: check if push is already in-flight
@@ -210,7 +211,9 @@ export function useDueDateAlerts(tasks: Task[]) {
         try {
           const template = getTemplateById(userTemplates, templateId);
           if (!template || template.enabled === false) return;
-          const formatted = formatNotificationTemplate(template, { taskTitle });
+          const vars: Record<string, string> = { taskTitle };
+          if (timeRemaining) vars.timeRemaining = timeRemaining;
+          const formatted = formatNotificationTemplate(template, vars);
           await oneSignalNotifier.send({
             user_id: user.id,
             title: formatted.title,
@@ -295,7 +298,7 @@ export function useDueDateAlerts(tasks: Task[]) {
                   description: `"${task.title}" vence em ${timeText}`,
                 });
                 showBrowserNotification("🔔 Lembrete de Tarefa", `"${task.title}" vence em ${timeText}`, reminder.hours_before <= 1);
-                sendOneSignalPush('due_warning', task.title, task.id, `custom-${idx}`);
+                sendOneSignalPush('due_warning', task.title, task.id, `custom-${idx}`, timeText);
               }
               
               // Send WhatsApp if channel is whatsapp or both
@@ -349,7 +352,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               variant: "destructive",
             });
             showBrowserNotification("🔥 Prazo Urgente!", `"${task.title}" vence em menos de 1 hora`, true);
-            sendOneSignalPush('due_urgent', task.title, task.id, 'urgent');
+            sendOneSignalPush('due_urgent', task.title, task.id, 'urgent', 'menos de 1 hora');
             notifiedTasksRef.current.add(`${taskId}-urgent`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -365,7 +368,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               description: `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`,
             });
             showBrowserNotification("⚠️ Prazo Próximo", `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`, false);
-            sendOneSignalPush('due_warning', task.title, task.id, 'warning');
+            sendOneSignalPush('due_warning', task.title, task.id, 'warning', `${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`);
             notifiedTasksRef.current.add(`${taskId}-warning`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -381,7 +384,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               description: `"${task.title}" vence em ${hoursUntilDue} horas`,
             });
             showBrowserNotification("📅 Prazo se Aproximando", `"${task.title}" vence em ${hoursUntilDue} horas`, false);
-            sendOneSignalPush('due_early', task.title, task.id, 'early');
+            sendOneSignalPush('due_early', task.title, task.id, 'early', `${hoursUntilDue} horas`);
             notifiedTasksRef.current.add(`${taskId}-early`);
             saveNotifiedSet(notifiedTasksRef.current);
           }
@@ -397,5 +400,5 @@ export function useDueDateAlerts(tasks: Task[]) {
     const interval = setInterval(checkDueDates, checkIntervalMs);
 
     return () => clearInterval(interval);
-  }, [tasks, settings.notificationTemplates]);
+  }, [tasks, settings.notificationTemplates, settings.notifications.dueDate]);
 }
