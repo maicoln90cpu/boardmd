@@ -1,13 +1,15 @@
+import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Settings, History, MessageSquare } from "lucide-react";
 import { PushProviderSelector } from "@/components/PushProviderSelector";
-import { NotificationPreferences } from "@/components/notifications/NotificationPreferences";
-import { NotificationHistory } from "@/components/notifications/NotificationHistory";
-import { NotificationTemplatesEditor } from "@/components/NotificationTemplatesEditor";
-import { WhatsAppSettings } from "@/components/whatsapp/WhatsAppSettings";
-import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const NotificationPreferences = lazy(() => import("@/components/notifications/NotificationPreferences").then(m => ({ default: m.NotificationPreferences })));
+const NotificationHistory = lazy(() => import("@/components/notifications/NotificationHistory").then(m => ({ default: m.NotificationHistory })));
+const NotificationTemplatesEditor = lazy(() => import("@/components/NotificationTemplatesEditor").then(m => ({ default: m.NotificationTemplatesEditor })));
+const WhatsAppSettings = lazy(() => import("@/components/whatsapp/WhatsAppSettings").then(m => ({ default: m.WhatsAppSettings })));
 
 // WhatsApp icon inline
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -16,8 +18,17 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+function TabSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-32 w-full" />
+      <Skeleton className="h-10 w-3/4" />
+    </div>
+  );
+}
+
 export default function NotificationsDashboard() {
-  const navigate = useNavigate();
   const { toggleTheme } = useTheme();
   
   return (
@@ -74,19 +85,27 @@ export default function NotificationsDashboard() {
             </TabsContent>
 
             <TabsContent value="whatsapp" className="space-y-4">
-              <WhatsAppSettings />
+              <Suspense fallback={<TabSkeleton />}>
+                <WhatsAppSettings />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="preferences" className="space-y-4">
-              <NotificationPreferences />
+              <Suspense fallback={<TabSkeleton />}>
+                <NotificationPreferences />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="templates" className="space-y-4">
-              <NotificationTemplatesEditor />
+              <Suspense fallback={<TabSkeleton />}>
+                <NotificationTemplatesEditor />
+              </Suspense>
             </TabsContent>
 
             <TabsContent value="history" className="space-y-4">
-              <NotificationHistory />
+              <Suspense fallback={<TabSkeleton />}>
+                <NotificationHistory />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </div>
