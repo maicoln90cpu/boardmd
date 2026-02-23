@@ -353,14 +353,27 @@ export default function Calendar() {
   const handleCreateTask = async (taskData: any) => {
     // If editing, update the task
     if (editingTask) {
+      const updatePayload: Record<string, any> = {
+        title: taskData.title,
+        description: taskData.description || null,
+        due_date: taskData.due_date || null,
+        priority: taskData.priority || null,
+        tags: taskData.tags || [],
+        subtasks: taskData.subtasks || [],
+        recurrence_rule: taskData.recurrence_rule || null,
+        track_metrics: taskData.track_metrics || false,
+        metric_type: taskData.metric_type || null,
+        track_comments: taskData.track_comments || false,
+        notification_settings: taskData.notification_settings || null,
+        linked_course_id: taskData.linked_course_id || null,
+      };
+      // Only update category/column if provided
+      if (taskData.category_id) updatePayload.category_id = taskData.category_id;
+      if (taskData.column_id) updatePayload.column_id = taskData.column_id;
+
       const { error } = await supabase
         .from("tasks")
-        .update({
-          title: taskData.title,
-          description: taskData.description || null,
-          due_date: taskData.due_date || null,
-          priority: taskData.priority || null,
-        })
+        .update(updatePayload)
         .eq("id", editingTask.id);
 
       if (!error) {
@@ -371,11 +384,11 @@ export default function Calendar() {
       return;
     }
 
-    // Get first category and column as defaults
-    const defaultCategoryId = categories[0]?.id;
-    const defaultColumnId = columns[0]?.id;
+    // Create new task
+    const categoryId = taskData.category_id || categories[0]?.id;
+    const columnId = taskData.column_id || columns[0]?.id;
 
-    if (!defaultCategoryId || !defaultColumnId) return;
+    if (!categoryId || !columnId) return;
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -385,8 +398,16 @@ export default function Calendar() {
       description: taskData.description || null,
       due_date: taskData.due_date || null,
       priority: taskData.priority || null,
-      category_id: defaultCategoryId,
-      column_id: defaultColumnId,
+      tags: taskData.tags || [],
+      subtasks: taskData.subtasks || [],
+      recurrence_rule: taskData.recurrence_rule || null,
+      track_metrics: taskData.track_metrics || false,
+      metric_type: taskData.metric_type || null,
+      track_comments: taskData.track_comments || false,
+      notification_settings: taskData.notification_settings || null,
+      linked_course_id: taskData.linked_course_id || null,
+      category_id: categoryId,
+      column_id: columnId,
       user_id: user.id,
       position: 0,
     });

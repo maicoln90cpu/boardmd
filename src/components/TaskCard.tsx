@@ -230,6 +230,15 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const isWarning = urgency === "warning";
   const isUltraCompact = densityMode === "ultra-compact";
 
+  // Custom priority colors from settings
+  const priorityColors = settings.customization?.priorityColors;
+  const customBorderStyle = React.useMemo(() => {
+    if (!priorityColors) return null;
+    const p = task.priority;
+    if (p === "high" && priorityColors.high?.background) return { borderWidth: '2px', borderColor: priorityColors.high.background, borderStyle: 'solid' as const };
+    if (p === "medium" && priorityColors.medium?.background && (isWarning || isUrgent)) return { borderLeftWidth: '4px', borderLeftColor: priorityColors.medium.background, borderLeftStyle: 'solid' as const };
+    return null;
+  }, [priorityColors, task.priority, isWarning, isUrgent]);
   // Optimistic local state
   const [isLocalCompleted, setIsLocalCompleted] = React.useState(task.is_completed);
   const [confirmCompleteOpen, setConfirmCompleteOpen] = React.useState(false);
@@ -507,13 +516,18 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                   isUltraCompact && "p-0",
                   densityMode === "compact" && "p-0",
                   densityMode === "comfortable" && "p-0",
-                  isOverdue && "border-2 border-destructive",
-                  isUrgent && "border-2 border-orange-500",
-                  isWarning && "border-l-4 border-l-yellow-500",
+                  !customBorderStyle && isOverdue && "border-2 border-destructive",
+                  !customBorderStyle && isUrgent && "border-2 border-orange-500",
+                  !customBorderStyle && isWarning && "border-l-4 border-l-yellow-500",
                   isDragging && "shadow-2xl ring-2 ring-primary/20",
                   isSelected && "ring-2 ring-primary bg-primary/5",
                   isSelectionMode && !isSelected && "opacity-80",
                 )}
+                style={customBorderStyle ? {
+                  ...customBorderStyle,
+                  ...(isOverdue ? { boxShadow: '0 0 0 2px var(--destructive)' } : {}),
+                  ...(isUrgent ? { boxShadow: '0 0 0 2px rgb(249 115 22)' } : {}),
+                } : undefined}
                 onDoubleClick={() => !isSelectionMode && onEdit(task)}
                 onClick={() => {
                   if (isSelectionMode && onToggleSelection) {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { ColumnColorPicker } from "./ColumnColorPicker";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -55,6 +56,7 @@ interface ColumnManagerProps {
   onReorderColumns: (newOrder: Column[]) => void;
   onAddColumn: (name: string) => void;
   onToggleKanbanVisibility: (columnId: string, kanbanType: 'projects', visible: boolean) => void;
+  onColorChange?: (columnId: string, color: string | null) => void;
 }
 
 interface SortableColumnItemProps {
@@ -67,6 +69,7 @@ interface SortableColumnItemProps {
   onDelete: () => void;
   onRename: (newName: string) => void;
   onToggleKanbanVisibility: (kanbanType: 'projects', visible: boolean) => void;
+  onColorChange?: (color: string | null) => void;
 }
 
 function SortableColumnItem({
@@ -79,6 +82,7 @@ function SortableColumnItem({
   onDelete,
   onRename,
   onToggleKanbanVisibility,
+  onColorChange,
 }: SortableColumnItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
@@ -180,6 +184,12 @@ function SortableColumnItem({
         </div>
 
         <div className="flex items-center gap-1 ml-2">
+          {onColorChange && (
+            <ColumnColorPicker
+              currentColor={column.color || null}
+              onColorChange={(color) => onColorChange(color)}
+            />
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -235,6 +245,7 @@ export function ColumnManager({
   onReorderColumns,
   onAddColumn,
   onToggleKanbanVisibility,
+  onColorChange,
 }: ColumnManagerProps) {
   const { tasks } = useTasks("all");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -387,6 +398,7 @@ export function ColumnManager({
                           onToggleKanbanVisibility={(kanbanType, visible) => 
                             onToggleKanbanVisibility(column.id, kanbanType, visible)
                           }
+                          onColorChange={onColorChange ? (color) => onColorChange(column.id, color) : undefined}
                         />
                       );
                     })}
