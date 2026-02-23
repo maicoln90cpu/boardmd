@@ -1,163 +1,176 @@
 
-# Plano: Correção de Notificações + Descrições de Templates + Auditoria Completa
+# Plano: 6 Correções - Calendário, Notificações, Cores e Colunas
 
-## Problema 1: Notificações disparam mesmo com alertas desativados (CRITICO)
+## 1. Performance da página /notifications (Preferências e Templates)
 
-### Causa raiz (2 bugs):
+### Diagnóstico:
+A página já usa lazy loading (`React.lazy`), skeleton loaders, e guards de `isLoading`. O gargalo principal é o hook `useSettings` que faz fetch do banco e o `useColumns` (usado em Preferências para listar colunas excluídas). Ambos são chamados independentemente por cada aba.
 
-**Bug A:** O efeito principal em `useDueDateAlerts.ts` (linha 160) tem dependencias `[tasks, settings.notificationTemplates]` mas NAO inclui `settings.notifications.dueDate`. Quando o usuario desativa os alertas, o efeito NAO re-executa, e o `setInterval` antigo continua rodando e disparando notificacoes.
+### Solução:
+- Aplicar `React.lazy` nos componentes individuais das abas (`NotificationPreferences`, `NotificationTemplatesEditor`, `NotificationHistory`) para que cada aba só carregue quando clicada
+- O `TabsContent` com `forceMount` não será usado - apenas lazy import dos componentes pesados
 
-**Bug B:** Dentro de `checkDueDates` (linha 189), o codigo le `settingsRef.current` mas NUNCA verifica `currentSettings.dueDate` novamente. Mesmo que o ref esteja atualizado, a funcao nao checa se deve parar.
+### Arquivos:
+- `src/pages/NotificationsDashboard.tsx`: Lazy-load das abas Preferências, Templates e Histórico
 
-### Correcao em `src/hooks/useDueDateAlerts.ts`:
-
-1. Adicionar `settings.notifications.dueDate` ao array de dependencias do efeito (linha 400)
-2. Adicionar guard `if (!currentSettings.dueDate) return;` dentro de `checkDueDates` como seguranca extra
-
-**Antes (linha 400):**
-```
-}, [tasks, settings.notificationTemplates]);
-```
-**Depois:**
-```
-}, [tasks, settings.notificationTemplates, settings.notifications.dueDate]);
-```
-
-**Antes (dentro de checkDueDates, ~linha 191):**
-```
-const currentSettings = settingsRef.current;
-const excludedColumns = currentSettings.excludedPushColumnIds || [];
-```
-**Depois:**
-```
-const currentSettings = settingsRef.current;
-if (!currentSettings.dueDate) return;
-const excludedColumns = currentSettings.excludedPushColumnIds || [];
-```
+### Risco: Baixo | Complexidade: 2/10
 
 ---
 
-## Problema 2: Variavel `{{timeRemaining}}` vazia nas notificacoes push
+## 2. Criação de tarefa pelo calendário - NÃO respeita dados do modal (BUG CRÍTICO)
 
 ### Causa raiz:
-A funcao `sendOneSignalPush` (linha 196) chama `formatNotificationTemplate(template, { taskTitle })` passando APENAS `taskTitle`. A variavel `timeRemaining` nunca e passada, resultando em mensagens como "vence em" sem completar o texto.
+O `handleCreateTask` em `Calendar.tsx` (linha 353) ignora TODOS os campos que o `TaskModal` envia, exceto `title`, `description`, `due_date` e `priority`. Especificamente:
 
-### Correcao em `src/hooks/useDueDateAlerts.ts`:
+**Na criação (linhas 383-392):**
+- `category_id` é SEMPRE `categories[0]?.id` (primeira categoria), ignorando o que o usuário selecionou no modal
+- `column_id` é SEMPRE `columns[0]?.id` (primeira coluna), ignorando seleção
+- `tags`, `subtasks`, `recurrence_rule`, `track_metrics`, `track_comments`, `linked_course_id`, `notification_settings` são todos IGNORADOS
 
-Alterar a assinatura de `sendOneSignalPush` para aceitar `timeRemaining` e passa-lo ao `formatNotificationTemplate`.
+**Na edição (linhas 356-364):**
+- Só atualiza `title`, `description`, `due_date`, `priority`
+- Ignora: `tags`, `category_id`, `column_id`, `subtasks`, `recurrence_rule`, `track_metrics`, `metric_type`, `track_comments`, `linked_course_id`, `notification_settings`
 
-**Antes:**
-```typescript
-const sendOneSignalPush = async (templateId, taskTitle, taskId, level) => {
-  ...
-  const formatted = formatNotificationTemplate(template, { taskTitle });
-```
-**Depois:**
-```typescript
-const sendOneSignalPush = async (templateId, taskTitle, taskId, level, timeRemaining?: string) => {
-  ...
-  const vars: Record<string, string> = { taskTitle };
-  if (timeRemaining) vars.timeRemaining = timeRemaining;
-  const formatted = formatNotificationTemplate(template, vars);
-```
+### Solução:
+Reescrever `handleCreateTask` para usar TODOS os campos do `taskData` recebido do `TaskModal`.
 
-Todas as chamadas de `sendOneSignalPush` serao atualizadas para passar o `timeRemaining` correto:
-- `overdue`: sem timeRemaining (nao usa)
-- `urgent`: "menos de 1 hora"
-- `warning`: "X hora(s)"
-- `early`: "X horas"
+### Arquivos:
+- `src/pages/Calendar.tsx`: Reescrever `handleCreateTask` completo
+
+### Risco: Baixo | Complexidade: 3/10
 
 ---
 
-## Problema 3: Templates sem descricao da logica de disparo
+## 3. Edição de tarefas pelo calendário (BUG)
 
-### Correcao em `src/lib/defaultNotificationTemplates.ts`:
+### Causa raiz:
+Mesmo bug do item 2. O bloco de edição (linhas 356-364) só passa 4 campos ao `supabase.update()`. Todos os outros campos editados no modal são descartados silenciosamente.
 
-Adicionar campo `description` na interface `NotificationTemplate` com texto explicativo para cada template:
-
-| Template | Descricao |
-|---|---|
-| `task_created` | "Disparado ao criar uma nova tarefa no kanban." |
-| `task_completed` | "Disparado ao marcar uma tarefa como concluida." |
-| `task_assigned` | "Disparado quando uma tarefa e atribuida a voce." |
-| `due_overdue` | "Disparado quando o prazo da tarefa ja expirou. Aparece como alerta urgente." |
-| `due_urgent` | "Disparado quando faltam menos de 1 hora para o vencimento. Alerta de acao imediata." |
-| `due_warning` | "Disparado quando faltam X horas para o vencimento (configuravel em Preferencias). Alerta moderado." |
-| `due_early` | "Disparado quando faltam o dobro das horas configuradas. Alerta preventivo de planejamento." |
-| `system_update` | "Disparado quando uma nova versao do app esta disponivel." |
-| `system_backup` | "Disparado apos backup automatico dos dados." |
-| `system_sync` | "Disparado apos sincronizacao entre dispositivos." |
-| `achievement_streak` | "Disparado ao manter uma sequencia de dias consecutivos completando tarefas." |
-| `achievement_milestone` | "Disparado ao atingir um marco de tarefas completadas (ex: 50, 100)." |
-| `achievement_level` | "Disparado ao subir de nivel no sistema de gamificacao." |
-
-### Correcao em `src/components/NotificationTemplatesEditor.tsx`:
-
-Exibir o campo `description` abaixo do nome de cada template na lista, como texto explicativo em cinza.
+### Solução:
+Incluída na correção do item 2 - o update passará todos os campos do `taskData`.
 
 ---
 
-## Auditoria Completa da Pagina de Notificacoes
+## 4. Cores de prioridade não funcionam (BUG)
 
-### Problemas encontrados e correcoes:
+### Causa raiz:
+O `TaskCard` recebe `priorityColors` como prop mas **nunca aplica essas cores no render**. O prop existe na interface, é passado pelo `KanbanBoard`, é comparado no `React.memo`, mas o JSX do card usa apenas classes Tailwind hardcoded (`border-destructive`, `border-orange-500`, etc). A cor customizada do Config nunca chega ao visual.
 
-| Item | Status | Acao |
-|---|---|---|
-| Alertas disparam com toggle OFF | BUG CRITICO | Corrigir deps do useEffect + guard |
-| `{{timeRemaining}}` vazio em push | BUG | Passar variavel ao formatar |
-| Templates sem descricao | MELHORIA | Adicionar campo description |
-| OneSignal: dominio antigo no Firefox | CACHE | Usuario deve limpar cache do Firefox (a notificacao mostra "board.infoprolab.com.br" porque foi cacheada antes da mudanca) |
-| NotificationPreferences: save funciona | OK | Nenhuma alteracao |
-| NotificationHistory: carrega logs | OK | Nenhuma alteracao |
-| PushProviderSelector: diagnostico | OK | Nenhuma alteracao |
-| Templates editor: toggle on/off | OK | Nenhuma alteracao |
-| Templates editor: teste push | OK | Nenhuma alteracao |
-| WhatsApp tab | OK | Nenhuma alteracao |
-| Chamadas duplicadas | OK | useDueDateAlerts so e chamado em Index.tsx (1 vez) |
-| Tabs sobrepostas | OK | Layout correto |
+### Solução:
+No `TaskCard`, usar `settings.customization?.priorityColors` (já lido via `useSettings`) para aplicar estilos inline no card em vez das classes hardcoded. A lógica será:
+1. Se há cor customizada definida, usar `style={{ borderColor: priorityColors.high.background }}` etc.
+2. Se não, manter as classes Tailwind padrão como fallback
+
+### Arquivos:
+- `src/components/TaskCard.tsx`: Aplicar priorityColors no render do Card
+
+### Risco: Baixo | Complexidade: 3/10
+
+---
+
+## 5. Permitir alterar cores das colunas pelo Gerenciador de Colunas
+
+### Diagnóstico:
+O `ColumnColorPicker` já existe e funciona no header de cada coluna do Kanban. Mas o `ColumnManager` (modal "Gerenciar Colunas") NÃO tem opção de cor.
+
+### Solução:
+Adicionar o `ColumnColorPicker` no `SortableColumnItem` dentro do `ColumnManager`, ao lado dos botões de renomear e deletar.
+
+### Arquivos:
+- `src/components/kanban/ColumnManager.tsx`: Adicionar ColumnColorPicker + prop `onColorChange`
+
+### Props necessárias:
+O `ColumnManager` precisa receber `onColorChange` como prop (já existe `updateColumnColor` no `useColumns`).
+
+### Risco: Baixo | Complexidade: 2/10
+
+---
+
+## 6. Explicação das cores no calendário (SEM alteração de código)
+
+Cada tarefa no calendário pode ter até 3 fontes de cor, com a seguinte hierarquia de prioridade:
+
+### Hierarquia de cores (1 = maior prioridade):
+
+1. **Cor da coluna** (borda esquerda colorida + fundo suave): Se a coluna da tarefa tem cor definida (ex: azul, verde, vermelho), o card usa essa cor. Isso identifica o STATUS da tarefa (ex: "A Fazer" = azul, "Em Progresso" = verde).
+
+2. **Atrasada** (borda vermelha + fundo vermelho suave): Se a tarefa NÃO está em coluna "Concluído" E o prazo já passou, aparece em vermelho com borda vermelha. Se a coluna TEM cor, a cor da coluna prevalece MAS aparece um anel vermelho fino ao redor.
+
+3. **Prioridade** (bolinha indicadora): Se não há cor de coluna nem atraso, a cor do fundo vem da prioridade:
+   - Vermelho = Alta prioridade
+   - Amarelo/Âmbar = Média prioridade  
+   - Verde = Baixa prioridade
+   - Cinza = Sem prioridade definida
+
+### Bolinha indicadora (dot):
+- Cada tarefa tem uma bolinha pequena à esquerda do título
+- A cor da bolinha segue a mesma hierarquia: cor da coluna > cor de atraso > cor de prioridade
+
+### No mobile:
+- Os dots coloridos abaixo de cada dia seguem a mesma lógica
+- Máximo 3 dots visíveis + contagem "+N" se houver mais
+
+### Resumo visual:
+- Card com borda esquerda colorida = cor da COLUNA (status)
+- Card vermelho = tarefa ATRASADA (sem cor de coluna)
+- Card com fundo suave verde/amarelo/vermelho = PRIORIDADE (sem cor de coluna, sem atraso)
 
 ---
 
 ## Resumo de Arquivos a Modificar
 
-| Arquivo | Alteracao |
+| Arquivo | Alteração |
 |---|---|
-| `src/hooks/useDueDateAlerts.ts` | Corrigir deps, guard interno, passar timeRemaining |
-| `src/lib/defaultNotificationTemplates.ts` | Adicionar campo `description` a interface e a cada template |
-| `src/components/NotificationTemplatesEditor.tsx` | Exibir `description` na lista de templates |
+| `src/pages/NotificationsDashboard.tsx` | Lazy-load dos componentes de cada aba |
+| `src/pages/Calendar.tsx` | Reescrever handleCreateTask para passar todos os campos |
+| `src/components/TaskCard.tsx` | Aplicar priorityColors customizadas no render |
+| `src/components/kanban/ColumnManager.tsx` | Adicionar ColumnColorPicker + prop onColorChange |
+| `src/components/KanbanBoard.tsx` | Passar updateColumnColor ao ColumnManager (se necessário) |
 
-## Analise de Impacto
+## Análise de Impacto
 
 | Item | Risco | Complexidade |
 |---|---|---|
-| Corrigir deps do useEffect | Baixo | 2/10 |
-| Guard interno em checkDueDates | Baixo | 1/10 |
-| Passar timeRemaining ao push | Baixo | 2/10 |
-| Adicionar description aos templates | Baixo | 2/10 |
-| Exibir description no editor | Baixo | 1/10 |
-| **Total** | **Baixo** | **8/50 - Bem abaixo do limite seguro** |
+| Lazy-load abas notificações | Baixo | 2/10 |
+| Corrigir criação de tarefas no calendário | Baixo | 3/10 |
+| Corrigir edição de tarefas no calendário | Baixo | 3/10 |
+| Aplicar priorityColors no TaskCard | Médio | 3/10 |
+| ColumnColorPicker no ColumnManager | Baixo | 2/10 |
+| Explicação cores (sem código) | N/A | 0/10 |
+| **Total** | **Baixo-Médio** | **13/60 - Abaixo do limite seguro** |
 
 ### Vantagens
-- Corrige bug critico de notificacoes disparando quando desabilitadas
-- Corrige texto incompleto "vence em" nas push notifications
-- Cada template agora explica exatamente quando e disparado
-- Nota sobre Firefox: o dominio antigo e cache do SW - orientar usuario a limpar
+- Tarefas criadas/editadas pelo calendário finalmente respeitarão todos os campos do modal
+- Cores de prioridade customizadas serão aplicadas visualmente nos cards
+- Cores de colunas editáveis diretamente no gerenciador
+- Página de notificações mais rápida
 
 ### Desvantagens
-- Nenhuma significativa
-
-## Nota sobre "board.infoprolab.com.br" no Firefox
-
-A notificacao do Firefox mostra "via board.infoprolab.com.br" porque o Service Worker antigo ainda esta cacheado naquele navegador. A correcao do dominio ja foi aplicada no codigo. O usuario deve:
-1. Abrir `board.infoprolab.com.br` no Firefox
-2. Ir em Configuracoes do Site > Limpar dados
-3. Ou desregistrar o Service Worker em `about:serviceworkers`
+- A aplicação de priorityColors via inline style em vez de Tailwind pode causar diferença sutil na transição de hover
 
 ## Checklist de Testes Manuais
 
-- [ ] Desativar "Notificacoes de prazo" em Preferencias e salvar
-- [ ] Aguardar 1 minuto - NAO devem aparecer notificacoes de prazo
-- [ ] Reativar e verificar que voltam a funcionar
-- [ ] Verificar que notificacoes push mostram texto completo (ex: "vence em 2 horas" em vez de "vence em")
-- [ ] Abrir Templates e verificar que cada um tem descricao explicativa abaixo do nome
-- [ ] Limpar cache do Firefox em board.infoprolab.com.br para resolver dominio antigo
+### Criação pelo calendário:
+- [ ] Abrir /calendar e clicar no "+" de um dia
+- [ ] No modal, preencher TODOS os campos (título, descrição, prioridade, data, tags, categoria, coluna, subtasks)
+- [ ] Salvar e verificar que a tarefa aparece com a categoria e coluna CORRETAS no Kanban
+- [ ] Verificar que tags, subtasks e recorrência foram salvos
+
+### Edição pelo calendário:
+- [ ] Clicar duas vezes em uma tarefa no calendário
+- [ ] Alterar categoria, coluna, tags e prioridade
+- [ ] Salvar e verificar que TODAS as mudanças persistiram
+
+### Cores de prioridade:
+- [ ] Ir em /config > Aparência > Cores de Prioridade
+- [ ] Alterar a cor de Alta Prioridade para uma cor diferente (ex: roxo)
+- [ ] Voltar ao Kanban e verificar que cards de alta prioridade usam a nova cor
+
+### Cores de colunas:
+- [ ] Abrir o Gerenciador de Colunas (ícone de engrenagem no Kanban)
+- [ ] Verificar que cada coluna tem um ícone de paleta para alterar a cor
+- [ ] Alterar a cor de uma coluna e verificar que muda no Kanban e no Calendário
+
+### Performance notificações:
+- [ ] Abrir /notifications e medir tempo de carregamento da aba Templates
+- [ ] Trocar entre abas e verificar que cada uma carrega independentemente
