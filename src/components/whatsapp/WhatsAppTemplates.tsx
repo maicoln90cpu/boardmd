@@ -59,7 +59,7 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   {
     template_type: "due_date",
     label: "⏰ Tarefa Vencendo",
-    message_template: "⏰ *Alerta de Prazo*\n\nA tarefa \"{{taskTitle}}\" vence em {{timeRemaining}}.\n\nAcesse o BoardMD para gerenciar.",
+    message_template: "⏰ *Alerta de Prazo*\n\nA tarefa \"{{taskTitle}}\" vence em {{timeRemaining}}.\n\nAcesse o TaskFlow para gerenciar.",
     is_enabled: true,
     variables: ["taskTitle", "timeRemaining"],
     send_time: "",
@@ -117,7 +117,7 @@ const DEFAULT_TEMPLATES: Omit<Template, "id">[] = [
   {
     template_type: "task_overdue",
     label: "🚨 Tarefa Atrasada",
-    message_template: "🚨 *Atenção!*\n\nA tarefa \"{{taskTitle}}\" está atrasada há {{overdueTime}}.\nVocê tem {{totalOverdue}} tarefa(s) atrasada(s) no total.\n\nAcesse o BoardMD para resolver.",
+    message_template: "🚨 *Atenção!*\n\nA tarefa \"{{taskTitle}}\" está atrasada há {{overdueTime}}.\nVocê tem {{totalOverdue}} tarefa(s) atrasada(s) no total.\n\nAcesse o TaskFlow para resolver.",
     is_enabled: false,
     variables: ["taskTitle", "overdueTime", "totalOverdue"],
     send_time: "",

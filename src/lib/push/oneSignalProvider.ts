@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-const ALLOWED_DOMAINS = ['board.infoprolab.com.br', 'localhost'];
+const ALLOWED_DOMAINS = ['taskflow.infoprolab.com.br', 'localhost'];
 
 let initialized = false;
 const subscriptionChangeCallbacks: Set<() => void> = new Set();
@@ -223,7 +223,7 @@ export const oneSignalUtils = {
 
     return {
       'App ID': '36035...47',
-      'Domínio': isAllowed ? `✅ ${hostname}` : `❌ ${hostname} (esperado: board.infoprolab.com.br)`,
+      'Domínio': isAllowed ? `✅ ${hostname}` : `❌ ${hostname} (esperado: taskflow.infoprolab.com.br)`,
       'SDK Carregado': OS ? '✅ Sim' : '❌ Não',
       'Permissão': Notification.permission,
       'Service Worker': swStatus,
