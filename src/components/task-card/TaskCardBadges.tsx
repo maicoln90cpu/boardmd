@@ -249,7 +249,7 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
           onClick={(e) => {
             e.stopPropagation();
             if (linkedNoteId) {
-              navigate(`/notes?noteId=${linkedNoteId}`);
+              window.open(`/notes?noteId=${linkedNoteId}`, '_blank');
             }
           }}
         >
