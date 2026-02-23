@@ -1,148 +1,126 @@
 
-# Plano: Notificações Personalizadas por Tarefa
 
-## Resumo
+# Plano: Corrigir Salvamento de Preferencias + Toggle por Template
 
-Cada tarefa podera ter ate 2 lembretes proprios (com horas antes do prazo e canal: push/whatsapp). Se a tarefa nao tiver lembretes configurados, o sistema usa os horarios globais das configuracoes.
+## Problema 1: Preferencias nao salvam (dados voltam ao reiniciar)
 
-## O que muda
+### Causa Raiz
 
-### 1. Banco de dados
-
-Adicionar coluna `notification_settings` (JSONB, nullable) na tabela `tasks`:
-
-```sql
-ALTER TABLE tasks ADD COLUMN notification_settings jsonb DEFAULT NULL;
-```
-
-Estrutura do JSON:
-```json
-{
-  "reminders": [
-    { "hours_before": 24, "channel": "push" },
-    { "hours_before": 2, "channel": "whatsapp" }
-  ]
-}
-```
-
-- `reminders`: array de ate 2 objetos
-- `hours_before`: numero de horas antes do prazo (1-168)
-- `channel`: "push", "whatsapp" ou "both"
-- Se `notification_settings` for `null`, usa os horarios globais do sistema
-
-### 2. Validacao (validations.ts)
-
-Adicionar `notification_settings` ao `taskSchema`:
+Em `NotificationPreferences.tsx` linha 28-31, o `handleSave` faz:
 
 ```typescript
-notification_settings: z.object({
-  reminders: z.array(z.object({
-    hours_before: z.number().min(0.5).max(168),
-    channel: z.enum(['push', 'whatsapp', 'both'])
-  })).max(2)
-}).nullable().optional()
+updateSettings({ notifications: localNotifications }); // linha 30
+await saveSettings(); // linha 31
 ```
 
-### 3. Interface Task (useTasks.ts)
-
-Adicionar campo na interface `Task`:
+O problema esta em `saveSettings()` (useSettings.ts linha 513-542). Apos chamar `flushPendingChanges()`, ele faz um **segundo** save usando `settings` da closure (linha 529):
 
 ```typescript
-notification_settings?: {
-  reminders: Array<{
-    hours_before: number;
-    channel: 'push' | 'whatsapp' | 'both';
-  }>;
-} | null;
+.update({ settings: settings as any }) // settings = valor ANTIGO da closure
 ```
 
-### 4. Modal de Tarefa (TaskModal.tsx)
+Isso sobrescreve as alteracoes que acabaram de ser salvas por `flushPendingChanges()` com o estado antigo. Resultado: as mudancas sao gravadas por 1 instante e imediatamente revertidas.
 
-Adicionar nova secao "Lembretes" no modal, logo apos o campo de Data e Horario:
+### Solucao
 
-- Switch "Lembretes personalizados" (desativado por padrao)
-- Quando ativado, mostra ate 2 linhas de configuracao:
-  - Input numerico "Horas antes" (default 24)
-  - Select de canal: "Push", "WhatsApp", "Ambos"
-  - Botao "+" para adicionar segundo lembrete
-  - Botao "X" para remover lembrete
-- Texto informativo: "Se vazio, usa as configuracoes globais do sistema"
-- Secao so aparece se a tarefa tem data/horario definido
+Remover o save duplicado de `saveSettings()`. A funcao so precisa chamar `flushPendingChanges()`, que ja usa `settingsRef.current` (sempre atualizado). O segundo save com `settings` da closure e redundante e destrutivo.
 
-### 5. Logica de alertas (useDueDateAlerts.ts)
-
-Alterar o calculo de thresholds no `forEach` de tarefas:
-
-```text
-ANTES:
-  configuredHours = settings.notifications.dueDateHours (global)
-  warningThreshold = configuredHours * 60
-
-DEPOIS:
-  SE task.notification_settings?.reminders existe e tem itens:
-    Usar os horarios do task.notification_settings.reminders
-    Para cada reminder, verificar se minutesUntilDue <= reminder.hours_before * 60
-    Respeitar o canal configurado (push, whatsapp ou both)
-  SENAO:
-    Usar configuredHours global (comportamento atual)
-```
-
-A logica de dedup (pendingPushesRef, pushTimestampsRef) permanece identica.
-
-### 6. Hook usePushNotifications.ts (legado)
-
-Mesma alteracao: verificar `task.notification_settings` antes de usar thresholds globais.
-
-## Arquivos a modificar
+### Arquivos a modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| Migracao SQL | Adicionar coluna `notification_settings` jsonb na tabela `tasks` |
-| `src/lib/validations.ts` | Adicionar `notification_settings` ao `taskSchema` |
-| `src/hooks/tasks/useTasks.ts` | Adicionar campo na interface `Task` |
-| `src/components/TaskModal.tsx` | Nova secao "Lembretes" com ate 2 configuracoes |
-| `src/hooks/useDueDateAlerts.ts` | Usar `task.notification_settings` quando disponivel, senao fallback global |
-| `src/hooks/usePushNotifications.ts` | Mesma logica de fallback |
+| `src/hooks/data/useSettings.ts` | Simplificar `saveSettings` para apenas chamar `flushPendingChanges()` sem o save duplicado (linhas 519-541 removidas) |
+
+### Codigo atual vs sugerido
+
+**Atual (bugado):**
+```typescript
+const saveSettings = useCallback(async () => {
+  if (!user) return;
+  await flushPendingChanges(); // salva com settingsRef (correto)
+  // ... segundo save com settings da closure (SOBRESCREVE com dado antigo)
+  .update({ settings: settings as any }) // settings = stale!
+}, [user, settings, flushPendingChanges]);
+```
+
+**Sugerido (corrigido):**
+```typescript
+const saveSettings = useCallback(async () => {
+  if (!user) return;
+  // Garante que updateSettings ja atualizou o ref
+  await flushPendingChanges(); // usa settingsRef.current (sempre fresco)
+  setIsDirty(false);
+}, [user, flushPendingChanges]);
+```
+
+---
+
+## Problema 2 (duvida - respondida): Desativar alertas globais vs cards individuais
+
+Desativar "Alertas de Prazo" no menu `/notifications` **NAO** afeta lembretes configurados dentro dos cards individuais. O sistema ja implementa a logica de prioridade: `task.notification_settings` tem precedencia sobre configuracoes globais. Se a tarefa nao tem configuracao propria, ai sim usa o global. Se o global esta desativado e a tarefa nao tem config propria, nenhuma notificacao e enviada para ela.
+
+---
+
+## Problema 3: Toggle ativar/desativar cada template individualmente
+
+### Situacao Atual
+
+Os templates de notificacao nao tem campo de ativacao. Todos estao sempre ativos (se conectados ao OneSignal) ou inativos (se apenas locais). Nao ha como desativar um template especifico.
+
+### Solucao
+
+Adicionar campo `enabled` (boolean, default `true`) na interface `NotificationTemplate`. Na UI do editor de templates, adicionar um Switch ao lado de cada template na lista. Nos locais que disparam notificacoes, verificar `template.enabled !== false` antes de enviar.
+
+### Arquivos a modificar
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/lib/defaultNotificationTemplates.ts` | Adicionar `enabled?: boolean` na interface `NotificationTemplate` (default true) |
+| `src/components/NotificationTemplatesEditor.tsx` | Adicionar Switch de ativar/desativar por template na lista lateral; mostrar badge "Desativado" quando off |
+| `src/lib/notifications/oneSignalNotifier.ts` | Antes de enviar, verificar se o template do tipo esta enabled |
+| `src/hooks/useDueDateAlerts.ts` | Verificar `template.enabled !== false` antes de disparar push/toast |
+
+### Detalhe da UI
+
+Na lista de templates (ScrollArea), adicionar um Switch compacto no canto direito de cada item. Quando desativado:
+- O item fica com opacidade reduzida
+- Badge muda para "Desativado" (cinza)
+- O template nao e usado para enviar notificacoes
+
+---
 
 ## Analise de Impacto
 
 | Item | Risco | Complexidade |
 |------|-------|-------------|
-| Nova coluna JSONB nullable | Baixo | 1/10 |
-| Validacao Zod | Baixo | 1/10 |
-| UI no TaskModal | Baixo | 3/10 |
-| Logica condicional no useDueDateAlerts | Medio | 4/10 |
-| **Total** | **Baixo** | **9/40 - Abaixo do limite seguro** |
+| Corrigir saveSettings (stale closure) | Baixo | 2/10 |
+| Toggle por template | Baixo | 3/10 |
+| **Total** | **Baixo** | **5/20 - Abaixo do limite seguro** |
 
 ### Vantagens
-- Controle granular por tarefa sem afetar as demais
-- Fallback automatico para configuracoes globais
-- Suporte a canais diferentes por lembrete (push vs whatsapp)
-- Nenhuma alteracao destrutiva: tarefas existentes continuam com `null` e usam sistema global
+- Preferencias finalmente persistem corretamente entre dispositivos e recarregamentos
+- Controle granular sobre quais tipos de notificacao estao ativos
+- Zero alteracao destrutiva: templates existentes mantem `enabled: true` por padrao
 
 ### Desvantagens
-- Complexidade adicional mınima na logica de thresholds
-- Campo JSONB pode crescer, mas com limite de 2 reminders e impacto minimo
+- Nenhuma funcionalidade removida
+- Complexidade adicional minima
 
 ## Checklist de Testes Manuais
 
-### Criacao com lembrete personalizado:
-- [ ] Criar tarefa com data/hora e ativar "Lembretes personalizados"
-- [ ] Configurar 1 lembrete: 2 horas antes, canal Push
-- [ ] Verificar que a notificacao chega 2h antes (e NAO nos horarios globais)
-- [ ] Verificar na tabela `tasks` que `notification_settings` foi salvo corretamente
+### Salvamento de preferencias:
+- [ ] Ir em /notifications > Preferencias
+- [ ] Alterar qualquer configuracao (ex: Antecedencia do alerta para 6 horas)
+- [ ] Clicar em "Salvar Preferencias"
+- [ ] Recarregar a pagina (F5)
+- [ ] Verificar que a alteracao foi mantida (6 horas, nao voltou para valor antigo)
+- [ ] Testar em outro dispositivo e confirmar sincronizacao
 
-### Fallback para global:
-- [ ] Criar tarefa com data/hora SEM lembretes personalizados
-- [ ] Verificar que usa os horarios das configuracoes globais normalmente
+### Toggle de templates:
+- [ ] Ir em /notifications > Templates
+- [ ] Desativar um template (ex: "Nova Tarefa")
+- [ ] Salvar alteracoes
+- [ ] Criar uma nova tarefa
+- [ ] Verificar que a notificacao "Nova Tarefa" NAO foi disparada
+- [ ] Reativar o template e verificar que volta a funcionar
 
-### Edicao:
-- [ ] Editar tarefa existente e adicionar lembretes personalizados
-- [ ] Salvar e verificar que os lembretes foram persistidos
-- [ ] Editar novamente e remover os lembretes (desativar switch)
-- [ ] Verificar que volta a usar configuracoes globais
-
-### Canal WhatsApp:
-- [ ] Criar tarefa com lembrete canal "WhatsApp"
-- [ ] Verificar que a notificacao chega via WhatsApp e NAO via push
-- [ ] Criar tarefa com canal "Ambos" e verificar ambos os canais
