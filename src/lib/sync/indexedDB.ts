@@ -1,4 +1,4 @@
-const DB_NAME = "boardmd_offline";
+const DB_NAME = "taskflow_offline";
 const DB_VERSION = 1;
 
 // Tipos genéricos para dados offline

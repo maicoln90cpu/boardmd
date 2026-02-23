@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     // Remove trailing slash
     evoUrl = evoUrl.replace(/\/$/, '');
-    const instanceName = `boardmd-${user.id.substring(0, 8)}`;
+    const instanceName = `taskflow-${user.id.substring(0, 8)}`;
 
     switch (action) {
       case 'check': {

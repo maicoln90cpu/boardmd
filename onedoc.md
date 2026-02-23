@@ -612,7 +612,7 @@ if (user) {
 ```typescript
 {
   'App ID': '36035...47',
-  'Domínio': '✅ board.infoprolab.com.br' | '❌ dominio-errado.com',
+  'Domínio': '✅ taskflow.infoprolab.com.br' | '❌ dominio-errado.com',
   'SDK Carregado': '✅ Sim' | '❌ Não',
   'Permissão': 'granted' | 'denied' | 'default',
   'Service Worker': 'Encontrado' | 'Não encontrado' | 'Erro',

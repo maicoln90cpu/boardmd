@@ -25,8 +25,8 @@ export function useOneSignal() {
         
         if (!initialized) {
           const hostname = window.location.hostname;
-          if (hostname !== 'board.infoprolab.com.br' && hostname !== 'localhost') {
-            setInitError(`Disponível apenas em board.infoprolab.com.br (atual: ${hostname})`);
+          if (hostname !== 'taskflow.infoprolab.com.br' && hostname !== 'localhost') {
+            setInitError(`Disponível apenas em taskflow.infoprolab.com.br (atual: ${hostname})`);
           } else {
             setInitError('Falha ao carregar SDK OneSignal');
           }
