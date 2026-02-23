@@ -42,7 +42,7 @@ const Logo = () => {
         transition={{ duration: 0.2 }}
         className="whitespace-pre">
 
-        <img alt="TaskFlow" className="h-7 object-contain" src="/lovable-uploads/780067e4-0022-4798-9f68-22e7aa21c1cb.png" />
+        <img alt="TaskFlow" className="h-7 object-contain" src="/lovable-uploads/5b8c2541-276c-4613-9bd7-2a0ad7efa01b.png" />
       </motion.div>
     </div>);
 
