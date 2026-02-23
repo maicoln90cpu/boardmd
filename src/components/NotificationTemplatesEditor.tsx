@@ -28,10 +28,29 @@ import {
 } from "@/lib/defaultNotificationTemplates";
 import { toast } from "sonner";
 
+// Merge saved templates with defaults to ensure description and new fields are present
+function mergeWithDefaults(saved: NotificationTemplate[]): NotificationTemplate[] {
+  const oldDefaultBodies = [
+    `"{{taskTitle}}" vence em {{timeRemaining}}`,
+    `*"{{taskTitle}}"* vence em {{timeRemaining}}`,
+  ];
+  return defaultNotificationTemplates.map((defaultT) => {
+    const savedT = saved.find((s) => s.id === defaultT.id);
+    if (!savedT) return defaultT;
+    const shouldUpdateBody = oldDefaultBodies.includes(savedT.body.trim()) && savedT.body.trim() !== defaultT.body.trim();
+    return {
+      ...defaultT,
+      ...savedT,
+      description: defaultT.description,
+      ...(shouldUpdateBody ? { body: defaultT.body } : {}),
+    };
+  });
+}
+
 export function NotificationTemplatesEditor() {
   const { settings, updateSettings, saveSettings, isLoading } = useSettings();
   const [templates, setTemplates] = useState<NotificationTemplate[]>(
-    settings.notificationTemplates || defaultNotificationTemplates
+    () => settings.notificationTemplates ? mergeWithDefaults(settings.notificationTemplates) : defaultNotificationTemplates
   );
   const [selectedTemplate, setSelectedTemplate] = useState<NotificationTemplate | null>(
     templates[0] || null
@@ -41,13 +60,14 @@ export function NotificationTemplatesEditor() {
   // Sync local state when settings load/change from server
   useEffect(() => {
     if (settings.notificationTemplates) {
-      setTemplates(settings.notificationTemplates);
+      const merged = mergeWithDefaults(settings.notificationTemplates);
+      setTemplates(merged);
       const currentId = selectedTemplate?.id;
       if (currentId) {
-        const updated = settings.notificationTemplates.find(t => t.id === currentId);
+        const updated = merged.find(t => t.id === currentId);
         if (updated) setSelectedTemplate(updated);
       } else {
-        setSelectedTemplate(settings.notificationTemplates[0] || null);
+        setSelectedTemplate(merged[0] || null);
       }
     }
   }, [settings.notificationTemplates]);
@@ -324,6 +344,12 @@ export function NotificationTemplatesEditor() {
                       </Button>
                     </div>
                   </div>
+
+                  {selectedTemplate.description && (
+                    <p className="text-[11px] text-muted-foreground italic bg-muted/50 rounded-md px-3 py-2 mb-1">
+                      💡 {selectedTemplate.description}
+                    </p>
+                  )}
 
                   <Card className="p-3 space-y-3 bg-muted/30">
                     <div className="space-y-1.5">
