@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ADD COLUMN notification_settings jsonb DEFAULT NULL;

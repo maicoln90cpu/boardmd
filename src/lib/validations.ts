@@ -86,6 +86,13 @@ export const taskSchema = z.object({
   track_comments: z.boolean().default(false).optional(),
   // Campo de nota vinculada
   linked_note_id: z.string().uuid("ID de nota inválido").nullable().optional(),
+  // Notificações personalizadas por tarefa
+  notification_settings: z.object({
+    reminders: z.array(z.object({
+      hours_before: z.number().min(0.5).max(168),
+      channel: z.enum(['push', 'whatsapp', 'both'])
+    })).max(2)
+  }).nullable().optional(),
 });
 
 export const categorySchema = z.object({

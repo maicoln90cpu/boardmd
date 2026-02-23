@@ -46,6 +46,13 @@ export interface Task {
   track_metrics?: boolean;
   metric_type?: string | null;
   track_comments?: boolean;
+  // Notificações personalizadas por tarefa
+  notification_settings?: {
+    reminders: Array<{
+      hours_before: number;
+      channel: 'push' | 'whatsapp' | 'both';
+    }>;
+  } | null;
 }
 
 export function useTasks(categoryId: string | null | "all") {
@@ -148,6 +155,7 @@ export function useTasks(categoryId: string | null | "all") {
                   track_metrics: updatedTask.track_metrics ?? t.track_metrics,
                   track_comments: updatedTask.track_comments ?? t.track_comments,
                   metric_type: updatedTask.metric_type ?? t.metric_type,
+                  notification_settings: updatedTask.notification_settings ?? t.notification_settings,
                 };
               })
             );

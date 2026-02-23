@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, Clock, FileText, X, BarChart3, GraduationCap } from "lucide-react";
+import { CalendarIcon, Clock, FileText, X, BarChart3, GraduationCap, Bell, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -70,6 +70,8 @@ export function TaskModal({
   const [metricType, setMetricType] = useState<string | null>(null);
   const [trackComments, setTrackComments] = useState(false);
   const [linkedCourseId, setLinkedCourseId] = useState<string | null>(null);
+  const [customReminders, setCustomReminders] = useState<Array<{ hours_before: number; channel: 'push' | 'whatsapp' | 'both' }>>([]);
+  const [useCustomReminders, setUseCustomReminders] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,6 +87,15 @@ export function TaskModal({
       setMetricType(task.metric_type || null);
       setTrackComments(task.track_comments || false);
       setLinkedCourseId((task as any).linked_course_id || null);
+      
+      // Carregar notificações personalizadas
+      if (task.notification_settings?.reminders?.length) {
+        setUseCustomReminders(true);
+        setCustomReminders(task.notification_settings.reminders);
+      } else {
+        setUseCustomReminders(false);
+        setCustomReminders([]);
+      }
       
       if (task.due_date) {
         const date = new Date(task.due_date);
@@ -120,6 +131,8 @@ export function TaskModal({
       setMetricType(null);
       setTrackComments(false);
       setLinkedCourseId(null);
+      setUseCustomReminders(false);
+      setCustomReminders([]);
       
       // Se foi passada uma data padrão (ex: clicou em um dia do calendário)
       if (defaultDueDate) {
@@ -185,6 +198,9 @@ export function TaskModal({
       subtasks,
       recurrence_rule: recurrence,
       linked_course_id: linkedCourseId,
+      notification_settings: useCustomReminders && customReminders.length > 0 && dueDate
+        ? { reminders: customReminders }
+        : null,
     };
 
     // Notificar se adicionou recorrência
@@ -397,6 +413,94 @@ export function TaskModal({
             />
             
             <RecurrenceEditor recurrence={recurrence} onChange={setRecurrence} />
+            
+            {/* Lembretes Personalizados - só aparece se tem data */}
+            {dueDate && (
+              <div className="space-y-3 pt-3 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-4 w-4 text-muted-foreground" />
+                    <Label className="font-medium">Lembretes personalizados</Label>
+                  </div>
+                  <Switch
+                    checked={useCustomReminders}
+                    onCheckedChange={(checked) => {
+                      setUseCustomReminders(checked);
+                      if (checked && customReminders.length === 0) {
+                        setCustomReminders([{ hours_before: 24, channel: 'push' }]);
+                      }
+                      if (!checked) setCustomReminders([]);
+                    }}
+                  />
+                </div>
+                
+                {useCustomReminders && (
+                  <div className="space-y-2 pl-2 border-l-2 border-primary/20">
+                    {customReminders.map((reminder, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0.5}
+                          max={168}
+                          step={0.5}
+                          value={reminder.hours_before}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) {
+                              setCustomReminders(prev => prev.map((r, i) => 
+                                i === index ? { ...r, hours_before: val } : r
+                              ));
+                            }
+                          }}
+                          className={cn("w-20", isMobile && "min-h-[48px]")}
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">h antes</span>
+                        <Select
+                          value={reminder.channel}
+                          onValueChange={(val: 'push' | 'whatsapp' | 'both') => {
+                            setCustomReminders(prev => prev.map((r, i) =>
+                              i === index ? { ...r, channel: val } : r
+                            ));
+                          }}
+                        >
+                          <SelectTrigger className={cn("w-[120px]", isMobile && "min-h-[48px]")}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="push">Push</SelectItem>
+                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            <SelectItem value="both">Ambos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => setCustomReminders(prev => prev.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {customReminders.length < 2 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => setCustomReminders(prev => [...prev, { hours_before: 2, channel: 'push' }])}
+                      >
+                        <Plus className="h-3 w-3 mr-1" /> Adicionar lembrete
+                      </Button>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
+                      Se vazio, usa as configurações globais do sistema
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Rastreamento de Métricas */}
             <div className="space-y-3 pt-3 border-t">

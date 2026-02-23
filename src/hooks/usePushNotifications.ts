@@ -71,6 +71,33 @@ export function usePushNotifications(tasks: Task[]) {
     // Get user's notification templates (or use defaults)
     const userTemplates = settings.notificationTemplates || defaultNotificationTemplates;
 
+    // Enviar notificações via OneSignal + WhatsApp
+    const sendPushNotification = async (templateId: string, variables: Record<string, string>) => {
+      const template = getTemplateById(userTemplates, templateId);
+      if (!template) return;
+
+      const formatted = formatNotificationTemplate(template, variables);
+
+      // === Push notification (OneSignal / Local) ===
+      if (user && isSubscribed) {
+        try {
+          await oneSignalNotifier.send({
+            user_id: user.id,
+            title: formatted.title,
+            body: formatted.body,
+            notification_type: templateId,
+            url: '/',
+            data: {},
+          });
+        } catch (error) {
+          logger.error('Error sending push notification:', error);
+          pushNotifications.scheduleLocalNotification(formatted.title, formatted.body, 0, `task-legacy`);
+        }
+      } else {
+        pushNotifications.scheduleLocalNotification(formatted.title, formatted.body, 0, `task-legacy`);
+      }
+    };
+
     tasks.forEach((task) => {
       if (!task.due_date) return;
 
@@ -83,6 +110,46 @@ export function usePushNotifications(tasks: Task[]) {
       const dueDate = new Date(task.due_date);
       const minutesUntilDue = differenceInMinutes(dueDate, now);
 
+      // === Per-task custom reminders ===
+      const taskReminders = (task as any).notification_settings?.reminders as Array<{ hours_before: number; channel: 'push' | 'whatsapp' | 'both' }> | undefined;
+      
+      if (taskReminders && taskReminders.length > 0) {
+        // Handle overdue
+        if (isPast(dueDate)) {
+          sendPushNotification('due_overdue', { taskTitle: task.title });
+          return;
+        }
+
+        // Check each custom reminder
+        taskReminders.forEach((reminder) => {
+          const reminderMinutes = reminder.hours_before * 60;
+          if (minutesUntilDue <= reminderMinutes && minutesUntilDue > 0) {
+            const hours = Math.floor(minutesUntilDue / 60);
+            const timeText = hours > 0 ? `${hours} hora${hours > 1 ? 's' : ''}` : `${minutesUntilDue} minutos`;
+            
+            if (reminder.channel === 'push' || reminder.channel === 'both') {
+              sendPushNotification('due_warning', { taskTitle: task.title, timeRemaining: timeText });
+            }
+            if (reminder.channel === 'whatsapp' || reminder.channel === 'both') {
+              const whatsappKey = `whatsapp-sent-${task.id}-custom`;
+              const lastSent = localStorage.getItem(whatsappKey);
+              const snoozeMs = (settings.notifications.snoozeMinutes || 60) * 60 * 1000;
+              if (!lastSent || Date.now() - Number(lastSent) > snoozeMs) {
+                sendWhatsAppNotification({
+                  userId: user?.id || '',
+                  templateType: 'due_date',
+                  variables: { taskTitle: task.title, timeRemaining: timeText },
+                }).then((sent) => {
+                  if (sent) localStorage.setItem(whatsappKey, String(Date.now()));
+                });
+              }
+            }
+          }
+        });
+        return; // Skip global thresholds
+      }
+
+      // === Global thresholds (fallback) ===
       // Configurações do /config
       const configuredHours = settings.notifications.dueDateHours || 24;
       const configuredHours2 = settings.notifications.dueDateHours2;
@@ -92,75 +159,6 @@ export function usePushNotifications(tasks: Task[]) {
       // Second alert thresholds
       const warningThreshold2 = configuredHours2 ? configuredHours2 * 60 : null;
       const earlyThreshold2 = warningThreshold2 ? warningThreshold2 * 2 : null;
-
-      // Enviar notificações via OneSignal + WhatsApp
-      const sendPushNotification = async (templateId: string, variables: Record<string, string>) => {
-        const template = getTemplateById(userTemplates, templateId);
-        if (!template) return;
-
-        const formatted = formatNotificationTemplate(template, variables);
-
-        // === Push notification (OneSignal / Local) ===
-        if (user && isSubscribed) {
-          try {
-            await oneSignalNotifier.send({
-              user_id: user.id,
-              title: formatted.title,
-              body: formatted.body,
-              notification_type: templateId,
-              url: '/',
-              data: { taskId: task.id },
-            });
-          } catch (error) {
-            logger.error('Error sending push notification:', error);
-            pushNotifications.scheduleLocalNotification(
-              formatted.title, 
-              formatted.body, 
-              0, 
-              `task-${task.id}`
-            );
-          }
-        } else {
-          pushNotifications.scheduleLocalNotification(
-            formatted.title, 
-            formatted.body, 
-            0, 
-            `task-${task.id}`
-          );
-        }
-
-        // === WhatsApp notification ===
-        if (user) {
-          // Map push template IDs to WhatsApp template types
-          const whatsappTemplateMap: Record<string, string> = {
-            'due_overdue': 'due_date',
-            'due_urgent': 'due_date',
-            'due_warning': 'due_date',
-            'due_early': 'due_date',
-          };
-
-          const whatsappType = whatsappTemplateMap[templateId];
-          if (whatsappType) {
-            // Prevent duplicate WhatsApp sends with localStorage
-            const whatsappKey = `whatsapp-sent-${task.id}-${templateId}`;
-            const lastSent = localStorage.getItem(whatsappKey);
-            const snoozeMs = (settings.notifications.snoozeMinutes || 60) * 60 * 1000;
-
-            if (!lastSent || Date.now() - Number(lastSent) > snoozeMs) {
-              sendWhatsAppNotification({
-                userId: user.id,
-                templateType: whatsappType,
-                variables,
-              }).then((sent) => {
-                if (sent) {
-                  localStorage.setItem(whatsappKey, String(Date.now()));
-                  logger.info(`[WhatsApp] Sent ${whatsappType} for task ${task.id}`);
-                }
-              });
-            }
-          }
-        }
-      };
 
       const hours = Math.floor(minutesUntilDue / 60);
 
