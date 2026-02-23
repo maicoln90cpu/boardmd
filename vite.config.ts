@@ -18,9 +18,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'pwa-icon.png', 'robots.txt', 'sw-push.js'],
       manifest: {
-        name: 'To do Tasks',
-        short_name: 'Tasks',
-        description: 'Gerenciador de tarefas com Kanban e notas',
+        name: 'TaskFlow',
+        short_name: 'TaskFlow',
+        description: 'Gerenciador de tarefas inteligente com Kanban, notas e produtividade',
         theme_color: '#000000',
         background_color: '#ffffff',
         display: 'standalone',

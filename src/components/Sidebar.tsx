@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Layers, FileText, BarChart3, LogOut, MoreHorizontal, ChevronDown, ChevronRight, Folder, Timer } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import taskflowLogo from "@/assets/taskflow-logo.png";
+import taskflowIcon from "@/assets/taskflow-icon.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -31,19 +33,17 @@ const Logo = () => {
   const { open } = useSidebar();
   return (
     <div className="flex items-center gap-2 py-2">
-      <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 rounded-lg flex-shrink-0 flex items-center justify-center">
-        <span className="text-primary-foreground font-bold text-sm">KB</span>
-      </div>
-      <motion.span
+      <img src={taskflowIcon} alt="TaskFlow" className="h-8 w-8 rounded-lg flex-shrink-0" />
+      <motion.div
         animate={{
           display: open ? "inline-block" : "none",
           opacity: open ? 1 : 0,
         }}
         transition={{ duration: 0.2 }}
-        className="font-semibold text-foreground whitespace-pre"
+        className="whitespace-pre"
       >
-        Kanban Board
-      </motion.span>
+        <img src={taskflowLogo} alt="TaskFlow" className="h-7 object-contain" />
+      </motion.div>
     </div>
   );
 };
