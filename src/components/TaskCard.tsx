@@ -17,6 +17,7 @@ import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
 import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import { useAuth } from "@/contexts/AuthContext";
+import { getTemplateById, formatNotificationTemplate } from "@/lib/defaultNotificationTemplates";
 
 // Import subcomponents
 import {
@@ -309,15 +310,20 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           onAddPoints();
         }
 
-        // Push notification via OneSignal para task_completed (recorrente)
+        // Push notification via OneSignal para task_completed (recorrente) - respeita template
         if (user) {
-          oneSignalNotifier.send({
-            user_id: user.id,
-            title: '✅ Tarefa Concluída!',
-            body: `"${task.title}" foi concluída`,
-            notification_type: 'task_completed',
-            url: '/',
-          });
+          const userTemplates = settings.notificationTemplates;
+          const tpl = getTemplateById(userTemplates || [], 'task_completed');
+          if (tpl?.enabled !== false) {
+            const formatted = formatNotificationTemplate(tpl!, { taskTitle: task.title });
+            oneSignalNotifier.send({
+              user_id: user.id,
+              title: formatted.title,
+              body: formatted.body,
+              notification_type: 'task_completed',
+              url: '/',
+            });
+          }
         }
         
         toast({
@@ -366,15 +372,20 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onAddPoints();
       }
 
-      // Push notification via OneSignal para task_completed
+      // Push notification via OneSignal para task_completed - respeita template
       if (checked && user) {
-        oneSignalNotifier.send({
-          user_id: user.id,
-          title: '✅ Tarefa Concluída!',
-          body: `"${task.title}" foi concluída`,
-          notification_type: 'task_completed',
-          url: '/',
-        });
+        const userTemplates = settings.notificationTemplates;
+        const tpl = getTemplateById(userTemplates || [], 'task_completed');
+        if (tpl?.enabled !== false) {
+          const formatted = formatNotificationTemplate(tpl!, { taskTitle: task.title });
+          oneSignalNotifier.send({
+            user_id: user.id,
+            title: formatted.title,
+            body: formatted.body,
+            notification_type: 'task_completed',
+            url: '/',
+          });
+        }
       }
 
       // Bidirectional sync for mirrored tasks
