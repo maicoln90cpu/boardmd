@@ -131,7 +131,8 @@ export default function Notes() {
     : null;
 
   const handleAddNote = async (notebookId: string | null = null) => {
-    const newNote = await addNote("Nova Nota", notebookId);
+    const effectiveNotebookId = notebookId === "loose" ? null : notebookId;
+    const newNote = await addNote("Nova Nota", effectiveNotebookId);
     if (newNote) {
       setSelectedNoteId(newNote.id);
     }
