@@ -152,9 +152,15 @@ export function useDueDateAlerts(tasks: Task[]) {
     settingsRef.current = settings.notifications;
   }, [settings.notifications]);
 
-  // Load push timestamps once on mount
+  // Load push timestamps and notified set only once on mount
+  const mountedRef = useRef(false);
   useEffect(() => {
-    pushTimestampsRef.current = loadPushTimestamps();
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      pushTimestampsRef.current = loadPushTimestamps();
+      const snoozeMinutes = settingsRef.current.snoozeMinutes || 30;
+      notifiedTasksRef.current = loadNotifiedSet(snoozeMinutes);
+    }
   }, []);
 
   useEffect(() => {
@@ -165,10 +171,6 @@ export function useDueDateAlerts(tasks: Task[]) {
 
     // Request permission once
     requestNotificationPermission();
-
-    // Load persisted notification state with snooze
-    const snoozeMinutes = notifSettings.snoozeMinutes || 30;
-    notifiedTasksRef.current = loadNotifiedSet(snoozeMinutes);
 
     // OTIMIZAÇÃO: Cachear dados de colunas fora do loop
     let columnMapRef: Map<string, string> | null = null;
@@ -233,6 +235,17 @@ export function useDueDateAlerts(tasks: Task[]) {
 
       const columnMap = await getColumnMap();
 
+      // Toast/browser dedup: reuse push timestamp logic (4h) to avoid cascade
+      const isToastDedupActive = (taskId: string, level: string): boolean => {
+        const key = `${taskId}-${level}`;
+        const lastTime = pushTimestampsRef.current.get(`toast-${key}`);
+        return !!lastTime && Date.now() - lastTime < PUSH_DEDUP_MS;
+      };
+      const markToastSent = (taskId: string, level: string) => {
+        pushTimestampsRef.current.set(`toast-${taskId}-${level}`, Date.now());
+        savePushTimestamps(pushTimestampsRef.current);
+      };
+
       tasks.forEach((task) => {
         const columnName = columnMap.get(task.column_id) || "";
         const isInDoneColumn = columnName.toLowerCase().includes("concluí");
@@ -268,7 +281,7 @@ export function useDueDateAlerts(tasks: Task[]) {
           
           // Still handle overdue with global logic
           if (isPast(dueDate)) {
-            if (!notifiedTasksRef.current.has(`${taskId}-overdue`)) {
+            if (!notifiedTasksRef.current.has(`${taskId}-overdue`) && !isToastDedupActive(taskId, 'overdue')) {
               toastRef.current({
                 title: "⏰ Tarefa Atrasada!",
                 description: `"${task.title}" já passou do prazo`,
@@ -277,6 +290,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               showBrowserNotification("⏰ Tarefa Atrasada!", `"${task.title}" já passou do prazo`, true);
               sendOneSignalPush('due_overdue', task.title, task.id, 'overdue');
               notifiedTasksRef.current.add(`${taskId}-overdue`);
+              markToastSent(taskId, 'overdue');
               saveNotifiedSet(notifiedTasksRef.current);
             }
             return;
@@ -329,7 +343,7 @@ export function useDueDateAlerts(tasks: Task[]) {
 
         // Verifica se está atrasada
         if (isPast(dueDate)) {
-          if (!notifiedTasksRef.current.has(`${taskId}-overdue`)) {
+          if (!notifiedTasksRef.current.has(`${taskId}-overdue`) && !isToastDedupActive(taskId, 'overdue')) {
             toastRef.current({
               title: "⏰ Tarefa Atrasada!",
               description: `"${task.title}" já passou do prazo`,
@@ -338,6 +352,7 @@ export function useDueDateAlerts(tasks: Task[]) {
             showBrowserNotification("⏰ Tarefa Atrasada!", `"${task.title}" já passou do prazo`, true);
             sendOneSignalPush('due_overdue', task.title, task.id, 'overdue');
             notifiedTasksRef.current.add(`${taskId}-overdue`);
+            markToastSent(taskId, 'overdue');
             saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
@@ -345,7 +360,7 @@ export function useDueDateAlerts(tasks: Task[]) {
 
         // Nível 3: Alerta urgente (1 hora antes)
         if (minutesUntilDue <= urgentThreshold && minutesUntilDue > 0) {
-          if (!notifiedTasksRef.current.has(`${taskId}-urgent`)) {
+          if (!notifiedTasksRef.current.has(`${taskId}-urgent`) && !isToastDedupActive(taskId, 'urgent')) {
             toastRef.current({
               title: "🔥 Prazo Urgente!",
               description: `"${task.title}" vence em menos de 1 hora`,
@@ -354,6 +369,7 @@ export function useDueDateAlerts(tasks: Task[]) {
             showBrowserNotification("🔥 Prazo Urgente!", `"${task.title}" vence em menos de 1 hora`, true);
             sendOneSignalPush('due_urgent', task.title, task.id, 'urgent', 'menos de 1 hora');
             notifiedTasksRef.current.add(`${taskId}-urgent`);
+            markToastSent(taskId, 'urgent');
             saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
@@ -361,7 +377,7 @@ export function useDueDateAlerts(tasks: Task[]) {
 
         // Nível 2: Alerta de aviso (horas configuradas)
         if (minutesUntilDue <= warningThreshold && minutesUntilDue > urgentThreshold) {
-          if (!notifiedTasksRef.current.has(`${taskId}-warning`)) {
+          if (!notifiedTasksRef.current.has(`${taskId}-warning`) && !isToastDedupActive(taskId, 'warning')) {
             const hoursUntilDue = Math.floor(minutesUntilDue / 60);
             toastRef.current({
               title: "⚠️ Prazo Próximo",
@@ -370,6 +386,7 @@ export function useDueDateAlerts(tasks: Task[]) {
             showBrowserNotification("⚠️ Prazo Próximo", `"${task.title}" vence em ${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`, false);
             sendOneSignalPush('due_warning', task.title, task.id, 'warning', `${hoursUntilDue} hora${hoursUntilDue > 1 ? 's' : ''}`);
             notifiedTasksRef.current.add(`${taskId}-warning`);
+            markToastSent(taskId, 'warning');
             saveNotifiedSet(notifiedTasksRef.current);
           }
           return;
@@ -377,7 +394,7 @@ export function useDueDateAlerts(tasks: Task[]) {
 
         // Nível 1: Alerta antecipado (dobro das horas configuradas)
         if (minutesUntilDue <= earlyThreshold && minutesUntilDue > warningThreshold) {
-          if (!notifiedTasksRef.current.has(`${taskId}-early`)) {
+          if (!notifiedTasksRef.current.has(`${taskId}-early`) && !isToastDedupActive(taskId, 'early')) {
             const hoursUntilDue = Math.floor(minutesUntilDue / 60);
             toastRef.current({
               title: "📅 Prazo se Aproximando",
@@ -386,6 +403,7 @@ export function useDueDateAlerts(tasks: Task[]) {
             showBrowserNotification("📅 Prazo se Aproximando", `"${task.title}" vence em ${hoursUntilDue} horas`, false);
             sendOneSignalPush('due_early', task.title, task.id, 'early', `${hoursUntilDue} horas`);
             notifiedTasksRef.current.add(`${taskId}-early`);
+            markToastSent(taskId, 'early');
             saveNotifiedSet(notifiedTasksRef.current);
           }
         }
