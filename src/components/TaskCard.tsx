@@ -15,9 +15,7 @@ import { logger } from "@/lib/logger";
 import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
 import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import { useAuth } from "@/contexts/AuthContext";
-import { getTemplateById, formatNotificationTemplate } from "@/lib/defaultNotificationTemplates";
 
 // Import subcomponents
 import {
@@ -310,21 +308,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
           onAddPoints();
         }
 
-        // Push notification via OneSignal para task_completed (recorrente) - respeita template
-        if (user) {
-          const userTemplates = settings.notificationTemplates;
-          const tpl = getTemplateById(userTemplates || [], 'task_completed');
-          if (tpl?.enabled !== false) {
-            const formatted = formatNotificationTemplate(tpl!, { taskTitle: task.title });
-            oneSignalNotifier.send({
-              user_id: user.id,
-              title: formatted.title,
-              body: formatted.body,
-              notification_type: 'task_completed',
-              url: '/',
-            });
-          }
-        }
+        // Push notification handled by useTasks.updateTask (centralized)
         
         toast({
           title: "✓ Tarefa concluída e resetada",
@@ -372,21 +356,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onAddPoints();
       }
 
-      // Push notification via OneSignal para task_completed - respeita template
-      if (checked && user) {
-        const userTemplates = settings.notificationTemplates;
-        const tpl = getTemplateById(userTemplates || [], 'task_completed');
-        if (tpl?.enabled !== false) {
-          const formatted = formatNotificationTemplate(tpl!, { taskTitle: task.title });
-          oneSignalNotifier.send({
-            user_id: user.id,
-            title: formatted.title,
-            body: formatted.body,
-            notification_type: 'task_completed',
-            url: '/',
-          });
-        }
-      }
+      // Push notification handled by useTasks.updateTask (centralized)
 
       // Bidirectional sync for mirrored tasks
       if (task.mirror_task_id) {
