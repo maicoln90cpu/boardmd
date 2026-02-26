@@ -17,6 +17,7 @@ const ACTIVE_PUSH_TEMPLATES = [
   'due_urgent',
   'due_warning',
   'due_early',
+  'due_overdue_summary',
   'achievement_streak',
   'achievement_level',
 ];
