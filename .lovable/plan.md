@@ -1,286 +1,130 @@
 
-## Auditoria completa (Push / envio de mensagens / templates) + Plano de correção do “efeito debandada” no iOS
 
-### Escopo do pedido
-Você relatou que **ao abrir o app no iOS** chegam **30–40 notificações de uma vez**, muitas repetidas, e que o sistema **não respeita regras/templates**.
+# Plano: Refatorar Sistema de Notificações Push (Simplificação Total)
 
-Pelo que encontrei no código + nos logs do backend (tabela `push_logs` e logs da função `send-onesignal`), isso está acontecendo por uma combinação de **arquitetura atual (client-side scheduler)** + **falta de deduplicação global (backend)** + **alguns pontos do app ainda enviando push sem respeitar template**.
+## Diagnóstico dos Dados Reais (push_logs)
+
+Analisei os logs do backend nas últimas 48h:
+
+- **154 `due_overdue` enviados em 25/Feb** — todos com `dedup_key: null` (código antigo ainda ativo, sem dedup no backend)
+- **14 pushes individuais disparados no MESMO SEGUNDO** (23:49:28) — e depois MAIS 14 nos próximos 24 segundos (23:49:52) — total de 28 em 24 segundos para as mesmas tarefas
+- **Após o fix (26/Feb)**: apenas 2 `due_overdue_summary` + 2 `due_early` + 1 `due_urgent` = 5 pushes em 24h — corretamente deduplicados, porém agora quase silencioso demais
+- **Colunas excluídas ESTÃO funcionando** — nenhuma tarefa da coluna "Recorrente" aparece nos logs (o filtro funciona). As 154 notificações eram todas de tarefas na coluna "PRIORIDADE"
+
+### Causa raiz dos 3 problemas:
+
+1. **"Quase não avisa mais"**: O resumo único + dedup de 4h = máximo 6 pushes/dia. Correto tecnicamente, mas o intervalo é longo demais
+2. **"Envia tudo de uma vez ao abrir"**: O hook roda `checkDueDates()` imediatamente no mount. Se o localStorage do device está vazio (iOS limpa cache), tudo dispara junto
+3. **"Colunas excluídas não funcionam"**: Na verdade funcionam — os logs confirmam. Mas como você tem 14+ tarefas atrasadas em "PRIORIDADE", parece que vem de tudo
+
+### Problema arquitetural:
+O sistema tem **5 camadas de dedup sobrepostas** (notifiedTasksRef, pushTimestampsRef, pendingPushesRef, localStorage, backend dedup_key), cada uma com regras diferentes. Isso gera bugs imprevisíveis e torna impossível debugar.
 
 ---
 
-## 1) Como o sistema está HOJE (mapa de disparos)
+## Plano: Simplificar para 3 Regras Claras
 
-### 1.1. Push via OneSignal (backend function `send-onesignal`)
-- **Quem chama:** o app (frontend) chama `oneSignalNotifier.send(...)`, que invoca a função `send-onesignal`.
-- **Entrega multi-device:** a notificação é enviada para todos os devices do usuário.
-- **Fallback:** se falhar por `external_id`, tenta por **tag `user_id`** (isso já está ativo).
-- **Problema atual:** **não existe deduplicação global** no backend. Se 2 devices abrirem o app, ambos podem “re-disparar” os mesmos pushes.
+### Regra de Ouro
+Se a tarefa tem lembretes configurados individualmente (`notification_settings.reminders`), esses são a ÚNICA fonte de notificação para aquela tarefa. Nenhum alerta global interfere.
 
-### 1.2. Alertas de prazo (principal causa da “debandada”)
-**Arquivo:** `src/hooks/useDueDateAlerts.ts`  
-**Onde roda:** `src/pages/Index.tsx` chama `useDueDateAlerts(state.allTasks)` (sempre que você entra na home `/` logado).
+### Regra Global (fallback)
+Para tarefas SEM lembretes individuais, o sistema usa os thresholds globais (dueDateHours). Mas com uma lógica mais simples.
 
-Comportamento atual:
-- Ao montar, ele roda **imediatamente** `checkDueDates()` (linha ~413–415).
-- Para **cada tarefa atrasada** ele pode disparar:
-  - toast (UI)
-  - browser notification
-  - push (OneSignal) via `sendOneSignalPush('due_overdue', ...)`
+### Regra de Dedup
+Dedup acontece em **UM lugar só**: o backend (Edge Function). Remove toda a complexidade de localStorage.
 
-Evidência do problema:
-- No seu backend há **26 tarefas atrasadas abertas**.
-- Nos logs, há minutos com **40+ `due_overdue`** em 1 minuto.
-- Também há duplicatas do MESMO `taskId + due_overdue` na MESMA janela de minuto (ex.: `c=2`), o que indica **mais de um “emissor” concorrente** (ex.: mais de um device/sessão rodando o mesmo scheduler).
+---
 
-### 1.3. “Tarefa concluída” ainda tem um ponto enviando push sem respeitar template
-**Arquivo:** `src/hooks/tasks/useTasks.ts` (função `updateTask`)  
-Trecho encontrado: quando `updates.is_completed === true`, ele chama:
-```ts
-oneSignalNotifier.send({
-  user_id: user.id,
-  title: '✅ Tarefa Concluída!',
-  body: `"${task?.title || ''}" foi concluída`,
-  notification_type: 'task_completed',
-  ...
-})
+## Alterações
+
+### 1. Reescrever `useDueDateAlerts.ts` (simplificação radical)
+
+**Remover:**
+- `loadNotifiedSet` / `saveNotifiedSet` / `STORAGE_KEY` (localStorage de toasts)
+- `loadPushTimestamps` / `savePushTimestamps` / `PUSH_STORAGE_KEY` (localStorage de push)
+- `pendingPushesRef` / `pushTimestampsRef`
+- Toda a lógica dual de dedup (local + push)
+
+**Manter:**
+- `notifiedTasksRef` como Set simples em memória (só previne re-toast na mesma sessão)
+- `checkInterval` para controlar frequência de verificação
+- Verificação de `excludedColumns`
+- Verificação de template `enabled`
+- Overdue summary (>= 5 atrasadas = 1 resumo)
+
+**Novo fluxo por tarefa:**
 ```
-Isso **ignora totalmente** o `template.enabled`. Mesmo que o template esteja OFF, aqui ainda envia push.
+1. Tarefa em coluna excluída? → SKIP
+2. Tarefa concluída ou em "Concluído"? → SKIP  
+3. Tarefa tem lembretes individuais? → Usar SÓ esses
+4. Senão → Usar thresholds globais
+5. Já notificou nesta sessão? (memória) → SKIP toast/browser
+6. Push → sendPushWithTemplate (backend faz dedup)
+```
 
-> Isso explica casos onde “template desativado” ainda disparava.
+### 2. Remover push duplicado de `TaskCard.tsx` e `MobileKanbanView.tsx`
 
-### 1.4. Conquistas/gamificação também ignoram templates
-**Arquivo:** `src/hooks/useUserStats.ts`  
-Ele chama `oneSignalNotifier.sendAchievement(...)`, que usa `notification_type: 'achievement'` e **não verifica template**.
+Atualmente, ao concluir uma tarefa, o push é enviado de **3 lugares**:
+- `TaskCard.tsx` linha 319 (recorrente) — `oneSignalNotifier.send()` direto, sem dedup_key
+- `TaskCard.tsx` linha 381 (normal) — `oneSignalNotifier.send()` direto, sem dedup_key  
+- `useTasks.ts` linha 357 — `sendPushWithTemplate()` com dedup_key
 
-### 1.5. Templates desativados não bloqueiam “todos os canais”
-Mesmo no `useDueDateAlerts.ts`, hoje a checagem de template é aplicada **apenas** para o envio de push via OneSignal (dentro de `sendOneSignalPush`).  
-Os **toasts e browser notifications** ainda são exibidos mesmo que o template esteja OFF.
+**Ação**: Remover os 2 envios do TaskCard e do MobileKanbanView. O `useTasks.updateTask` já faz o envio correto via `sendPushWithTemplate`.
 
-Você confirmou que quer:
-- **Template desativado = bloquear push + toast + browser**.
+### 3. Ajustar janela de dedup no backend
 
----
+Reduzir de 4h para **2h** para que as notificações legítimas cheguem com mais frequência, sem causar spam.
 
-## 2) Causas raiz (por que acontece a “debandada” e duplicatas)
+### 4. Simplificar menu de Preferências
 
-### Causa A — O app dispara backlog inteiro ao abrir
-Como você tem muitas tarefas atrasadas (26), o hook `useDueDateAlerts` faz um loop e dispara push **por tarefa**. Isso por si só já gera um “pacote” grande ao abrir o app.
-
-### Causa B — Sem deduplicação global, múltiplos devices duplicam
-Se você abre no iOS e também tem outro device/sessão (ou até o próprio iOS em mais de um contexto) executando o scheduler, cada um chama o backend, e o backend envia push novamente — **globalmente**.
-
-Os dados confirmam isso: há `taskId` com **2 envios do mesmo template no mesmo minuto**.
-
-### Causa C — Alguns disparos não respeitam templates
-`useTasks.updateTask` e `useUserStats` ainda disparam push sem checar template.
+Remover configurações que causam confusão:
+- **Remover "Soneca"** (snoozeMinutes) — irrelevante agora que o dedup é no backend
+- Manter: toggle on/off, antecedência (dueDateHours), frequência de verificação, colunas excluídas
 
 ---
 
-## 3) Sua preferência (confirmada pelas respostas)
-- **Muitas atrasadas:** “Resumo único”
-- **Deduplicação:** “Global no backend”
-- **Template desativado:** “Bloquear todos canais”
+## Arquivos a Modificar
 
-Vamos desenhar a correção exatamente em cima disso.
+| Arquivo | Alteração |
+|---|---|
+| `src/hooks/useDueDateAlerts.ts` | Reescrever com lógica simplificada (remover 5 camadas de dedup, manter 1 em memória) |
+| `src/components/TaskCard.tsx` | Remover envio direto de push task_completed (2 locais) |
+| `src/components/kanban/MobileKanbanView.tsx` | Remover envio direto de push task_completed |
+| `supabase/functions/send-onesignal/index.ts` | Reduzir janela dedup de 4h para 2h |
+| `src/components/notifications/NotificationPreferences.tsx` | Remover campo "Soneca" |
 
----
+## Análise de Impacto
 
-## 4) Plano de correção (execução real em etapas)
+| Item | Risco | Complexidade |
+|---|---|---|
+| Reescrever useDueDateAlerts | 4 | 6 |
+| Remover push duplicado TaskCard/Mobile | 2 | 2 |
+| Ajustar dedup backend | 1 | 1 |
+| Simplificar Preferências | 1 | 1 |
+| **Total** | **8** | **10 — Abaixo do limite 28** |
 
-### Etapa 1 — Deduplicação GLOBAL no backend (a correção mais importante)
-**Arquivo:** `supabase/functions/send-onesignal/index.ts`
+### Antes vs Depois
 
-**Objetivo:** se a notificação já foi enviada recentemente, o backend **não envia de novo**, mesmo que 2 devices tentem ao mesmo tempo.
+**Antes**: 5 camadas de dedup, 3 locais de envio de task_completed, localStorage que corrompe entre devices, push com e sem dedup_key misturados, máximo 5 pushes/dia
 
-**Como:**
-1) Padronizar um `dedup_key` (chave única):
-   - Para prazo: `due_overdue:<taskId>` / `due_warning:<taskId>` etc.
-   - Para evento: `task_completed:<taskId>`
-   - Para resumo: `due_overdue_summary:<date>` (ou com janela de 4h)
-2) Antes de enviar ao OneSignal, consultar `push_logs` buscando:
-   - `user_id = payload.user_id`
-   - `data->>'dedup_key' = <dedup_key>`
-   - `timestamp > now() - interval '4 hours'` (mesma janela usada hoje no client)
-   - `status in ('sent','sent_fallback')` (ou equivalentes)
-3) Se existir, **retornar success** sem enviar (e opcionalmente logar `status='dedup_skipped'`).
+**Depois**: 1 dedup (backend), 1 local de envio por evento, Set em memória só para toasts na sessão, todos os pushes com dedup_key, ~12 pushes/dia (janela 2h)
 
-**Por que isso resolve:**
-- Mesmo que o iOS dispare “tudo” ao abrir, **não terá repetição** ao abrir de novo.
-- Mesmo que 2 devices abram juntos, só o primeiro passa; o segundo será bloqueado.
+### Vantagens
+- Sistema previsível e debugável
+- Lembretes individuais da tarefa (regra de ouro) sempre funcionam
+- Sem dependência de localStorage entre devices
+- Menos código = menos bugs
 
-**Impacto:** alto benefício, risco baixo (mudança contida no backend de push).
+### Desvantagens
+- Toasts podem repetir se você ficar com o app aberto por muito tempo (mas push não repete)
 
----
+## Checklist de Testes Manuais
 
-### Etapa 2 — Resumo único de atrasadas (para parar os 30–40 pushes)
-**Arquivo:** `src/hooks/useDueDateAlerts.ts` + `src/lib/defaultNotificationTemplates.ts` + UI de templates
-
-**Comportamento novo:**
-- Se houver “muitas” atrasadas (ex.: `>= 5`, configurável), ao invés de mandar 1 push por tarefa:
-  - enviar **1 push resumo**: “Você tem 26 tarefas atrasadas. Abra o app para revisar.”
-  - **não enviar** `due_overdue` individual para cada uma nesse ciclo
-- E esse resumo também fica protegido pela dedup global (Etapa 1), então não repete.
-
-**Detalhes técnicos:**
-- Adicionar template `due_overdue_summary` (categoria reminder).
-- Implementar coleta:
-  - `overdueTasks = tasks.filter(isOverdue && !completed && !excludedColumn)`
-  - Se `overdueTasks.length >= threshold`:
-    - enviar `due_overdue_summary` com variáveis `count` + (opcional) top 3 títulos
-    - retornar antes do loop de `due_overdue` individuais
-- Manter alertas `urgent/warning/early` como estão (mas também protegidos por dedup global).
-
----
-
-### Etapa 3 — “Template OFF bloqueia TUDO” (push + toast + browser)
-**Arquivo:** `src/hooks/useDueDateAlerts.ts`
-
-Hoje o `enabled` só corta o push.
-Vamos ajustar para:
-- Antes de exibir toast / browser notification / push, checar template:
-  - se `enabled === false`: não fazer nada (nenhum canal)
-
-Isso alinha com o que você pediu.
-
----
-
-### Etapa 4 — Respeitar template no `task_completed` em 100% dos lugares
-**Arquivos:**
-- `src/hooks/tasks/useTasks.ts` (corrigir o envio hardcoded em `updateTask`)
-- `src/hooks/useUserStats.ts` (conquistas respeitarem templates)
-- (opcional) padronizar um helper único pra enviar push respeitando templates.
-
-**Correção específica do bug atual:**
-- Substituir o push hardcoded de `updateTask` por:
-  - pegar template do settings
-  - checar `enabled`
-  - formatar conteúdo pelo template
-  - enviar via `oneSignalNotifier.send(...)` incluindo `dedup_key`
-
----
-
-### Etapa 5 — Auditoria/observabilidade (para nunca mais ficar “cego”)
-**Sem mudar schema (só payload em `data` do push_logs):**
-- Sempre incluir em `payload.data`:
-  - `dedup_key`
-  - `trigger_source` (`due_date`, `task_completed`, `achievement`, `template_test`)
-  - `client_instance_id` (um UUID salvo em localStorage no device)
-  - `app_route` (rota atual ao disparar)
-Isso permite rastrear *qual device/contexto* causou disparos e confirmar se o dedup global está funcionando.
-
----
-
-## 5) Viabilidade (banco / código / regras)
-
-### Mudança em banco de dados (schema)?
-- **Não é obrigatório.** Dá para fazer tudo usando:
-  - consulta à tabela existente `push_logs`
-  - `data` (jsonb) para armazenar `dedup_key` e metadados
-- (Opcional futuro) criar índice em `push_logs (user_id, (data->>'dedup_key'), timestamp)` para performance em escala.
-
-### Mudança em código-fonte?
-- Sim:
-  - `send-onesignal` (backend)
-  - `useDueDateAlerts.ts`
-  - `useTasks.ts`
-  - `useUserStats.ts`
-  - `defaultNotificationTemplates.ts` + editor para mostrar novo template
-
-### Mudança de regra de negócio?
-- Sim (por sua escolha):
-  - atrasadas viram **resumo único**
-  - templates OFF bloqueiam **todos os canais**
-  - dedup global vira “fonte da verdade”
-
----
-
-## 6) Análise de impacto (antes x depois)
-
-### Antes
-- Abrir o app com muitas atrasadas:
-  - dispara N pushes (N = nº de tarefas atrasadas)
-- Se abrir em 2 devices:
-  - duplica (pode virar 2N)
-- Template OFF:
-  - ainda pode disparar em pontos que ignoram template
-  - ainda pode mostrar toast/browser mesmo OFF
-
-### Depois
-- Abrir o app com muitas atrasadas:
-  - dispara **1** push resumo
-- Abrir em 2 devices:
-  - backend bloqueia repetição (dedup global)
-- Template OFF:
-  - bloqueia push + toast + browser
-- Logs ficam explicáveis via `dedup_key` e `trigger_source`
-
----
-
-## 7) Risco estimado + complexidade (com notas)
-
-Vou usar “limite seguro” = **28 pontos** (soma de risco + complexidade por item, onde cada nota é 0–10).
-
-| Item | Risco (0-10) | Complexidade (0-10) | Pontos |
-|---|---:|---:|---:|
-| Dedup global no backend (send-onesignal) | 3 | 5 | 8 |
-| Resumo único de atrasadas | 4 | 6 | 10 |
-| Template OFF bloqueia todos canais | 2 | 4 | 6 |
-| Corrigir `task_completed` hardcoded + conquistas | 3 | 4 | 7 |
-| Observabilidade (metadados em data json) | 2 | 3 | 5 |
-| **Total** |  |  | **36 (acima do limite 28)** |
-
-**Interpretação:** é um conjunto grande (vale a pena), mas para manter segurança operacional eu executaria em 2 releases:
-
-- **Release 1 (mais urgente / menor risco):**
-  1) Dedup global no backend  
-  2) Corrigir `useTasks.updateTask` respeitando templates  
-  3) Template OFF bloqueia todos canais (pelo menos nos alertas de prazo)  
-  **Estimativa:** ~21 pontos
-
-- **Release 2:**
-  4) Resumo único de atrasadas  
-  5) Observabilidade completa + conquistas/templates  
-  **Estimativa:** ~15 pontos
-
----
-
-## 8) Checklist de testes manuais (simulação do “mundo real”)
-
-### A) Anti-debandada no iOS
-1. No iOS, feche o app (swipe para matar).
-2. Abra o app.
-3. **Esperado:** chega no máximo **1 push** de resumo (se houver muitas atrasadas).
-4. Abra de novo em menos de 4 horas.
-5. **Esperado:** não chega push repetido (dedup global).
-
-### B) Duplicação multi-device
-1. Deixe um device A (desktop) logado no app.
-2. Abra o app no iOS (device B).
-3. **Esperado:** nenhum template “duplica” no minuto; push_logs mostra `dedup_skipped` quando o segundo device tenta.
-
-### C) Template OFF bloqueia tudo
-1. Desative `due_overdue` e `due_warning` nos templates.
-2. Abra o app com tarefas vencidas.
-3. **Esperado:** sem push, sem toast, sem browser notification.
-
-### D) `task_completed` OFF
-1. Deixe `task_completed` desativado.
-2. Conclua uma tarefa por:
-   - clique no card (desktop)
-   - swipe (mobile)
-3. **Esperado:** não envia push nem toast/browser (se aplicável ao evento).
-
-### E) Regressão geral
-- Confirmar que “Testar template” ainda envia (somente se template estiver ON).
-- Confirmar que histórico `/notifications > histórico` continua carregando e mostrando status corretamente.
-
----
-
-## 9) Arquivos que serão mexidos (quando você autorizar a execução)
-- `supabase/functions/send-onesignal/index.ts` (dedup global + logging)
-- `src/hooks/useDueDateAlerts.ts` (resumo único + template OFF bloqueia tudo + dedup_key)
-- `src/hooks/tasks/useTasks.ts` (respeitar template no task_completed)
-- `src/hooks/useUserStats.ts` (respeitar template para conquistas / ou bloquear conforme configuração)
-- `src/lib/defaultNotificationTemplates.ts` (novo template de resumo)
-- `src/components/NotificationTemplatesEditor.tsx` (garantir que o novo template apareça corretamente)
+- [ ] Abrir app no iOS com tarefas atrasadas → deve receber 1 push resumo (não 30+)
+- [ ] Fechar e reabrir em menos de 2h → NÃO deve receber push repetido
+- [ ] Concluir tarefa → deve receber APENAS 1 push (não 2 ou 3)
+- [ ] Desativar template → nenhuma notificação (push, toast, browser)
+- [ ] Tarefa em coluna "Recorrente" (excluída) → ZERO notificações
+- [ ] Tarefa com lembrete individual de 2h → receber push exatamente 2h antes
+- [ ] Tarefa SEM lembrete individual → usar threshold global (dueDateHours)
 
