@@ -203,12 +203,21 @@ function DroppableDay({
       day
     }
   });
-  return <div ref={setNodeRef} onClick={() => onDayClick(day)} className={cn(dayIdx === 0 && colStartClasses[getDay(day)], !isEqual(day, selectedDay) && !isToday(day) && !isSameMonth(day, firstDayCurrentMonth) && "bg-muted/30 text-muted-foreground", "relative flex flex-col border-b border-r hover:bg-muted/50 cursor-pointer transition-colors", isEqual(day, selectedDay) && "bg-primary/5 ring-1 ring-inset ring-primary/20", isToday(day) && "bg-primary/10", isOver && "ring-2 ring-primary ring-inset bg-primary/20")}>
+  return <div ref={setNodeRef} onClick={() => onDayClick(day)} className={cn(dayIdx === 0 && colStartClasses[getDay(day)], !isEqual(day, selectedDay) && !isToday(day) && !isSameMonth(day, firstDayCurrentMonth) && "bg-muted/30 text-muted-foreground", "relative flex flex-col border-b border-r hover:bg-muted/50 cursor-pointer transition-all duration-200", isEqual(day, selectedDay) && "bg-primary/5 ring-1 ring-inset ring-primary/20", isToday(day) && "bg-primary/10", isOver && "ring-2 ring-primary ring-inset bg-primary/15 scale-[1.02] shadow-lg")}>
       <div className="flex items-center justify-center py-1.5">
         <span className={cn("flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium", isToday(day) && "bg-primary text-primary-foreground", isEqual(day, selectedDay) && !isToday(day) && "bg-muted")}>
           {format(day, "d")}
         </span>
       </div>
+
+      {/* Drop indicator text */}
+      {isOver && (
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-center pb-1 pointer-events-none">
+          <span className="text-[9px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+            Mover para {format(day, "d/MM")}
+          </span>
+        </div>
+      )}
 
       <div className={cn("flex-1 flex-col gap-0.5 overflow-y-auto px-1 pb-1 scrollbar-thin scrollbar-thumb-muted flex", viewType === "week" ? "max-h-[300px]" : "max-h-[140px]")}>
         {dayTasks.map(task => <DraggableTask key={task.id} task={task} columns={columns} getPriorityColor={getPriorityColor} getPriorityBg={getPriorityBg} onEditTask={onEditTask} className="py-[5px] my-0 pb-[10px] pt-[10px] mt-[5px]" />)}
@@ -553,8 +562,9 @@ export function FullScreenCalendar({
 
             {/* Drag Overlay */}
             <DragOverlay>
-              {activeTask && <div className={cn("flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs shadow-lg", getPriorityBg(activeTask.priority))}>
-                  <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
+              {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30 cursor-grabbing", getPriorityBg(activeTask.priority))}>
+                  <GripVertical className="h-3 w-3 text-muted-foreground" />
+                  <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
                   <span className="truncate font-medium">{activeTask.title}</span>
                 </div>}
             </DragOverlay>

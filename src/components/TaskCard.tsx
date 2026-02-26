@@ -586,6 +586,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
                         hasRecurrence={!!task.recurrence_rule}
                         hasLinkedNote={!!task.linked_note_id}
                         linkedNoteId={task.linked_note_id}
+                        hasCustomNotification={!!(task as any).notification_settings?.reminders?.length}
                         densityMode={densityMode}
                         urgency={urgency}
                       />

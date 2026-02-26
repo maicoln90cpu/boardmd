@@ -76,8 +76,19 @@ export function useDueDateAlerts(tasks: Task[]) {
   const { toast } = useToast();
   const { settings } = useSettings();
   
-  // Simple in-memory Set: prevents re-toast in same browser session only
-  const notifiedRef = useRef<Set<string>>(new Set());
+  // SessionStorage-backed Set: persists across app restarts within same tab session
+  const notifiedRef = useRef<Set<string>>(new Set<string>());
+  
+  // Initialize from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('due_date_notified');
+      if (saved) {
+        const items = JSON.parse(saved) as string[];
+        items.forEach(item => notifiedRef.current.add(item));
+      }
+    } catch {}
+  }, []);
   const toastRef = useRef(toast);
   const settingsRef = useRef(settings.notifications);
 
@@ -120,10 +131,11 @@ export function useDueDateAlerts(tasks: Task[]) {
       // Helper: is template enabled?
       const tplEnabled = (id: string) => isTemplateEnabled(id, userTemplates);
 
-      // Helper: mark notified in-memory & show toast + browser
+      // Helper: mark notified in sessionStorage & show toast + browser
       const notifyLocal = (key: string, title: string, desc: string, urgent: boolean) => {
         if (notifiedRef.current.has(key)) return;
         notifiedRef.current.add(key);
+        try { sessionStorage.setItem('due_date_notified', JSON.stringify([...notifiedRef.current])); } catch {}
         toastRef.current({ title, description: desc, variant: urgent ? "destructive" : undefined });
         showBrowserNotification(title, desc, urgent);
       };
@@ -165,8 +177,13 @@ export function useDueDateAlerts(tasks: Task[]) {
             topTasks,
           });
         }
-        // Mark individual overdue as notified so they don't fire individually
-        overdueTasks.forEach(t => notifiedRef.current.add(`${t.id}-overdue`));
+        // Mark individual overdue AND urgent/warning as notified to suppress individual alerts
+        overdueTasks.forEach(t => {
+          notifiedRef.current.add(`${t.id}-overdue`);
+          notifiedRef.current.add(`${t.id}-urgent`);
+          notifiedRef.current.add(`${t.id}-warning`);
+        });
+        try { sessionStorage.setItem('due_date_notified', JSON.stringify([...notifiedRef.current])); } catch {}
       }
 
       // === Step 3: Process each task ===

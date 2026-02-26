@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, AlertCircle, FileText, Repeat, GraduationCap } from "lucide-react";
+import { Calendar, Clock, AlertCircle, FileText, Repeat, GraduationCap, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
 import { useNavigate } from "react-router-dom";
@@ -68,6 +68,7 @@ interface TaskCardBadgesProps {
   linkedNoteId?: string | null;
   hasLinkedCourse?: boolean;
   linkedCourseId?: string | null;
+  hasCustomNotification?: boolean;
   densityMode: "comfortable" | "compact" | "ultra-compact";
   urgency: "overdue" | "urgent" | "warning" | "normal";
 }
@@ -86,6 +87,7 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
   linkedNoteId,
   hasLinkedCourse = false,
   linkedCourseId,
+  hasCustomNotification = false,
   densityMode,
   urgency,
 }) => {
@@ -258,6 +260,25 @@ export const TaskCardBadges: React.FC<TaskCardBadgesProps> = ({
             densityMode === "comfortable" && "h-3 w-3",
           )} />
           Nota
+        </Badge>
+      )}
+
+      {/* Custom notification badge */}
+      {!hideBadges && hasCustomNotification && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "flex items-center gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20",
+            densityMode === "compact" && "text-[10px] px-1.5 py-0",
+            densityMode === "comfortable" && "text-xs px-2 py-0.5",
+          )}
+          title="Lembrete personalizado configurado"
+        >
+          <Bell className={cn(
+            densityMode === "compact" && "h-2.5 w-2.5",
+            densityMode === "comfortable" && "h-3 w-3",
+          )} />
+          Lembrete
         </Badge>
       )}
 
