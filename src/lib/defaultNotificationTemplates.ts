@@ -134,6 +134,17 @@ export const defaultNotificationTemplates: NotificationTemplate[] = [
     category: 'achievement',
     description: 'Disparado ao subir de nível no sistema de gamificação.',
   },
+
+  // Summary notification for overdue tasks
+  {
+    id: 'due_overdue_summary',
+    name: 'Resumo de Atrasadas',
+    title: '⏰ {{count}} Tarefas Atrasadas',
+    body: 'Você tem {{count}} tarefas atrasadas. As mais urgentes: {{topTasks}}. Abra o app para revisar.',
+    emoji: '⏰',
+    category: 'reminder',
+    description: 'Disparado ao abrir o app quando há 5+ tarefas atrasadas. Envia um resumo único em vez de alertas individuais.',
+  },
 ];
 
 // Template variable replacer

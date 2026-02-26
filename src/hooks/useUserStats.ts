@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
+import { sendPushWithTemplate } from "@/lib/notifications/pushHelper";
 
 export interface UserStats {
   id: string;
@@ -98,9 +98,16 @@ export function useUserStats() {
         description: `Parabéns! Você chegou ao nível ${newLevel}`,
       });
 
-      // Push notification de nível
+      // Push notification de nível (respects template enabled)
       if (user?.id) {
-        oneSignalNotifier.sendAchievement(user.id, `Nível ${newLevel} alcançado!`, points);
+        sendPushWithTemplate({
+          userId: user.id,
+          templateId: 'achievement_level',
+          variables: { level: String(newLevel) },
+          dedupKey: `achievement_level:${newLevel}`,
+          triggerSource: 'achievement',
+          extraData: { points },
+        });
       }
     }
   };
@@ -115,9 +122,16 @@ export function useUserStats() {
         best_streak: Math.max(newStreak, stats.best_streak),
       });
 
-      // Push notification de streak a cada 5 dias
+      // Push notification de streak a cada 5 dias (respects template enabled)
       if (newStreak > 0 && newStreak % 5 === 0 && user?.id) {
-        oneSignalNotifier.sendAchievement(user.id, `Sequência de ${newStreak} dias!`, newStreak * 5);
+        sendPushWithTemplate({
+          userId: user.id,
+          templateId: 'achievement_streak',
+          variables: { streakDays: String(newStreak) },
+          dedupKey: `achievement_streak:${newStreak}`,
+          triggerSource: 'achievement',
+          extraData: { points: newStreak * 5 },
+        });
       }
     } else {
       updateStatsMutation.mutate({

@@ -29,6 +29,9 @@ async function sendToOneSignal(
   return await response.json();
 }
 
+// Dedup window: 4 hours
+const DEDUP_WINDOW_HOURS = 4;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -50,6 +53,62 @@ Deno.serve(async (req) => {
 
     const payload: NotificationPayload = await req.json();
     console.log('[send-onesignal] Received payload:', JSON.stringify(payload));
+
+    // === DEDUP GLOBAL ===
+    const dedupKey = (payload.data as any)?.dedup_key as string | undefined;
+    
+    if (dedupKey && payload.user_id && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      
+      const windowStart = new Date(Date.now() - DEDUP_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+      
+      const { data: existing } = await supabaseAdmin
+        .from('push_logs')
+        .select('id')
+        .eq('user_id', payload.user_id)
+        .gte('timestamp', windowStart)
+        .in('status', ['sent', 'sent_fallback', 'no_recipients'])
+        .limit(1);
+      
+      // We need to filter by dedup_key in data jsonb
+      // Since we can't do jsonb filter easily, query with notification_type + check data
+      const { data: existingDedup } = await supabaseAdmin
+        .from('push_logs')
+        .select('id, data')
+        .eq('user_id', payload.user_id)
+        .gte('timestamp', windowStart)
+        .in('status', ['sent', 'sent_fallback', 'no_recipients']);
+      
+      const isDuplicate = existingDedup?.some(log => {
+        const logData = log.data as Record<string, unknown> | null;
+        return logData && logData.dedup_key === dedupKey;
+      });
+      
+      if (isDuplicate) {
+        console.log(`[send-onesignal] DEDUP: Skipping duplicate for key="${dedupKey}"`);
+        
+        // Log as dedup_skipped
+        await supabaseAdmin.from('push_logs').insert({
+          user_id: payload.user_id,
+          title: payload.title,
+          body: payload.body,
+          data: { ...payload.data, dedup_key: dedupKey },
+          notification_type: payload.notification_type || 'onesignal',
+          status: 'dedup_skipped',
+          error_message: `Duplicate within ${DEDUP_WINDOW_HOURS}h window`,
+          device_name: 'OneSignal',
+        });
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            dedup_skipped: true,
+            dedup_key: dedupKey,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // Base notification data
     const baseData: Record<string, unknown> = {
@@ -116,27 +175,27 @@ Deno.serve(async (req) => {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const recipients = (result as any).recipients ?? 0;
 
-      // Determine status: if we have an id, it was accepted by OneSignal
-      let logStatus = 'failed';
-      let logError: string | null = result.errors ? JSON.stringify(result.errors) : null;
+        // Determine status
+        let logStatus = 'failed';
+        let logError: string | null = result.errors ? JSON.stringify(result.errors) : null;
 
-      if (result.id) {
-        if (recipients > 0) {
-          logStatus = 'sent';
-        } else if (usedFallback) {
-          logStatus = 'sent_fallback';
-          logError = null; // Clear error since fallback succeeded
-        } else {
-          logStatus = 'no_recipients';
-          logError = 'Nenhum dispositivo encontrado — a notificação pode ter sido entregue via cache do OneSignal';
+        if (result.id) {
+          if (recipients > 0) {
+            logStatus = 'sent';
+          } else if (usedFallback) {
+            logStatus = 'sent_fallback';
+            logError = null;
+          } else {
+            logStatus = 'no_recipients';
+            logError = 'Nenhum dispositivo encontrado — a notificação pode ter sido entregue via cache do OneSignal';
+          }
         }
-      }
 
-      await supabase.from('push_logs').insert({
+        await supabase.from('push_logs').insert({
           user_id: payload.user_id,
           title: payload.title,
           body: payload.body,
-          data: { ...payload.data, recipients, used_fallback: usedFallback },
+          data: { ...payload.data, recipients, used_fallback: usedFallback, dedup_key: dedupKey || null },
           notification_type: payload.notification_type || 'onesignal',
           status: logStatus,
           error_message: logError,
