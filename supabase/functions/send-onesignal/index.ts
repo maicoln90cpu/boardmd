@@ -29,8 +29,8 @@ async function sendToOneSignal(
   return await response.json();
 }
 
-// Dedup window: 4 hours
-const DEDUP_WINDOW_HOURS = 4;
+// Dedup window: 2 hours (reduced from 4h for more frequent legitimate alerts)
+const DEDUP_WINDOW_HOURS = 2;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

@@ -12,9 +12,7 @@ import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import { useSettings } from "@/hooks/data/useSettings";
-import { getTemplateById, formatNotificationTemplate } from "@/lib/defaultNotificationTemplates";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -90,25 +88,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
           onAddPoints();
         }
 
-        // Push notification via OneSignal para task_completed - respeita template
-        if (newCompleted) {
-          const userTemplates = settings.notificationTemplates;
-          const tpl = getTemplateById(userTemplates || [], 'task_completed');
-          if (tpl?.enabled !== false) {
-            supabase.auth.getUser().then(({ data }) => {
-              if (data?.user) {
-                const formatted = formatNotificationTemplate(tpl!, { taskTitle: task.title });
-                oneSignalNotifier.send({
-                  user_id: data.user.id,
-                  title: formatted.title,
-                  body: formatted.body,
-                  notification_type: 'task_completed',
-                  url: '/',
-                });
-              }
-            });
-          }
-        }
+        // Push notification handled by useTasks.updateTask (centralized)
 
         window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
 

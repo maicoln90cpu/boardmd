@@ -184,30 +184,6 @@ export function NotificationPreferences() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between">
-                <Label htmlFor="snoozeMinutes" className="flex flex-col gap-1">
-                  <span>Soneca</span>
-                  <span className="font-normal text-muted-foreground text-sm">
-                    Tempo antes de repetir o mesmo alerta
-                  </span>
-                </Label>
-                <Select
-                  value={String(localNotifications.snoozeMinutes)}
-                  onValueChange={(value) => handleNotificationChange('snoozeMinutes', Number(value))}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutos</SelectItem>
-                    <SelectItem value="30">30 minutos</SelectItem>
-                    <SelectItem value="60">1 hora</SelectItem>
-                    <SelectItem value="120">2 horas</SelectItem>
-                    <SelectItem value="240">4 horas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* Column filter for push notifications */}
               <div className="border-t pt-4 mt-4">
                 <Label className="flex items-center gap-2 mb-3">
