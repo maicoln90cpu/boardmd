@@ -1,130 +1,76 @@
 
 
-# Plano: Refatorar Sistema de Notificações Push (Simplificação Total)
+# Plano: Indicador Visual de Notificação + Correções Push + Calendário D&D
 
-## Diagnóstico dos Dados Reais (push_logs)
+## Diagnóstico dos Dados (push_logs últimas 24h)
 
-Analisei os logs do backend nas últimas 48h:
+Os logs revelam:
 
-- **154 `due_overdue` enviados em 25/Feb** — todos com `dedup_key: null` (código antigo ainda ativo, sem dedup no backend)
-- **14 pushes individuais disparados no MESMO SEGUNDO** (23:49:28) — e depois MAIS 14 nos próximos 24 segundos (23:49:52) — total de 28 em 24 segundos para as mesmas tarefas
-- **Após o fix (26/Feb)**: apenas 2 `due_overdue_summary` + 2 `due_early` + 1 `due_urgent` = 5 pushes em 24h — corretamente deduplicados, porém agora quase silencioso demais
-- **Colunas excluídas ESTÃO funcionando** — nenhuma tarefa da coluna "Recorrente" aparece nos logs (o filtro funciona). As 154 notificações eram todas de tarefas na coluna "PRIORIDADE"
+1. **"Treino apareceu depois aleatória"**: A tarefa "Treino" disparou como `due_urgent` (menos de 1h), que é processado SEPARADAMENTE do resumo de atrasadas (`due_overdue_summary`). O resumo só cobre tarefas já atrasadas — "Treino" não era atrasada, era urgente. Resultado: 1 push de resumo + 1 push de "Treino" = correto, mas confuso para o usuário.
 
-### Causa raiz dos 3 problemas:
+2. **"Fechei e abri, apareceu de novo"**: O `notifiedRef` é um Set **em memória** que reseta ao fechar o app. Ao reabrir, o toast e browser notification disparam de novo (o push é bloqueado pelo backend — logs mostram 6x `dedup_skipped` para Treino). **Solução**: usar `sessionStorage` no lugar de Set em memória.
 
-1. **"Quase não avisa mais"**: O resumo único + dedup de 4h = máximo 6 pushes/dia. Correto tecnicamente, mas o intervalo é longo demais
-2. **"Envia tudo de uma vez ao abrir"**: O hook roda `checkDueDates()` imediatamente no mount. Se o localStorage do device está vazio (iOS limpa cache), tudo dispara junto
-3. **"Colunas excluídas não funcionam"**: Na verdade funcionam — os logs confirmam. Mas como você tem 14+ tarefas atrasadas em "PRIORIDADE", parece que vem de tudo
-
-### Problema arquitetural:
-O sistema tem **5 camadas de dedup sobrepostas** (notifiedTasksRef, pushTimestampsRef, pendingPushesRef, localStorage, backend dedup_key), cada uma com regras diferentes. Isso gera bugs imprevisíveis e torna impossível debugar.
-
----
-
-## Plano: Simplificar para 3 Regras Claras
-
-### Regra de Ouro
-Se a tarefa tem lembretes configurados individualmente (`notification_settings.reminders`), esses são a ÚNICA fonte de notificação para aquela tarefa. Nenhum alerta global interfere.
-
-### Regra Global (fallback)
-Para tarefas SEM lembretes individuais, o sistema usa os thresholds globais (dueDateHours). Mas com uma lógica mais simples.
-
-### Regra de Dedup
-Dedup acontece em **UM lugar só**: o backend (Edge Function). Remove toda a complexidade de localStorage.
+3. **"Algumas tarefas com app fechado aparecem, outras não"**: Limitação do iOS PWA — Service Workers são suspensos quando o app é fechado. Somente pushes enviados enquanto o app está aberto são entregues de forma confiável. Isso não muda com implementação — é restrição do sistema operacional.
 
 ---
 
 ## Alterações
 
-### 1. Reescrever `useDueDateAlerts.ts` (simplificação radical)
+### 1. Indicador visual de notificação customizada no card
+**Arquivo**: `src/components/task-card/TaskCardBadges.tsx`
 
-**Remover:**
-- `loadNotifiedSet` / `saveNotifiedSet` / `STORAGE_KEY` (localStorage de toasts)
-- `loadPushTimestamps` / `savePushTimestamps` / `PUSH_STORAGE_KEY` (localStorage de push)
-- `pendingPushesRef` / `pushTimestampsRef`
-- Toda a lógica dual de dedup (local + push)
+Adicionar prop `hasCustomNotification` e renderizar um ícone de sino (🔔 `Bell`) ao lado dos outros badges quando a tarefa tem `notification_settings.reminders` configurados.
 
-**Manter:**
-- `notifiedTasksRef` como Set simples em memória (só previne re-toast na mesma sessão)
-- `checkInterval` para controlar frequência de verificação
-- Verificação de `excludedColumns`
-- Verificação de template `enabled`
-- Overdue summary (>= 5 atrasadas = 1 resumo)
+**Arquivo**: `src/components/TaskCard.tsx`
 
-**Novo fluxo por tarefa:**
-```
-1. Tarefa em coluna excluída? → SKIP
-2. Tarefa concluída ou em "Concluído"? → SKIP  
-3. Tarefa tem lembretes individuais? → Usar SÓ esses
-4. Senão → Usar thresholds globais
-5. Já notificou nesta sessão? (memória) → SKIP toast/browser
-6. Push → sendPushWithTemplate (backend faz dedup)
-```
+Passar a nova prop `hasCustomNotification={!!task.notification_settings?.reminders?.length}`.
 
-### 2. Remover push duplicado de `TaskCard.tsx` e `MobileKanbanView.tsx`
+### 2. Persistir dedup de toasts em `sessionStorage` (corrige "fechei e abri, apareceu de novo")
+**Arquivo**: `src/hooks/useDueDateAlerts.ts`
 
-Atualmente, ao concluir uma tarefa, o push é enviado de **3 lugares**:
-- `TaskCard.tsx` linha 319 (recorrente) — `oneSignalNotifier.send()` direto, sem dedup_key
-- `TaskCard.tsx` linha 381 (normal) — `oneSignalNotifier.send()` direto, sem dedup_key  
-- `useTasks.ts` linha 357 — `sendPushWithTemplate()` com dedup_key
+Trocar `notifiedRef = new Set()` por um Set inicializado a partir de `sessionStorage`. Ao adicionar um item, salvar também no `sessionStorage`. Isso garante que toasts não repetem dentro da mesma sessão do navegador (mesmo após reload), mas resetam quando o usuário fecha a aba completamente.
 
-**Ação**: Remover os 2 envios do TaskCard e do MobileKanbanView. O `useTasks.updateTask` já faz o envio correto via `sendPushWithTemplate`.
+### 3. Incluir `due_urgent` e `due_warning` no resumo quando há muitas atrasadas
+**Arquivo**: `src/hooks/useDueDateAlerts.ts`
 
-### 3. Ajustar janela de dedup no backend
+Quando o resumo é disparado (>= 5 atrasadas), suprimir também alertas individuais de `due_urgent` e `due_warning` para as tarefas que fazem parte do backlog (ou seja, tarefas cujo prazo está dentro das próximas 2h E já existem muitas atrasadas). Isso evita o "resumo + tarefa aleatória depois".
 
-Reduzir de 4h para **2h** para que as notificações legítimas cheguem com mais frequência, sem causar spam.
+### 4. Calendário: melhorar feedback visual do drag-and-drop
+**Arquivo**: `src/components/ui/fullscreen-calendar.tsx`
 
-### 4. Simplificar menu de Preferências
-
-Remover configurações que causam confusão:
-- **Remover "Soneca"** (snoozeMinutes) — irrelevante agora que o dedup é no backend
-- Manter: toggle on/off, antecedência (dueDateHours), frequência de verificação, colunas excluídas
+O drag-and-drop já funciona no calendário. Melhorias sutis:
+- Adicionar indicação de "soltar aqui" mais visível (texto sutil "Mover para dia X")
+- Animação de transição suave ao soltar
+- Cursor grab/grabbing mais claro no handle
 
 ---
 
-## Arquivos a Modificar
-
-| Arquivo | Alteração |
-|---|---|
-| `src/hooks/useDueDateAlerts.ts` | Reescrever com lógica simplificada (remover 5 camadas de dedup, manter 1 em memória) |
-| `src/components/TaskCard.tsx` | Remover envio direto de push task_completed (2 locais) |
-| `src/components/kanban/MobileKanbanView.tsx` | Remover envio direto de push task_completed |
-| `supabase/functions/send-onesignal/index.ts` | Reduzir janela dedup de 4h para 2h |
-| `src/components/notifications/NotificationPreferences.tsx` | Remover campo "Soneca" |
-
 ## Análise de Impacto
 
-| Item | Risco | Complexidade |
-|---|---|---|
-| Reescrever useDueDateAlerts | 4 | 6 |
-| Remover push duplicado TaskCard/Mobile | 2 | 2 |
-| Ajustar dedup backend | 1 | 1 |
-| Simplificar Preferências | 1 | 1 |
-| **Total** | **8** | **10 — Abaixo do limite 28** |
-
-### Antes vs Depois
-
-**Antes**: 5 camadas de dedup, 3 locais de envio de task_completed, localStorage que corrompe entre devices, push com e sem dedup_key misturados, máximo 5 pushes/dia
-
-**Depois**: 1 dedup (backend), 1 local de envio por evento, Set em memória só para toasts na sessão, todos os pushes com dedup_key, ~12 pushes/dia (janela 2h)
+| Item | Risco (0-10) | Complexidade (0-10) |
+|---|---:|---:|
+| Indicador visual de notificação no card | 1 | 2 |
+| SessionStorage para dedup de toasts | 2 | 3 |
+| Suprimir alertas individuais junto com resumo | 2 | 3 |
+| Melhorar D&D visual no calendário | 1 | 3 |
+| **Total** | **6** | **11 — Abaixo do limite 28** |
 
 ### Vantagens
-- Sistema previsível e debugável
-- Lembretes individuais da tarefa (regra de ouro) sempre funcionam
-- Sem dependência de localStorage entre devices
-- Menos código = menos bugs
+- Card mostra claramente quais tarefas têm notificações customizadas
+- "Fechei e abri" não repete toasts na mesma sessão
+- Resumo agrupa TUDO (overdue + urgent), evitando pushes "soltos"
+- Calendário com drag-and-drop mais intuitivo
 
 ### Desvantagens
-- Toasts podem repetir se você ficar com o app aberto por muito tempo (mas push não repete)
+- Nenhuma significativa
+
+## Sobre o ponto 5 (tarefas com app fechado)
+Essa é uma **limitação do iOS** para PWAs: o Service Worker é suspenso quando o app sai do primeiro plano. Pushes só chegam de forma confiável com o app aberto. Para notificações background no iOS, seria necessário um app nativo (Capacitor). As melhorias feitas (dedup backend, resumo) garantem que quando o app ABRIR, o comportamento seja correto e previsível.
 
 ## Checklist de Testes Manuais
-
-- [ ] Abrir app no iOS com tarefas atrasadas → deve receber 1 push resumo (não 30+)
-- [ ] Fechar e reabrir em menos de 2h → NÃO deve receber push repetido
-- [ ] Concluir tarefa → deve receber APENAS 1 push (não 2 ou 3)
-- [ ] Desativar template → nenhuma notificação (push, toast, browser)
-- [ ] Tarefa em coluna "Recorrente" (excluída) → ZERO notificações
-- [ ] Tarefa com lembrete individual de 2h → receber push exatamente 2h antes
-- [ ] Tarefa SEM lembrete individual → usar threshold global (dueDateHours)
+- [ ] Criar tarefa com lembrete individual → verificar ícone de sino no card
+- [ ] Abrir app com muitas atrasadas → receber APENAS 1 push de resumo (sem "Treino" avulso)
+- [ ] Fechar e reabrir o app → NÃO deve mostrar toasts repetidos na mesma sessão
+- [ ] No calendário, arrastar tarefa de um dia para outro → verificar feedback visual suave
+- [ ] Verificar que tarefas em colunas excluídas continuam sem notificação
 
