@@ -418,15 +418,27 @@ async function buildTemplateMessages(
     const { data: completedTasks } = await completedQ.limit(50);
     const completedToday = (completedTasks || []).length;
 
-    // Not completed (still pending, were due today or have no date)
-    let pendingTodayQ = supabase.from('tasks').select('title, priority')
-      .eq('user_id', userId).eq('is_completed', false);
-    pendingTodayQ = applyExclusions(pendingTodayQ);
-    const { data: allPending } = await pendingTodayQ.limit(100);
-    const pendingCount = (allPending || []).length;
+    // Not completed: tasks due today (not completed) + overdue tasks
+    let pendingTodayOnlyQ = supabase.from('tasks').select('title, priority')
+      .eq('user_id', userId).eq('is_completed', false)
+      .gte('due_date', todayStartUTC.toISOString())
+      .lte('due_date', todayEndUTC.toISOString());
+    pendingTodayOnlyQ = applyExclusions(pendingTodayOnlyQ);
+    const { data: pendingTodayTasks } = await pendingTodayOnlyQ.limit(100);
 
-    // Total for today = completed + pending
-    const total = completedToday + pendingCount;
+    let overdueReportQ = supabase.from('tasks').select('title, priority')
+      .eq('user_id', userId).eq('is_completed', false)
+      .lt('due_date', todayStartUTC.toISOString())
+      .not('due_date', 'is', null);
+    overdueReportQ = applyExclusions(overdueReportQ);
+    const { data: overdueReportTasks } = await overdueReportQ.limit(100);
+
+    const allPending = [...(pendingTodayTasks || []), ...(overdueReportTasks || [])];
+    const pendingCount = allPending.length;
+
+    // Total for today = completed + pending today only (not overdue)
+    const pendingTodayCount = (pendingTodayTasks || []).length;
+    const total = completedToday + pendingTodayCount;
     const percent = total > 0 ? Math.round((completedToday / total) * 100) : 0;
     const filled = Math.round(percent / 10);
     const progressBar = '▓'.repeat(filled) + '░'.repeat(10 - filled) + ` ${percent}%`;
