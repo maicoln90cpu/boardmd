@@ -94,7 +94,7 @@ const SidebarContent = ({
 
   const handleCategorySelect = (categoryId: string) => {
     onCategorySelect?.(categoryId);
-    navigate("/");
+    navigate(`/?project=${categoryId}`);
   };
 
   // Filter categories for projects (depth 0 or all)
@@ -263,7 +263,7 @@ export function Sidebar({ onExport, onImport, onThemeToggle, onCategorySelect, s
                   style={{ paddingLeft: `${(category.depth || 0) * 16 + 16}px` }}
                   onClick={() => {
                     onCategorySelect?.(category.id);
-                    handleNavigation("/");
+                    handleNavigation(`/?project=${category.id}`);
                     setProjectsMenuOpen(false);
                   }}>
 
