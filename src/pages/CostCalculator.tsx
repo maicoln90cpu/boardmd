@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
 import { Button } from "@/components/ui/button";
 import { Plus, Calculator } from "lucide-react";
 import { useCostCalculator } from "@/hooks/useCostCalculator";
@@ -33,9 +32,13 @@ export default function CostCalculator() {
 
   return (
     <div className="flex h-screen w-full bg-background">
-      <Sidebar onCategorySelect={() => {}} />
+      <Sidebar
+        onCategorySelect={() => {}}
+        onExport={() => {}}
+        onImport={() => {}}
+        onThemeToggle={() => {}}
+      />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {selectedTheme ? (
             <CostThemeDetail
@@ -74,18 +77,15 @@ export default function CostCalculator() {
                 </div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {themes.map((theme) => {
-                    // We compute basic totals inline for the card
-                    return (
-                      <ThemeCardWrapper
-                        key={theme.id}
-                        theme={theme}
-                        onOpen={() => setSelectedThemeId(theme.id)}
-                        onDelete={() => deleteTheme.mutate(theme.id)}
-                        calculateTotals={calculateTotals}
-                      />
-                    );
-                  })}
+                  {themes.map((theme) => (
+                    <ThemeCardWrapper
+                      key={theme.id}
+                      theme={theme}
+                      onOpen={() => setSelectedThemeId(theme.id)}
+                      onDelete={() => deleteTheme.mutate(theme.id)}
+                      calculateTotals={calculateTotals}
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -114,7 +114,6 @@ function ThemeCardWrapper({
   onDelete: () => void;
   calculateTotals: any;
 }) {
-  const { useCostCalculator: _ } = {} as any; // unused
   const { useThemeItems } = useCostCalculator();
   const { data: items = [] } = useThemeItems(theme.id);
   const totals = calculateTotals(items, theme);

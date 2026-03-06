@@ -76,7 +76,13 @@ export function useCostCalculator() {
     mutationFn: async (theme: { name: string; currencies: CostCurrency[]; base_currency: string; exchange_rates: Record<string, number> }) => {
       const { data, error } = await supabase
         .from("cost_themes")
-        .insert({ ...theme, user_id: user!.id })
+        .insert({
+          name: theme.name,
+          currencies: theme.currencies as any,
+          exchange_rates: theme.exchange_rates as any,
+          base_currency: theme.base_currency,
+          user_id: user!.id,
+        })
         .select()
         .single();
       if (error) throw error;
@@ -92,7 +98,12 @@ export function useCostCalculator() {
   // Update theme
   const updateTheme = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<CostTheme> & { id: string }) => {
-      const { error } = await supabase.from("cost_themes").update(updates).eq("id", id);
+      const payload: any = {};
+      if (updates.name !== undefined) payload.name = updates.name;
+      if (updates.currencies !== undefined) payload.currencies = updates.currencies as any;
+      if (updates.exchange_rates !== undefined) payload.exchange_rates = updates.exchange_rates as any;
+      if (updates.base_currency !== undefined) payload.base_currency = updates.base_currency;
+      const { error } = await supabase.from("cost_themes").update(payload).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
