@@ -168,6 +168,19 @@ export function useCostCalculator() {
     onError: () => toast({ title: "Erro ao adicionar item", variant: "destructive" }),
   });
 
+  // Update item
+  const updateItem = useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; description?: string; amount?: number; currency?: string; cost_date?: string; category?: string; payment_method?: string }) => {
+      const { error } = await supabase.from("cost_items").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cost-items"] });
+      toast({ title: "✓ Item atualizado" });
+    },
+    onError: () => toast({ title: "Erro ao atualizar item", variant: "destructive" }),
+  });
+
   // Delete item
   const deleteItem = useMutation({
     mutationFn: async (id: string) => {
@@ -280,6 +293,7 @@ export function useCostCalculator() {
     deleteTheme,
     createItem,
     deleteItem,
+    updateItem,
     convertAmount,
     calculateTotals,
     generateReportText,

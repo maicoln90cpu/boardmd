@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Settings2, Trash2 } from "lucide-react";
+import { ArrowLeft, Settings2, Trash2, Pencil } from "lucide-react";
 import { CostItemForm } from "./CostItemForm";
+import { CostItemEditModal } from "./CostItemEditModal";
 import { CostSummary } from "./CostSummary";
 import { ExchangeRateEditor } from "./ExchangeRateEditor";
 import { CostReportExport } from "./CostReportExport";
@@ -17,6 +18,7 @@ interface Props {
   onBack: () => void;
   onAddItem: (item: { description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
   onDeleteItem: (id: string) => void;
+  onUpdateItem: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
   onUpdateRates: (rates: Record<string, number>) => void;
 }
 
@@ -31,9 +33,11 @@ export function CostThemeDetail({
   onBack,
   onAddItem,
   onDeleteItem,
+  onUpdateItem,
   onUpdateRates,
 }: Props) {
   const [showRateEditor, setShowRateEditor] = useState(false);
+  const [editingItem, setEditingItem] = useState<CostItem | null>(null);
 
   return (
     <div className="space-y-4">
@@ -84,7 +88,7 @@ export function CostThemeDetail({
                     <span className="text-xs text-muted-foreground">{item.cost_date}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <div className="text-right">
                     <span className="text-sm font-semibold whitespace-nowrap">
                       {Number(item.amount).toFixed(2)} {item.currency}
@@ -95,6 +99,14 @@ export function CostThemeDetail({
                       </p>
                     )}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => setEditingItem(item)}
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -120,6 +132,16 @@ export function CostThemeDetail({
             reportText={reportText}
           />
         </>
+      )}
+
+      {editingItem && (
+        <CostItemEditModal
+          item={editingItem}
+          currencies={theme.currencies}
+          open={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          onSave={onUpdateItem}
+        />
       )}
     </div>
   );
