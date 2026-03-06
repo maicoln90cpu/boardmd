@@ -45,6 +45,7 @@ const NotificationsDashboard = lazy(() => import("./pages/NotificationsDashboard
 const Pomodoro = lazy(() => import("./pages/Pomodoro"));
 const Tools = lazy(() => import("./pages/Tools"));
 const Courses = lazy(() => import("./pages/Courses"));
+const CostCalculator = lazy(() => import("./pages/CostCalculator"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
@@ -167,6 +168,16 @@ function RouterContent() {
           <ProtectedRoute>
             <Suspense fallback={<PageLoadingSkeleton />}>
               <Courses />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/cost-calculator" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <CostCalculator />
             </Suspense>
           </ProtectedRoute>
         } 

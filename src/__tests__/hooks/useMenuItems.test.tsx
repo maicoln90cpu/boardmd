@@ -42,8 +42,8 @@ describe("useMenuItems", () => {
   });
 
   describe("SECONDARY_MENU_ITEMS", () => {
-    it("should have 6 secondary menu items", () => {
-      expect(SECONDARY_MENU_ITEMS.length).toBe(6);
+    it("should have 7 secondary menu items", () => {
+      expect(SECONDARY_MENU_ITEMS.length).toBe(7);
     });
 
     it("should have Pomodoro with path /pomodoro", () => {
@@ -116,7 +116,7 @@ describe("useMenuItems", () => {
       );
 
       expect(result.current.primaryItems).toHaveLength(3);
-      expect(result.current.secondaryItems).toHaveLength(6);
+      expect(result.current.secondaryItems).toHaveLength(7);
     });
 
     it("should return primaryLinks and secondaryLinks", () => {
@@ -129,7 +129,7 @@ describe("useMenuItems", () => {
       );
 
       expect(result.current.primaryLinks).toHaveLength(3);
-      expect(result.current.secondaryLinks).toHaveLength(6);
+      expect(result.current.secondaryLinks).toHaveLength(7);
     });
 
     it("should mark Projetos as active when on /", () => {

@@ -1,0 +1,130 @@
+import { useState } from "react";
+import { Sidebar } from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Plus, Calculator } from "lucide-react";
+import { useCostCalculator } from "@/hooks/useCostCalculator";
+import { CostThemeCard } from "@/components/costs/CostThemeCard";
+import { CostThemeModal } from "@/components/costs/CostThemeModal";
+import { CostThemeDetail } from "@/components/costs/CostThemeDetail";
+
+export default function CostCalculator() {
+  const {
+    themes,
+    loadingThemes,
+    useThemeItems,
+    createTheme,
+    updateTheme,
+    deleteTheme,
+    createItem,
+    deleteItem,
+    calculateTotals,
+    generateReportText,
+  } = useCostCalculator();
+
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const selectedTheme = themes.find((t) => t.id === selectedThemeId) || null;
+  const { data: items = [] } = useThemeItems(selectedThemeId);
+
+  const totals = selectedTheme ? calculateTotals(items, selectedTheme) : { byOriginal: {}, converted: {} };
+  const reportText = selectedTheme ? generateReportText(selectedTheme, items) : "";
+
+  return (
+    <div className="flex h-screen w-full bg-background">
+      <Sidebar
+        onCategorySelect={() => {}}
+        onExport={() => {}}
+        onImport={() => {}}
+        onThemeToggle={() => {}}
+      />
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {selectedTheme ? (
+            <CostThemeDetail
+              theme={selectedTheme}
+              items={items}
+              totals={totals}
+              reportText={reportText}
+              onBack={() => setSelectedThemeId(null)}
+              onAddItem={(item) =>
+                createItem.mutate({ ...item, theme_id: selectedTheme.id })
+              }
+              onDeleteItem={(id) => deleteItem.mutate(id)}
+              onUpdateRates={(rates) =>
+                updateTheme.mutate({ id: selectedTheme.id, exchange_rates: rates })
+              }
+            />
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calculator className="h-6 w-6 text-primary" />
+                  <h1 className="text-2xl font-bold">Calculador de Custos</h1>
+                </div>
+                <Button onClick={() => setShowModal(true)} className="gap-1">
+                  <Plus className="h-4 w-4" /> Novo Tema
+                </Button>
+              </div>
+
+              {loadingThemes ? (
+                <p className="text-muted-foreground text-sm">Carregando...</p>
+              ) : themes.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground">
+                  <Calculator className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Nenhum tema de custos criado.</p>
+                  <p className="text-sm">Crie um tema para começar a registrar gastos.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {themes.map((theme) => (
+                    <ThemeCardWrapper
+                      key={theme.id}
+                      theme={theme}
+                      onOpen={() => setSelectedThemeId(theme.id)}
+                      onDelete={() => deleteTheme.mutate(theme.id)}
+                      calculateTotals={calculateTotals}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <CostThemeModal
+            open={showModal}
+            onClose={() => setShowModal(false)}
+            onSave={(data) => createTheme.mutate(data)}
+          />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// Wrapper to fetch items per theme for card display
+function ThemeCardWrapper({
+  theme,
+  onOpen,
+  onDelete,
+  calculateTotals,
+}: {
+  theme: any;
+  onOpen: () => void;
+  onDelete: () => void;
+  calculateTotals: any;
+}) {
+  const { useThemeItems } = useCostCalculator();
+  const { data: items = [] } = useThemeItems(theme.id);
+  const totals = calculateTotals(items, theme);
+
+  return (
+    <CostThemeCard
+      theme={theme}
+      itemCount={items.length}
+      totalBase={totals.converted[theme.base_currency] || 0}
+      onOpen={onOpen}
+      onDelete={onDelete}
+    />
+  );
+}
