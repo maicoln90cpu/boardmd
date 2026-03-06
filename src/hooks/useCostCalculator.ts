@@ -28,7 +28,30 @@ export interface CostItem {
   amount: number;
   currency: string;
   cost_date: string;
+  category: string;
+  payment_method: string;
   created_at: string;
+}
+
+export const COST_CATEGORIES = [
+  { value: "presente", label: "Presente" },
+  { value: "alimentacao", label: "Alimentação" },
+  { value: "transporte", label: "Transporte" },
+  { value: "aleatorios", label: "Aleatórios" },
+  { value: "outros", label: "Outros" },
+] as const;
+
+export const PAYMENT_METHODS = [
+  { value: "pix", label: "PIX" },
+  { value: "credit_card", label: "Cartão de Crédito" },
+  { value: "papel_moeda", label: "Papel Moeda" },
+] as const;
+
+export function getEffectiveAmount(amount: number, paymentMethod: string): number {
+  if (paymentMethod === "credit_card") {
+    return amount * 1.10 * 1.06; // 10% taxa + 6% IOF (composto)
+  }
+  return amount;
 }
 
 export function useCostCalculator() {
@@ -129,7 +152,7 @@ export function useCostCalculator() {
 
   // Create item
   const createItem = useMutation({
-    mutationFn: async (item: { theme_id: string; description: string; amount: number; currency: string; cost_date: string }) => {
+    mutationFn: async (item: { theme_id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => {
       const { data, error } = await supabase
         .from("cost_items")
         .insert({ ...item, user_id: user!.id })
@@ -175,21 +198,37 @@ export function useCostCalculator() {
   const calculateTotals = useCallback(
     (items: CostItem[], theme: CostTheme) => {
       const totals: Record<string, number> = {};
-      // Sum by original currency
+      const byCategory: Record<string, number> = {};
+      let totalCCFees = 0;
+      let totalCCIOF = 0;
+      // Sum by original currency (using effective amounts for CC)
       for (const item of items) {
-        totals[item.currency] = (totals[item.currency] || 0) + Number(item.amount);
+        const effective = getEffectiveAmount(Number(item.amount), item.payment_method);
+        totals[item.currency] = (totals[item.currency] || 0) + effective;
+        // Category totals in original currency
+        const catKey = item.category || "outros";
+        byCategory[catKey] = (byCategory[catKey] || 0) + effective;
+        // Track CC fees
+        if (item.payment_method === "credit_card") {
+          const amt = Number(item.amount);
+          const fee = amt * 0.10;
+          const iof = (amt + fee) * 0.06;
+          totalCCFees += fee;
+          totalCCIOF += iof;
+        }
       }
       // Convert all to each configured currency
       const converted: Record<string, number> = {};
       for (const cur of theme.currencies) {
         let total = 0;
         for (const item of items) {
-          const val = convertAmount(Number(item.amount), item.currency, cur.code, theme.exchange_rates);
+          const effective = getEffectiveAmount(Number(item.amount), item.payment_method);
+          const val = convertAmount(effective, item.currency, cur.code, theme.exchange_rates);
           if (val !== null) total += val;
         }
         converted[cur.code] = total;
       }
-      return { byOriginal: totals, converted };
+      return { byOriginal: totals, converted, byCategory, ccFees: totalCCFees, ccIOF: totalCCIOF };
     },
     [convertAmount]
   );
@@ -197,11 +236,25 @@ export function useCostCalculator() {
   // Generate report text
   const generateReportText = useCallback(
     (theme: CostTheme, items: CostItem[]) => {
-      const { converted } = calculateTotals(items, theme);
+      const { converted, ccFees, ccIOF } = calculateTotals(items, theme);
+      const catLabels: Record<string, string> = { presente: "Presente", alimentacao: "Alimentação", transporte: "Transporte", aleatorios: "Aleatórios", outros: "Outros" };
+      const pmLabels: Record<string, string> = { pix: "PIX", credit_card: "Cartão de Crédito", papel_moeda: "Papel Moeda" };
       let text = `📊 *${theme.name}*\n\n`;
       text += `📝 *Itens (${items.length}):*\n`;
       for (const item of items) {
-        text += `• ${item.description}: ${Number(item.amount).toFixed(2)} ${item.currency} (${item.cost_date})\n`;
+        const catLabel = catLabels[item.category] || item.category;
+        const pmLabel = pmLabels[item.payment_method] || item.payment_method;
+        let line = `• ${item.description}: ${Number(item.amount).toFixed(2)} ${item.currency} (${item.cost_date}) [${catLabel}] [${pmLabel}]`;
+        if (item.payment_method === "credit_card") {
+          line += ` → ${getEffectiveAmount(Number(item.amount), item.payment_method).toFixed(2)} ${item.currency} c/ taxas`;
+        }
+        text += line + "\n";
+      }
+      if (ccFees > 0) {
+        text += `\n💳 *Taxas Cartão de Crédito:*\n`;
+        text += `• Taxa 10%: ${ccFees.toFixed(2)}\n`;
+        text += `• IOF 6%: ${ccIOF.toFixed(2)}\n`;
+        text += `• Total taxas: ${(ccFees + ccIOF).toFixed(2)}\n`;
       }
       text += `\n💰 *Totais Convertidos:*\n`;
       for (const cur of theme.currencies) {

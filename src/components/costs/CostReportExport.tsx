@@ -2,14 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Share2, FileDown, MessageCircle } from "lucide-react";
 import { useWebShare } from "@/hooks/useWebShare";
 import { jsPDF } from "jspdf";
+import { COST_CATEGORIES, PAYMENT_METHODS, getEffectiveAmount } from "@/hooks/useCostCalculator";
 import type { CostTheme, CostItem } from "@/hooks/useCostCalculator";
 
 interface Props {
   theme: CostTheme;
   items: CostItem[];
-  totals: { byOriginal: Record<string, number>; converted: Record<string, number> };
+  totals: { byOriginal: Record<string, number>; converted: Record<string, number>; byCategory: Record<string, number>; ccFees: number; ccIOF: number };
   reportText: string;
 }
+
+const catLabels: Record<string, string> = Object.fromEntries(COST_CATEGORIES.map(c => [c.value, c.label]));
+const pmLabels: Record<string, string> = Object.fromEntries(PAYMENT_METHODS.map(p => [p.value, p.label]));
 
 export function CostReportExport({ theme, items, totals, reportText }: Props) {
   const { share } = useWebShare();
@@ -20,10 +24,7 @@ export function CostReportExport({ theme, items, totals, reportText }: Props) {
   };
 
   const handleShare = () => {
-    share({
-      title: theme.name,
-      text: reportText,
-    });
+    share({ title: theme.name, text: reportText });
   };
 
   const handlePDF = () => {
@@ -48,13 +49,28 @@ export function CostReportExport({ theme, items, totals, reportText }: Props) {
 
     doc.setFontSize(9);
     for (const item of items) {
-      const line = `• ${item.description}: ${Number(item.amount).toFixed(2)} ${item.currency} (${item.cost_date})`;
+      const catLabel = catLabels[item.category] || item.category;
+      const pmLabel = pmLabels[item.payment_method] || item.payment_method;
+      const isCC = item.payment_method === "credit_card";
+      let line = `• ${item.description}: ${Number(item.amount).toFixed(2)} ${item.currency} (${item.cost_date}) [${catLabel}] [${pmLabel}]`;
+      if (isCC) {
+        line += ` → ${getEffectiveAmount(Number(item.amount), item.payment_method).toFixed(2)} c/ taxas`;
+      }
       doc.text(line, margin + 4, y);
       y += 6;
-      if (y > 270) {
-        doc.addPage();
-        y = margin;
-      }
+      if (y > 270) { doc.addPage(); y = margin; }
+    }
+
+    // CC Fees
+    if (totals.ccFees > 0) {
+      y += 6;
+      doc.setFontSize(12);
+      doc.text("Taxas Cartão de Crédito", margin, y);
+      y += 8;
+      doc.setFontSize(10);
+      doc.text(`Taxa 10%: ${totals.ccFees.toFixed(2)}`, margin + 4, y); y += 6;
+      doc.text(`IOF 6%: ${totals.ccIOF.toFixed(2)}`, margin + 4, y); y += 6;
+      doc.text(`Total taxas: ${(totals.ccFees + totals.ccIOF).toFixed(2)}`, margin + 4, y); y += 6;
     }
 
     y += 6;
