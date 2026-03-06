@@ -10,6 +10,7 @@ import {
   Timer,
   Wrench,
   GraduationCap,
+  Calculator,
   LucideIcon 
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ export const SECONDARY_MENU_ITEMS: MenuItem[] = [
   { icon: Timer, label: "Pomodoro", path: "/pomodoro" },
   { icon: Calendar, label: "Calendário", path: "/calendar" },
   { icon: GraduationCap, label: "Cursos", path: "/courses" },
+  { icon: Calculator, label: "Custos", path: "/cost-calculator" },
   { icon: Wrench, label: "Ferramentas", path: "/tools" },
   { icon: Bell, label: "Notificações", path: "/notifications" },
   { icon: Settings, label: "Setup", path: "/config" },
