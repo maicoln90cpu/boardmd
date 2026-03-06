@@ -27,7 +27,7 @@ export default function CostCalculator() {
   const selectedTheme = themes.find((t) => t.id === selectedThemeId) || null;
   const { data: items = [] } = useThemeItems(selectedThemeId);
 
-  const totals = selectedTheme ? calculateTotals(items, selectedTheme) : { byOriginal: {}, converted: {} };
+  const totals = selectedTheme ? calculateTotals(items, selectedTheme) : { byOriginal: {}, converted: {}, byCategory: {}, ccFees: 0, ccIOF: 0 };
   const reportText = selectedTheme ? generateReportText(selectedTheme, items) : "";
 
   return (
