@@ -172,31 +172,37 @@ export type Database = {
       cost_items: {
         Row: {
           amount: number
+          category: string
           cost_date: string
           created_at: string
           currency: string
           description: string
           id: string
+          payment_method: string
           theme_id: string
           user_id: string
         }
         Insert: {
           amount?: number
+          category?: string
           cost_date?: string
           created_at?: string
           currency?: string
           description: string
           id?: string
+          payment_method?: string
           theme_id: string
           user_id: string
         }
         Update: {
           amount?: number
+          category?: string
           cost_date?: string
           created_at?: string
           currency?: string
           description?: string
           id?: string
+          payment_method?: string
           theme_id?: string
           user_id?: string
         }
