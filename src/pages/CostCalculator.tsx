@@ -17,6 +17,7 @@ export default function CostCalculator() {
     deleteTheme,
     createItem,
     deleteItem,
+    updateItem,
     calculateTotals,
     generateReportText,
   } = useCostCalculator();
@@ -51,6 +52,7 @@ export default function CostCalculator() {
                 createItem.mutate({ ...item, theme_id: selectedTheme.id })
               }
               onDeleteItem={(id) => deleteItem.mutate(id)}
+              onUpdateItem={(updates) => updateItem.mutate(updates)}
               onUpdateRates={(rates) =>
                 updateTheme.mutate({ id: selectedTheme.id, exchange_rates: rates })
               }
