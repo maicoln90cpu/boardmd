@@ -169,6 +169,80 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_items: {
+        Row: {
+          amount: number
+          cost_date: string
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          theme_id: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          cost_date?: string
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          theme_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          cost_date?: string
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          theme_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cost_items_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "cost_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_themes: {
+        Row: {
+          base_currency: string
+          created_at: string
+          currencies: Json
+          exchange_rates: Json
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          base_currency?: string
+          created_at?: string
+          currencies?: Json
+          exchange_rates?: Json
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          currencies?: Json
+          exchange_rates?: Json
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       course_categories: {
         Row: {
           color: string
