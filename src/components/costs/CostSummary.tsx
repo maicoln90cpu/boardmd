@@ -6,6 +6,8 @@ interface Props {
   totals: { byOriginal: Record<string, number>; converted: Record<string, number>; byCategory: Record<string, number>; ccFees: number; ccIOF: number };
 }
 
+// byCategory and ccFees/ccIOF are now in base currency
+
 const catLabels: Record<string, string> = Object.fromEntries(COST_CATEGORIES.map(c => [c.value, c.label]));
 
 export function CostSummary({ theme, totals }: Props) {
@@ -22,7 +24,7 @@ export function CostSummary({ theme, totals }: Props) {
           <div className="flex flex-wrap gap-3">
             {Object.entries(totals.byCategory).map(([cat, val]) => (
               <div key={cat} className="text-sm">
-                <span className="font-medium">{val.toFixed(2)}</span>{" "}
+                <span className="font-medium">{val.toFixed(2)} {theme.base_currency}</span>{" "}
                 <span className="text-muted-foreground">{catLabels[cat] || cat}</span>
               </div>
             ))}
@@ -47,7 +49,7 @@ export function CostSummary({ theme, totals }: Props) {
       {/* Credit card fees */}
       {(totals.ccFees > 0 || totals.ccIOF > 0) && (
         <div className="rounded-md bg-destructive/10 p-3 space-y-1">
-          <p className="text-xs font-semibold text-destructive">💳 Taxas Cartão de Crédito:</p>
+          <p className="text-xs font-semibold text-destructive">💳 Taxas Cartão de Crédito ({theme.base_currency}):</p>
           <div className="flex flex-wrap gap-4 text-sm">
             <span>Taxa 10%: <strong>{totals.ccFees.toFixed(2)}</strong></span>
             <span>IOF 6%: <strong>{totals.ccIOF.toFixed(2)}</strong></span>

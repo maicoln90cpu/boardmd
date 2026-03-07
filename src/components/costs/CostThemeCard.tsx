@@ -6,12 +6,12 @@ import type { CostTheme } from "@/hooks/useCostCalculator";
 interface Props {
   theme: CostTheme;
   itemCount: number;
-  totalBase: number;
+  converted: Record<string, number>;
   onOpen: () => void;
   onDelete: () => void;
 }
 
-export function CostThemeCard({ theme, itemCount, totalBase, onOpen, onDelete }: Props) {
+export function CostThemeCard({ theme, itemCount, converted, onOpen, onDelete }: Props) {
   return (
     <Card
       className="cursor-pointer hover:border-primary/50 transition-colors group"
@@ -32,11 +32,15 @@ export function CostThemeCard({ theme, itemCount, totalBase, onOpen, onDelete }:
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>{itemCount} {itemCount === 1 ? "item" : "itens"}</span>
-          <span className="font-semibold text-foreground">
-            {totalBase.toFixed(2)} {theme.base_currency}
-          </span>
+        <div className="space-y-1 text-sm">
+          <span className="text-muted-foreground">{itemCount} {itemCount === 1 ? "item" : "itens"}</span>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            {theme.currencies.map((c) => (
+              <span key={c.code} className={c.code === theme.base_currency ? "font-bold text-primary" : "text-foreground"}>
+                {(converted[c.code] || 0).toFixed(2)} {c.code}
+              </span>
+            ))}
+          </div>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
           {theme.currencies.map((c) => (

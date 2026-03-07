@@ -9,6 +9,7 @@ import { ExchangeRateEditor } from "./ExchangeRateEditor";
 import { CostReportExport } from "./CostReportExport";
 import { COST_CATEGORIES, PAYMENT_METHODS, getEffectiveAmount } from "@/hooks/useCostCalculator";
 import type { CostTheme, CostItem } from "@/hooks/useCostCalculator";
+import { useCostCalculator } from "@/hooks/useCostCalculator";
 
 interface Props {
   theme: CostTheme;
@@ -38,6 +39,17 @@ export function CostThemeDetail({
 }: Props) {
   const [showRateEditor, setShowRateEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<CostItem | null>(null);
+  const { convertAmount } = useCostCalculator();
+
+  const getConversions = (amount: number, fromCurrency: string) => {
+    return theme.currencies
+      .filter((c) => c.code !== fromCurrency)
+      .map((c) => {
+        const val = convertAmount(amount, fromCurrency, c.code, theme.exchange_rates);
+        return val !== null ? `${val.toFixed(2)} ${c.code}` : null;
+      })
+      .filter(Boolean);
+  };
 
   return (
     <div className="space-y-4">
@@ -96,6 +108,11 @@ export function CostThemeDetail({
                     {isCC && (
                       <p className="text-xs text-destructive">
                         → {effective.toFixed(2)} {item.currency}
+                      </p>
+                    )}
+                    {theme.currencies.length > 1 && (
+                      <p className="text-xs text-muted-foreground">
+                        ≈ {getConversions(effective, item.currency).join(" | ")}
                       </p>
                     )}
                   </div>

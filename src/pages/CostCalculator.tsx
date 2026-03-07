@@ -124,7 +124,7 @@ function ThemeCardWrapper({
     <CostThemeCard
       theme={theme}
       itemCount={items.length}
-      totalBase={totals.converted[theme.base_currency] || 0}
+      converted={totals.converted}
       onOpen={onOpen}
       onDelete={onDelete}
     />
