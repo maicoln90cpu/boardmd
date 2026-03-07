@@ -214,22 +214,29 @@ export function useCostCalculator() {
       const byCategory: Record<string, number> = {};
       let totalCCFees = 0;
       let totalCCIOF = 0;
-      // Sum by original currency (using effective amounts for CC)
+      const baseCur = theme.base_currency;
+
       for (const item of items) {
-        const effective = getEffectiveAmount(Number(item.amount), item.payment_method);
+        const amt = Number(item.amount);
+        const effective = getEffectiveAmount(amt, item.payment_method);
         totals[item.currency] = (totals[item.currency] || 0) + effective;
-        // Category totals in original currency
+
+        // Convert effective amount to base currency for category totals
+        const effectiveInBase = convertAmount(effective, item.currency, baseCur, theme.exchange_rates) ?? effective;
         const catKey = item.category || "outros";
-        byCategory[catKey] = (byCategory[catKey] || 0) + effective;
-        // Track CC fees
+        byCategory[catKey] = (byCategory[catKey] || 0) + effectiveInBase;
+
+        // Track CC fees converted to base currency
         if (item.payment_method === "credit_card") {
-          const amt = Number(item.amount);
           const fee = amt * 0.10;
           const iof = (amt + fee) * 0.06;
-          totalCCFees += fee;
-          totalCCIOF += iof;
+          const feeInBase = convertAmount(fee, item.currency, baseCur, theme.exchange_rates) ?? fee;
+          const iofInBase = convertAmount(iof, item.currency, baseCur, theme.exchange_rates) ?? iof;
+          totalCCFees += feeInBase;
+          totalCCIOF += iofInBase;
         }
       }
+
       // Convert all to each configured currency
       const converted: Record<string, number> = {};
       for (const cur of theme.currencies) {
