@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Settings2, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Settings2, Trash2, Pencil, Copy } from "lucide-react";
 import { CostItemForm } from "./CostItemForm";
 import { CostItemEditModal } from "./CostItemEditModal";
 import { CostSummary } from "./CostSummary";
