@@ -219,6 +219,8 @@ export type Database = {
       cost_themes: {
         Row: {
           base_currency: string
+          cc_fee_percent: number
+          cc_iof_percent: number
           created_at: string
           currencies: Json
           exchange_rates: Json
@@ -229,6 +231,8 @@ export type Database = {
         }
         Insert: {
           base_currency?: string
+          cc_fee_percent?: number
+          cc_iof_percent?: number
           created_at?: string
           currencies?: Json
           exchange_rates?: Json
@@ -239,6 +243,8 @@ export type Database = {
         }
         Update: {
           base_currency?: string
+          cc_fee_percent?: number
+          cc_iof_percent?: number
           created_at?: string
           currencies?: Json
           exchange_rates?: Json
