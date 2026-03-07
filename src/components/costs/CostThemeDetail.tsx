@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Settings2, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Settings2, Trash2, Pencil, Copy } from "lucide-react";
 import { CostItemForm } from "./CostItemForm";
 import { CostItemEditModal } from "./CostItemEditModal";
 import { CostSummary } from "./CostSummary";
@@ -116,6 +116,22 @@ export function CostThemeDetail({
                       </p>
                     )}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Duplicar"
+                    onClick={() => onAddItem({
+                      description: item.description,
+                      amount: Number(item.amount),
+                      currency: item.currency,
+                      cost_date: item.cost_date,
+                      category: item.category,
+                      payment_method: item.payment_method,
+                    })}
+                  >
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
