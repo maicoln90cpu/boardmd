@@ -120,6 +120,22 @@ export function CostThemeDetail({
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
+                    title="Duplicar"
+                    onClick={() => onAddItem({
+                      description: item.description,
+                      amount: Number(item.amount),
+                      currency: item.currency,
+                      cost_date: item.cost_date,
+                      category: item.category,
+                      payment_method: item.payment_method,
+                    })}
+                  >
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
                     onClick={() => setEditingItem(item)}
                   >
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
