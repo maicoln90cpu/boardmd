@@ -20,12 +20,16 @@ interface Props {
     currencies: CostCurrency[];
     base_currency: string;
     exchange_rates: Record<string, number>;
+    cc_fee_percent: number;
+    cc_iof_percent: number;
   }) => void;
   initial?: {
     name: string;
     currencies: CostCurrency[];
     base_currency: string;
     exchange_rates: Record<string, number>;
+    cc_fee_percent?: number;
+    cc_iof_percent?: number;
   };
 }
 
@@ -45,6 +49,8 @@ export function CostThemeModal({ open, onClose, onSave, initial }: Props) {
   );
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
+  const [ccFeeStr, setCcFeeStr] = useState(String(initial?.cc_fee_percent ?? 10));
+  const [ccIofStr, setCcIofStr] = useState(String(initial?.cc_iof_percent ?? 6));
 
   const addCurrency = () => {
     if (!newCode.trim() || !newName.trim()) return;
@@ -85,6 +91,8 @@ export function CostThemeModal({ open, onClose, onSave, initial }: Props) {
       currencies,
       base_currency: baseCurrency,
       exchange_rates: exchangeRates,
+      cc_fee_percent: parseFloat(ccFeeStr.replace(",", ".")) || 10,
+      cc_iof_percent: parseFloat(ccIofStr.replace(",", ".")) || 6,
     });
     onClose();
   };
