@@ -16,6 +16,8 @@ export interface CostTheme {
   currencies: CostCurrency[];
   exchange_rates: Record<string, number>;
   base_currency: string;
+  cc_fee_percent: number;
+  cc_iof_percent: number;
   created_at: string;
   updated_at: string;
 }
@@ -47,9 +49,11 @@ export const PAYMENT_METHODS = [
   { value: "papel_moeda", label: "Papel Moeda" },
 ] as const;
 
-export function getEffectiveAmount(amount: number, paymentMethod: string): number {
+export function getEffectiveAmount(amount: number, paymentMethod: string, ccFeePercent = 10, ccIofPercent = 6): number {
   if (paymentMethod === "credit_card") {
-    return amount * 1.10 * 1.06; // 10% taxa + 6% IOF (composto)
+    const feeMultiplier = 1 + ccFeePercent / 100;
+    const iofMultiplier = 1 + ccIofPercent / 100;
+    return amount * feeMultiplier * iofMultiplier;
   }
   return amount;
 }
@@ -72,6 +76,8 @@ export function useCostCalculator() {
         ...t,
         currencies: t.currencies as CostCurrency[],
         exchange_rates: t.exchange_rates as Record<string, number>,
+        cc_fee_percent: t.cc_fee_percent ?? 10,
+        cc_iof_percent: t.cc_iof_percent ?? 6,
       })) as CostTheme[];
     },
     enabled: !!user,
