@@ -102,7 +102,7 @@ export function useCostCalculator() {
 
   // Create theme
   const createTheme = useMutation({
-    mutationFn: async (theme: { name: string; currencies: CostCurrency[]; base_currency: string; exchange_rates: Record<string, number> }) => {
+    mutationFn: async (theme: { name: string; currencies: CostCurrency[]; base_currency: string; exchange_rates: Record<string, number>; cc_fee_percent?: number; cc_iof_percent?: number }) => {
       const { data, error } = await supabase
         .from("cost_themes")
         .insert({
@@ -110,6 +110,8 @@ export function useCostCalculator() {
           currencies: theme.currencies as any,
           exchange_rates: theme.exchange_rates as any,
           base_currency: theme.base_currency,
+          cc_fee_percent: theme.cc_fee_percent ?? 10,
+          cc_iof_percent: theme.cc_iof_percent ?? 6,
           user_id: user!.id,
         })
         .select()
@@ -132,6 +134,8 @@ export function useCostCalculator() {
       if (updates.currencies !== undefined) payload.currencies = updates.currencies as any;
       if (updates.exchange_rates !== undefined) payload.exchange_rates = updates.exchange_rates as any;
       if (updates.base_currency !== undefined) payload.base_currency = updates.base_currency;
+      if (updates.cc_fee_percent !== undefined) payload.cc_fee_percent = updates.cc_fee_percent;
+      if (updates.cc_iof_percent !== undefined) payload.cc_iof_percent = updates.cc_iof_percent;
       const { error } = await supabase.from("cost_themes").update(payload).eq("id", id);
       if (error) throw error;
     },
@@ -222,9 +226,12 @@ export function useCostCalculator() {
       let totalCCIOF = 0;
       const baseCur = theme.base_currency;
 
+      const ccFee = theme.cc_fee_percent ?? 10;
+      const ccIof = theme.cc_iof_percent ?? 6;
+
       for (const item of items) {
         const amt = Number(item.amount);
-        const effective = getEffectiveAmount(amt, item.payment_method);
+        const effective = getEffectiveAmount(amt, item.payment_method, ccFee, ccIof);
         totals[item.currency] = (totals[item.currency] || 0) + effective;
 
         // Convert effective amount to base currency for category totals
@@ -234,8 +241,8 @@ export function useCostCalculator() {
 
         // Track CC fees converted to base currency
         if (item.payment_method === "credit_card") {
-          const fee = amt * 0.10;
-          const iof = (amt + fee) * 0.06;
+          const fee = amt * (ccFee / 100);
+          const iof = (amt + fee) * (ccIof / 100);
           const feeInBase = convertAmount(fee, item.currency, baseCur, theme.exchange_rates) ?? fee;
           const iofInBase = convertAmount(iof, item.currency, baseCur, theme.exchange_rates) ?? iof;
           totalCCFees += feeInBase;
@@ -248,7 +255,7 @@ export function useCostCalculator() {
       for (const cur of theme.currencies) {
         let total = 0;
         for (const item of items) {
-          const effective = getEffectiveAmount(Number(item.amount), item.payment_method);
+          const effective = getEffectiveAmount(Number(item.amount), item.payment_method, ccFee, ccIof);
           const val = convertAmount(effective, item.currency, cur.code, theme.exchange_rates);
           if (val !== null) total += val;
         }
@@ -272,14 +279,15 @@ export function useCostCalculator() {
         const pmLabel = pmLabels[item.payment_method] || item.payment_method;
         let line = `• ${item.description}: ${Number(item.amount).toFixed(2)} ${item.currency} (${item.cost_date}) [${catLabel}] [${pmLabel}]`;
         if (item.payment_method === "credit_card") {
-          line += ` → ${getEffectiveAmount(Number(item.amount), item.payment_method).toFixed(2)} ${item.currency} c/ taxas`;
+          line += ` → ${getEffectiveAmount(Number(item.amount), item.payment_method, theme.cc_fee_percent, theme.cc_iof_percent).toFixed(2)} ${item.currency} c/ taxas`;
         }
         text += line + "\n";
       }
+      const totalTaxPercent = ((1 + (theme.cc_fee_percent ?? 10) / 100) * (1 + (theme.cc_iof_percent ?? 6) / 100) - 1) * 100;
       if (ccFees > 0) {
-        text += `\n💳 *Taxas Cartão de Crédito:*\n`;
-        text += `• Taxa 10%: ${ccFees.toFixed(2)}\n`;
-        text += `• IOF 6%: ${ccIOF.toFixed(2)}\n`;
+        text += `\n💳 *Taxas Cartão de Crédito (${totalTaxPercent.toFixed(1)}%):*\n`;
+        text += `• Taxa ${theme.cc_fee_percent ?? 10}%: ${ccFees.toFixed(2)}\n`;
+        text += `• IOF ${theme.cc_iof_percent ?? 6}%: ${ccIOF.toFixed(2)}\n`;
         text += `• Total taxas: ${(ccFees + ccIOF).toFixed(2)}\n`;
       }
       text += `\n💰 *Totais Convertidos:*\n`;
