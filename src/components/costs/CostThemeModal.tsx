@@ -189,6 +189,34 @@ export function CostThemeModal({ open, onClose, onSave, initial }: Props) {
               </div>
             </div>
           )}
+
+          <div>
+            <Label>Taxas Cartão de Crédito</Label>
+            <div className="space-y-2 mt-1">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="w-28 text-muted-foreground">Taxa (%)</span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  className="w-32"
+                  placeholder="10"
+                  value={ccFeeStr}
+                  onChange={(e) => setCcFeeStr(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="w-28 text-muted-foreground">IOF (%)</span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  className="w-32"
+                  placeholder="6"
+                  value={ccIofStr}
+                  onChange={(e) => setCcIofStr(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <DialogFooter>
