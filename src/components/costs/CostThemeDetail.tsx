@@ -21,6 +21,7 @@ interface Props {
   onDeleteItem: (id: string) => void;
   onUpdateItem: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
   onUpdateRates: (rates: Record<string, number>) => void;
+  onUpdateTheme: (updates: Partial<{ exchange_rates: Record<string, number>; cc_fee_percent: number; cc_iof_percent: number }>) => void;
 }
 
 const catLabels: Record<string, string> = Object.fromEntries(COST_CATEGORIES.map(c => [c.value, c.label]));
@@ -36,6 +37,7 @@ export function CostThemeDetail({
   onDeleteItem,
   onUpdateItem,
   onUpdateRates,
+  onUpdateTheme,
 }: Props) {
   const [showRateEditor, setShowRateEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<CostItem | null>(null);
@@ -72,8 +74,11 @@ export function CostThemeDetail({
         <ExchangeRateEditor
           currencies={theme.currencies}
           exchangeRates={theme.exchange_rates}
-          onSave={(rates) => {
+          ccFeePercent={theme.cc_fee_percent ?? 10}
+          ccIofPercent={theme.cc_iof_percent ?? 6}
+          onSave={(rates, ccFee, ccIof) => {
             onUpdateRates(rates);
+            onUpdateTheme({ cc_fee_percent: ccFee, cc_iof_percent: ccIof });
             setShowRateEditor(false);
           }}
         />
@@ -85,7 +90,7 @@ export function CostThemeDetail({
         <div className="space-y-2">
           {items.map((item) => {
             const isCC = item.payment_method === "credit_card";
-            const effective = getEffectiveAmount(Number(item.amount), item.payment_method);
+            const effective = getEffectiveAmount(Number(item.amount), item.payment_method, theme.cc_fee_percent, theme.cc_iof_percent);
             return (
               <div
                 key={item.id}
@@ -96,7 +101,7 @@ export function CostThemeDetail({
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant="secondary" className="text-xs">{catLabels[item.category] || item.category}</Badge>
                     <Badge variant="outline" className="text-xs">{pmLabels[item.payment_method] || item.payment_method}</Badge>
-                    {isCC && <Badge variant="destructive" className="text-xs">+16.6% taxas</Badge>}
+                    {isCC && <Badge variant="destructive" className="text-xs">+{(((1 + (theme.cc_fee_percent ?? 10) / 100) * (1 + (theme.cc_iof_percent ?? 6) / 100) - 1) * 100).toFixed(1)}% taxas</Badge>}
                     <span className="text-xs text-muted-foreground">{item.cost_date}</span>
                   </div>
                 </div>
