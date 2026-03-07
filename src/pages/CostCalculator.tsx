@@ -56,6 +56,9 @@ export default function CostCalculator() {
               onUpdateRates={(rates) =>
                 updateTheme.mutate({ id: selectedTheme.id, exchange_rates: rates })
               }
+              onUpdateTheme={(updates) =>
+                updateTheme.mutate({ id: selectedTheme.id, ...updates })
+              }
             />
           ) : (
             <div className="space-y-4">

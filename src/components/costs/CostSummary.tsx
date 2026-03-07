@@ -51,8 +51,8 @@ export function CostSummary({ theme, totals }: Props) {
         <div className="rounded-md bg-destructive/10 p-3 space-y-1">
           <p className="text-xs font-semibold text-destructive">💳 Taxas Cartão de Crédito ({theme.base_currency}):</p>
           <div className="flex flex-wrap gap-4 text-sm">
-            <span>Taxa 10%: <strong>{totals.ccFees.toFixed(2)}</strong></span>
-            <span>IOF 6%: <strong>{totals.ccIOF.toFixed(2)}</strong></span>
+            <span>Taxa {theme.cc_fee_percent ?? 10}%: <strong>{totals.ccFees.toFixed(2)}</strong></span>
+            <span>IOF {theme.cc_iof_percent ?? 6}%: <strong>{totals.ccIOF.toFixed(2)}</strong></span>
             <span>Total taxas: <strong>{(totals.ccFees + totals.ccIOF).toFixed(2)}</strong></span>
           </div>
         </div>

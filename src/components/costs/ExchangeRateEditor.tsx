@@ -8,11 +8,12 @@ import type { CostCurrency } from "@/hooks/useCostCalculator";
 interface Props {
   currencies: CostCurrency[];
   exchangeRates: Record<string, number>;
-  onSave: (rates: Record<string, number>) => void;
+  ccFeePercent: number;
+  ccIofPercent: number;
+  onSave: (rates: Record<string, number>, ccFee: number, ccIof: number) => void;
 }
 
-export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props) {
-  // Use string state so user can freely type "0," or "0." without it being clobbered
+export function ExchangeRateEditor({ currencies, exchangeRates, ccFeePercent, ccIofPercent, onSave }: Props) {
   const [rateStrings, setRateStrings] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     for (const [key, val] of Object.entries(exchangeRates)) {
@@ -20,6 +21,8 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
     }
     return initial;
   });
+  const [feeStr, setFeeStr] = useState(String(ccFeePercent));
+  const [iofStr, setIofStr] = useState(String(ccIofPercent));
 
   const ratePairs: [string, string][] = [];
   for (let i = 0; i < currencies.length; i++) {
@@ -31,10 +34,11 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
   const handleSave = () => {
     const parsed: Record<string, number> = {};
     for (const [key, val] of Object.entries(rateStrings)) {
-      // Support comma as decimal separator
       parsed[key] = parseFloat(val.replace(",", ".")) || 0;
     }
-    onSave(parsed);
+    const fee = parseFloat(feeStr.replace(",", ".")) || 0;
+    const iof = parseFloat(iofStr.replace(",", ".")) || 0;
+    onSave(parsed, fee, iof);
   };
 
   return (
@@ -60,8 +64,33 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
           );
         })}
       </div>
+
+      <Label className="text-sm font-semibold">Taxas Cartão de Crédito</Label>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-24 text-muted-foreground">Taxa (%)</span>
+          <Input
+            type="text"
+            inputMode="decimal"
+            className="w-32"
+            value={feeStr}
+            onChange={(e) => setFeeStr(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-24 text-muted-foreground">IOF (%)</span>
+          <Input
+            type="text"
+            inputMode="decimal"
+            className="w-32"
+            value={iofStr}
+            onChange={(e) => setIofStr(e.target.value)}
+          />
+        </div>
+      </div>
+
       <Button size="sm" onClick={handleSave} className="gap-1">
-        <Save className="h-3 w-3" /> Salvar Câmbio
+        <Save className="h-3 w-3" /> Salvar
       </Button>
     </div>
   );
