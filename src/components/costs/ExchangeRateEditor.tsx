@@ -12,7 +12,14 @@ interface Props {
 }
 
 export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props) {
-  const [rates, setRates] = useState<Record<string, number>>({ ...exchangeRates });
+  // Use string state so user can freely type "0," or "0." without it being clobbered
+  const [rateStrings, setRateStrings] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    for (const [key, val] of Object.entries(exchangeRates)) {
+      initial[key] = String(val);
+    }
+    return initial;
+  });
 
   const ratePairs: [string, string][] = [];
   for (let i = 0; i < currencies.length; i++) {
@@ -20,6 +27,15 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
       ratePairs.push([currencies[i].code, currencies[j].code]);
     }
   }
+
+  const handleSave = () => {
+    const parsed: Record<string, number> = {};
+    for (const [key, val] of Object.entries(rateStrings)) {
+      // Support comma as decimal separator
+      parsed[key] = parseFloat(val.replace(",", ".")) || 0;
+    }
+    onSave(parsed);
+  };
 
   return (
     <div className="space-y-3">
@@ -31,12 +47,12 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
             <div key={key} className="flex items-center gap-2 text-sm">
               <span className="w-24 text-muted-foreground">1 {a} =</span>
               <Input
-                type="number"
-                step="any"
+                type="text"
+                inputMode="decimal"
                 className="w-32"
-                value={rates[key] ?? ""}
+                value={rateStrings[key] ?? ""}
                 onChange={(e) =>
-                  setRates({ ...rates, [key]: parseFloat(e.target.value) || 0 })
+                  setRateStrings({ ...rateStrings, [key]: e.target.value })
                 }
               />
               <span className="text-muted-foreground">{b}</span>
@@ -44,7 +60,7 @@ export function ExchangeRateEditor({ currencies, exchangeRates, onSave }: Props)
           );
         })}
       </div>
-      <Button size="sm" onClick={() => onSave(rates)} className="gap-1">
+      <Button size="sm" onClick={handleSave} className="gap-1">
         <Save className="h-3 w-3" /> Salvar Câmbio
       </Button>
     </div>
