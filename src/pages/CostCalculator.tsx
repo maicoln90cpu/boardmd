@@ -32,7 +32,7 @@ export default function CostCalculator() {
   const reportText = selectedTheme ? generateReportText(selectedTheme, items) : "";
 
   return (
-    <div className="flex h-screen w-full bg-background">
+    <div className="flex h-screen w-full bg-background pt-14 md:pt-0">
       <Sidebar
         onCategorySelect={() => {}}
         onExport={() => {}}
