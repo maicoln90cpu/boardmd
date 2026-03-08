@@ -1,0 +1,1 @@
+ALTER TABLE public.cost_items ADD COLUMN cost_time time NOT NULL DEFAULT '12:00:00';
