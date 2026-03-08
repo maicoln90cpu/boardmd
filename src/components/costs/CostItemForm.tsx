@@ -4,17 +4,31 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { COST_CATEGORIES, PAYMENT_METHODS, type CostCurrency } from "@/hooks/useCostCalculator";
+import { getNowInTimezone, formatTimeOnlyBR } from "@/lib/dateUtils";
 
 interface Props {
   currencies: CostCurrency[];
-  onAdd: (item: { description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
+  onAdd: (item: { description: string; amount: number; currency: string; cost_date: string; cost_time: string; category: string; payment_method: string }) => void;
+}
+
+function getDefaultDate(): string {
+  const now = getNowInTimezone();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getDefaultTime(): string {
+  return formatTimeOnlyBR(new Date());
 }
 
 export function CostItemForm({ currencies, onAdd }: Props) {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState(currencies[0]?.code || "BRL");
-  const [costDate, setCostDate] = useState(new Date().toISOString().slice(0, 10));
+  const [costDate, setCostDate] = useState(getDefaultDate);
+  const [costTime, setCostTime] = useState(getDefaultTime);
   const [category, setCategory] = useState("outros");
   const [paymentMethod, setPaymentMethod] = useState("papel_moeda");
 
@@ -25,11 +39,13 @@ export function CostItemForm({ currencies, onAdd }: Props) {
       amount: parseFloat(amount),
       currency,
       cost_date: costDate,
+      cost_time: costTime,
       category,
       payment_method: paymentMethod,
     });
     setDescription("");
     setAmount("");
+    setCostTime(getDefaultTime());
   };
 
   return (
@@ -86,6 +102,12 @@ export function CostItemForm({ currencies, onAdd }: Props) {
           value={costDate}
           onChange={(e) => setCostDate(e.target.value)}
           className="w-36"
+        />
+        <Input
+          type="time"
+          value={costTime}
+          onChange={(e) => setCostTime(e.target.value)}
+          className="w-28"
         />
         <Button onClick={handleAdd} disabled={!description.trim() || !amount} size="icon" className="shrink-0">
           <Plus className="h-4 w-4" />

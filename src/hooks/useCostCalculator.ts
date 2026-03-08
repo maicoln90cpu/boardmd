@@ -30,6 +30,7 @@ export interface CostItem {
   amount: number;
   currency: string;
   cost_date: string;
+  cost_time: string;
   category: string;
   payment_method: string;
   created_at: string;
@@ -162,7 +163,7 @@ export function useCostCalculator() {
 
   // Create item
   const createItem = useMutation({
-    mutationFn: async (item: { theme_id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => {
+    mutationFn: async (item: { theme_id: string; description: string; amount: number; currency: string; cost_date: string; cost_time: string; category: string; payment_method: string }) => {
       const { data, error } = await supabase
         .from("cost_items")
         .insert({ ...item, user_id: user!.id })
@@ -180,7 +181,7 @@ export function useCostCalculator() {
 
   // Update item
   const updateItem = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string; description?: string; amount?: number; currency?: string; cost_date?: string; category?: string; payment_method?: string }) => {
+    mutationFn: async ({ id, ...updates }: { id: string; description?: string; amount?: number; currency?: string; cost_date?: string; cost_time?: string; category?: string; payment_method?: string }) => {
       const { error } = await supabase.from("cost_items").update(updates).eq("id", id);
       if (error) throw error;
     },

@@ -11,7 +11,7 @@ interface Props {
   currencies: CostCurrency[];
   open: boolean;
   onClose: () => void;
-  onSave: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
+  onSave: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; cost_time: string; category: string; payment_method: string }) => void;
 }
 
 export function CostItemEditModal({ item, currencies, open, onClose, onSave }: Props) {
@@ -19,6 +19,7 @@ export function CostItemEditModal({ item, currencies, open, onClose, onSave }: P
   const [amount, setAmount] = useState(String(item.amount));
   const [currency, setCurrency] = useState(item.currency);
   const [costDate, setCostDate] = useState(item.cost_date);
+  const [costTime, setCostTime] = useState(item.cost_time || "12:00");
   const [category, setCategory] = useState(item.category);
   const [paymentMethod, setPaymentMethod] = useState(item.payment_method);
 
@@ -30,6 +31,7 @@ export function CostItemEditModal({ item, currencies, open, onClose, onSave }: P
       amount: parseFloat(amount),
       currency,
       cost_date: costDate,
+      cost_time: costTime,
       category,
       payment_method: paymentMethod,
     });
@@ -88,11 +90,20 @@ export function CostItemEditModal({ item, currencies, open, onClose, onSave }: P
               ))}
             </SelectContent>
           </Select>
-          <Input
-            type="date"
-            value={costDate}
-            onChange={(e) => setCostDate(e.target.value)}
-          />
+          <div className="flex gap-2">
+            <Input
+              type="date"
+              value={costDate}
+              onChange={(e) => setCostDate(e.target.value)}
+              className="flex-1"
+            />
+            <Input
+              type="time"
+              value={costTime}
+              onChange={(e) => setCostTime(e.target.value)}
+              className="w-28"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
