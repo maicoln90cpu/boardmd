@@ -175,7 +175,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen pt-14 md:pt-0">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
