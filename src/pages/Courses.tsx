@@ -266,7 +266,7 @@ export default function Courses() {
         onImport={() => {}}
         onThemeToggle={toggleTheme}
       />
-      <div className="flex-1 overflow-auto pb-[140px] md:pb-0">
+      <div className="flex-1 overflow-auto">
         <div className="p-4 md:p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

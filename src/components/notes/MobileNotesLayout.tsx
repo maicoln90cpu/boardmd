@@ -108,7 +108,7 @@ export function MobileNotesLayout({
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 pb-[140px]">
+          <div className="flex-1 overflow-y-auto p-4 pb-4">
             {/* Notebooks */}
             <div className="mb-6">
               <h3 className="font-semibold mb-3">📚 Cadernos</h3>
