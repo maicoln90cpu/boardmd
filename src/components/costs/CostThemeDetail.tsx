@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Settings2, Trash2, Pencil, Copy } from "lucide-react";
 import { CostItemForm } from "./CostItemForm";
 import { CostItemEditModal } from "./CostItemEditModal";
+import { CostFiltersBar, EMPTY_FILTERS, hasActiveFilters, type CostFilters } from "./CostFiltersBar";
 import { CostSummary } from "./CostSummary";
 import { ExchangeRateEditor } from "./ExchangeRateEditor";
 import { CostReportExport } from "./CostReportExport";
 import { COST_CATEGORIES, PAYMENT_METHODS, getEffectiveAmount } from "@/hooks/useCostCalculator";
 import type { CostTheme, CostItem } from "@/hooks/useCostCalculator";
 import { useCostCalculator } from "@/hooks/useCostCalculator";
+import { formatDateShortBR } from "@/lib/dateUtils";
 
 interface Props {
   theme: CostTheme;
@@ -17,15 +19,26 @@ interface Props {
   totals: { byOriginal: Record<string, number>; converted: Record<string, number>; byCategory: Record<string, number>; ccFees: number; ccIOF: number };
   reportText: string;
   onBack: () => void;
-  onAddItem: (item: { description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
+  onAddItem: (item: { description: string; amount: number; currency: string; cost_date: string; cost_time: string; category: string; payment_method: string }) => void;
   onDeleteItem: (id: string) => void;
-  onUpdateItem: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; category: string; payment_method: string }) => void;
+  onUpdateItem: (updates: { id: string; description: string; amount: number; currency: string; cost_date: string; cost_time: string; category: string; payment_method: string }) => void;
   onUpdateRates: (rates: Record<string, number>) => void;
   onUpdateTheme: (updates: Partial<{ exchange_rates: Record<string, number>; cc_fee_percent: number; cc_iof_percent: number }>) => void;
 }
 
 const catLabels: Record<string, string> = Object.fromEntries(COST_CATEGORIES.map(c => [c.value, c.label]));
 const pmLabels: Record<string, string> = Object.fromEntries(PAYMENT_METHODS.map(p => [p.value, p.label]));
+
+function applyFilters(items: CostItem[], filters: CostFilters): CostItem[] {
+  return items.filter((item) => {
+    if (filters.categories.length > 0 && !filters.categories.includes(item.category)) return false;
+    if (filters.paymentMethods.length > 0 && !filters.paymentMethods.includes(item.payment_method)) return false;
+    if (filters.currencies.length > 0 && !filters.currencies.includes(item.currency)) return false;
+    if (filters.dateFrom && item.cost_date < filters.dateFrom) return false;
+    if (filters.dateTo && item.cost_date > filters.dateTo) return false;
+    return true;
+  });
+}
 
 export function CostThemeDetail({
   theme,
@@ -41,7 +54,23 @@ export function CostThemeDetail({
 }: Props) {
   const [showRateEditor, setShowRateEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<CostItem | null>(null);
-  const { convertAmount } = useCostCalculator();
+  const [filters, setFilters] = useState<CostFilters>(EMPTY_FILTERS);
+  const { convertAmount, calculateTotals, generateReportText } = useCostCalculator();
+
+  const filteredItems = useMemo(
+    () => hasActiveFilters(filters) ? applyFilters(items, filters) : items,
+    [items, filters]
+  );
+
+  const filteredTotals = useMemo(
+    () => hasActiveFilters(filters) ? calculateTotals(filteredItems, theme) : totals,
+    [filteredItems, theme, filters, totals, calculateTotals]
+  );
+
+  const filteredReportText = useMemo(
+    () => hasActiveFilters(filters) ? generateReportText(theme, filteredItems) : reportText,
+    [filteredItems, theme, filters, reportText, generateReportText]
+  );
 
   const getConversions = (amount: number, fromCurrency: string) => {
     return theme.currencies
@@ -86,11 +115,20 @@ export function CostThemeDetail({
 
       <CostItemForm currencies={theme.currencies} onAdd={onAddItem} />
 
-      {items.length > 0 && (
+      <CostFiltersBar filters={filters} onChange={setFilters} currencies={theme.currencies} />
+
+      {hasActiveFilters(filters) && (
+        <p className="text-xs text-muted-foreground">
+          Mostrando {filteredItems.length} de {items.length} itens
+        </p>
+      )}
+
+      {filteredItems.length > 0 && (
         <div className="space-y-2">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const isCC = item.payment_method === "credit_card";
             const effective = getEffectiveAmount(Number(item.amount), item.payment_method, theme.cc_fee_percent, theme.cc_iof_percent);
+            const timeStr = item.cost_time ? ` ${item.cost_time.slice(0, 5)}` : "";
             return (
               <div
                 key={item.id}
@@ -102,7 +140,9 @@ export function CostThemeDetail({
                     <Badge variant="secondary" className="text-xs">{catLabels[item.category] || item.category}</Badge>
                     <Badge variant="outline" className="text-xs">{pmLabels[item.payment_method] || item.payment_method}</Badge>
                     {isCC && <Badge variant="destructive" className="text-xs">+{(((1 + (theme.cc_fee_percent ?? 10) / 100) * (1 + (theme.cc_iof_percent ?? 6) / 100) - 1) * 100).toFixed(1)}% taxas</Badge>}
-                    <span className="text-xs text-muted-foreground">{item.cost_date}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDateShortBR(item.cost_date + "T12:00:00")}{timeStr}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -131,6 +171,7 @@ export function CostThemeDetail({
                       amount: Number(item.amount),
                       currency: item.currency,
                       cost_date: item.cost_date,
+                      cost_time: item.cost_time || "12:00",
                       category: item.category,
                       payment_method: item.payment_method,
                     })}
@@ -160,14 +201,14 @@ export function CostThemeDetail({
         </div>
       )}
 
-      {items.length > 0 && (
+      {filteredItems.length > 0 && (
         <>
-          <CostSummary theme={theme} totals={totals} />
+          <CostSummary theme={theme} totals={filteredTotals} />
           <CostReportExport
             theme={theme}
-            items={items}
-            totals={totals}
-            reportText={reportText}
+            items={filteredItems}
+            totals={filteredTotals}
+            reportText={filteredReportText}
           />
         </>
       )}
