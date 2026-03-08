@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Settings2, Trash2, Pencil, Copy } from "lucide-react";
 import { CostItemForm } from "./CostItemForm";
 import { CostItemEditModal } from "./CostItemEditModal";
-import { CostFiltersBar, EMPTY_FILTERS, hasActiveFilters, type CostFilters } from "./CostFiltersBar";
+import { CostFiltersBar, EMPTY_FILTERS, DEFAULT_SORT, hasActiveFilters, type CostFilters, type CostSortOption } from "./CostFiltersBar";
 import { CostSummary } from "./CostSummary";
 import { ExchangeRateEditor } from "./ExchangeRateEditor";
 import { CostReportExport } from "./CostReportExport";
@@ -55,12 +55,27 @@ export function CostThemeDetail({
   const [showRateEditor, setShowRateEditor] = useState(false);
   const [editingItem, setEditingItem] = useState<CostItem | null>(null);
   const [filters, setFilters] = useState<CostFilters>(EMPTY_FILTERS);
+  const [sort, setSort] = useState<CostSortOption>(DEFAULT_SORT);
   const { convertAmount, calculateTotals, generateReportText } = useCostCalculator();
 
-  const filteredItems = useMemo(
-    () => hasActiveFilters(filters) ? applyFilters(items, filters) : items,
-    [items, filters]
-  );
+  const filteredItems = useMemo(() => {
+    let result = hasActiveFilters(filters) ? applyFilters(items, filters) : [...items];
+    result.sort((a, b) => {
+      const dir = sort.dir === "asc" ? 1 : -1;
+      switch (sort.field) {
+        case "date": {
+          const cmp = `${a.cost_date}T${a.cost_time || "00:00"}`.localeCompare(`${b.cost_date}T${b.cost_time || "00:00"}`);
+          return cmp * dir;
+        }
+        case "amount": return (Number(a.amount) - Number(b.amount)) * dir;
+        case "category": return a.category.localeCompare(b.category) * dir;
+        case "payment_method": return a.payment_method.localeCompare(b.payment_method) * dir;
+        case "description": return a.description.localeCompare(b.description) * dir;
+        default: return 0;
+      }
+    });
+    return result;
+  }, [items, filters, sort]);
 
   const filteredTotals = useMemo(
     () => hasActiveFilters(filters) ? calculateTotals(filteredItems, theme) : totals,
@@ -115,7 +130,7 @@ export function CostThemeDetail({
 
       <CostItemForm currencies={theme.currencies} onAdd={onAddItem} />
 
-      <CostFiltersBar filters={filters} onChange={setFilters} currencies={theme.currencies} />
+      <CostFiltersBar filters={filters} onChange={setFilters} currencies={theme.currencies} sort={sort} onSortChange={setSort} />
 
       {hasActiveFilters(filters) && (
         <p className="text-xs text-muted-foreground">

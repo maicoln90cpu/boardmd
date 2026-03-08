@@ -175,7 +175,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen pt-14 md:pt-0">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
@@ -198,7 +198,7 @@ export default function Dashboard() {
           <ReportExportButton tasks={tasks} categories={categories} stats={stats} />
         </div>
 
-        <div className="flex-1 overflow-auto pb-[140px] md:pb-0">
+        <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-7xl mx-auto space-y-6 relative pt-12">
             <DashboardWidgetContainer
               widgets={widgets}

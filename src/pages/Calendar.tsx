@@ -419,7 +419,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background pt-14 md:pt-0 flex">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}

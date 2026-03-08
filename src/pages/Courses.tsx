@@ -232,7 +232,7 @@ export default function Courses() {
 
   if (isLoading || categoriesLoading) {
     return (
-      <div className="flex h-screen">
+      <div className="flex h-screen pt-14 md:pt-0">
         <Sidebar
           onExport={() => {}}
           onImport={() => {}}
@@ -260,13 +260,13 @@ export default function Courses() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen pt-14 md:pt-0">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
         onThemeToggle={toggleTheme}
       />
-      <div className="flex-1 overflow-auto pb-[140px] md:pb-0">
+      <div className="flex-1 overflow-auto">
         <div className="p-4 md:p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

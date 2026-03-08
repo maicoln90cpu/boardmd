@@ -253,7 +253,7 @@ export default function Notes() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 flex">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 pt-14 md:pt-0 flex">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
