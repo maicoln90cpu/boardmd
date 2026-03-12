@@ -1,46 +1,47 @@
 
 
-# Plano: Corrigir navegação por projeto a partir de outras páginas
+# Plano: Ordenação por Horário no Calendário + Presets Separados por Contexto (localStorage)
 
-## Diagnóstico
+## 1. Ordenar tarefas por horário no calendário
 
-**Causa raiz**: Quando você clica em um projeto na sidebar estando em `/notes`, `/config`, etc., o código faz:
-1. `onCategorySelect?.(categoryId)` — mas esse callback é `undefined` em todas as páginas exceto `/` (Index)
-2. `navigate("/")` — navega para Index, que monta com `selectedCategory = ""` (estado vazio)
+### `src/pages/Calendar.tsx`
+- No `calendarData` useMemo, ordenar as tasks de cada dia por `due_date` (horário mais cedo primeiro) usando sort antes de adicionar ao mapa.
+- No `selectedDateTasks` useMemo, ordenar o resultado pelo horário do `due_date`.
 
-Resultado: a seleção de projeto se perde durante a navegação.
+### `src/components/ui/fullscreen-calendar.tsx`
+- Garantir que a renderização das tasks dentro de cada célula do dia respeita a ordem do array (já deve ser o caso se o array vier ordenado).
 
-## Solução
+## 2. Separar presets de filtros: Kanban vs Calendário
 
-Usar **query parameter na URL** (`/?project=<categoryId>`) para transportar a seleção entre páginas. O Index lê esse parâmetro ao montar e aplica o filtro.
+### `src/hooks/useFilterPresets.ts`
+- Refatorar para aceitar um parâmetro `scope: "kanban" | "calendar"`.
+- Ao invés de salvar/ler do `settings` (DB), usar **localStorage** com chaves separadas: `filterPresets_kanban` e `filterPresets_calendar`.
+- Manter a mesma interface pública (`presets`, `savePreset`, `applyPreset`, etc.), mas os dados são isolados por scope.
 
-## Alterações
+### `src/components/kanban/FilterPresetsManager.tsx`
+- Aceitar prop `scope` e passar ao `useFilterPresets(scope)`.
 
-### 1. `src/components/Sidebar.tsx` — Navegar com query param
-Na função `handleCategorySelect`, trocar `navigate("/")` por `navigate("/?project=" + categoryId)`. O mesmo no mobile (Sheet de projetos).
+### `src/pages/Calendar.tsx`
+- Passar `scope="calendar"` ao `FilterPresetsManager`.
 
-### 2. `src/hooks/useCategoryFilters.ts` — Ler query param ao inicializar
-Ao montar, verificar se existe `?project=<id>` na URL. Se existir, usar como `selectedCategory` inicial e limpar o param da URL (para não ficar "preso").
+### `src/components/kanban/KanbanFiltersBar.tsx`
+- Garantir que o `FilterPresetsManager` embutido usa `scope="kanban"` (ou default).
 
-### 3. `src/components/Sidebar.tsx` (mobile) — Mesmo ajuste no Sheet de projetos
-O botão de cada categoria no Sheet mobile também usa `handleNavigation("/")` sem passar o ID. Ajustar para incluir o query param.
+## 3. Migrar armazenamento para localStorage
 
-## Impacto
+### `src/hooks/useFilterPresets.ts`
+- Substituir `useSettings` por `useState` + `localStorage.getItem/setItem`.
+- Usar `useLocalStorage` hook existente ou implementar leitura/escrita diretas.
+- Remover dependência de `saveSettings` e `updateSettings` para presets.
+
+---
+
+## Análise de Impacto
 
 | Item | Risco | Complexidade |
 |---|---|---|
-| Navegar com query param | 1 | 1 |
-| Ler param no hook | 1 | 2 |
-| **Total** | **2** | **3** |
-
-- **Sem mudança em banco de dados**
-- **Sem mudança de regra de negócio**
-- Apenas ajuste de navegação client-side
-
-## Checklist de Testes Manuais
-- [ ] Estar em `/notes` → clicar projeto na sidebar → deve ir direto para `/` com projeto filtrado
-- [ ] Estar em `/config` → clicar projeto na sidebar → mesmo resultado
-- [ ] Estar em `/` → clicar projeto na sidebar → funcionar como antes
-- [ ] Mobile: usar Sheet de projetos em qualquer página → deve filtrar corretamente
-- [ ] Pressionar Esc em `/` → deve limpar filtro normalmente
+| Ordenação por horário | 1 | 1 |
+| Separar presets por scope | 1 | 3 |
+| Migrar para localStorage | 1 | 2 |
+| **Total** | **3** | **6** |
 
