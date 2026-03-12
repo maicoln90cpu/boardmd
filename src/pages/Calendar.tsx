@@ -244,8 +244,16 @@ export default function Calendar() {
       }
     });
 
+    // Sort tasks within each day by due_date time (earliest first)
+    dateMap.forEach((dayTasks) => {
+      dayTasks.sort((a, b) => {
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
+        return timeA - timeB;
+      });
+    });
+
     return Array.from(dateMap.entries()).map(([dateStr, tasks]) => ({
-      // Use parseISO to correctly handle timezone
       day: parseISO(dateStr + 'T12:00:00'),
       tasks,
     }));
