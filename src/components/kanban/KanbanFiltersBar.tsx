@@ -358,6 +358,7 @@ export function KanbanFiltersBar({
                 {showPresets && (
                   <div className="pt-2 border-t">
                     <FilterPresetsManager
+                      scope="kanban"
                       currentFilters={currentFilters}
                       onApplyPreset={handleApplyPreset}
                       onClearFilters={onClearFilters}
