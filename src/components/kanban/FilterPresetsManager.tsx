@@ -59,7 +59,7 @@ export function FilterPresetsManager({
     deletePreset,
     applyPreset,
     clearActivePreset,
-  } = useFilterPresets();
+  } = useFilterPresets(scope);
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);

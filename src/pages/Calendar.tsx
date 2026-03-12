@@ -468,6 +468,7 @@ export default function Calendar() {
           tasks={tasks}
           filterPresetsSlot={
             <FilterPresetsManager
+              scope="calendar"
               currentFilters={currentFilters}
               onApplyPreset={handleApplyPreset}
               onClearFilters={clearFilters}
