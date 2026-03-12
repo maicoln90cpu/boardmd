@@ -40,6 +40,7 @@ interface FilterPresetsManagerProps {
   onApplyPreset: (filters: FilterPreset["filters"]) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
+  scope?: FilterPresetScope;
 }
 
 export function FilterPresetsManager({
