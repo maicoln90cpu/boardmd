@@ -318,6 +318,7 @@ export function KanbanFiltersBar({
       {/* Presets de Filtros */}
       {showPresets && !isMobile && (
         <FilterPresetsManager
+          scope="kanban"
           currentFilters={currentFilters}
           onApplyPreset={handleApplyPreset}
           onClearFilters={onClearFilters}
