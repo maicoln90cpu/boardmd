@@ -48,6 +48,7 @@ export function FilterPresetsManager({
   onApplyPreset,
   onClearFilters,
   hasActiveFilters,
+  scope = "kanban",
 }: FilterPresetsManagerProps) {
   const {
     presets,
