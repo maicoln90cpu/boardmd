@@ -262,11 +262,17 @@ export default function Calendar() {
   // Get tasks for selected date
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return [];
-    return filteredTasks.filter(task => {
-      if (!task.due_date) return false;
-      const taskDate = parseISO(task.due_date);
-      return isSameDay(taskDate, selectedDate);
-    });
+    return filteredTasks
+      .filter(task => {
+        if (!task.due_date) return false;
+        const taskDate = parseISO(task.due_date);
+        return isSameDay(taskDate, selectedDate);
+      })
+      .sort((a, b) => {
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
+        return timeA - timeB;
+      });
   }, [selectedDate, filteredTasks]);
 
   // Toggle category filter
