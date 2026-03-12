@@ -43,7 +43,7 @@ export function usePomodoro() {
   const [stats, setStats] = useState<PomodoroStats>({ sessionsToday: 0, totalMinutesToday: 0, currentStreak: 0 });
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousState = useRef<PomodoroState>("idle");
 
