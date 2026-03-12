@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { useFilterPresets, FilterPreset } from "@/hooks/useFilterPresets";
+import { useFilterPresets, FilterPreset, FilterPresetScope } from "@/hooks/useFilterPresets";
 import { cn } from "@/lib/utils";
 
 // Ícones disponíveis para presets
