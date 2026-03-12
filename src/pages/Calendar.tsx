@@ -244,8 +244,16 @@ export default function Calendar() {
       }
     });
 
+    // Sort tasks within each day by due_date time (earliest first)
+    dateMap.forEach((dayTasks) => {
+      dayTasks.sort((a, b) => {
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
+        return timeA - timeB;
+      });
+    });
+
     return Array.from(dateMap.entries()).map(([dateStr, tasks]) => ({
-      // Use parseISO to correctly handle timezone
       day: parseISO(dateStr + 'T12:00:00'),
       tasks,
     }));
@@ -254,11 +262,17 @@ export default function Calendar() {
   // Get tasks for selected date
   const selectedDateTasks = useMemo(() => {
     if (!selectedDate) return [];
-    return filteredTasks.filter(task => {
-      if (!task.due_date) return false;
-      const taskDate = parseISO(task.due_date);
-      return isSameDay(taskDate, selectedDate);
-    });
+    return filteredTasks
+      .filter(task => {
+        if (!task.due_date) return false;
+        const taskDate = parseISO(task.due_date);
+        return isSameDay(taskDate, selectedDate);
+      })
+      .sort((a, b) => {
+        const timeA = a.due_date ? new Date(a.due_date).getTime() : 0;
+        const timeB = b.due_date ? new Date(b.due_date).getTime() : 0;
+        return timeA - timeB;
+      });
   }, [selectedDate, filteredTasks]);
 
   // Toggle category filter
@@ -454,6 +468,7 @@ export default function Calendar() {
           tasks={tasks}
           filterPresetsSlot={
             <FilterPresetsManager
+              scope="calendar"
               currentFilters={currentFilters}
               onApplyPreset={handleApplyPreset}
               onClearFilters={clearFilters}

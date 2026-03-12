@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { useFilterPresets, FilterPreset } from "@/hooks/useFilterPresets";
+import { useFilterPresets, FilterPreset, FilterPresetScope } from "@/hooks/useFilterPresets";
 import { cn } from "@/lib/utils";
 
 // Ícones disponíveis para presets
@@ -40,6 +40,7 @@ interface FilterPresetsManagerProps {
   onApplyPreset: (filters: FilterPreset["filters"]) => void;
   onClearFilters: () => void;
   hasActiveFilters: boolean;
+  scope?: FilterPresetScope;
 }
 
 export function FilterPresetsManager({
@@ -47,6 +48,7 @@ export function FilterPresetsManager({
   onApplyPreset,
   onClearFilters,
   hasActiveFilters,
+  scope = "kanban",
 }: FilterPresetsManagerProps) {
   const {
     presets,
@@ -57,7 +59,7 @@ export function FilterPresetsManager({
     deletePreset,
     applyPreset,
     clearActivePreset,
-  } = useFilterPresets();
+  } = useFilterPresets(scope);
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
