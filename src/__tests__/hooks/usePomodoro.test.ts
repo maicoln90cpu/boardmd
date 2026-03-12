@@ -17,7 +17,7 @@ class MockAudio {
   pause = vi.fn();
   load = vi.fn();
 }
-global.Audio = MockAudio as any;
+(globalThis as any).Audio = MockAudio as any;
 
 // Mock dependencies
 vi.mock('@/integrations/supabase/client', () => ({

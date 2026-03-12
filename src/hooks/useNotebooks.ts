@@ -26,7 +26,7 @@ export function useNotebooks() {
   const { toast } = useToast();
   
   // Ref para debounce do realtime
-  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchNotebooks = async () => {
     if (!user) return;

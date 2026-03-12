@@ -30,7 +30,7 @@ export function useNotes() {
   const { isOnline } = useOnlineStatus();
   
   // Ref para debounce do realtime
-  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Ref para a nota sendo editada atualmente (para merge inteligente)
   const editingNoteIdRef = useRef<string | null>(null);
