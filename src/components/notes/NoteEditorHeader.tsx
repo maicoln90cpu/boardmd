@@ -61,6 +61,7 @@ export function NoteEditorHeader({
   onTogglePin,
   onShare,
   showSavedIndicator,
+  onApplyTemplate,
   linkedTaskId,
   onLinkedTaskChange,
   tasks,
