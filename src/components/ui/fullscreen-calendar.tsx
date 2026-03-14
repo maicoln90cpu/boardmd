@@ -518,6 +518,10 @@ export function FullScreenCalendar({
                 <CalendarDays className="h-3.5 w-3.5 mr-1" />
                 Semana
               </Button>
+              <Button variant={viewType === "day" ? "default" : "ghost"} size="sm" className="h-7 px-2 text-xs" onClick={() => setViewType("day")}>
+                <CalendarClock className="h-3.5 w-3.5 mr-1" />
+                Dia
+              </Button>
             </div>
 
             {/* Navigation */}
