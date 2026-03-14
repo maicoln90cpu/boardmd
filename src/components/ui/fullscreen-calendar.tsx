@@ -192,7 +192,7 @@ function DroppableDay({
   getPriorityBg: (priority?: string | null) => string;
   onDayClick: (day: Date) => void;
   onEditTask?: (task: Task) => void;
-  viewType: "month" | "week";
+  viewType: "month" | "week" | "day";
 }) {
   const {
     setNodeRef,
