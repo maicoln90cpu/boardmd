@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, LucideIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
