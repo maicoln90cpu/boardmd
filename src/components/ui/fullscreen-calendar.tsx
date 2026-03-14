@@ -553,6 +553,90 @@ export function FullScreenCalendar({
 
       {/* Calendar Grid */}
       <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Day View */}
+        {viewType === "day" ? (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="max-w-3xl mx-auto space-y-2">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">
+                  {format(selectedDay, "EEEE, d 'de' MMMM", { locale: ptBR })}
+                </h3>
+                <Button variant="outline" size="sm" onClick={() => handleCreateTaskOnDay(selectedDay)}>
+                  <Plus className="h-4 w-4 mr-1" /> Nova Tarefa
+                </Button>
+              </div>
+              {selectedDayTasks.length === 0 ? (
+                <EmptyState
+                  variant="calendar"
+                  onAction={() => handleCreateTaskOnDay(selectedDay)}
+                  className="py-8"
+                />
+              ) : (
+                <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                  <div className="space-y-2">
+                    {selectedDayTasks.map(task => {
+                      const column = columns.find(c => c.id === task.column_id);
+                      const columnInfo = getColumnInfo(task.column_id, columns);
+                      const isInCompletedColumn = isCompletedColumn(columnInfo.name);
+                      const isOverdue = !isInCompletedColumn && task.due_date && isBefore(parseISO(task.due_date), today);
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => onEditTask?.(task)}
+                          className={cn(
+                            "flex items-start gap-4 rounded-lg p-4 border cursor-pointer transition-colors hover:bg-accent/50",
+                            isOverdue && "border-red-500/50 bg-red-500/5"
+                          )}
+                          style={columnInfo.color ? { borderLeftWidth: 4, borderLeftColor: columnInfo.color } : undefined}
+                        >
+                          {task.due_date && (
+                            <div className="flex flex-col items-center min-w-[50px] text-center">
+                              <Clock className="h-4 w-4 text-muted-foreground mb-1" />
+                              <span className={cn("text-sm font-medium", isOverdue ? "text-red-600" : "text-foreground")}>
+                                {format(parseISO(task.due_date), "HH:mm")}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{task.title}</p>
+                            {task.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              {column && (
+                                <Badge variant="outline" className="text-xs" style={{ borderColor: column.color || undefined, color: column.color || undefined }}>
+                                  {column.name}
+                                </Badge>
+                              )}
+                              {task.priority && (
+                                <Badge variant="outline" className={cn("text-xs",
+                                  task.priority === "high" && "border-red-500 text-red-500",
+                                  task.priority === "medium" && "border-amber-500 text-amber-500",
+                                  task.priority === "low" && "border-emerald-500 text-emerald-500"
+                                )}>
+                                  {task.priority === "high" ? "Alta" : task.priority === "medium" ? "Média" : "Baixa"}
+                                </Badge>
+                              )}
+                              {task.tags?.map((tag, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-[10px]">#{tag}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <DragOverlay>
+                    {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30", getPriorityBg(activeTask.priority))}>
+                      <span className="truncate font-medium">{activeTask.title}</span>
+                    </div>}
+                  </DragOverlay>
+                </DndContext>
+              )}
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Week Days Header */}
         <div className="grid grid-cols-7 border-b bg-muted/30">
           {weekDays.map(day => <div key={day} className="flex items-center justify-center py-2 text-xs font-medium text-muted-foreground">
