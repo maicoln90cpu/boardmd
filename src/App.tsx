@@ -183,6 +183,16 @@ function RouterContent() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/links" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <QuickLinks />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

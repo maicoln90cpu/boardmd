@@ -18,12 +18,12 @@ export function useQuickLinks() {
 
   const fetchLinks = useCallback(async () => {
     const { data, error } = await supabase
-      .from("quick_links")
+      .from("quick_links" as any)
       .select("*")
       .order("position");
 
     if (!error && data) {
-      setLinks(data as QuickLink[]);
+      setLinks(data as unknown as QuickLink[]);
     }
     setIsLoading(false);
   }, []);
@@ -36,7 +36,7 @@ export function useQuickLinks() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase.from("quick_links").insert({
+    const { error } = await (supabase.from("quick_links" as any) as any).insert({
       title: link.title,
       url: link.url,
       icon: link.icon,
@@ -53,8 +53,7 @@ export function useQuickLinks() {
   };
 
   const updateLink = async (id: string, updates: Partial<QuickLink>) => {
-    const { error } = await supabase
-      .from("quick_links")
+    const { error } = await (supabase.from("quick_links" as any) as any)
       .update(updates)
       .eq("id", id);
 
@@ -66,8 +65,7 @@ export function useQuickLinks() {
   };
 
   const deleteLink = async (id: string) => {
-    const { error } = await supabase
-      .from("quick_links")
+    const { error } = await (supabase.from("quick_links" as any) as any)
       .delete()
       .eq("id", id);
 
