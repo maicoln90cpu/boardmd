@@ -23,7 +23,8 @@ type EmptyStateVariant =
   | "column" 
   | "notebooks"
   | "pomodoro"
-  | "courses";
+  | "courses"
+  | "links";
 
 interface EmptyStateProps {
   variant: EmptyStateVariant;

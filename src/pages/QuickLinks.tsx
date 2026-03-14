@@ -88,7 +88,7 @@ export default function QuickLinks() {
         <div className="flex-1 overflow-auto p-4 sm:p-6">
           {links.length === 0 && !isLoading ? (
             <EmptyState
-              variant="default"
+              variant="links"
               title="Nenhum link salvo"
               description="Adicione atalhos para seus sites e ferramentas mais usados"
               onAction={() => setIsAddOpen(true)}
