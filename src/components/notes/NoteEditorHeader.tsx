@@ -103,6 +103,9 @@ export function NoteEditorHeader({
             <Share2 className="h-4 w-4" />
           </Button>
           <ColorPicker currentColor={color} onColorChange={onColorChange} />
+          {onApplyTemplate && (
+            <NoteTemplateSelector onSelectTemplate={onApplyTemplate} />
+          )}
         </div>
       </div>
 
