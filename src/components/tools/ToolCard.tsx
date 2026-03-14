@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ToolAlternativesModal } from "./ToolAlternativesModal";
 
 // Map of common icon names to components
 const iconMap: Record<string, LucideIcon> = {
