@@ -310,6 +310,13 @@ export function NoteEditor({
         onTogglePin={onTogglePin}
         onShare={() => state.handleShare(editor)}
         showSavedIndicator={state.showSavedIndicator}
+        onApplyTemplate={(template: NoteTemplate) => {
+          if (editor) {
+            state.setTitle(template.name);
+            editor.commands.setContent(template.content);
+            state.setContent(template.content);
+          }
+        }}
         linkedTaskId={state.linkedTaskId}
         onLinkedTaskChange={state.setLinkedTaskId}
         tasks={state.tasks}
