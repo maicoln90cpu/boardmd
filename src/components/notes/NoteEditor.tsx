@@ -1,4 +1,5 @@
 import { Note } from "@/hooks/useNotes";
+import { NoteTemplate } from "@/lib/noteTemplates";
 import { Notebook } from "@/hooks/useNotebooks";
 import { useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
