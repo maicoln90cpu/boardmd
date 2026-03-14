@@ -358,7 +358,11 @@ export function FullScreenCalendar({
   const selectedDayData = data.find(d => isSameDay(d.day, selectedDay));
   const selectedDayTasks = selectedDayData?.tasks || [];
   function previousPeriod() {
-    if (viewType === "week") {
+    if (viewType === "day") {
+      const newSelectedDay = add(selectedDay, { days: -1 });
+      setSelectedDay(newSelectedDay);
+      setCurrentMonth(format(newSelectedDay, "MMM-yyyy"));
+    } else if (viewType === "week") {
       const newSelectedDay = add(selectedDay, {
         weeks: -1
       });
@@ -372,7 +376,11 @@ export function FullScreenCalendar({
     }
   }
   function nextPeriod() {
-    if (viewType === "week") {
+    if (viewType === "day") {
+      const newSelectedDay = add(selectedDay, { days: 1 });
+      setSelectedDay(newSelectedDay);
+      setCurrentMonth(format(newSelectedDay, "MMM-yyyy"));
+    } else if (viewType === "week") {
       const newSelectedDay = add(selectedDay, {
         weeks: 1
       });
