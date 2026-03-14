@@ -11,11 +11,6 @@ import { ColorPicker } from "./ColorPicker";
 import { NoteTemplateSelector } from "./NoteTemplateSelector";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { useNavigate } from "react-router-dom";
-import { Note } from "@/hooks/useNotes";
-import { Notebook } from "@/hooks/useNotebooks";
-import { Task } from "@/hooks/tasks/useTasks";
-import { ColorPicker } from "./ColorPicker";
-import { useNavigate } from "react-router-dom";
 
 interface Course {
   id: string;
