@@ -321,7 +321,7 @@ export function FullScreenCalendar({
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
   const [mobileTasksExpanded, setMobileTasksExpanded] = React.useState(true);
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
-  const [viewType, setViewType] = React.useState<"month" | "week">("month");
+  const [viewType, setViewType] = React.useState<"month" | "week" | "day">("month");
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const sensors = useSensors(useSensor(PointerSensor, {
