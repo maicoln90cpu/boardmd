@@ -782,6 +782,8 @@ export function FullScreenCalendar({
             </AnimatePresence>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>;
 }
