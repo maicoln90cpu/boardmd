@@ -3,7 +3,7 @@
 import * as React from "react";
 import { add, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isEqual, isSameDay, isSameMonth, isToday, isBefore, parse, parseISO, startOfToday, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, CalendarClock, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AnimatePresence, motion } from "framer-motion";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
