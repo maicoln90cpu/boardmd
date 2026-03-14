@@ -11,6 +11,7 @@ import {
   Wrench,
   GraduationCap,
   Calculator,
+  Link2,
   LucideIcon 
 } from "lucide-react";
 
