@@ -108,6 +108,14 @@ const variants = {
     color: "text-indigo-500",
     bgColor: "bg-indigo-500/10",
   },
+  links: {
+    icon: Inbox,
+    title: "Nenhum link salvo",
+    description: "Adicione atalhos para seus sites e ferramentas mais usados.",
+    actionLabel: "Adicionar link",
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-500/10",
+  },
 };
 
 export function EmptyState({
