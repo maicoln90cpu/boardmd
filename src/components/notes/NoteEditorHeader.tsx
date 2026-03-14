@@ -8,6 +8,8 @@ import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Task } from "@/hooks/tasks/useTasks";
 import { ColorPicker } from "./ColorPicker";
+import { NoteTemplateSelector } from "./NoteTemplateSelector";
+import { NoteTemplate } from "@/lib/noteTemplates";
 import { useNavigate } from "react-router-dom";
 
 interface Course {
@@ -26,6 +28,7 @@ interface NoteEditorHeaderProps {
   onTogglePin: (id: string) => void;
   onShare: () => void;
   showSavedIndicator: boolean;
+  onApplyTemplate?: (template: NoteTemplate) => void;
   
   // Task linking
   linkedTaskId: string | null;
@@ -53,6 +56,7 @@ export function NoteEditorHeader({
   onTogglePin,
   onShare,
   showSavedIndicator,
+  onApplyTemplate,
   linkedTaskId,
   onLinkedTaskChange,
   tasks,
@@ -94,6 +98,9 @@ export function NoteEditorHeader({
             <Share2 className="h-4 w-4" />
           </Button>
           <ColorPicker currentColor={color} onColorChange={onColorChange} />
+          {onApplyTemplate && (
+            <NoteTemplateSelector onSelectTemplate={onApplyTemplate} />
+          )}
         </div>
       </div>
 

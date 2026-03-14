@@ -11,6 +11,7 @@ import {
   Wrench,
   GraduationCap,
   Calculator,
+  Link2,
   LucideIcon 
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const SECONDARY_MENU_ITEMS: MenuItem[] = [
   { icon: GraduationCap, label: "Cursos", path: "/courses" },
   { icon: Calculator, label: "Custos", path: "/cost-calculator" },
   { icon: Wrench, label: "Ferramentas", path: "/tools" },
+  { icon: Link2, label: "Links Rápidos", path: "/links" },
   { icon: Bell, label: "Notificações", path: "/notifications" },
   { icon: Settings, label: "Setup", path: "/config" },
 ];

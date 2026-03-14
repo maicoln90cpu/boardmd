@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, LucideIcon, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { ToolAlternativesModal } from "./ToolAlternativesModal";
 
 // Map of common icon names to components
 const iconMap: Record<string, LucideIcon> = {
@@ -37,6 +38,7 @@ interface ToolCardProps {
 
 export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAlternatives, setShowAlternatives] = useState(false);
 
   // Get icon component from map, fallback to Wrench
   const IconComponent = tool.icon && iconMap[tool.icon.toLowerCase()] 
@@ -149,7 +151,7 @@ export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardP
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-2 flex-wrap">
               <Button
                 variant="outline"
                 size="sm"
@@ -163,6 +165,17 @@ export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardP
                   tool.is_favorite && "text-red-500 fill-red-500"
                 )} />
                 {tool.is_favorite ? "Remover Favorito" : "Favoritar"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAlternatives(true);
+                }}
+              >
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                Alternativas
               </Button>
               <Button
                 variant="outline"
@@ -191,6 +204,12 @@ export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardP
           </div>
         </CardContent>
       )}
+
+      <ToolAlternativesModal
+        open={showAlternatives}
+        onOpenChange={setShowAlternatives}
+        toolName={tool.name}
+      />
     </Card>
   );
 }

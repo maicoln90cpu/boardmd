@@ -12,6 +12,7 @@ import { SystemHealthMonitor } from "@/components/dashboard/SystemHealthMonitor"
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { DailyHeroCard } from "@/components/dashboard/DailyHeroCard";
 import { ReportExportButton } from "@/components/dashboard/ReportExportButton";
+import { DailyDigestCard } from "@/components/dashboard/DailyDigestCard";
 import { DashboardWidgetContainer, DashboardWidget } from "@/components/dashboard/DashboardWidgetContainer";
 import { GoalsCard } from "@/components/dashboard/GoalsCard";
 import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
@@ -74,6 +75,10 @@ export default function Dashboard() {
   // Build widgets array based on config
   const widgets: DashboardWidget[] = useMemo(() => {
     const widgetComponents: Record<string, { name: string; component: React.ReactNode }> = {
+      "daily-digest": {
+        name: "📰 Digest do Dia",
+        component: <DailyDigestCard tasks={tasks} />,
+      },
       "hero": {
         name: "📊 Resumo Diário",
         component: (

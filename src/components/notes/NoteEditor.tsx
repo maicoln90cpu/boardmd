@@ -1,4 +1,5 @@
 import { Note } from "@/hooks/useNotes";
+import { NoteTemplate } from "@/lib/noteTemplates";
 import { Notebook } from "@/hooks/useNotebooks";
 import { useEffect, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -309,6 +310,13 @@ export function NoteEditor({
         onTogglePin={onTogglePin}
         onShare={() => state.handleShare(editor)}
         showSavedIndicator={state.showSavedIndicator}
+        onApplyTemplate={(template: NoteTemplate) => {
+          if (editor) {
+            state.setTitle(template.name);
+            editor.commands.setContent(template.content);
+            state.setContent(template.content);
+          }
+        }}
         linkedTaskId={state.linkedTaskId}
         onLinkedTaskChange={state.setLinkedTaskId}
         tasks={state.tasks}
