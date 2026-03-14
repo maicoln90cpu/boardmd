@@ -38,6 +38,7 @@ interface ToolCardProps {
 
 export function ToolCard({ tool, onEdit, onDelete, onToggleFavorite }: ToolCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAlternatives, setShowAlternatives] = useState(false);
 
   // Get icon component from map, fallback to Wrench
   const IconComponent = tool.icon && iconMap[tool.icon.toLowerCase()] 
