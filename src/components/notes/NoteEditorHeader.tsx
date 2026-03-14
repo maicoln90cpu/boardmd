@@ -33,6 +33,7 @@ interface NoteEditorHeaderProps {
   onTogglePin: (id: string) => void;
   onShare: () => void;
   showSavedIndicator: boolean;
+  onApplyTemplate?: (template: NoteTemplate) => void;
   
   // Task linking
   linkedTaskId: string | null;
