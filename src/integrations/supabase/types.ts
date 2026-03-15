@@ -413,6 +413,74 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_checkins: {
+        Row: {
+          checked_date: string
+          created_at: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          checked_date?: string
+          created_at?: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          checked_date?: string
+          created_at?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_checkins_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          color: string
+          created_at: string
+          frequency: string
+          icon: string
+          id: string
+          is_archived: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          frequency?: string
+          icon?: string
+          id?: string
+          is_archived?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          frequency?: string
+          icon?: string
+          id?: string
+          is_archived?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notebooks: {
         Row: {
           created_at: string
@@ -1150,6 +1218,45 @@ export type Database = {
           total_points?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_reviews: {
+        Row: {
+          created_at: string
+          id: string
+          mood: number | null
+          next_week_plan: string
+          updated_at: string
+          user_id: string
+          week_start: string
+          what_did: string
+          what_improve: string
+          what_learned: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood?: number | null
+          next_week_plan?: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+          what_did?: string
+          what_improve?: string
+          what_learned?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: number | null
+          next_week_plan?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+          what_did?: string
+          what_improve?: string
+          what_learned?: string
         }
         Relationships: []
       }
