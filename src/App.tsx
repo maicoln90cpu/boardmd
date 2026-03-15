@@ -49,6 +49,8 @@ const CostCalculator = lazy(() => import("./pages/CostCalculator"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const QuickLinks = lazy(() => import("./pages/QuickLinks"));
+const Habits = lazy(() => import("./pages/Habits"));
+const Retrospective = lazy(() => import("./pages/Retrospective"));
 
 const queryClient = new QueryClient();
 
