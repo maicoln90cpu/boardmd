@@ -146,8 +146,12 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
 }: ProjectsKanbanViewProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { updateColumnColor } = useColumns();
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
   const nonDailyCategories = categories.filter((c) => c.name !== "Diário");
   const selectedCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
+  
+  // Build categories map for table view
+  const originalCategoriesMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
 
   return (
     <>
