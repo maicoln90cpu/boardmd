@@ -11,13 +11,13 @@
 | 1D. Alternativas de Ferramentas (IA) | ✅ Implementada |
 | 1E. Digest Diário no Dashboard | ✅ Implementada |
 
-## 🔲 Etapa 2 — Features Estruturais
+## ✅ Etapa 2 — CONCLUÍDA
 
 | Feature | Status |
 |---------|--------|
-| 2A. Visão de Lista/Tabela para Tarefas | 🔲 Pendente |
-| 2B. Hábitos Tracker | 🔲 Pendente |
-| 2C. Retrospectiva Semanal | 🔲 Pendente |
+| 2A. Visão de Lista/Tabela para Tarefas | ✅ Implementada |
+| 2B. Hábitos Tracker | ✅ Implementada |
+| 2C. Retrospectiva Semanal | ✅ Implementada |
 
 ## 🔲 Etapa 3 — Features Avançadas
 
