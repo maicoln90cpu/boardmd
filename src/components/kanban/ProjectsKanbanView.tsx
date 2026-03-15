@@ -220,19 +220,42 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               )}
             </div>
             <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={viewMode === "kanban" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-r-none"
+                  onClick={() => setViewMode("kanban")}
+                  title="Visão Kanban"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-l-none"
+                  onClick={() => setViewMode("table")}
+                  title="Visão Tabela"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
               <Button variant="outline" size="sm" onClick={() => onShowColumnManagerChange(true)}>
                 <Columns3 className="h-4 w-4 mr-2" />
                 Colunas
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onEqualizeColumns}
-                title="Equalizar largura das colunas"
-                className="h-9 w-9"
-              >
-                <Equal className="h-4 w-4" />
-              </Button>
+              {viewMode === "kanban" && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onEqualizeColumns}
+                  title="Equalizar largura das colunas"
+                  className="h-9 w-9"
+                >
+                  <Equal className="h-4 w-4" />
+                </Button>
+              )}
               {onResetRecurrentTasks && (
                 <Button
                   variant="outline"
