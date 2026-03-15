@@ -36,6 +36,8 @@ export const PRIMARY_MENU_ITEMS: MenuItem[] = [
 export const SECONDARY_MENU_ITEMS: MenuItem[] = [
   { icon: Timer, label: "Pomodoro", path: "/pomodoro" },
   { icon: Calendar, label: "Calendário", path: "/calendar" },
+  { icon: Target, label: "Hábitos", path: "/habits" },
+  { icon: BookOpen, label: "Retrospectiva", path: "/retrospective" },
   { icon: GraduationCap, label: "Cursos", path: "/courses" },
   { icon: Calculator, label: "Custos", path: "/cost-calculator" },
   { icon: Wrench, label: "Ferramentas", path: "/tools" },
