@@ -12,6 +12,8 @@ import {
   GraduationCap,
   Calculator,
   Link2,
+  Target,
+  BookOpen,
   LucideIcon 
 } from "lucide-react";
 
