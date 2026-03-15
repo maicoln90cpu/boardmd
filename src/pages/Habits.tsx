@@ -171,9 +171,9 @@ function Habits() {
             </div>
           ) : habits.length === 0 ? (
             <EmptyState
+              variant="tasks"
               title="Nenhum hábito ainda"
               description="Comece criando um hábito para rastrear diariamente"
-              icon="tasks"
             />
           ) : (
             <div className="space-y-3">

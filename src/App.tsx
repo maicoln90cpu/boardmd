@@ -195,6 +195,26 @@ function RouterContent() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/habits" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Habits />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/retrospective" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Retrospective />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
