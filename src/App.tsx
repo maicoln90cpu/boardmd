@@ -49,6 +49,8 @@ const CostCalculator = lazy(() => import("./pages/CostCalculator"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const QuickLinks = lazy(() => import("./pages/QuickLinks"));
+const Habits = lazy(() => import("./pages/Habits"));
+const Retrospective = lazy(() => import("./pages/Retrospective"));
 
 const queryClient = new QueryClient();
 
@@ -189,6 +191,26 @@ function RouterContent() {
           <ProtectedRoute>
             <Suspense fallback={<PageLoadingSkeleton />}>
               <QuickLinks />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/habits" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Habits />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/retrospective" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Retrospective />
             </Suspense>
           </ProtectedRoute>
         } 

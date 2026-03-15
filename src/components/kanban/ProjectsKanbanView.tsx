@@ -1,4 +1,4 @@
-import { memo, useRef, lazy, Suspense } from "react";
+import { memo, useRef, lazy, Suspense, useState } from "react";
 import { useColumns } from "@/hooks/data/useColumns";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
@@ -6,7 +6,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardStats } from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Columns3, Equal, RotateCcw } from "lucide-react";
+import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load ColumnManager - componente pesado com muitas dependências
 const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
+const TaskTableView = lazy(() => import("./TaskTableView").then(m => ({ default: m.TaskTableView })));
 
 interface TaskCounters {
   total: number;
@@ -145,8 +146,12 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
 }: ProjectsKanbanViewProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { updateColumnColor } = useColumns();
+  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
   const nonDailyCategories = categories.filter((c) => c.name !== "Diário");
   const selectedCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
+  
+  // Build categories map for table view
+  const originalCategoriesMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
 
   return (
     <>
@@ -215,19 +220,42 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               )}
             </div>
             <div className="flex items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={viewMode === "kanban" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-r-none"
+                  onClick={() => setViewMode("kanban")}
+                  title="Visão Kanban"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "table" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-l-none"
+                  onClick={() => setViewMode("table")}
+                  title="Visão Tabela"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
               <Button variant="outline" size="sm" onClick={() => onShowColumnManagerChange(true)}>
                 <Columns3 className="h-4 w-4 mr-2" />
                 Colunas
               </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={onEqualizeColumns}
-                title="Equalizar largura das colunas"
-                className="h-9 w-9"
-              >
-                <Equal className="h-4 w-4" />
-              </Button>
+              {viewMode === "kanban" && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={onEqualizeColumns}
+                  title="Equalizar largura das colunas"
+                  className="h-9 w-9"
+                >
+                  <Equal className="h-4 w-4" />
+                </Button>
+              )}
               {onResetRecurrentTasks && (
                 <Button
                   variant="outline"
@@ -341,64 +369,92 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         searchPlaceholder="Buscar em Projetos..."
       />
 
-      {/* Renderizar baseado no displayMode */}
-      {displayMode === "all_tasks" ? (
-        <div className="mb-8" key={`all-tasks-${boardKey}`}>
-          <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
-            <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
-            <Badge variant="secondary" className="text-xs">
-              {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa" : "tarefas"}
-            </Badge>
-          </div>
-        <KanbanBoard
-            key={`all-board-${boardKey}`}
-            columns={columns}
-            categoryId="all"
-            searchTerm={searchTerm}
-            priorityFilter={priorityFilter}
-            tagFilter={tagFilter}
-            dueDateFilter={dueDateFilter}
-            sortOption={sortOption}
-            showCategoryBadge
-            densityMode={densityMode}
-            hideBadges={hideBadges}
-            gridColumns={gridColumns}
-            categoryFilter={categoryFilter}
-            categoryFilterInitialized={categoryFilterInitialized}
-            selectedCategoryId={selectedCategory}
-          />
+      {/* Table View */}
+      {viewMode === "table" && (
+        <div className="px-4 py-4">
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <TaskTableView
+              tasks={filteredTasks}
+              columns={columns}
+              onEditTask={onTaskSelect}
+              onDeleteClick={(id) => {
+                // Will be handled by parent via task select
+                const task = filteredTasks.find(t => t.id === id);
+                if (task) onTaskSelect(task);
+              }}
+              toggleFavorite={(id) => {
+                // Toggle favorite via task select
+                const task = filteredTasks.find(t => t.id === id);
+                if (task) onTaskSelect(task);
+              }}
+              updateTask={async () => {}}
+              originalCategoriesMap={originalCategoriesMap}
+            />
+          </Suspense>
         </div>
-      ) : (
-        /* Renderizar Kanbans por categoria */
-        nonDailyCategories
-          .filter((cat) => !categoryFilterInitialized || categoryFilter.includes(cat.id))
-          .map((category) => {
-            const categoryTasks = filteredTasks.filter((t) => t.category_id === category.id);
-            return (
-              <div key={`${category.id}-${boardKey}`} className="mb-8">
-                <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{category.name}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {categoryTasks.length} {categoryTasks.length === 1 ? "tarefa" : "tarefas"}
-                  </Badge>
-                </div>
-                <KanbanBoard
-                  key={`board-${category.id}-${boardKey}`}
-                  columns={columns}
-                  categoryId={category.id}
-                  searchTerm={searchTerm}
-                  priorityFilter={priorityFilter}
-                  tagFilter={tagFilter}
-                  dueDateFilter={dueDateFilter}
-                  sortOption={sortOption}
-                  densityMode={densityMode}
-                  hideBadges={hideBadges}
-                  gridColumns={gridColumns}
-                  selectedCategoryId={selectedCategory}
-                />
+      )}
+
+      {/* Kanban View */}
+      {viewMode === "kanban" && (
+        <>
+          {displayMode === "all_tasks" ? (
+            <div className="mb-8" key={`all-tasks-${boardKey}`}>
+              <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">📋 Todas as Tarefas</h3>
+                <Badge variant="secondary" className="text-xs">
+                  {filteredTasks.length} {filteredTasks.length === 1 ? "tarefa" : "tarefas"}
+                </Badge>
               </div>
-            );
-          })
+              <KanbanBoard
+                key={`all-board-${boardKey}`}
+                columns={columns}
+                categoryId="all"
+                searchTerm={searchTerm}
+                priorityFilter={priorityFilter}
+                tagFilter={tagFilter}
+                dueDateFilter={dueDateFilter}
+                sortOption={sortOption}
+                showCategoryBadge
+                densityMode={densityMode}
+                hideBadges={hideBadges}
+                gridColumns={gridColumns}
+                categoryFilter={categoryFilter}
+                categoryFilterInitialized={categoryFilterInitialized}
+                selectedCategoryId={selectedCategory}
+              />
+            </div>
+          ) : (
+            nonDailyCategories
+              .filter((cat) => !categoryFilterInitialized || categoryFilter.includes(cat.id))
+              .map((category) => {
+                const categoryTasks = filteredTasks.filter((t) => t.category_id === category.id);
+                return (
+                  <div key={`${category.id}-${boardKey}`} className="mb-8">
+                    <div className="px-6 py-3 bg-muted/50 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">{category.name}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {categoryTasks.length} {categoryTasks.length === 1 ? "tarefa" : "tarefas"}
+                      </Badge>
+                    </div>
+                    <KanbanBoard
+                      key={`board-${category.id}-${boardKey}`}
+                      columns={columns}
+                      categoryId={category.id}
+                      searchTerm={searchTerm}
+                      priorityFilter={priorityFilter}
+                      tagFilter={tagFilter}
+                      dueDateFilter={dueDateFilter}
+                      sortOption={sortOption}
+                      densityMode={densityMode}
+                      hideBadges={hideBadges}
+                      gridColumns={gridColumns}
+                      selectedCategoryId={selectedCategory}
+                    />
+                  </div>
+                );
+              })
+          )}
+        </>
       )}
 
       {/* Dialog de Estatísticas */}
