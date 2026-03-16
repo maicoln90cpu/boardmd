@@ -6,7 +6,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardStats } from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List } from "lucide-react";
+import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List, GanttChart } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
