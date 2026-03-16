@@ -11,6 +11,7 @@ import { ColorPicker } from "./ColorPicker";
 import { NoteTemplateSelector } from "./NoteTemplateSelector";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { useNavigate } from "react-router-dom";
+import { useSharedNotes } from "@/hooks/useSharedNotes";
 
 interface Course {
   id: string;
