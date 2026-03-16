@@ -338,12 +338,29 @@ export function NoteEditor({
         onCourseSearchOpenChange={state.setCourseSearchOpen}
       />
 
-      <NoteEditorContent
-        editor={editor}
-        tasks={state.tasks}
-        onInsertTaskBlock={handleInsertTaskBlock}
-        onCreateTask={state.handleCreateTask}
-      />
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+        <NoteEditorContent
+          editor={editor}
+          tasks={state.tasks}
+          onInsertTaskBlock={handleInsertTaskBlock}
+          onCreateTask={state.handleCreateTask}
+        />
+        {/* Backlink autocomplete dropdown */}
+        <BacklinkSuggestion
+          editor={editor}
+          notes={allNotes}
+          currentNoteId={note.id}
+        />
+      </div>
+
+      {/* Backlinks panel - notes that reference this one */}
+      {allNotes.length > 0 && onNavigateToNote && (
+        <BacklinksPanel
+          currentNoteId={note.id}
+          notes={allNotes}
+          onNavigateToNote={onNavigateToNote}
+        />
+      )}
 
       <NoteEditorFooter
         wordCount={state.wordCount}
