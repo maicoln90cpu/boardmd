@@ -235,11 +235,20 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                 <Button
                   variant={viewMode === "table" ? "secondary" : "ghost"}
                   size="icon"
-                  className="h-9 w-9 rounded-l-none"
+                  className="h-9 w-9 rounded-none border-x"
                   onClick={() => setViewMode("table")}
                   title="Visão Tabela"
                 >
                   <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "gantt" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-l-none"
+                  onClick={() => setViewMode("gantt")}
+                  title="Visão Timeline/Gantt"
+                >
+                  <GanttChart className="h-4 w-4" />
                 </Button>
               </div>
               <Button variant="outline" size="sm" onClick={() => onShowColumnManagerChange(true)}>
