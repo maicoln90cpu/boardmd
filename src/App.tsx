@@ -216,6 +216,14 @@ function RouterContent() {
           </ProtectedRoute>
         } 
       />
+      <Route
+        path="/shared/:slug"
+        element={
+          <Suspense fallback={<PageLoadingSkeleton />}>
+            <SharedNote />
+          </Suspense>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
