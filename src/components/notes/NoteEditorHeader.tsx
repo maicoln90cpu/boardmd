@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap } from "lucide-react";
+import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap, Globe, Loader2 } from "lucide-react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Task } from "@/hooks/tasks/useTasks";
