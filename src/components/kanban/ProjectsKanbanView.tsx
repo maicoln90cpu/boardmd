@@ -404,6 +404,20 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         </div>
       )}
 
+      {/* Gantt/Timeline View */}
+      {viewMode === "gantt" && (
+        <div className="px-4 py-4">
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <GanttView
+              tasks={filteredTasks}
+              columns={columns}
+              onEditTask={onTaskSelect}
+              categoriesMap={originalCategoriesMap}
+            />
+          </Suspense>
+        </div>
+      )}
+
       {/* Kanban View */}
       {viewMode === "kanban" && (
         <>
