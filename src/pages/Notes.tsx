@@ -425,9 +425,11 @@ export default function Notes() {
                 <NoteEditor 
                   note={selectedNote}
                   notebooks={notebooks}
+                  allNotes={notes}
                   onUpdate={handleUpdateNote}
                   onTogglePin={togglePin}
                   onMoveToNotebook={moveNoteToNotebook}
+                  onNavigateToNote={handleSelectNote}
                 />
               </motion.div>
             ) : (

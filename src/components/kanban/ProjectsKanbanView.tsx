@@ -6,7 +6,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { DashboardStats } from "@/components/DashboardStats";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List } from "lucide-react";
+import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List, GanttChart } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Column } from "@/hooks/data/useColumns";
 import { Category } from "@/hooks/data/useCategories";
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Lazy load ColumnManager - componente pesado com muitas dependências
 const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
 const TaskTableView = lazy(() => import("./TaskTableView").then(m => ({ default: m.TaskTableView })));
+const GanttView = lazy(() => import("./GanttView").then(m => ({ default: m.GanttView })));
 
 interface TaskCounters {
   total: number;
@@ -146,7 +147,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
 }: ProjectsKanbanViewProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { updateColumnColor } = useColumns();
-  const [viewMode, setViewMode] = useState<"kanban" | "table">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gantt">("kanban");
   const nonDailyCategories = categories.filter((c) => c.name !== "Diário");
   const selectedCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
   
@@ -234,11 +235,20 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
                 <Button
                   variant={viewMode === "table" ? "secondary" : "ghost"}
                   size="icon"
-                  className="h-9 w-9 rounded-l-none"
+                  className="h-9 w-9 rounded-none border-x"
                   onClick={() => setViewMode("table")}
                   title="Visão Tabela"
                 >
                   <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "gantt" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-9 w-9 rounded-l-none"
+                  onClick={() => setViewMode("gantt")}
+                  title="Visão Timeline/Gantt"
+                >
+                  <GanttChart className="h-4 w-4" />
                 </Button>
               </div>
               <Button variant="outline" size="sm" onClick={() => onShowColumnManagerChange(true)}>
@@ -389,6 +399,20 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
               }}
               updateTask={async () => {}}
               originalCategoriesMap={originalCategoriesMap}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {/* Gantt/Timeline View */}
+      {viewMode === "gantt" && (
+        <div className="px-4 py-4">
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <GanttView
+              tasks={filteredTasks}
+              columns={columns}
+              onEditTask={onTaskSelect}
+              categoriesMap={originalCategoriesMap}
             />
           </Suspense>
         </div>

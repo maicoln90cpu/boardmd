@@ -25,6 +25,10 @@ import { TaskSelectorModal } from "./TaskSelectorModal";
 import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
 import { PriorityBadgeExtension } from "./extensions/PriorityBadgeExtension";
+import { BacklinkExtension } from "./extensions/BacklinkExtension";
+import { BacklinkSuggestion } from "./BacklinkSuggestion";
+import { BacklinksPanel } from "./BacklinksPanel";
+import { useNotes } from "@/hooks/useNotes";
 
 // Refactored components
 import { NoteEditorHeader } from "./NoteEditorHeader";
@@ -35,9 +39,11 @@ import { useNoteEditorState } from "./hooks/useNoteEditorState";
 interface NoteEditorProps {
   note: Note;
   notebooks: Notebook[];
+  allNotes?: Note[];
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
+  onNavigateToNote?: (noteId: string) => void;
   onSave?: () => void;
   className?: string;
 }
@@ -45,9 +51,11 @@ interface NoteEditorProps {
 export function NoteEditor({
   note,
   notebooks,
+  allNotes = [],
   onUpdate,
   onTogglePin,
   onMoveToNotebook,
+  onNavigateToNote,
   onSave,
   className
 }: NoteEditorProps) {
@@ -111,7 +119,8 @@ export function NoteEditor({
         HTMLAttributes: { class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto' }
       }), 
       TaskBlockExtension, 
-      PriorityBadgeExtension
+      PriorityBadgeExtension,
+      BacklinkExtension
     ],
     content: note.content || "",
     onUpdate: ({ editor }) => {
@@ -329,12 +338,29 @@ export function NoteEditor({
         onCourseSearchOpenChange={state.setCourseSearchOpen}
       />
 
-      <NoteEditorContent
-        editor={editor}
-        tasks={state.tasks}
-        onInsertTaskBlock={handleInsertTaskBlock}
-        onCreateTask={state.handleCreateTask}
-      />
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+        <NoteEditorContent
+          editor={editor}
+          tasks={state.tasks}
+          onInsertTaskBlock={handleInsertTaskBlock}
+          onCreateTask={state.handleCreateTask}
+        />
+        {/* Backlink autocomplete dropdown */}
+        <BacklinkSuggestion
+          editor={editor}
+          notes={allNotes}
+          currentNoteId={note.id}
+        />
+      </div>
+
+      {/* Backlinks panel - notes that reference this one */}
+      {allNotes.length > 0 && onNavigateToNote && (
+        <BacklinksPanel
+          currentNoteId={note.id}
+          notes={allNotes}
+          onNavigateToNote={onNavigateToNote}
+        />
+      )}
 
       <NoteEditorFooter
         wordCount={state.wordCount}

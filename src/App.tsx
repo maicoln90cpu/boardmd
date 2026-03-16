@@ -51,6 +51,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const QuickLinks = lazy(() => import("./pages/QuickLinks"));
 const Habits = lazy(() => import("./pages/Habits"));
 const Retrospective = lazy(() => import("./pages/Retrospective"));
+const SharedNote = lazy(() => import("./pages/SharedNote"));
 
 const queryClient = new QueryClient();
 
@@ -214,6 +215,14 @@ function RouterContent() {
             </Suspense>
           </ProtectedRoute>
         } 
+      />
+      <Route
+        path="/shared/:slug"
+        element={
+          <Suspense fallback={<PageLoadingSkeleton />}>
+            <SharedNote />
+          </Suspense>
+        }
       />
       <Route path="*" element={<NotFound />} />
     </Routes>

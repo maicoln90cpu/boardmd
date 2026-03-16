@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap } from "lucide-react";
+import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap, Globe, Loader2 } from "lucide-react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Task } from "@/hooks/tasks/useTasks";
@@ -11,6 +11,7 @@ import { ColorPicker } from "./ColorPicker";
 import { NoteTemplateSelector } from "./NoteTemplateSelector";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { useNavigate } from "react-router-dom";
+import { useSharedNotes } from "@/hooks/useSharedNotes";
 
 interface Course {
   id: string;
@@ -69,6 +70,8 @@ export function NoteEditorHeader({
   onCourseSearchOpenChange,
 }: NoteEditorHeaderProps) {
   const navigate = useNavigate();
+  const { shareNote, loading: sharingLoading } = useSharedNotes();
+
   return (
     <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
       {/* Title and actions */}
@@ -93,9 +96,19 @@ export function NoteEditorHeader({
             size="icon" 
             onClick={onShare} 
             className="h-10 w-10 shrink-0" 
-            title="Compartilhar nota"
+            title="Compartilhar nota (nativo)"
           >
             <Share2 className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => shareNote(note.id)} 
+            disabled={sharingLoading}
+            className="h-10 w-10 shrink-0" 
+            title="Gerar link público read-only"
+          >
+            {sharingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
           </Button>
           <ColorPicker currentColor={color} onColorChange={onColorChange} />
           {onApplyTemplate && (
