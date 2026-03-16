@@ -119,7 +119,8 @@ export function NoteEditor({
         HTMLAttributes: { class: 'rounded-lg bg-muted p-4 my-4 overflow-x-auto' }
       }), 
       TaskBlockExtension, 
-      PriorityBadgeExtension
+      PriorityBadgeExtension,
+      BacklinkExtension
     ],
     content: note.content || "",
     onUpdate: ({ editor }) => {
