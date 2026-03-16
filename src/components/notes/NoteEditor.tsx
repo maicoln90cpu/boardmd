@@ -39,9 +39,11 @@ import { useNoteEditorState } from "./hooks/useNoteEditorState";
 interface NoteEditorProps {
   note: Note;
   notebooks: Notebook[];
+  allNotes?: Note[];
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
+  onNavigateToNote?: (noteId: string) => void;
   onSave?: () => void;
   className?: string;
 }
