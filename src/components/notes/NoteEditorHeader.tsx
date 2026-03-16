@@ -70,6 +70,8 @@ export function NoteEditorHeader({
   onCourseSearchOpenChange,
 }: NoteEditorHeaderProps) {
   const navigate = useNavigate();
+  const { shareNote, loading: sharingLoading } = useSharedNotes();
+
   return (
     <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
       {/* Title and actions */}
@@ -94,9 +96,19 @@ export function NoteEditorHeader({
             size="icon" 
             onClick={onShare} 
             className="h-10 w-10 shrink-0" 
-            title="Compartilhar nota"
+            title="Compartilhar nota (nativo)"
           >
             <Share2 className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => shareNote(note.id)} 
+            disabled={sharingLoading}
+            className="h-10 w-10 shrink-0" 
+            title="Gerar link público read-only"
+          >
+            {sharingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
           </Button>
           <ColorPicker currentColor={color} onColorChange={onColorChange} />
           {onApplyTemplate && (
