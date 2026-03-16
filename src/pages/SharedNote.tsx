@@ -19,40 +19,16 @@ export default function SharedNote() {
     if (!slug) return;
 
     const fetchSharedNote = async () => {
-      // Fetch shared_notes record by slug
-      const { data: shared, error: sharedErr } = await supabase
-        .from("shared_notes")
-        .select("note_id, expires_at")
-        .eq("public_slug", slug)
-        .maybeSingle();
+      const { data, error } = await supabase
+        .rpc("get_shared_note", { p_slug: slug });
 
-      if (sharedErr || !shared) {
+      if (error || !data || data.length === 0) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      // Check expiry
-      if (shared.expires_at && new Date(shared.expires_at) < new Date()) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch the actual note
-      const { data: noteData, error: noteErr } = await supabase
-        .from("notes")
-        .select("title, content, color")
-        .eq("id", shared.note_id)
-        .maybeSingle();
-
-      if (noteErr || !noteData) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      setNote(noteData);
+      setNote(data[0] as SharedNoteData);
       setLoading(false);
     };
 
