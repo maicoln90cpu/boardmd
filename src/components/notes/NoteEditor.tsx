@@ -51,9 +51,11 @@ interface NoteEditorProps {
 export function NoteEditor({
   note,
   notebooks,
+  allNotes = [],
   onUpdate,
   onTogglePin,
   onMoveToNotebook,
+  onNavigateToNote,
   onSave,
   className
 }: NoteEditorProps) {
