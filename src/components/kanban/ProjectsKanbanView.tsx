@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // Lazy load ColumnManager - componente pesado com muitas dependências
 const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
 const TaskTableView = lazy(() => import("./TaskTableView").then(m => ({ default: m.TaskTableView })));
+const GanttView = lazy(() => import("./GanttView").then(m => ({ default: m.GanttView })));
 
 interface TaskCounters {
   total: number;
