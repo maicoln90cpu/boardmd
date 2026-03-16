@@ -25,6 +25,10 @@ import { TaskSelectorModal } from "./TaskSelectorModal";
 import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
 import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
 import { PriorityBadgeExtension } from "./extensions/PriorityBadgeExtension";
+import { BacklinkExtension } from "./extensions/BacklinkExtension";
+import { BacklinkSuggestion } from "./BacklinkSuggestion";
+import { BacklinksPanel } from "./BacklinksPanel";
+import { useNotes } from "@/hooks/useNotes";
 
 // Refactored components
 import { NoteEditorHeader } from "./NoteEditorHeader";
