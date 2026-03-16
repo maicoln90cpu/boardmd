@@ -1437,6 +1437,14 @@ export type Database = {
           day_name: string
         }[]
       }
+      get_shared_note: {
+        Args: { p_slug: string }
+        Returns: {
+          color: string
+          content: string
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
