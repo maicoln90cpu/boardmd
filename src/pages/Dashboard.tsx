@@ -12,6 +12,7 @@ import { SystemHealthMonitor } from "@/components/dashboard/SystemHealthMonitor"
 import { PerformanceMetrics } from "@/components/dashboard/PerformanceMetrics";
 import { DailyHeroCard } from "@/components/dashboard/DailyHeroCard";
 import { ReportExportButton } from "@/components/dashboard/ReportExportButton";
+import { ContinueStudyingCard } from "@/components/dashboard/ContinueStudyingCard";
 import { DailyDigestCard } from "@/components/dashboard/DailyDigestCard";
 import { DashboardWidgetContainer, DashboardWidget } from "@/components/dashboard/DashboardWidgetContainer";
 import { GoalsCard } from "@/components/dashboard/GoalsCard";
