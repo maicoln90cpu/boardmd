@@ -313,6 +313,9 @@ export default function Courses() {
 
             {/* List Tab */}
             <TabsContent value="list" className="space-y-6 mt-6">
+              {/* Weekly Study Goal */}
+              <CourseWeeklyGoal courses={courses} />
+
               {/* Stats */}
               <CourseStats stats={stats} />
 
