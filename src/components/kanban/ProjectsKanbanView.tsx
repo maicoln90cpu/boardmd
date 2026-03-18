@@ -154,6 +154,12 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   // Build categories map for table view
   const originalCategoriesMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
 
+  // Filter out tasks from hidden columns for Table and Gantt views
+  const visibleFilteredTasks = useMemo(() =>
+    filteredTasks.filter(t => !hiddenColumns.includes(t.column_id)),
+    [filteredTasks, hiddenColumns]
+  );
+
   return (
     <>
       <div className="border-b bg-background">
