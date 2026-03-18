@@ -415,7 +415,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         <div className="px-4 py-4">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <GanttView
-              tasks={filteredTasks}
+              tasks={visibleFilteredTasks}
               columns={columns}
               onEditTask={onTaskSelect}
               categoriesMap={originalCategoriesMap}
