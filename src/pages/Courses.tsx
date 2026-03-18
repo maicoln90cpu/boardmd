@@ -12,6 +12,7 @@ import { CourseFilters } from "@/components/courses/CourseFilters";
 import { CourseSortOptions, type CourseSortOption } from "@/components/courses/CourseSortOptions";
 import { CourseCategoryManager } from "@/components/courses/CourseCategoryManager";
 import { CoursesDashboard } from "@/components/courses/CoursesDashboard";
+import { CourseWeeklyGoal } from "@/components/courses/CourseWeeklyGoal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -312,6 +313,9 @@ export default function Courses() {
 
             {/* List Tab */}
             <TabsContent value="list" className="space-y-6 mt-6">
+              {/* Weekly Study Goal */}
+              <CourseWeeklyGoal courses={courses} />
+
               {/* Stats */}
               <CourseStats stats={stats} />
 

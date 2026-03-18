@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Clock,
   GraduationCap,
-  ListChecks
+  ListChecks,
+  Timer
 } from "lucide-react";
 import type { Course } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
@@ -310,6 +311,17 @@ export function CourseCard({
               onClick={() => window.open(course.url!, "_blank")}
             >
               <ExternalLink className="h-3 w-3 mr-1" /> Abrir
+            </Button>
+          )}
+          {course.status === "in_progress" && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => navigate(`/pomodoro?courseId=${course.id}&courseName=${encodeURIComponent(course.name)}`)}
+              title="Iniciar Pomodoro de estudo"
+            >
+              <Timer className="h-3.5 w-3.5" />
             </Button>
           )}
           <Button 

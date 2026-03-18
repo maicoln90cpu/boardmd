@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useQuickLinks } from "@/hooks/useQuickLinks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, Plus, Trash2, Home, Globe, Link2 } from "lucide-react";
+import { ExternalLink, Plus, Trash2, Home, Globe, Link2, Download, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/ui/empty-state";
+import { exportToBookmarkHtml, parseBookmarkHtml } from "@/lib/bookmarkUtils";
+import { toast } from "sonner";
 
 const ICON_OPTIONS = ["🔗", "📌", "⭐", "🌐", "📧", "💼", "📊", "🎨", "🛠️", "📱", "💡", "🎯"];
 
@@ -18,6 +20,7 @@ export default function QuickLinks() {
   const [newUrl, setNewUrl] = useState("");
   const [newIcon, setNewIcon] = useState("🔗");
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAdd = async () => {
     if (!newTitle.trim() || !newUrl.trim()) return;
@@ -28,6 +31,57 @@ export default function QuickLinks() {
     setNewUrl("");
     setNewIcon("🔗");
     setIsAddOpen(false);
+  };
+
+  const handleExport = () => {
+    if (links.length === 0) {
+      toast.error("Nenhum link para exportar");
+      return;
+    }
+    const html = exportToBookmarkHtml(links.map(l => ({ title: l.title, url: l.url })));
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bookmarks_links_rapidos.html";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Bookmarks exportados!");
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const html = ev.target?.result as string;
+      const entries = parseBookmarkHtml(html);
+
+      if (entries.length === 0) {
+        toast.error("Nenhum bookmark encontrado no arquivo");
+        return;
+      }
+
+      // Filter out duplicates
+      const existingUrls = new Set(links.map(l => l.url));
+      const newEntries = entries.filter(e => !existingUrls.has(e.url));
+
+      if (newEntries.length === 0) {
+        toast.info("Todos os bookmarks já existem");
+        return;
+      }
+
+      let imported = 0;
+      for (const entry of newEntries) {
+        await addLink({ title: entry.title, url: entry.url, icon: "🔗" });
+        imported++;
+      }
+      toast.success(`${imported} bookmark${imported > 1 ? "s" : ""} importado${imported > 1 ? "s" : ""}!`);
+    };
+    reader.readAsText(file);
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -43,46 +97,76 @@ export default function QuickLinks() {
             </button>
             <h2 className="text-base sm:text-lg font-semibold">🔗 Links Rápidos</h2>
           </div>
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Novo Link</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Link Rápido</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Ícone</label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {ICON_OPTIONS.map(icon => (
-                      <button
-                        key={icon}
-                        onClick={() => setNewIcon(icon)}
-                        className={`text-2xl p-1.5 rounded-lg transition-colors ${newIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"}`}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Título</label>
-                  <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Ex: Gmail, Figma, GitHub..." className="mt-1" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">URL</label>
-                  <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://..." className="mt-1" />
-                </div>
-                <Button onClick={handleAdd} disabled={!newTitle.trim() || !newUrl.trim()} className="w-full">
-                  Adicionar
+          <div className="flex items-center gap-2">
+            {/* Import */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".html,.htm"
+              className="hidden"
+              onChange={handleImport}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              title="Importar bookmarks do navegador"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Importar</span>
+            </Button>
+            {/* Export */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              title="Exportar para arquivo de bookmarks"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline ml-1">Exportar</span>
+            </Button>
+            {/* Add */}
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Novo Link</span>
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar Link Rápido</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Ícone</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {ICON_OPTIONS.map(icon => (
+                        <button
+                          key={icon}
+                          onClick={() => setNewIcon(icon)}
+                          className={`text-2xl p-1.5 rounded-lg transition-colors ${newIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "hover:bg-muted"}`}
+                        >
+                          {icon}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Título</label>
+                    <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Ex: Gmail, Figma, GitHub..." className="mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">URL</label>
+                    <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://..." className="mt-1" />
+                  </div>
+                  <Button onClick={handleAdd} disabled={!newTitle.trim() || !newUrl.trim()} className="w-full">
+                    Adicionar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto p-4 sm:p-6">
@@ -90,7 +174,7 @@ export default function QuickLinks() {
             <EmptyState
               variant="links"
               title="Nenhum link salvo"
-              description="Adicione atalhos para seus sites e ferramentas mais usados"
+              description="Adicione atalhos para seus sites e ferramentas mais usados, ou importe seus bookmarks do navegador"
               onAction={() => setIsAddOpen(true)}
               actionLabel="Adicionar Link"
             />

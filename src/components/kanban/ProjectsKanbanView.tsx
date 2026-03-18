@@ -1,4 +1,4 @@
-import { memo, useRef, lazy, Suspense, useState } from "react";
+import { memo, useRef, lazy, Suspense, useState, useMemo } from "react";
 import { useColumns } from "@/hooks/data/useColumns";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
@@ -153,6 +153,12 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
   
   // Build categories map for table view
   const originalCategoriesMap = Object.fromEntries(categories.map(c => [c.id, c.name]));
+
+  // Filter out tasks from hidden columns for Table and Gantt views
+  const visibleFilteredTasks = useMemo(() =>
+    filteredTasks.filter(t => !hiddenColumns.includes(t.column_id)),
+    [filteredTasks, hiddenColumns]
+  );
 
   return (
     <>
@@ -384,17 +390,15 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         <div className="px-4 py-4">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <TaskTableView
-              tasks={filteredTasks}
+              tasks={visibleFilteredTasks}
               columns={columns}
               onEditTask={onTaskSelect}
               onDeleteClick={(id) => {
-                // Will be handled by parent via task select
-                const task = filteredTasks.find(t => t.id === id);
+                const task = visibleFilteredTasks.find(t => t.id === id);
                 if (task) onTaskSelect(task);
               }}
               toggleFavorite={(id) => {
-                // Toggle favorite via task select
-                const task = filteredTasks.find(t => t.id === id);
+                const task = visibleFilteredTasks.find(t => t.id === id);
                 if (task) onTaskSelect(task);
               }}
               updateTask={async () => {}}
@@ -409,7 +413,7 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         <div className="px-4 py-4">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <GanttView
-              tasks={filteredTasks}
+              tasks={visibleFilteredTasks}
               columns={columns}
               onEditTask={onTaskSelect}
               categoriesMap={originalCategoriesMap}
