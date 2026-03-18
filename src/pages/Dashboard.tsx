@@ -76,6 +76,10 @@ export default function Dashboard() {
   // Build widgets array based on config
   const widgets: DashboardWidget[] = useMemo(() => {
     const widgetComponents: Record<string, { name: string; component: React.ReactNode }> = {
+      "continue-studying": {
+        name: "📚 Continuar Estudando",
+        component: <ContinueStudyingCard />,
+      },
       "daily-digest": {
         name: "📰 Digest do Dia",
         component: <DailyDigestCard tasks={tasks} />,
