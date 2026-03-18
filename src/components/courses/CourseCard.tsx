@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Clock,
   GraduationCap,
-  ListChecks
+  ListChecks,
+  Timer
 } from "lucide-react";
 import type { Course } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
