@@ -390,17 +390,15 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
         <div className="px-4 py-4">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <TaskTableView
-              tasks={filteredTasks}
+              tasks={visibleFilteredTasks}
               columns={columns}
               onEditTask={onTaskSelect}
               onDeleteClick={(id) => {
-                // Will be handled by parent via task select
-                const task = filteredTasks.find(t => t.id === id);
+                const task = visibleFilteredTasks.find(t => t.id === id);
                 if (task) onTaskSelect(task);
               }}
               toggleFavorite={(id) => {
-                // Toggle favorite via task select
-                const task = filteredTasks.find(t => t.id === id);
+                const task = visibleFilteredTasks.find(t => t.id === id);
                 if (task) onTaskSelect(task);
               }}
               updateTask={async () => {}}
