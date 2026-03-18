@@ -8,17 +8,18 @@ export interface WidgetConfig {
 }
 
 const DEFAULT_WIDGET_CONFIG: WidgetConfig[] = [
-  { id: "daily-digest", enabled: true, order: 0 },
-  { id: "hero", enabled: true, order: 1 },
-  { id: "goals", enabled: true, order: 2 },
-  { id: "stats", enabled: true, order: 3 },
-  { id: "insights", enabled: true, order: 4 },
-  { id: "productivity-chart", enabled: true, order: 5 },
-  { id: "performance-metrics", enabled: true, order: 6 },
-  { id: "weekly-progress", enabled: true, order: 7 },
-  { id: "gamification", enabled: true, order: 8 },
-  { id: "highlights", enabled: true, order: 9 },
-  { id: "system-health", enabled: true, order: 10 },
+  { id: "continue-studying", enabled: true, order: 0 },
+  { id: "daily-digest", enabled: true, order: 1 },
+  { id: "hero", enabled: true, order: 2 },
+  { id: "goals", enabled: true, order: 3 },
+  { id: "stats", enabled: true, order: 4 },
+  { id: "insights", enabled: true, order: 5 },
+  { id: "productivity-chart", enabled: true, order: 6 },
+  { id: "performance-metrics", enabled: true, order: 7 },
+  { id: "weekly-progress", enabled: true, order: 8 },
+  { id: "gamification", enabled: true, order: 9 },
+  { id: "highlights", enabled: true, order: 10 },
+  { id: "system-health", enabled: true, order: 11 },
 ];
 
 export function useDashboardWidgets() {
