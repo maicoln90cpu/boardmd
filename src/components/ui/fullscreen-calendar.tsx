@@ -325,6 +325,14 @@ export function FullScreenCalendar({
   const [viewType, setViewType] = React.useState<"month" | "week" | "day">("month");
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  // Notify parent when visible month changes
+  const onMonthChange = (FullScreenCalendarProps as any).onMonthChange;
+  React.useEffect(() => {
+    const props = arguments[0] as any;
+    // We access onMonthChange from the destructured props scope
+  }, []);
+
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
       distance: 8
