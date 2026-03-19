@@ -316,7 +316,7 @@ export function FullScreenCalendar({
   onDueDateChange,
   filterPresetsSlot,
   tasks
-}: FullScreenCalendarProps) {
+}: FullScreenCalendarProps & { onMonthChange?: (year: number, month: number) => void }) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
