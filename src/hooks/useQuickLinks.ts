@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface QuickLink {
   id: string;
@@ -13,30 +15,31 @@ export interface QuickLink {
 }
 
 export function useQuickLinks() {
-  const [links, setLinks] = useState<QuickLink[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  const fetchLinks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("quick_links" as any)
-      .select("*")
-      .order("position");
+  const { data: links = [], isLoading } = useQuery({
+    queryKey: ["quick_links", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("quick_links")
+        .select("*")
+        .order("position");
 
-    if (!error && data) {
-      setLinks(data as unknown as QuickLink[]);
-    }
-    setIsLoading(false);
-  }, []);
+      if (error) throw error;
+      return (data || []) as QuickLink[];
+    },
+    enabled: !!user?.id,
+  });
 
-  useEffect(() => {
-    fetchLinks();
-  }, [fetchLinks]);
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["quick_links"] });
+  }, [queryClient]);
 
   const addLink = async (link: { title: string; url: string; icon: string }) => {
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await (supabase.from("quick_links" as any) as any).insert({
+    const { error } = await supabase.from("quick_links").insert({
       title: link.title,
       url: link.url,
       icon: link.icon,
@@ -48,24 +51,26 @@ export function useQuickLinks() {
       toast.error("Erro ao adicionar link");
     } else {
       toast.success("Link adicionado");
-      fetchLinks();
+      invalidate();
     }
   };
 
   const updateLink = async (id: string, updates: Partial<QuickLink>) => {
-    const { error } = await (supabase.from("quick_links" as any) as any)
+    const { error } = await supabase
+      .from("quick_links")
       .update(updates)
       .eq("id", id);
 
     if (error) {
       toast.error("Erro ao atualizar link");
     } else {
-      fetchLinks();
+      invalidate();
     }
   };
 
   const deleteLink = async (id: string) => {
-    const { error } = await (supabase.from("quick_links" as any) as any)
+    const { error } = await supabase
+      .from("quick_links")
       .delete()
       .eq("id", id);
 
@@ -73,9 +78,9 @@ export function useQuickLinks() {
       toast.error("Erro ao remover link");
     } else {
       toast.success("Link removido");
-      fetchLinks();
+      invalidate();
     }
   };
 
-  return { links, isLoading, addLink, updateLink, deleteLink, refetch: fetchLinks };
+  return { links, isLoading, addLink, updateLink, deleteLink, refetch: invalidate };
 }

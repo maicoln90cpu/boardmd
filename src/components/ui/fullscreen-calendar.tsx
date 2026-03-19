@@ -52,6 +52,7 @@ interface FullScreenCalendarProps {
   onCreateTaskOnDay?: (date: Date) => void;
   onEditTask?: (task: Task) => void;
   onTaskDateChange?: (taskId: string, newDate: Date) => void;
+  onMonthChange?: (year: number, month: number) => void;
   // Novos filtros avançados
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
@@ -303,6 +304,7 @@ export function FullScreenCalendar({
   onCreateTaskOnDay,
   onEditTask,
   onTaskDateChange,
+  onMonthChange,
   searchTerm = "",
   onSearchChange,
   priorityFilter = "all",
@@ -315,7 +317,7 @@ export function FullScreenCalendar({
   onDueDateChange,
   filterPresetsSlot,
   tasks
-}: FullScreenCalendarProps) {
+}: FullScreenCalendarProps & { onMonthChange?: (year: number, month: number) => void }) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
@@ -324,6 +326,12 @@ export function FullScreenCalendar({
   const [viewType, setViewType] = React.useState<"month" | "week" | "day">("month");
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  // Notify parent when visible month changes
+  React.useEffect(() => {
+    onMonthChange?.(firstDayCurrentMonth.getFullYear(), firstDayCurrentMonth.getMonth());
+  }, [currentMonth, onMonthChange]);
+
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
       distance: 8
