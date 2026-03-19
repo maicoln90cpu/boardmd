@@ -457,6 +457,7 @@ export default function Calendar() {
           onCreateTaskOnDay={handleCreateTaskOnDay}
           onEditTask={handleEditTask}
           onTaskDateChange={handleTaskDateChange}
+          onMonthChange={(year, month) => setVisibleMonth({ year, month })}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           priorityFilter={priorityFilter}
