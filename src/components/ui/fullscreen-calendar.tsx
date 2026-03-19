@@ -52,6 +52,7 @@ interface FullScreenCalendarProps {
   onCreateTaskOnDay?: (date: Date) => void;
   onEditTask?: (task: Task) => void;
   onTaskDateChange?: (taskId: string, newDate: Date) => void;
+  onMonthChange?: (year: number, month: number) => void;
   // Novos filtros avançados
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
