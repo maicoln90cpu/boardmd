@@ -304,6 +304,7 @@ export function FullScreenCalendar({
   onCreateTaskOnDay,
   onEditTask,
   onTaskDateChange,
+  onMonthChange,
   searchTerm = "",
   onSearchChange,
   priorityFilter = "all",
@@ -327,11 +328,9 @@ export function FullScreenCalendar({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // Notify parent when visible month changes
-  const onMonthChange = (FullScreenCalendarProps as any).onMonthChange;
   React.useEffect(() => {
-    const props = arguments[0] as any;
-    // We access onMonthChange from the destructured props scope
-  }, []);
+    onMonthChange?.(firstDayCurrentMonth.getFullYear(), firstDayCurrentMonth.getMonth());
+  }, [currentMonth, onMonthChange]);
 
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
