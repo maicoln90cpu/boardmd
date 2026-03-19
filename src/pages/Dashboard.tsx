@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { useUserStats } from "@/hooks/useUserStats";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -21,6 +21,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import { StatsLoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 export default function Dashboard() {
@@ -29,45 +31,73 @@ export default function Dashboard() {
   const { categories } = useCategories();
   const navigate = useNavigate();
   const { widgetConfig, updateWidgetConfig, isWidgetEnabled } = useDashboardWidgets();
+  const { user } = useAuth();
 
-  // Buscar todas as tarefas e colunas
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [columns, setColumns] = useState<{ id: string; name: string }[]>([]);
+  // Use RPC instead of SELECT * for dashboard stats
+  const { data: dashboardStats } = useQuery({
+    queryKey: ["dashboard-stats", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase.rpc("get_dashboard_stats", {
+        p_user_id: user.id,
+      });
+      if (error) throw error;
+      return data as {
+        total: number;
+        completed: number;
+        pending: number;
+        overdue: number;
+        due_today: number;
+        due_this_week: number;
+        completed_today: number;
+        completed_this_week: number;
+        high_priority: number;
+        favorites: number;
+      };
+    },
+    enabled: !!user?.id,
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [tasksRes, columnsRes] = await Promise.all([
-        supabase.from("tasks").select("*"),
-        supabase.from("columns").select("id, name")
-      ]);
-      setTasks(tasksRes.data || []);
-      setColumns(columnsRes.data || []);
-    };
-    fetchData();
-  }, []);
+  // Fetch only minimal task data needed for insights and digest (title, priority, column_id, due_date, is_completed, updated_at)
+  const { data: tasks = [] } = useQuery({
+    queryKey: ["dashboard-tasks-minimal", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("id, title, priority, column_id, due_date, is_completed, updated_at, is_favorite, category_id, tags")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
 
-  // Filtrar tarefas excluindo coluna "Recorrente" para insights de IA
+  // Fetch columns (minimal)
+  const { data: columns = [] } = useQuery({
+    queryKey: ["dashboard-columns-minimal", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("columns")
+        .select("id, name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Filter tasks excluding "Recorrente" column for AI insights
   const tasksForInsights = useMemo(() => {
     const recurrentColumnIds = columns
       .filter(col => col.name.toLowerCase() === "recorrente" || col.name.toLowerCase() === "recorrentes")
       .map(col => col.id);
-    
     return tasks.filter(task => !recurrentColumnIds.includes(task.column_id));
   }, [tasks, columns]);
 
-  // Computed dashboard stats
-  const dashboardStats = useMemo(() => ({
-    total: tasks.length,
-    completed: tasks.filter(t => t.is_completed).length,
-    pending: tasks.filter(t => !t.is_completed).length,
-    overdue: tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && !t.is_completed).length,
-    due_today: tasks.filter(t => t.due_date && new Date(t.due_date).toDateString() === new Date().toDateString() && !t.is_completed).length,
-    due_this_week: tasks.filter(t => t.due_date && new Date(t.due_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) && !t.is_completed).length,
-    completed_today: tasks.filter(t => t.is_completed && t.updated_at && new Date(t.updated_at).toDateString() === new Date().toDateString()).length,
-    completed_this_week: tasks.filter(t => t.is_completed && t.updated_at && new Date(t.updated_at) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length,
-    high_priority: tasks.filter(t => t.priority === 'high' && !t.is_completed).length,
-    favorites: tasks.filter(t => t.is_favorite).length,
-  }), [tasks]);
+  const resolvedStats = dashboardStats || {
+    total: 0, completed: 0, pending: 0, overdue: 0,
+    due_today: 0, due_this_week: 0, completed_today: 0,
+    completed_this_week: 0, high_priority: 0, favorites: 0,
+  };
 
   const level = stats?.level || 1;
   const currentPoints = stats?.total_points || 0;
@@ -82,12 +112,12 @@ export default function Dashboard() {
       },
       "daily-digest": {
         name: "📰 Digest do Dia",
-        component: <DailyDigestCard tasks={tasks} />,
+        component: <DailyDigestCard tasks={tasks as any} />,
       },
       "hero": {
         name: "📊 Resumo Diário",
         component: (
-          <DailyHeroCard stats={stats} dashboardStats={dashboardStats} />
+          <DailyHeroCard stats={stats} dashboardStats={resolvedStats} />
         ),
       },
       "goals": {
@@ -96,15 +126,15 @@ export default function Dashboard() {
       },
       "stats": {
         name: "📈 Estatísticas",
-        component: <DashboardStats tasks={tasks} />,
+        component: <DashboardStats tasks={tasks as any} />,
       },
       "insights": {
         name: "🤖 Insights de IA",
-        component: <ProductivityInsights stats={stats} tasks={tasksForInsights} />,
+        component: <ProductivityInsights stats={stats} tasks={tasksForInsights as any} />,
       },
       "productivity-chart": {
         name: "📊 Gráfico de Produtividade",
-        component: <ProductivityChart tasks={tasks} />,
+        component: <ProductivityChart tasks={tasks as any} />,
       },
       "performance-metrics": {
         name: "⚡ Métricas de Performance",
@@ -172,14 +202,13 @@ export default function Dashboard() {
       enabled: config.enabled,
       component: widgetComponents[config.id]?.component || null,
     }));
-  }, [widgetConfig, stats, tasks, dashboardStats, progress]);
+  }, [widgetConfig, stats, tasks, resolvedStats, progress, tasksForInsights]);
 
   // Handle widget changes
   const handleWidgetsChange = (newWidgets: DashboardWidget[]) => {
     updateWidgetConfig(newWidgets.map((w) => ({ id: w.id, enabled: w.enabled })));
   };
 
-  // OTIMIZAÇÃO FASE 3: Adicionar imports de skeleton loading
   if (isLoading) {
     return <StatsLoadingSkeleton />;
   }
@@ -205,7 +234,7 @@ export default function Dashboard() {
             </button>
             <h2 className="text-base sm:text-lg font-semibold truncate">📊 Dashboard</h2>
           </div>
-          <ReportExportButton tasks={tasks} categories={categories} stats={stats} />
+          <ReportExportButton tasks={tasks as any} categories={categories} stats={stats} />
         </div>
 
         <div className="flex-1 overflow-auto">

@@ -112,12 +112,22 @@ export default function Calendar() {
     if (filters.categoryFilter !== undefined) setSelectedCategories(filters.categoryFilter);
   };
 
-  // Fetch ALL tasks from all kanbans and categories
+  // Current visible month for filtering
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+
+  // Fetch tasks filtered by a 3-month window around the visible month
   useEffect(() => {
-    const fetchAllTasks = async () => {
+    const fetchTasks = async () => {
+      const rangeStart = new Date(visibleMonth.year, visibleMonth.month - 1, 1);
+      const rangeEnd = new Date(visibleMonth.year, visibleMonth.month + 2, 0);
+
       const { data, error } = await supabase
         .from("tasks")
-        .select("*")
+        .select("id, title, description, due_date, priority, tags, column_id, category_id, position, user_id, created_at, updated_at, is_favorite, subtasks, recurrence_rule, mirror_task_id, linked_note_id, is_completed")
+        .or(`due_date.gte.${rangeStart.toISOString()},due_date.is.null`)
         .order("position");
 
       if (!error && data) {
@@ -125,28 +135,20 @@ export default function Calendar() {
       }
     };
 
-    fetchAllTasks();
+    fetchTasks();
 
     // Subscribe to realtime changes
     const channel = supabase
       .channel('calendar-tasks')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tasks'
-        },
-        () => {
-          fetchAllTasks();
-        }
+        { event: '*', schema: 'public', table: 'tasks' },
+        () => { fetchTasks(); }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    return () => { supabase.removeChannel(channel); };
+  }, [visibleMonth]);
 
   // Extrair lista de tags disponíveis das tarefas
   const availableTags = useMemo(() => {
