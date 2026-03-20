@@ -10,6 +10,8 @@ export interface QuickLink {
   url: string;
   icon: string;
   position: number;
+  folder: string | null;
+  click_count: number;
   user_id: string;
   created_at: string;
 }
@@ -36,13 +38,14 @@ export function useQuickLinks() {
     queryClient.invalidateQueries({ queryKey: ["quick_links"] });
   }, [queryClient]);
 
-  const addLink = async (link: { title: string; url: string; icon: string }) => {
+  const addLink = async (link: { title: string; url: string; icon: string; folder?: string | null }) => {
     if (!user) return;
 
     const { error } = await supabase.from("quick_links").insert({
       title: link.title,
       url: link.url,
       icon: link.icon,
+      folder: link.folder || null,
       position: links.length,
       user_id: user.id,
     });
@@ -83,7 +86,6 @@ export function useQuickLinks() {
   };
 
   const reorderLinks = async (reorderedLinks: QuickLink[]) => {
-    // Optimistic update
     queryClient.setQueryData(["quick_links", user?.id], reorderedLinks);
 
     const updates = reorderedLinks.map((link, index) =>
@@ -99,5 +101,22 @@ export function useQuickLinks() {
     }
   };
 
-  return { links, isLoading, addLink, updateLink, deleteLink, reorderLinks, refetch: invalidate };
+  const trackClick = async (id: string) => {
+    const link = links.find(l => l.id === id);
+    if (!link) return;
+    
+    // Optimistic update
+    queryClient.setQueryData(["quick_links", user?.id], (old: QuickLink[] | undefined) =>
+      (old || []).map(l => l.id === id ? { ...l, click_count: l.click_count + 1 } : l)
+    );
+
+    await supabase
+      .from("quick_links")
+      .update({ click_count: link.click_count + 1 })
+      .eq("id", id);
+  };
+
+  const folders = [...new Set(links.map(l => l.folder).filter(Boolean))] as string[];
+
+  return { links, isLoading, addLink, updateLink, deleteLink, reorderLinks, trackClick, folders, refetch: invalidate };
 }

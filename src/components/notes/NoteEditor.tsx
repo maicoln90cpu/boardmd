@@ -1,4 +1,5 @@
 import { Note } from "@/hooks/useNotes";
+import { exportNoteAsMarkdown, exportNoteAsPDF } from "@/lib/noteExport";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { Notebook } from "@/hooks/useNotebooks";
 import { useEffect, useCallback } from "react";
@@ -369,6 +370,8 @@ export function NoteEditor({
         onCancel={state.handleCancel}
         isSaving={state.isSaving}
         lastSaved={state.lastSaved}
+        onExportMarkdown={() => exportNoteAsMarkdown(state.title, editor?.getHTML() || "")}
+        onExportPDF={() => exportNoteAsPDF(state.title, editor?.getHTML() || "")}
       />
 
       {/* Task selector modal via Ctrl+Shift+T shortcut */}
