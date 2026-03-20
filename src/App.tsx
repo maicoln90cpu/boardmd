@@ -67,9 +67,10 @@ const queryClient = new QueryClient({
 
 // Inner component that uses Router hooks
 function RouterContent() {
-  useNotificationActions(); // Handle notification action buttons - must be inside Router
+  useNotificationActions();
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/landing" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route 
