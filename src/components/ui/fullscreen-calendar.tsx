@@ -167,6 +167,7 @@ function DraggableTask({
       <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} style={taskStyle.indicatorStyle} />
       <span className="truncate font-medium text-xs">{task.title}</span>
+      {task.recurrence_rule && <span className="text-[10px] flex-shrink-0" title="Recorrente">🔄</span>}
     </div>;
 }
 
