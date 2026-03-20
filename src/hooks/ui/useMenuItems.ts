@@ -14,6 +14,7 @@ import {
   Link2,
   Target,
   BookOpen,
+  Grid2x2,
   LucideIcon 
 } from "lucide-react";
 
