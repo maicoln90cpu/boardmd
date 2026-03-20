@@ -27,7 +27,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex h-screen pt-14 md:pt-0">
+    <div className="flex h-screen pt-14 md:pt-0 pb-16 md:pb-0">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}

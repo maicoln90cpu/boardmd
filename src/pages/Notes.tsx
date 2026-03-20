@@ -206,7 +206,7 @@ export default function Notes() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 flex flex-col pb-16 md:pb-0">
         <div className="p-4 border-b flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5">
