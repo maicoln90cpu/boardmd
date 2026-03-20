@@ -237,6 +237,8 @@ function RouterContent() {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <BottomTabBar />
+    </>
   );
 }
 
