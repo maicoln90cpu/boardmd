@@ -187,7 +187,7 @@ function Habits() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1">
                           <button
-                            onClick={() => toggleCheckin(habit.id, today)}
+                            onClick={() => { toggleCheckin(habit.id, today); hapticSuccess(); }}
                             className={cn(
                               "w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all shrink-0",
                               checked
