@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Check, X, Loader2, Cloud } from "lucide-react";
+import { Check, X, Loader2, Cloud, FileText, FileDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface NoteEditorFooterProps {
   wordCount: number;
@@ -10,6 +11,8 @@ interface NoteEditorFooterProps {
   onCancel: () => void;
   isSaving?: boolean;
   lastSaved?: Date | null;
+  onExportMarkdown?: () => void;
+  onExportPDF?: () => void;
 }
 
 export function NoteEditorFooter({
@@ -19,6 +22,8 @@ export function NoteEditorFooter({
   onCancel,
   isSaving = false,
   lastSaved,
+  onExportMarkdown,
+  onExportPDF,
 }: NoteEditorFooterProps) {
   return (
     <>
@@ -36,8 +41,32 @@ export function NoteEditorFooter({
           </span>
         </div>
         
-        {/* Auto-save indicator */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-3">
+          {(onExportMarkdown || onExportPDF) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1">
+                  <FileDown className="h-3 w-3" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onExportMarkdown && (
+                  <DropdownMenuItem onClick={onExportMarkdown}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Markdown (.md)
+                  </DropdownMenuItem>
+                )}
+                {onExportPDF && (
+                  <DropdownMenuItem onClick={onExportPDF}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    PDF (.pdf)
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {isSaving ? (
             <>
               <Loader2 className="h-3 w-3 animate-spin text-primary" />
