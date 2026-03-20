@@ -795,7 +795,9 @@ export type Database = {
       }
       quick_links: {
         Row: {
+          click_count: number
           created_at: string
+          folder: string | null
           icon: string
           id: string
           position: number
@@ -804,7 +806,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          click_count?: number
           created_at?: string
+          folder?: string | null
           icon?: string
           id?: string
           position?: number
@@ -813,7 +817,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          click_count?: number
           created_at?: string
+          folder?: string | null
           icon?: string
           id?: string
           position?: number
