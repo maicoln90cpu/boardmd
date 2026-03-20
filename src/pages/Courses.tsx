@@ -261,7 +261,7 @@ export default function Courses() {
   }
 
   return (
-    <div className="flex h-screen pt-14 md:pt-0 pb-16 md:pb-0">
+    <div className="flex h-screen pt-14 md:pt-0">
       <Sidebar
         onExport={() => {}}
         onImport={() => {}}
