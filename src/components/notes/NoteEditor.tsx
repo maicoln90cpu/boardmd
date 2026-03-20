@@ -1,4 +1,5 @@
 import { Note } from "@/hooks/useNotes";
+import { exportNoteAsMarkdown, exportNoteAsPDF } from "@/lib/noteExport";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { Notebook } from "@/hooks/useNotebooks";
 import { useEffect, useCallback } from "react";
