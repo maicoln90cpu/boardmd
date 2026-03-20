@@ -608,7 +608,7 @@ export function FullScreenCalendar({
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{task.title}</p>
+                            <p className="font-medium truncate">{task.title} {task.recurrence_rule && <span title="Recorrente">🔄</span>}</p>
                             {task.description && (
                               <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                             )}
