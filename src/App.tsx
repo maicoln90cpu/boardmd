@@ -236,9 +236,18 @@ function RouterContent() {
           </Suspense>
         }
       />
+      <Route
+        path="/eisenhower"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Eisenhower />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
-    <BottomTabBar />
     </>
   );
 }
