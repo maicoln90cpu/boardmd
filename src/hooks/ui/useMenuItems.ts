@@ -14,6 +14,7 @@ import {
   Link2,
   Target,
   BookOpen,
+  Grid2x2,
   LucideIcon 
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ export const PRIMARY_MENU_ITEMS: MenuItem[] = [
 export const SECONDARY_MENU_ITEMS: MenuItem[] = [
   { icon: Timer, label: "Pomodoro", path: "/pomodoro" },
   { icon: Calendar, label: "Calendário", path: "/calendar" },
+  { icon: Grid2x2, label: "Eisenhower", path: "/eisenhower" },
   { icon: Target, label: "Hábitos", path: "/habits" },
   { icon: BookOpen, label: "Retrospectiva", path: "/retrospective" },
   { icon: GraduationCap, label: "Cursos", path: "/courses" },

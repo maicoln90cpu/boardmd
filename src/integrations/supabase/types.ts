@@ -953,6 +953,7 @@ export type Database = {
       tasks: {
         Row: {
           category_id: string
+          column_entered_at: string | null
           column_id: string
           created_at: string
           description: string | null
@@ -978,6 +979,7 @@ export type Database = {
         }
         Insert: {
           category_id: string
+          column_entered_at?: string | null
           column_id: string
           created_at?: string
           description?: string | null
@@ -1003,6 +1005,7 @@ export type Database = {
         }
         Update: {
           category_id?: string
+          column_entered_at?: string | null
           column_id?: string
           created_at?: string
           description?: string | null

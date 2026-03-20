@@ -16,7 +16,7 @@ import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
-import { BottomTabBar } from "@/components/BottomTabBar";
+
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import { useGoalTaskIntegration } from "@/hooks/useGoalTaskIntegration";
 import { useNotificationActions } from "@/hooks/useNotificationActions";
@@ -53,6 +53,7 @@ const QuickLinks = lazy(() => import("./pages/QuickLinks"));
 const Habits = lazy(() => import("./pages/Habits"));
 const Retrospective = lazy(() => import("./pages/Retrospective"));
 const SharedNote = lazy(() => import("./pages/SharedNote"));
+const Eisenhower = lazy(() => import("./pages/Eisenhower"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -235,9 +236,18 @@ function RouterContent() {
           </Suspense>
         }
       />
+      <Route
+        path="/eisenhower"
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Eisenhower />
+            </Suspense>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFound />} />
     </Routes>
-    <BottomTabBar />
     </>
   );
 }

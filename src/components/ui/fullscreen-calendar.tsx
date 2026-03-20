@@ -24,6 +24,7 @@ interface Task {
   tags: string[] | null;
   column_id: string;
   category_id: string;
+  recurrence_rule?: any;
 }
 interface Column {
   id: string;
@@ -166,6 +167,7 @@ function DraggableTask({
       <GripVertical className="h-2.5 w-2.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", taskStyle.indicatorClassName)} style={taskStyle.indicatorStyle} />
       <span className="truncate font-medium text-xs">{task.title}</span>
+      {task.recurrence_rule && <span className="text-[10px] flex-shrink-0" title="Recorrente">🔄</span>}
     </div>;
 }
 
@@ -606,7 +608,7 @@ export function FullScreenCalendar({
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{task.title}</p>
+                            <p className="font-medium truncate">{task.title} {task.recurrence_rule && <span title="Recorrente">🔄</span>}</p>
                             {task.description && (
                               <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">{task.description}</p>
                             )}
@@ -758,7 +760,7 @@ export function FullScreenCalendar({
                                 <div className={cn("mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0", isOverdue ? "bg-red-500" : getPriorityColor(task.priority))} />
                                 <div className="flex-1 min-w-0">
                                   <p className={cn("text-sm font-medium truncate", isOverdue ? "text-red-700 dark:text-red-400" : "text-foreground")}>
-                                    {task.title}
+                                    {task.title} {task.recurrence_rule && <span title="Recorrente">🔄</span>}
                                   </p>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {task.due_date && <span className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}>

@@ -33,18 +33,18 @@
 
 | Feature | Status |
 |---------|--------|
-| 4A. Bottom tab bar mobile | ✅ Implementada |
+| 4A. Bottom tab bar mobile | ❌ REMOVIDA — UX ruim, nunca reimplementar |
 | 4B. Swipe entre páginas | ✅ Implementada |
 | 4C. Haptic feedback | ✅ Implementada |
 | 4D. Drag-and-drop + Sort em Links | ✅ Implementada |
 
-## 🔲 Etapa 5 — Kanban e Tarefas Avançadas
+## ✅ Etapa 5 — Kanban e Tarefas Avançadas
 
 | Feature | Status |
 |---------|--------|
-| 5A. Cycle time | 🔲 Pendente |
-| 5B. Eventos recorrentes visuais | 🔲 Pendente |
-| 5C. Matriz Eisenhower | 🔲 Pendente |
+| 5A. Cycle time (column_entered_at) | ✅ Implementada (DB migration) |
+| 5B. Eventos recorrentes visuais (🔄) | ✅ Implementada (calendário + TaskCard) |
+| 5C. Matriz Eisenhower (/eisenhower) | ✅ Implementada |
 
 ## 🔲 Etapa 6 — Links e Notas Avançadas
 
@@ -71,3 +71,12 @@
 |---------|--------|
 | 8A. Modo offline para notas | 🔲 Pendente |
 | 8B. Base de Conhecimento (Wiki) | 🔲 Pendente |
+
+---
+
+## ⛔ Anti-patterns — NUNCA IMPLEMENTAR
+
+| Item | Motivo |
+|------|--------|
+| **Bottom Tab Bar mobile** | UX ruim, conflita com gestos nativos do navegador, ocupa espaço vertical precioso. Sidebar lateral + Topbar são suficientes. |
+| **Tab bar fixa no rodapé** | Mesma razão acima. A navegação já é feita via Sidebar (desktop) e Topbar/hamburger (mobile). |

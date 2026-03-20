@@ -310,12 +310,18 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
+      // If column changed, update column_entered_at for cycle time tracking
+      const finalUpdates: Record<string, unknown> = {
+        ...validated,
+        updated_at: new Date().toISOString(),
+      };
+      if (updates.column_id) {
+        finalUpdates.column_entered_at = new Date().toISOString();
+      }
+
       const { error } = await supabase
         .from("tasks")
-        .update({
-          ...validated,
-          updated_at: new Date().toISOString(),
-        })
+        .update(finalUpdates)
         .eq("id", id);
 
       dispatchSavingEvent(id, false);
