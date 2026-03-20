@@ -29,14 +29,14 @@
 | 3D. QueryClient cache (staleTime/gcTime) | ✅ Implementada |
 | 3E. Calendário filtro por período | ✅ Implementada |
 
-## 🔲 Etapa 4 — UX Mobile e Interações
+## ✅ Etapa 4 — UX Mobile e Interações
 
 | Feature | Status |
 |---------|--------|
-| 4A. Bottom tab bar mobile | 🔲 Pendente |
-| 4B. Swipe entre páginas | 🔲 Pendente |
-| 4C. Haptic feedback | 🔲 Pendente |
-| 4D. Drag-and-drop em Links | 🔲 Pendente |
+| 4A. Bottom tab bar mobile | ✅ Implementada |
+| 4B. Swipe entre páginas | ✅ Implementada |
+| 4C. Haptic feedback | ✅ Implementada |
+| 4D. Drag-and-drop + Sort em Links | ✅ Implementada |
 
 ## 🔲 Etapa 5 — Kanban e Tarefas Avançadas
 

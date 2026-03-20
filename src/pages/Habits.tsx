@@ -16,6 +16,7 @@ import {
 import { Plus, Flame, Check, Trash2, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { hapticSuccess } from "@/lib/haptic";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
 const ICONS = ["✅", "💪", "📚", "🏃", "💧", "🧘", "✍️", "🎯", "💤", "🥗", "🎵", "💊"];
@@ -82,7 +83,7 @@ function Habits() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-14 md:pt-0 flex">
+    <div className="min-h-screen bg-background pt-14 md:pt-0 pb-16 md:pb-0 flex">
       <Sidebar onExport={() => {}} onImport={() => {}} onThemeToggle={() => {}} />
       <main className="flex-1 overflow-auto p-4 md:p-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -187,7 +188,7 @@ function Habits() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1">
                           <button
-                            onClick={() => toggleCheckin(habit.id, today)}
+                            onClick={() => { toggleCheckin(habit.id, today); hapticSuccess(); }}
                             className={cn(
                               "w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all shrink-0",
                               checked

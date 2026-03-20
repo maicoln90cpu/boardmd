@@ -82,5 +82,22 @@ export function useQuickLinks() {
     }
   };
 
-  return { links, isLoading, addLink, updateLink, deleteLink, refetch: invalidate };
+  const reorderLinks = async (reorderedLinks: QuickLink[]) => {
+    // Optimistic update
+    queryClient.setQueryData(["quick_links", user?.id], reorderedLinks);
+
+    const updates = reorderedLinks.map((link, index) =>
+      supabase.from("quick_links").update({ position: index }).eq("id", link.id)
+    );
+
+    const results = await Promise.all(updates);
+    const hasError = results.some((r) => r.error);
+
+    if (hasError) {
+      toast.error("Erro ao reordenar links");
+      invalidate();
+    }
+  };
+
+  return { links, isLoading, addLink, updateLink, deleteLink, reorderLinks, refetch: invalidate };
 }

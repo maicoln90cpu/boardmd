@@ -16,6 +16,7 @@ import { Auth } from "@/components/Auth";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
+import { BottomTabBar } from "@/components/BottomTabBar";
 import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import { useGoalTaskIntegration } from "@/hooks/useGoalTaskIntegration";
 import { useNotificationActions } from "@/hooks/useNotificationActions";
@@ -66,9 +67,10 @@ const queryClient = new QueryClient({
 
 // Inner component that uses Router hooks
 function RouterContent() {
-  useNotificationActions(); // Handle notification action buttons - must be inside Router
+  useNotificationActions();
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/landing" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route 
@@ -235,6 +237,8 @@ function RouterContent() {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <BottomTabBar />
+    </>
   );
 }
 
