@@ -762,7 +762,6 @@ export function FullScreenCalendar({
                                   <p className={cn("text-sm font-medium truncate", isOverdue ? "text-red-700 dark:text-red-400" : "text-foreground")}>
                                     {task.title} {task.recurrence_rule && <span title="Recorrente">🔄</span>}
                                   </p>
-                                  </p>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                                     {task.due_date && <span className={cn("flex items-center gap-1 text-xs", isOverdue ? "text-red-600 dark:text-red-400" : "text-muted-foreground")}>
                                         <Clock className="h-3 w-3" />
