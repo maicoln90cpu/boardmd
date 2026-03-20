@@ -53,6 +53,7 @@ const QuickLinks = lazy(() => import("./pages/QuickLinks"));
 const Habits = lazy(() => import("./pages/Habits"));
 const Retrospective = lazy(() => import("./pages/Retrospective"));
 const SharedNote = lazy(() => import("./pages/SharedNote"));
+const Eisenhower = lazy(() => import("./pages/Eisenhower"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
