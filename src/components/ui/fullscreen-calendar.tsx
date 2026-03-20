@@ -24,6 +24,7 @@ interface Task {
   tags: string[] | null;
   column_id: string;
   category_id: string;
+  recurrence_rule?: any;
 }
 interface Column {
   id: string;
