@@ -196,6 +196,14 @@ export default function Dashboard() {
         name: "🔧 Saúde do Sistema",
         component: <SystemHealthMonitor />,
       },
+      "heatmap": {
+        name: "🔥 Heatmap de Produtividade",
+        component: <ProductivityHeatmap tasks={tasks as any} />,
+      },
+      "category-charts": {
+        name: "📊 Distribuição por Categoria",
+        component: <CategoryCharts tasks={tasks as any} categories={categories} />,
+      },
     };
 
     return widgetConfig.map((config) => ({
