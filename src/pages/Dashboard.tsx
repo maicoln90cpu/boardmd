@@ -4,6 +4,8 @@ import { useUserStats } from "@/hooks/useUserStats";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCategories } from "@/hooks/data/useCategories";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
+import { ProductivityHeatmap } from "@/components/dashboard/ProductivityHeatmap";
+import { CategoryCharts } from "@/components/dashboard/CategoryCharts";
 import { WeeklyProgress } from "@/components/dashboard/WeeklyProgress";
 import { GamificationPanel } from "@/components/dashboard/GamificationPanel";
 import { DashboardStats } from "@/components/DashboardStats";
@@ -193,6 +195,14 @@ export default function Dashboard() {
       "system-health": {
         name: "🔧 Saúde do Sistema",
         component: <SystemHealthMonitor />,
+      },
+      "heatmap": {
+        name: "🔥 Heatmap de Produtividade",
+        component: <ProductivityHeatmap tasks={tasks as any} />,
+      },
+      "category-charts": {
+        name: "📊 Distribuição por Categoria",
+        component: <CategoryCharts tasks={tasks as any} categories={categories} />,
       },
     };
 

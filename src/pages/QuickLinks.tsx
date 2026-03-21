@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Home, Download, Upload, GripVertical, ArrowUpDown, FolderOpen, MousePointerClick } from "lucide-react";
+import { Plus, Trash2, Home, Download, Upload, GripVertical, ArrowUpDown, FolderOpen, MousePointerClick, LayoutGrid, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@/components/ui/empty-state";
 import { exportToBookmarkHtml, parseBookmarkHtml } from "@/lib/bookmarkUtils";
@@ -15,18 +15,19 @@ import { hapticSuccess, hapticLight } from "@/lib/haptic";
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { SortableContext, rectSortingStrategy, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const ICON_OPTIONS = ["🔗", "📌", "⭐", "🌐", "📧", "💼", "📊", "🎨", "🛠️", "📱", "💡", "🎯"];
 
 type SortMode = "manual" | "name" | "date" | "clicks";
+type ViewMode = "cards" | "list";
 
-function getFaviconUrl(url: string) {
+function getFaviconUrl(url: string, size = 64) {
   try {
     const { hostname } = new URL(url);
-    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${size}`;
   } catch {
     return null;
   }
@@ -40,6 +41,7 @@ function SortableLinkCard({
   onTrackClick: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
+  const [faviconError, setFaviconError] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -66,17 +68,23 @@ function SortableLinkCard({
           <GripVertical className="h-3.5 w-3.5" />
         </button>
 
-        {/* Favicon + emoji icon */}
+        {/* Favicon large + emoji badge */}
         <div className="relative">
-          <span className="text-4xl">{link.icon}</span>
-          {faviconUrl && (
+          {faviconUrl && !faviconError ? (
             <img
               src={faviconUrl}
               alt=""
-              className="absolute -bottom-1 -right-1 h-5 w-5 rounded-sm bg-background border shadow-sm"
+              className="h-12 w-12 rounded-lg object-contain"
               loading="lazy"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              onError={() => setFaviconError(true)}
             />
+          ) : (
+            <span className="text-4xl">{link.icon}</span>
+          )}
+          {faviconUrl && !faviconError && (
+            <span className="absolute -bottom-1 -right-1 text-lg leading-none bg-background rounded-full border shadow-sm px-0.5">
+              {link.icon}
+            </span>
           )}
         </div>
 
@@ -87,7 +95,6 @@ function SortableLinkCard({
           </p>
         </div>
 
-        {/* Click count */}
         {link.click_count > 0 && (
           <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
             <MousePointerClick className="h-3 w-3" />
@@ -107,23 +114,114 @@ function SortableLinkCard({
   );
 }
 
-function LinksGrid({
-  links, onDelete, onTrackClick, sensors, onDragEnd,
+function SortableLinkRow({
+  link, onDelete, onTrackClick,
+}: {
+  link: QuickLink;
+  onDelete: (id: string) => void;
+  onTrackClick: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
+  const [faviconError, setFaviconError] = useState(false);
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  const faviconUrl = getFaviconUrl(link.url, 32);
+
+  const handleClick = () => {
+    onTrackClick(link.id);
+    window.open(link.url, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group flex items-center gap-3 p-3 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer"
+      onClick={handleClick}
+    >
+      <button
+        {...attributes} {...listeners}
+        className="h-6 w-6 flex items-center justify-center opacity-0 group-hover:opacity-60 transition-opacity text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+
+      {faviconUrl && !faviconError ? (
+        <img
+          src={faviconUrl}
+          alt=""
+          className="h-6 w-6 rounded-sm object-contain shrink-0"
+          loading="lazy"
+          onError={() => setFaviconError(true)}
+        />
+      ) : (
+        <span className="text-lg shrink-0">{link.icon}</span>
+      )}
+
+      <div className="min-w-0 flex-1">
+        <h3 className="font-medium text-sm truncate">{link.title}</h3>
+        <p className="text-[10px] text-muted-foreground truncate">
+          {(() => { try { return new URL(link.url).hostname; } catch { return link.url; } })()}
+        </p>
+      </div>
+
+      {link.folder && (
+        <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground shrink-0 hidden sm:inline">
+          {link.folder}
+        </span>
+      )}
+
+      {link.click_count > 0 && (
+        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
+          <MousePointerClick className="h-3 w-3" />
+          {link.click_count}
+        </span>
+      )}
+
+      <Button
+        variant="ghost" size="icon"
+        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive shrink-0"
+        onClick={(e) => { e.stopPropagation(); onDelete(link.id); }}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
+function LinksView({
+  links, onDelete, onTrackClick, sensors, onDragEnd, viewMode,
 }: {
   links: QuickLink[];
   onDelete: (id: string) => void;
   onTrackClick: (id: string) => void;
   sensors: ReturnType<typeof useSensors>;
   onDragEnd: (e: DragEndEvent) => void;
+  viewMode: ViewMode;
 }) {
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <SortableContext items={links.map((l) => l.id)} strategy={rectSortingStrategy}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {links.map((link) => (
-            <SortableLinkCard key={link.id} link={link} onDelete={onDelete} onTrackClick={onTrackClick} />
-          ))}
-        </div>
+      <SortableContext items={links.map((l) => l.id)} strategy={viewMode === "cards" ? rectSortingStrategy : verticalListSortingStrategy}>
+        {viewMode === "cards" ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {links.map((link) => (
+              <SortableLinkCard key={link.id} link={link} onDelete={onDelete} onTrackClick={onTrackClick} />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {links.map((link) => (
+              <SortableLinkRow key={link.id} link={link} onDelete={onDelete} onTrackClick={onTrackClick} />
+            ))}
+          </div>
+        )}
       </SortableContext>
     </DndContext>
   );
@@ -138,6 +236,7 @@ export default function QuickLinks() {
   const [newFolder, setNewFolder] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("manual");
   const [filterFolder, setFilterFolder] = useState<string | "all">("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,9 +255,8 @@ export default function QuickLinks() {
     return filtered;
   }, [links, sortMode, filterFolder]);
 
-  // Group by folder for display
   const groupedByFolder = useMemo(() => {
-    if (filterFolder !== "all") return null; // don't group when filtering
+    if (filterFolder !== "all") return null;
     const groups: Record<string, QuickLink[]> = {};
     const noFolder: QuickLink[] = [];
     for (const link of sortedLinks) {
@@ -239,6 +337,24 @@ export default function QuickLinks() {
             <h2 className="text-base sm:text-lg font-semibold">🔗 Links Rápidos</h2>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <button
+                onClick={() => setViewMode("cards")}
+                className={`p-1.5 transition-colors ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                title="Cards"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                title="Lista"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
             {/* Folder filter */}
             {folders.length > 0 && (
               <Select value={filterFolder} onValueChange={setFilterFolder}>
@@ -319,7 +435,6 @@ export default function QuickLinks() {
             <EmptyState variant="links" title="Nenhum link salvo" description="Adicione atalhos para seus sites e ferramentas mais usados, ou importe seus bookmarks do navegador" onAction={() => setIsAddOpen(true)} actionLabel="Adicionar Link" />
           ) : groupedByFolder ? (
             <div className="space-y-6 max-w-6xl mx-auto">
-              {/* Folders */}
               {Object.entries(groupedByFolder.groups).map(([folderName, folderLinks]) => (
                 <Collapsible key={folderName} defaultOpen>
                   <CollapsibleTrigger className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors mb-3">
@@ -328,21 +443,20 @@ export default function QuickLinks() {
                     <span className="text-xs font-normal">({folderLinks.length})</span>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
-                    <LinksGrid links={folderLinks} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} />
+                    <LinksView links={folderLinks} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} viewMode={viewMode} />
                   </CollapsibleContent>
                 </Collapsible>
               ))}
-              {/* Without folder */}
               {groupedByFolder.noFolder.length > 0 && (
                 <div>
                   <p className="text-sm font-semibold text-muted-foreground mb-3">Sem pasta</p>
-                  <LinksGrid links={groupedByFolder.noFolder} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} />
+                  <LinksView links={groupedByFolder.noFolder} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} viewMode={viewMode} />
                 </div>
               )}
             </div>
           ) : (
             <div className="max-w-6xl mx-auto">
-              <LinksGrid links={sortedLinks} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} />
+              <LinksView links={sortedLinks} onDelete={deleteLink} onTrackClick={trackClick} sensors={sensors} onDragEnd={handleDragEnd} viewMode={viewMode} />
             </div>
           )}
         </div>
