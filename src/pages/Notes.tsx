@@ -29,11 +29,24 @@ export default function Notes() {
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>('list');
+  const [sidebarMode, setSidebarMode] = useState<'notebooks' | 'wiki'>('notebooks');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === 'mobile';
+
+  // Offline notes support
+  const { loadOfflineNotes, isOnline } = useOfflineNotes(notes, fetchNotes);
+
+  // Load from cache when offline and no notes loaded
+  useEffect(() => {
+    if (!isOnline && notes.length === 0 && !loadingNotes) {
+      loadOfflineNotes().then(cached => {
+        // Notes will be served from the hook's state if needed
+      });
+    }
+  }, [isOnline, notes.length, loadingNotes, loadOfflineNotes]);
 
   // Selecionar nota via URL param (vindo do GlobalSearch)
   useEffect(() => {
