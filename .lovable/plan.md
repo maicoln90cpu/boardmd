@@ -66,12 +66,12 @@
 | 7B. Gráficos pizza/barras por categoria | ✅ Implementada |
 | 7C. Widgets heatmap e charts no Dashboard | ✅ Implementada |
 
-## 🔲 Etapa 8 — Features Estruturais
+## ✅ Etapa 8 — Features Estruturais
 
 | Feature | Status |
 |---------|--------|
-| 8A. Modo offline para notas (IndexedDB sync) | 🔲 Pendente |
-| 8B. Base de Conhecimento / Wiki (navegação Gitbook) | 🔲 Pendente |
+| 8A. Modo offline para notas (IndexedDB sync) | ✅ Implementada |
+| 8B. Base de Conhecimento / Wiki (navegação Gitbook) | ✅ Implementada |
 
 ---
 
