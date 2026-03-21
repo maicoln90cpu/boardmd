@@ -277,96 +277,126 @@ export default function Notes() {
 
       <main className="flex-1 flex h-screen overflow-hidden">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          {/* Coluna 1 - Cadernos */}
+          {/* Coluna 1 - Cadernos / Wiki */}
           <div className="w-64 border-r flex flex-col bg-gradient-to-b from-card via-card to-muted/5 shadow-sm">
             <div className="p-4 border-b bg-gradient-to-r from-card to-muted/20 backdrop-blur-sm">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5">
-                    <Sparkles className="h-4 w-4 text-primary" />
+                <div className="flex items-center gap-1">
+                  {/* Mode toggle */}
+                  <div className="flex items-center border rounded-lg overflow-hidden mr-2">
+                    <button
+                      onClick={() => setSidebarMode("notebooks")}
+                      className={`p-1.5 transition-colors ${sidebarMode === "notebooks" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                      title="Cadernos"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setSidebarMode("wiki")}
+                      className={`p-1.5 transition-colors ${sidebarMode === "wiki" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                      title="Wiki"
+                    >
+                      <Book className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                   <h2 className="text-lg font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                    Cadernos
+                    {sidebarMode === "notebooks" ? "Cadernos" : "Wiki"}
                   </h2>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setTrashOpen(true)}
-                  title="Lixeira"
-                  className="hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8 p-0"
+                <div className="flex items-center gap-1">
+                  {!isOnline && (
+                    <div className="p-1.5 rounded-lg bg-amber-500/10" title="Modo offline">
+                      <WifiOff className="h-3.5 w-3.5 text-amber-500" />
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTrashOpen(true)}
+                    title="Lixeira"
+                    className="hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8 p-0"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {sidebarMode === "wiki" ? (
+              <WikiNavigation
+                notebooks={sortedNotebooks}
+                notes={filteredAndSortedNotes}
+                selectedNoteId={selectedNoteId}
+                onSelectNote={handleSelectNote}
+              />
+            ) : (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                {/* Todas as Notas */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => setSelectedNotebookId(null)}
+                  className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
+                    selectedNotebookId === null 
+                      ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
+                      : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
+                  }`}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
-              {/* Todas as Notas - Premium button */}
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => setSelectedNotebookId(null)}
-                className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
-                  selectedNotebookId === null 
-                    ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
-                    : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-lg transition-colors ${
-                    selectedNotebookId === null ? "bg-primary/20" : "bg-muted"
-                  }`}>
-                    <FileText className="h-4 w-4" />
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg transition-colors ${
+                      selectedNotebookId === null ? "bg-primary/20" : "bg-muted"
+                    }`}>
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <span className="font-medium text-sm">Todas as Notas</span>
+                    <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                      {notes.length}
+                    </span>
                   </div>
-                  <span className="font-medium text-sm">Todas as Notas</span>
-                  <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                    {notes.length}
-                  </span>
-                </div>
-              </motion.button>
-              
-              {/* Notas Soltas - Premium button */}
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => setSelectedNotebookId("loose")}
-                className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
-                  selectedNotebookId === "loose" 
-                    ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
-                    : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <div className={`p-1.5 rounded-lg transition-colors ${
-                    selectedNotebookId === "loose" ? "bg-primary/20" : "bg-muted"
-                  }`}>
-                    <FileText className="h-4 w-4" />
+                </motion.button>
+                
+                {/* Notas Soltas */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => setSelectedNotebookId("loose")}
+                  className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
+                    selectedNotebookId === "loose" 
+                      ? "bg-primary/10 border border-primary/20 shadow-md shadow-primary/10" 
+                      : "hover:bg-accent/50 hover:shadow-sm border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg transition-colors ${
+                      selectedNotebookId === "loose" ? "bg-primary/20" : "bg-muted"
+                    }`}>
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <span className="font-medium text-sm">Notas Soltas</span>
+                    <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                      {notes.filter(n => !n.notebook_id).length}
+                    </span>
                   </div>
-                  <span className="font-medium text-sm">Notas Soltas</span>
-                  <span className="ml-auto text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                    {notes.filter(n => !n.notebook_id).length}
-                  </span>
-                </div>
-              </motion.button>
+                </motion.button>
 
-              <div className="pt-2">
-                <NotebooksList
-                  notebooks={sortedNotebooks}
-                  notes={filteredAndSortedNotes}
-                  selectedNoteId={selectedNoteId}
-                  onSelectNote={handleSelectNote}
-                  onAddNote={handleAddNote}
-                  onDeleteNote={handleDeleteNote}
-                  sortBy={notebookSortBy}
-                  onSortChange={setNotebookSortBy}
-                  selectedNotebookId={selectedNotebookId}
-                  onSelectNotebook={setSelectedNotebookId}
-                  selectedTagId={selectedTagId}
-                  onSelectTag={setSelectedTagId}
-                />
+                <div className="pt-2">
+                  <NotebooksList
+                    notebooks={sortedNotebooks}
+                    notes={filteredAndSortedNotes}
+                    selectedNoteId={selectedNoteId}
+                    onSelectNote={handleSelectNote}
+                    onAddNote={handleAddNote}
+                    onDeleteNote={handleDeleteNote}
+                    sortBy={notebookSortBy}
+                    onSortChange={setNotebookSortBy}
+                    selectedNotebookId={selectedNotebookId}
+                    onSelectNotebook={setSelectedNotebookId}
+                    selectedTagId={selectedTagId}
+                    onSelectTag={setSelectedTagId}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Coluna 2 - Lista de Notas */}
