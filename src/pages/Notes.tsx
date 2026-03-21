@@ -9,12 +9,14 @@ import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid } from "lucide-react";
+import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 import { motion, AnimatePresence } from "framer-motion";
+import { WikiNavigation } from "@/components/notes/WikiNavigation";
+import { useOfflineNotes } from "@/hooks/useOfflineNotes";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
