@@ -1018,6 +1018,22 @@ export default function Config() {
 
                 <Separator />
 
+                {/* Mostrar recorrentes no calendário */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mostrar Recorrentes no Calendário</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Exibir tarefas recorrentes na visualização do calendário
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.calendar?.showRecurring !== false}
+                    onCheckedChange={(checked) => updateSettings({ calendar: { ...settings.calendar, showRecurring: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
                 <div className="space-y-2">
                   <Label>Gerenciar Colunas</Label>
                   <p className="text-sm text-muted-foreground mb-2">

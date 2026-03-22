@@ -52,7 +52,7 @@ export default function NotificationsDashboard() {
           </div>
 
           <Tabs defaultValue="config" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
+            <TabsList className="flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4">
               <TabsTrigger value="config" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
                 <span className="hidden sm:inline">Ativar Push</span>

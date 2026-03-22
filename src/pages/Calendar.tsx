@@ -239,7 +239,7 @@ export default function Calendar() {
     }
     
     return filtered;
-  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, selectedCategories, selectedColumns]);
+  }, [tasks, searchTerm, priorityFilter, tagFilter, dueDateFilter, selectedCategories, selectedColumns, showRecurring]);
 
   // Transform tasks into calendar data format
   const calendarData = useMemo(() => {
