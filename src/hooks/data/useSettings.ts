@@ -85,6 +85,10 @@ export interface AppSettings {
   notificationTemplates?: NotificationTemplate[];
   // Filtros de data do calendário persistidos
   calendarDueDateFilter?: string;
+  // Calendário
+  calendar?: {
+    showRecurring: boolean;
+  };
   // Filtros do Kanban sincronizados (migrados de localStorage) - agora suportam arrays
   filters?: {
     search: string;
@@ -169,6 +173,9 @@ const defaultSettings: AppSettings = {
     },
   },
   calendarDueDateFilter: 'all',
+  calendar: {
+    showRecurring: true,
+  },
   filters: {
     search: '',
     priority: 'all',

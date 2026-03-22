@@ -623,7 +623,7 @@ export default function Config() {
 
         <div className="container max-w-6xl mx-auto p-6 pb-24">
           <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+          <TabsList className="flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-8 mb-4">
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
@@ -1013,6 +1013,22 @@ export default function Config() {
                   <Switch
                     checked={settings.kanban.immediateRecurrentReset}
                     onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, immediateRecurrentReset: checked } })}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Mostrar recorrentes no calendário */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mostrar Recorrentes no Calendário</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Exibir tarefas recorrentes na visualização do calendário
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.calendar?.showRecurring !== false}
+                    onCheckedChange={(checked) => updateSettings({ calendar: { ...settings.calendar, showRecurring: checked } })}
                   />
                 </div>
 
