@@ -53,7 +53,7 @@ export default function Settings() {
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-4xl mx-auto">
             <Tabs defaultValue="appearance" className="w-full">
-              <TabsList className="flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4">
+              <TabsList className="flex flex-wrap gap-1 md:grid md:grid-cols-5 mb-6 h-auto">
                 <TabsTrigger value="appearance">Aparência</TabsTrigger>
                 <TabsTrigger value="notifications">Notificações</TabsTrigger>
                 <TabsTrigger value="kanban">Kanban</TabsTrigger>
