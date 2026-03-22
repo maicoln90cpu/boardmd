@@ -127,7 +127,9 @@ export default function Calendar() {
       const { data, error } = await supabase
         .from("tasks")
         .select("id, title, description, due_date, priority, tags, column_id, category_id, position, user_id, created_at, updated_at, is_favorite, subtasks, recurrence_rule, mirror_task_id, linked_note_id, is_completed")
-        .or(`due_date.gte.${rangeStart.toISOString()},due_date.is.null`)
+        .not('due_date', 'is', null)
+        .gte('due_date', rangeStart.toISOString())
+        .lte('due_date', rangeEnd.toISOString())
         .order("position");
 
       if (!error && data) {
