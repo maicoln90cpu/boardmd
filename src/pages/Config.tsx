@@ -623,7 +623,7 @@ export default function Config() {
 
         <div className="container max-w-6xl mx-auto p-6 pb-24">
           <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8">
+          <TabsList className="flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-8 mb-4">
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
