@@ -173,6 +173,9 @@ const defaultSettings: AppSettings = {
     },
   },
   calendarDueDateFilter: 'all',
+  calendar: {
+    showRecurring: true,
+  },
   filters: {
     search: '',
     priority: 'all',
