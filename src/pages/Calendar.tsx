@@ -160,12 +160,19 @@ export default function Calendar() {
   }, [tasks]);
 
   // Filter tasks based on selected categories, columns, search, priority, tags, and due date
+  const showRecurring = settings.calendar?.showRecurring !== false;
+
   const filteredTasks = useMemo(() => {
     let filtered = tasks;
     const today = new Date();
     
     // Filter out mirrored tasks to avoid duplicates (legacy cleanup)
     filtered = filtered.filter(task => !task.mirror_task_id);
+
+    // Filter recurring tasks based on user setting
+    if (!showRecurring) {
+      filtered = filtered.filter(task => !task.recurrence_rule);
+    }
     
     // Filtro de busca
     if (searchTerm) {
