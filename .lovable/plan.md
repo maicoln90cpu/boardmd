@@ -1,83 +1,66 @@
 
-# Plano de Implementação — Roadmap Completo
 
-## ✅ Etapa 1 — CONCLUÍDA
+# Plano: Correção do Calendário (recorrentes) + Espaçamento Mobile nas Tabs
 
-| Feature | Status |
-|---------|--------|
-| 1A. Visão Diária no Calendário | ✅ Implementada |
-| 1B. Templates de Notas | ✅ Implementada |
-| 1C. Painel de Links Rápidos | ✅ Implementada |
-| 1D. Alternativas de Ferramentas (IA) | ✅ Implementada |
-| 1E. Digest Diário no Dashboard | ✅ Implementada |
+## Problema 1: Tarefas recorrentes "piscando" no calendário
 
-## ✅ Etapa 2 — CONCLUÍDA
+**Causa raiz**: A query em `Calendar.tsx` (linha 130) busca `.or('due_date.gte...., due_date.is.null')`, carregando TODAS as tarefas sem data. Quando o componente renderiza e filtra, tarefas sem `due_date` não aparecem em nenhum dia — mas entre o fetch e o render dos filtros, elas "piscam" na tela. Além disso, não há nenhuma configuração para o usuário decidir se quer ver tarefas recorrentes no calendário.
 
-| Feature | Status |
-|---------|--------|
-| 2A. Visão de Lista/Tabela para Tarefas | ✅ Implementada |
-| 2B. Hábitos Tracker | ✅ Implementada |
-| 2C. Retrospectiva Semanal | ✅ Implementada |
+**Solução**:
+1. **Remover `due_date.is.null`** da query do calendário — tarefas sem data não pertencem ao calendário
+2. **Adicionar setting `showRecurringInCalendar`** em `AppSettings` (default: `true`) para o usuário controlar se tarefas recorrentes aparecem
+3. **Filtrar recorrentes no `filteredTasks` useMemo** — se `showRecurringInCalendar === false`, excluir tarefas com `recurrence_rule`
+4. **Adicionar toggle na aba Kanban/Produtividade do Config** — "Mostrar tarefas recorrentes no calendário"
+5. **Carregar tasks com `useState([])` e sem flash** — garantir que o estado inicial vazio evita o "piscar"
 
-## ✅ Etapa 3 — Débito Técnico e Performance
-
-| Feature | Status |
-|---------|--------|
-| 3A. Loading states consistentes | ✅ Implementada |
-| 3B. Dashboard RPC (substituir SELECT *) | ✅ Implementada |
-| 3C. useQuickLinks type safety | ✅ Implementada |
-| 3D. QueryClient cache (staleTime/gcTime) | ✅ Implementada |
-| 3E. Calendário filtro por período | ✅ Implementada |
-
-## ✅ Etapa 4 — UX Mobile e Interações
-
-| Feature | Status |
-|---------|--------|
-| 4A. Bottom tab bar mobile | ❌ REMOVIDA — UX ruim, nunca reimplementar |
-| 4B. Swipe entre páginas | ✅ Implementada |
-| 4C. Haptic feedback | ✅ Implementada |
-| 4D. Drag-and-drop + Sort em Links | ✅ Implementada |
-
-## ✅ Etapa 5 — Kanban e Tarefas Avançadas
-
-| Feature | Status |
-|---------|--------|
-| 5A. Cycle time (column_entered_at) | ✅ Implementada (DB migration) |
-| 5B. Eventos recorrentes visuais (🔄) | ✅ Implementada (calendário + TaskCard) |
-| 5C. Matriz Eisenhower (/eisenhower) | ✅ Implementada |
-
-## ✅ Etapa 6 — Links e Notas Avançadas
-
-| Feature | Status |
-|---------|--------|
-| 6A. Favicon automático (Google S2 API) | ✅ Implementada |
-| 6B. Pastas de links (collapsible folders) | ✅ Implementada |
-| 6C. Contador de cliques (optimistic update) | ✅ Implementada |
-| 6D. Swap favicon/emoji (favicon grande, emoji badge) | ✅ Implementada |
-| 6E. Toggle cards/lista nos Links Rápidos | ✅ Implementada |
-| 6F. Export nota como PDF/Markdown | ✅ Implementada |
-| 6G. Ordenação por nome/data/cliques | ✅ Implementada |
-
-## ✅ Etapa 7 — Dashboard e Analytics
-
-| Feature | Status |
-|---------|--------|
-| 7A. Heatmap de produtividade (12 semanas) | ✅ Implementada |
-| 7B. Gráficos pizza/barras por categoria | ✅ Implementada |
-| 7C. Widgets heatmap e charts no Dashboard | ✅ Implementada |
-
-## ✅ Etapa 8 — Features Estruturais
-
-| Feature | Status |
-|---------|--------|
-| 8A. Modo offline para notas (IndexedDB sync) | ✅ Implementada |
-| 8B. Base de Conhecimento / Wiki (navegação Gitbook) | ✅ Implementada |
+### Arquivos alterados
+- `src/pages/Calendar.tsx` — remover `due_date.is.null`, filtrar recorrentes baseado em setting
+- `src/hooks/data/useSettings.ts` — adicionar `calendar.showRecurring: boolean` ao `AppSettings`
+- `src/pages/Config.tsx` — adicionar toggle "Mostrar recorrentes no calendário"
 
 ---
 
-## ⛔ Anti-patterns — NUNCA IMPLEMENTAR
+## Problema 2: Tabs coladas no conteúdo em mobile
 
-| Item | Motivo |
-|------|--------|
-| **Bottom Tab Bar mobile** | UX ruim, conflita com gestos nativos do navegador, ocupa espaço vertical precioso. Sidebar lateral + Topbar são suficientes. |
-| **Tab bar fixa no rodapé** | Mesma razão acima. A navegação já é feita via Sidebar (desktop) e Topbar/hamburger (mobile). |
+**Causa raiz**: No Config.tsx, `TabsList` com `grid-cols-4 lg:grid-cols-8` (8 tabs) fica extremamente comprimido em 390px. O `space-y-6` entre Tabs e TabsContent existe, mas as tabs em si ficam empilhadas e coladas visualmente no card abaixo. A imagem mostra que as duas linhas de tabs (4+4) ficam sem margin-bottom suficiente antes do primeiro Card.
+
+**Solução**:
+1. **Config.tsx**: Trocar `grid-cols-4 lg:grid-cols-8` por um layout de tabs com scroll horizontal em mobile (`flex overflow-x-auto`) ou wrapping com `flex flex-wrap gap-1`. Adicionar `mb-4` ou `mb-6` na TabsList para criar espaço entre as tabs e o conteúdo.
+2. **Aplicar globalmente**: Revisar as 10 ocorrências de `TabsList` com `grid-cols` e adicionar espaçamento consistente. Focar especialmente em:
+   - `Config.tsx` (8 tabs — o pior caso)
+   - `Settings.tsx` (5 tabs)
+   - `NotificationsDashboard.tsx` (5 tabs)
+
+### Abordagem para mobile tabs
+- Em telas < 768px, usar `flex overflow-x-auto whitespace-nowrap` em vez de `grid`, permitindo scroll horizontal nas tabs
+- Adicionar `mb-4` à TabsList para separar das cards abaixo
+- No Config.tsx especificamente, manter `grid-cols-8` no desktop e scroll horizontal no mobile
+
+### Arquivos alterados
+- `src/pages/Config.tsx` — TabsList responsiva com scroll horizontal mobile + margin bottom
+- `src/pages/Settings.tsx` — mesmo padrão
+- `src/pages/NotificationsDashboard.tsx` — mesmo padrão
+- `src/components/whatsapp/WhatsAppSettings.tsx` — ajuste de spacing menor
+
+---
+
+## Resumo de alterações
+
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/hooks/data/useSettings.ts` | Adicionar `calendar: { showRecurring: boolean }` |
+| `src/pages/Calendar.tsx` | Remover `due_date.is.null`, filtrar recorrentes por setting |
+| `src/pages/Config.tsx` | Toggle recorrentes + tabs mobile scroll horizontal + spacing |
+| `src/pages/Settings.tsx` | Tabs mobile responsivas |
+| `src/pages/NotificationsDashboard.tsx` | Tabs mobile responsivas |
+
+## Checklist manual
+- [ ] Abrir calendário → tarefas devem aparecer de imediato sem "piscar"
+- [ ] Desativar "Mostrar recorrentes no calendário" → recorrentes somem do calendário
+- [ ] Abrir /config em mobile (390px) → tabs devem ter scroll horizontal, com espaço entre tabs e cards
+- [ ] Testar /config em desktop → layout grid normal mantido
+
+## Próximas fases
+- Etapa 8 (Offline + Wiki) — já implementada
+- Próxima: relatório mensal automático, paginação infinita
+
