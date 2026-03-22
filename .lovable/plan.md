@@ -1,66 +1,60 @@
 
 
-# Plano: Correção do Calendário (recorrentes) + Espaçamento Mobile nas Tabs
+# Plano: Tabs em Múltiplas Linhas (sem scroll horizontal) + Bug do Calendário Travado
 
-## Problema 1: Tarefas recorrentes "piscando" no calendário
+## Problema 1: Tabs com scroll horizontal indesejado
 
-**Causa raiz**: A query em `Calendar.tsx` (linha 130) busca `.or('due_date.gte...., due_date.is.null')`, carregando TODAS as tarefas sem data. Quando o componente renderiza e filtra, tarefas sem `due_date` não aparecem em nenhum dia — mas entre o fetch e o render dos filtros, elas "piscam" na tela. Além disso, não há nenhuma configuração para o usuário decidir se quer ver tarefas recorrentes no calendário.
+O usuário quer que as tabs **quebrem em múltiplas linhas** quando não cabem na tela, com mais espaço entre as tabs e o conteúdo abaixo. **Não** quer scroll horizontal.
 
-**Solução**:
-1. **Remover `due_date.is.null`** da query do calendário — tarefas sem data não pertencem ao calendário
-2. **Adicionar setting `showRecurringInCalendar`** em `AppSettings` (default: `true`) para o usuário controlar se tarefas recorrentes aparecem
-3. **Filtrar recorrentes no `filteredTasks` useMemo** — se `showRecurringInCalendar === false`, excluir tarefas com `recurrence_rule`
-4. **Adicionar toggle na aba Kanban/Produtividade do Config** — "Mostrar tarefas recorrentes no calendário"
-5. **Carregar tasks com `useState([])` e sem flash** — garantir que o estado inicial vazio evita o "piscar"
+### Solução
+Trocar `flex overflow-x-auto whitespace-nowrap` por `flex flex-wrap gap-1` em todas as TabsList que usam essa abordagem. Manter `md:grid` para desktop. Adicionar `mb-6` para espaçamento generoso.
 
-### Arquivos alterados
-- `src/pages/Calendar.tsx` — remover `due_date.is.null`, filtrar recorrentes baseado em setting
-- `src/hooks/data/useSettings.ts` — adicionar `calendar.showRecurring: boolean` ao `AppSettings`
-- `src/pages/Config.tsx` — adicionar toggle "Mostrar recorrentes no calendário"
+### Arquivos afetados
+| Arquivo | TabsList atual | Novo |
+|---------|---------------|------|
+| `src/pages/Config.tsx` (L626) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-8 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-8 mb-6` |
+| `src/pages/Settings.tsx` (L56) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-5 mb-6` |
+| `src/pages/NotificationsDashboard.tsx` (L55) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-5 mb-6` |
 
----
-
-## Problema 2: Tabs coladas no conteúdo em mobile
-
-**Causa raiz**: No Config.tsx, `TabsList` com `grid-cols-4 lg:grid-cols-8` (8 tabs) fica extremamente comprimido em 390px. O `space-y-6` entre Tabs e TabsContent existe, mas as tabs em si ficam empilhadas e coladas visualmente no card abaixo. A imagem mostra que as duas linhas de tabs (4+4) ficam sem margin-bottom suficiente antes do primeiro Card.
-
-**Solução**:
-1. **Config.tsx**: Trocar `grid-cols-4 lg:grid-cols-8` por um layout de tabs com scroll horizontal em mobile (`flex overflow-x-auto`) ou wrapping com `flex flex-wrap gap-1`. Adicionar `mb-4` ou `mb-6` na TabsList para criar espaço entre as tabs e o conteúdo.
-2. **Aplicar globalmente**: Revisar as 10 ocorrências de `TabsList` com `grid-cols` e adicionar espaçamento consistente. Focar especialmente em:
-   - `Config.tsx` (8 tabs — o pior caso)
-   - `Settings.tsx` (5 tabs)
-   - `NotificationsDashboard.tsx` (5 tabs)
-
-### Abordagem para mobile tabs
-- Em telas < 768px, usar `flex overflow-x-auto whitespace-nowrap` em vez de `grid`, permitindo scroll horizontal nas tabs
-- Adicionar `mb-4` à TabsList para separar das cards abaixo
-- No Config.tsx especificamente, manter `grid-cols-8` no desktop e scroll horizontal no mobile
-
-### Arquivos alterados
-- `src/pages/Config.tsx` — TabsList responsiva com scroll horizontal mobile + margin bottom
-- `src/pages/Settings.tsx` — mesmo padrão
-- `src/pages/NotificationsDashboard.tsx` — mesmo padrão
-- `src/components/whatsapp/WhatsAppSettings.tsx` — ajuste de spacing menor
+### Outros locais com `overflow-x-auto` (não precisam de alteração)
+- `SearchFilters.tsx` — filtros horizontais, scroll faz sentido
+- `RichTextToolbar.tsx` — toolbar de editor, `flex-wrap` já usado
+- `GanttView.tsx` — timeline, scroll é necessário
+- `ProductivityHeatmap.tsx` — grid de dados, scroll é necessário
+- `dropdown-menu.tsx`, `popover.tsx` — componentes UI genéricos
+- `NoteEditor.tsx` — code blocks
+- Pomodoro: TabsList com `grid-cols-3` (3 tabs cabem em qualquer tela, ok)
 
 ---
 
-## Resumo de alterações
+## Problema 2: Calendário trava navegação
+
+**Causa provável**: O `DraggableTask` no `fullscreen-calendar.tsx` usa `touch-none` (L163), que bloqueia **todos** os gestos de toque no elemento. Combinado com `{...listeners} {...attributes}` do dnd-kit que capturam todos os eventos de pointer, isso pode impedir que toques no mobile propagarem corretamente para o menu hambúrguer ou links de navegação.
+
+Além disso, o container do calendário usa `overflow-hidden` no `<main>` (L454 do Calendar.tsx), que pode prender o scroll.
+
+### Solução
+1. No `fullscreen-calendar.tsx` (L163): remover `touch-none` do `DraggableTask` — o `TouchSensor` do dnd-kit já tem `activationConstraint` com delay de 200ms e tolerance de 8px, o que é suficiente para distinguir scroll de drag
+2. Verificar se o header mobile (z-50) da Sidebar está acessível por cima do calendário — o `KanbanFiltersBar` dentro do calendário pode estar criando uma camada que bloqueia o header
+
+### Arquivo alterado
+- `src/components/ui/fullscreen-calendar.tsx` — remover `touch-none` da classe do `DraggableTask`
+
+---
+
+## Resumo
 
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/hooks/data/useSettings.ts` | Adicionar `calendar: { showRecurring: boolean }` |
-| `src/pages/Calendar.tsx` | Remover `due_date.is.null`, filtrar recorrentes por setting |
-| `src/pages/Config.tsx` | Toggle recorrentes + tabs mobile scroll horizontal + spacing |
-| `src/pages/Settings.tsx` | Tabs mobile responsivas |
-| `src/pages/NotificationsDashboard.tsx` | Tabs mobile responsivas |
+| `src/pages/Config.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
+| `src/pages/Settings.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
+| `src/pages/NotificationsDashboard.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
+| `src/components/ui/fullscreen-calendar.tsx` | Remover `touch-none` do DraggableTask |
 
 ## Checklist manual
-- [ ] Abrir calendário → tarefas devem aparecer de imediato sem "piscar"
-- [ ] Desativar "Mostrar recorrentes no calendário" → recorrentes somem do calendário
-- [ ] Abrir /config em mobile (390px) → tabs devem ter scroll horizontal, com espaço entre tabs e cards
-- [ ] Testar /config em desktop → layout grid normal mantido
-
-## Próximas fases
-- Etapa 8 (Offline + Wiki) — já implementada
-- Próxima: relatório mensal automático, paginação infinita
+- [ ] Abrir /config em mobile (390px) → tabs devem quebrar em 2 linhas com bom espaço antes do card
+- [ ] Abrir /settings e /notifications em mobile → mesmo comportamento
+- [ ] Nenhuma página deve ter scroll horizontal nas tabs
+- [ ] Abrir /calendar em mobile → navegar pelo menu hambúrguer para outra página → deve funcionar sem travar
+- [ ] Arrastar tarefas no calendário desktop → deve continuar funcionando
 
