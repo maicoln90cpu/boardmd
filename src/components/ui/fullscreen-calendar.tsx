@@ -785,5 +785,6 @@ export function FullScreenCalendar({
         </>
         )}
       </div>
-    </div>;
+    </div>
+  </DndContext>;
 }
