@@ -1,5 +1,6 @@
 import { memo, useRef, lazy, Suspense, useState, useMemo } from "react";
 import { useColumns } from "@/hooks/data/useColumns";
+import { useSettings } from "@/hooks/data/useSettings";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -147,7 +148,10 @@ export const ProjectsKanbanView = memo(function ProjectsKanbanView({
 }: ProjectsKanbanViewProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { updateColumnColor } = useColumns();
-  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gantt">("kanban");
+  const { settings } = useSettings();
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "gantt">(
+    settings.kanban.defaultViewMode || "kanban"
+  );
   const nonDailyCategories = categories.filter((c) => c.name !== "Diário");
   const selectedCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
   

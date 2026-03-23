@@ -39,6 +39,10 @@ export interface AppSettings {
     projectsDueDateFilter: string | string[];
     // View padrão ao fazer login
     defaultView: 'daily' | 'projects';
+    // Modo de visualização padrão do kanban
+    defaultViewMode: 'kanban' | 'table' | 'gantt';
+    // Modo de exibição padrão (por categoria ou todas)
+    defaultDisplayMode: 'by_category' | 'all_tasks';
     // Automação: mover tarefas da semana atual automaticamente
     autoMoveToCurrentWeek: boolean;
     // Colunas excluídas da automação Semana Atual
@@ -88,6 +92,13 @@ export interface AppSettings {
   // Calendário
   calendar?: {
     showRecurring: boolean;
+    defaultViewType: 'month' | 'week' | 'day';
+  };
+  // Preferências de visualização de Anotações
+  notes?: {
+    defaultSidebarMode: 'notebooks' | 'wiki';
+    defaultViewMode: 'list' | 'grid';
+    defaultSortBy: 'updated' | 'alphabetical' | 'created';
   };
   // Filtros do Kanban sincronizados (migrados de localStorage) - agora suportam arrays
   filters?: {
@@ -141,6 +152,8 @@ const defaultSettings: AppSettings = {
     projectsDueDateFilter: 'all',
     autoMoveToCurrentWeek: false,
     defaultView: 'projects',
+    defaultViewMode: 'kanban',
+    defaultDisplayMode: 'all_tasks',
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
     columnSizes: {},
     immediateRecurrentReset: false,
@@ -175,6 +188,12 @@ const defaultSettings: AppSettings = {
   calendarDueDateFilter: 'all',
   calendar: {
     showRecurring: true,
+    defaultViewType: 'month',
+  },
+  notes: {
+    defaultSidebarMode: 'notebooks',
+    defaultViewMode: 'list',
+    defaultSortBy: 'updated',
   },
   filters: {
     search: '',
@@ -243,6 +262,14 @@ export function useSettings() {
     filters: {
       ...defaultSettings.filters,
       ...(loaded.filters || {}),
+    },
+    calendar: {
+      ...defaultSettings.calendar,
+      ...(loaded.calendar || {}),
+    },
+    notes: {
+      ...defaultSettings.notes,
+      ...(loaded.notes || {}),
     },
   }), []);
 
@@ -328,6 +355,14 @@ export function useSettings() {
         filters: {
           ...currentSettings.filters,
           ...(changesToSave.filters || {}),
+        },
+        calendar: {
+          ...currentSettings.calendar,
+          ...(changesToSave.calendar || {}),
+        },
+        notes: {
+          ...currentSettings.notes,
+          ...(changesToSave.notes || {}),
         },
       };
 
@@ -501,6 +536,14 @@ export function useSettings() {
         filters: {
           ...prev.filters,
           ...(newSettings.filters || {}),
+        },
+        calendar: {
+          ...prev.calendar,
+          ...(newSettings.calendar || {}),
+        },
+        notes: {
+          ...prev.notes,
+          ...(newSettings.notes || {}),
         },
       };
       // Keep ref in sync for flushPendingChanges
