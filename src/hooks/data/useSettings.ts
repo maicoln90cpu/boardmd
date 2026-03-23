@@ -537,6 +537,14 @@ export function useSettings() {
           ...prev.filters,
           ...(newSettings.filters || {}),
         },
+        calendar: {
+          ...prev.calendar,
+          ...(newSettings.calendar || {}),
+        },
+        notes: {
+          ...prev.notes,
+          ...(newSettings.notes || {}),
+        },
       };
       // Keep ref in sync for flushPendingChanges
       settingsRef.current = updated;
