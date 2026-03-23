@@ -467,7 +467,8 @@ export function FullScreenCalendar({
     }
   };
   const hasActiveFilters = searchTerm || (Array.isArray(priorityFilter) ? priorityFilter.length > 0 : priorityFilter !== "all") || (Array.isArray(tagFilter) ? tagFilter.length > 0 : tagFilter !== "all") || selectedCategories.length > 0 || selectedColumns.length > 0;
-  return <div className="flex h-full flex-col">
+  return <DndContext id="calendar-dnd" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <div className="flex h-full flex-col">
       {/* Filters Bar */}
       <KanbanFiltersBar searchTerm={searchTerm} onSearchChange={onSearchChange || (() => {})} priorityFilter={priorityFilter} onPriorityChange={onPriorityChange || (() => {})} tagFilter={tagFilter} onTagChange={onTagChange || (() => {})} availableTags={availableTags} onClearFilters={onClearFilters} categoryFilter={selectedCategories} onCategoryChange={cats => {
       // Toggle each category
