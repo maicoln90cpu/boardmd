@@ -356,6 +356,14 @@ export function useSettings() {
           ...currentSettings.filters,
           ...(changesToSave.filters || {}),
         },
+        calendar: {
+          ...currentSettings.calendar,
+          ...(changesToSave.calendar || {}),
+        },
+        notes: {
+          ...currentSettings.notes,
+          ...(changesToSave.notes || {}),
+        },
       };
 
       // Upsert to database
