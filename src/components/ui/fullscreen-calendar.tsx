@@ -333,7 +333,7 @@ export function FullScreenCalendar({
   // Notify parent when visible month changes
   React.useEffect(() => {
     onMonthChange?.(firstDayCurrentMonth.getFullYear(), firstDayCurrentMonth.getMonth());
-  }, [currentMonth, onMonthChange]);
+  }, [firstDayCurrentMonth, onMonthChange]);
 
   // Cleanup on unmount to prevent stale DnD state
   React.useEffect(() => {
