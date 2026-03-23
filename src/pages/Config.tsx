@@ -1046,6 +1046,137 @@ export default function Config() {
               </CardContent>
             </Card>
 
+            {/* Preferências de Visualização */}
+            <Card>
+              <CardHeader>
+                <CardTitle>👁️ Preferências de Visualização</CardTitle>
+                <CardDescription>Defina o estado inicial ao abrir cada módulo. Mudanças feitas dentro da tela valem apenas para a sessão.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Kanban */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Kanban</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Modo de Visualização Padrão</Label>
+                      <Select
+                        value={settings.kanban.defaultViewMode || 'kanban'}
+                        onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultViewMode: value as 'kanban' | 'table' | 'gantt' } })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="kanban">Kanban</SelectItem>
+                          <SelectItem value="table">Tabela</SelectItem>
+                          <SelectItem value="gantt">Timeline / Gantt</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Exibição Padrão</Label>
+                      <Select
+                        value={settings.kanban.defaultDisplayMode || 'all_tasks'}
+                        onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultDisplayMode: value as 'by_category' | 'all_tasks' } })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all_tasks">Todas as Tarefas</SelectItem>
+                          <SelectItem value="by_category">Por Categoria</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Calendário */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Calendário</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Visualização Padrão</Label>
+                    <Select
+                      value={settings.calendar?.defaultViewType || 'month'}
+                      onValueChange={(value) => updateSettings({ calendar: { ...settings.calendar, defaultViewType: value as 'month' | 'week' | 'day' } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="month">Mês</SelectItem>
+                        <SelectItem value="week">Semana</SelectItem>
+                        <SelectItem value="day">Dia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Anotações */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Anotações</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Modo da Sidebar</Label>
+                      <Select
+                        value={settings.notes?.defaultSidebarMode || 'notebooks'}
+                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultSidebarMode: value as 'notebooks' | 'wiki' } })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="notebooks">Cadernos</SelectItem>
+                          <SelectItem value="wiki">Wiki</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Visualização Padrão</Label>
+                      <Select
+                        value={settings.notes?.defaultViewMode || 'list'}
+                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultViewMode: value as 'list' | 'grid' } })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="list">Lista</SelectItem>
+                          <SelectItem value="grid">Grid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Ordenação Padrão</Label>
+                      <Select
+                        value={settings.notes?.defaultSortBy || 'updated'}
+                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultSortBy: value as 'updated' | 'alphabetical' | 'created' } })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="updated">Última Atualização</SelectItem>
+                          <SelectItem value="alphabetical">Alfabética</SelectItem>
+                          <SelectItem value="created">Data de Criação</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Mobile Settings */}
             <Card>
               <CardHeader>
