@@ -335,6 +335,14 @@ export function FullScreenCalendar({
     onMonthChange?.(firstDayCurrentMonth.getFullYear(), firstDayCurrentMonth.getMonth());
   }, [currentMonth, onMonthChange]);
 
+  // Cleanup on unmount to prevent stale DnD state
+  React.useEffect(() => {
+    return () => {
+      setActiveTask(null);
+      setMobileTasksExpanded(true);
+    };
+  }, []);
+
   const sensors = useSensors(useSensor(PointerSensor, {
     activationConstraint: {
       distance: 8
