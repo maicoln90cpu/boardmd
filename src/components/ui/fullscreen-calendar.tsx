@@ -643,7 +643,7 @@ export function FullScreenCalendar({
                       <span className="truncate font-medium">{activeTask.title}</span>
                     </div>}
                   </DragOverlay>
-                </DndContext>
+                </>
               )}
             </div>
           </div>
