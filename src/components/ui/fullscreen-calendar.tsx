@@ -768,6 +768,14 @@ export function FullScreenCalendar({
         </>
         )}
       </div>
+      {/* Single unified DragOverlay for all views */}
+      <DragOverlay>
+        {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30 cursor-grabbing", getPriorityBg(activeTask.priority))}>
+            <GripVertical className="h-3 w-3 text-muted-foreground" />
+            <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
+            <span className="truncate font-medium">{activeTask.title}</span>
+          </div>}
+      </DragOverlay>
     </div>
   </DndContext>;
 }
