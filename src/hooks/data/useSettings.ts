@@ -152,6 +152,8 @@ const defaultSettings: AppSettings = {
     projectsDueDateFilter: 'all',
     autoMoveToCurrentWeek: false,
     defaultView: 'projects',
+    defaultViewMode: 'kanban',
+    defaultDisplayMode: 'all_tasks',
     excludeFromWeeklyAutomation: ['recorrente', 'recorrentes', 'arquivado'],
     columnSizes: {},
     immediateRecurrentReset: false,
