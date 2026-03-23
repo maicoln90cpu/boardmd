@@ -1,81 +1,84 @@
 
+Plano: auditoria corretiva do /calendar com foco em travamento visual após mudança de rota
 
-# Plano: Fix Navegação Calendário + Preferências de Visualização no Config
+Diagnóstico da auditoria
+- As correções anteriores já estão no código:
+  - `Calendar.tsx` já usa `overflow-auto`
+  - `DraggableTask` já não usa `touch-none`
+  - o calendário mensal/semanal já usa `DndContext id="calendar-dnd"`
+- Mesmo assim, o bug pode persistir porque o problema mais provável não é só “toque bloqueado”, mas sim ciclo de vida da rota + cleanup incompleto do calendário.
+- Há um ponto importante: o `fullscreen-calendar.tsx` ainda mantém lógica de drag espalhada por mais de um ramo visual, e o calendário continua sendo um componente muito “stateful”, com overlays, drag, filtros e lista mobile no mesmo subtree.
+- O sintoma “URL muda mas a tela continua no calendário” indica fortemente uma destas causas:
+  1. o componente de calendário não está desmontando corretamente ao trocar de rota
+  2. algum subtree do calendário continua visualmente montado por falta de remount/cleanup
+  3. o DnD / listeners globais continuam vivos após a navegação e impedem repaint/atualização visual
 
-## Problema 1: Navegação travada após entrar no Calendário
+Teste interno
+- Tentei validar no browser tool, mas a sessão abriu em `/auth`, então não foi possível reproduzir autenticado por esse canal.
+- A evidência prática veio da leitura do código + session replay do preview do usuário, então a próxima correção precisa ser estrutural, não incremental.
 
-**Diagnóstico**: O `<main>` do Calendar.tsx usa `overflow-hidden` (L454), criando um contexto de contenção. Combinado com dois `DndContext` simultâneos (desktop L660 + mobile L680) que adicionam listeners globais de pointer no document, os eventos de clique nos links do sidebar podem ser interceptados pelos sensors antes de propagar para o React Router `<Link>`. O URL muda (React Router processa o `navigate()`), mas o DndContext captura o evento e impede o cleanup correto do componente.
+Implementação proposta
+1. Forçar desmontagem real ao sair do calendário
+- Em `App.tsx`, usar `useLocation()` dentro do conteúdo roteado e keyear o container das rotas por `location.pathname` ou `location.key`.
+- Objetivo: garantir unmount/mount completo ao trocar de rota, evitando que o subtree do calendário sobreviva visualmente.
 
-**Solução**:
-1. **Calendar.tsx L454**: Trocar `overflow-hidden` por `overflow-auto` no `<main>` — alinha com Index.tsx que usa `overflow-auto`
-2. **fullscreen-calendar.tsx**: Consolidar os dois DndContexts em um único, evitando listeners duplicados no document
-3. **fullscreen-calendar.tsx**: Adicionar `id` único ao DndContext para evitar conflitos com outros DndContexts em páginas vizinhas
-4. Adicionar cleanup explícito dos sensors via key no DndContext que muda quando a rota muda
+2. Unificar o DnD do calendário de verdade
+- Em `src/components/ui/fullscreen-calendar.tsx`, mover toda a árvore visual do calendário para dentro de um único `DndContext` estável no topo do componente.
+- Eliminar qualquer ramo separado com contexto próprio e centralizar `DragOverlay`, `handleDragStart` e `handleDragEnd`.
+- Adicionar cleanup explícito no unmount:
+  - reset de `activeTask`
+  - reset de expansões mobile
+  - reset de seleção temporária se necessário
 
-### Arquivos alterados
-- `src/pages/Calendar.tsx` — `overflow-hidden` → `overflow-auto`
-- `src/components/ui/fullscreen-calendar.tsx` — unificar DndContexts
+3. Blindar o calendário contra persistência de estado após navegação
+- Em `src/pages/Calendar.tsx`, usar `useLocation()` e limpar estados transitórios quando a rota deixar `/calendar`:
+  - `selectedDate`
+  - `isTaskModalOpen`
+  - `editingTask`
+  - `newTaskDate`
+- Se necessário, keyear o próprio `FullScreenCalendar` por pathname para forçar reinicialização total.
 
----
+4. Separar overlays/diálogos do estado visual principal
+- Revisar os `Dialog` e listas expansíveis do calendário para garantir que nada continue montado fora do fluxo após navegação.
+- Prioridade:
+  - dialog do dia selecionado
+  - `TaskModal`
+  - `DragOverlay`
+  - lista mobile expandida
 
-## Problema 2: Preferências de visualização pré-configuráveis no Config
+5. Instrumentação temporária para confirmar desmontagem
+- Adicionar logs temporários de mount/unmount em:
+  - `Calendar.tsx`
+  - `FullScreenCalendar.tsx`
+  - `RouterContent` / shell das rotas
+- Isso serve para provar se a navegação está trocando rota sem desmontar a tela anterior.
 
-O usuário quer que o Config defina o **estado inicial** de cada módulo ao abrir. Mudanças feitas dentro da tela valem só na sessão.
+6. Validação cruzada em outras rotas pesadas
+- Depois de corrigir o calendário, repetir o mesmo padrão de auditoria em páginas com estrutura semelhante:
+  - `Notes.tsx`
+  - `Index.tsx` / Kanban
+- Não para mudar tudo agora, mas para evitar repetir o mesmo problema em módulos com DnD e layout complexo.
 
-### Novas preferências em AppSettings
+Arquivos a revisar/alterar
+- `src/App.tsx`
+- `src/pages/Calendar.tsx`
+- `src/components/ui/fullscreen-calendar.tsx`
 
-| Módulo | Preferência | Tipo | Default |
-|--------|------------|------|---------|
-| Anotações | `notes.defaultSidebarMode` | `'notebooks' \| 'wiki'` | `'notebooks'` |
-| Anotações | `notes.defaultViewMode` | `'list' \| 'grid'` | `'list'` |
-| Anotações | `notes.defaultSortBy` | `'updated' \| 'alphabetical' \| 'created'` | `'updated'` |
-| Calendário | `calendar.defaultViewType` | `'month' \| 'week' \| 'day'` | `'month'` |
-| Kanban | `kanban.defaultViewMode` | `'kanban' \| 'table' \| 'gantt'` | `'kanban'` |
-| Kanban | `kanban.defaultDisplayMode` | `'by_category' \| 'all_tasks'` | `'all_tasks'` |
+Resultado esperado
+- Entrar em `/calendar`
+- Clicar em qualquer outra rota
+- URL muda e a tela efetivamente troca no mesmo instante
+- sem ficar “presa” no calendário
+- funcionando em desktop e mobile
 
-### Implementação
+Checklist de validação
+- Abrir `/calendar` e navegar para `/`, `/notes`, `/pomodoro`, `/config`
+- Repetir ida e volta: `/calendar` → outra rota → `/calendar`
+- Testar no mobile com menu hambúrguer
+- Testar com visualização mês, semana e dia
+- Testar com dialog de dia aberto e também com modal de tarefa aberto
+- Testar após arrastar tarefa no calendário e depois navegar
 
-1. **useSettings.ts**: Expandir `AppSettings` com `notes?: { defaultSidebarMode, defaultViewMode, defaultSortBy }`, expandir `calendar` com `defaultViewType`, expandir `kanban` com `defaultViewMode`, `defaultDisplayMode`. Atualizar `defaultSettings` e `deepMergeSettings`.
-
-2. **Notes.tsx**: Inicializar `sidebarMode`, `notesViewMode`, `sortBy` com `settings.notes?.defaultSidebarMode || 'notebooks'` etc.
-
-3. **fullscreen-calendar.tsx**: Aceitar nova prop `defaultViewType` e inicializar `viewType` com ela.
-
-4. **Calendar.tsx**: Passar `settings.calendar?.defaultViewType` para o `FullScreenCalendar`.
-
-5. **useIndexViewState.ts**: Aceitar `defaultDisplayMode` do settings e inicializar `displayMode` com ele.
-
-6. **ProjectsKanbanView.tsx**: Aceitar e usar `defaultViewMode` do settings para inicializar `viewMode`.
-
-7. **Config.tsx**: Adicionar nova seção "Preferências de Visualização" na aba Kanban/Produtividade com Selects para cada preferência:
-   - Anotações: Modo Padrão (Cadernos/Wiki), Visualização (Lista/Grid), Ordenação
-   - Calendário: Visualização Padrão (Mês/Semana/Dia)
-   - Kanban: Modo Padrão (Kanban/Tabela/Gantt), Exibição (Por Categoria/Todas)
-
-### Arquivos alterados
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/hooks/data/useSettings.ts` | Expandir AppSettings com notes, calendar.defaultViewType, kanban.defaultViewMode/defaultDisplayMode |
-| `src/pages/Notes.tsx` | Ler defaults do settings para inicializar estados |
-| `src/components/ui/fullscreen-calendar.tsx` | Aceitar prop `defaultViewType`, inicializar viewType |
-| `src/pages/Calendar.tsx` | Passar defaultViewType; fix overflow-hidden |
-| `src/hooks/index/useIndexViewState.ts` | Aceitar defaultDisplayMode do settings |
-| `src/components/kanban/ProjectsKanbanView.tsx` | Aceitar defaultViewMode |
-| `src/pages/Config.tsx` | Seção "Preferências de Visualização" com 6 novos Selects |
-| `src/hooks/useIndexState.ts` | Passar defaultDisplayMode para useIndexViewState |
-
----
-
-## Checklist manual
-- [ ] Abrir /calendar → navegar para /notes pelo menu → página deve mudar corretamente
-- [ ] Abrir /calendar → navegar pelo hambúrguer mobile → deve funcionar
-- [ ] Abrir Config > Kanban → seção "Preferências de Visualização" deve ter 6 opções
-- [ ] Alterar "Modo Padrão Anotações" para Wiki → abrir /notes → sidebar deve abrir em Wiki
-- [ ] Alterar "Visualização Calendário" para Semana → abrir /calendar → deve abrir em visão semanal
-- [ ] Alterar "Modo Kanban" para Tabela → abrir / → deve abrir em visão tabela
-- [ ] Mudanças feitas dentro da tela (ex: trocar Wiki→Cadernos no Notes) NÃO devem alterar a preferência salva
-
-## Próximas fases
-- Relatório mensal automático com PDF
-- Paginação infinita nas listagens
-
+Observação de abordagem
+- Como o bug já resistiu a 4 tentativas, eu não seguiria mais com ajustes cosméticos.
+- A correção agora deve ser feita como “hard fix” de ciclo de vida: remount forçado da rota + cleanup explícito do calendário + DnD único e previsível.
