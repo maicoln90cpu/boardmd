@@ -88,6 +88,13 @@ export interface AppSettings {
   // Calendário
   calendar?: {
     showRecurring: boolean;
+    defaultViewType: 'month' | 'week' | 'day';
+  };
+  // Preferências de visualização de Anotações
+  notes?: {
+    defaultSidebarMode: 'notebooks' | 'wiki';
+    defaultViewMode: 'list' | 'grid';
+    defaultSortBy: 'updated' | 'alphabetical' | 'created';
   };
   // Filtros do Kanban sincronizados (migrados de localStorage) - agora suportam arrays
   filters?: {
