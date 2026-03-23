@@ -186,6 +186,12 @@ const defaultSettings: AppSettings = {
   calendarDueDateFilter: 'all',
   calendar: {
     showRecurring: true,
+    defaultViewType: 'month',
+  },
+  notes: {
+    defaultSidebarMode: 'notebooks',
+    defaultViewMode: 'list',
+    defaultSortBy: 'updated',
   },
   filters: {
     search: '',
