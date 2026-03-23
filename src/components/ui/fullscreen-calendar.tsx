@@ -656,8 +656,9 @@ export function FullScreenCalendar({
 
         {/* Calendar Days */}
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-          {/* Desktop View with Drag and Drop */}
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          {/* Single DndContext for both desktop and mobile */}
+          <DndContext id="calendar-dnd" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            {/* Desktop View */}
             <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
               {days.map((day, dayIdx) => {
               const dayData = data.find(d => isSameDay(d.day, day));
@@ -666,18 +667,7 @@ export function FullScreenCalendar({
             })}
             </div>
 
-            {/* Drag Overlay */}
-            <DragOverlay>
-              {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30 cursor-grabbing", getPriorityBg(activeTask.priority))}>
-                  <GripVertical className="h-3 w-3 text-muted-foreground" />
-                  <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
-                  <span className="truncate font-medium">{activeTask.title}</span>
-                </div>}
-            </DragOverlay>
-          </DndContext>
-
-          {/* Mobile View - Calendar Grid with DnD */}
-          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            {/* Mobile View - Calendar Grid */}
             <div className="grid grid-cols-7 md:hidden">
               {days.map((day, dayIdx) => {
               const dayData = data.find(d => isSameDay(d.day, day));
@@ -686,12 +676,10 @@ export function FullScreenCalendar({
             })}
             </div>
 
-            {/* Mobile Drag Overlay */}
+            {/* Unified Drag Overlay */}
             <DragOverlay>
-              {activeTask && <div className={cn("flex items-center gap-1.5 rounded px-2 py-1 text-xs shadow-lg", (() => {
-              const isOverdue = activeTask.due_date && isBefore(parseISO(activeTask.due_date), today);
-              return isOverdue ? "bg-red-500/20 ring-1 ring-red-500" : getPriorityBg(activeTask.priority);
-            })())}>
+              {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30 cursor-grabbing", getPriorityBg(activeTask.priority))}>
+                  <GripVertical className="h-3 w-3 text-muted-foreground" />
                   <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
                   <span className="truncate font-medium">{activeTask.title}</span>
                 </div>}
