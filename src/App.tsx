@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ColorThemeProvider } from "@/contexts/ColorThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -69,9 +69,10 @@ const queryClient = new QueryClient({
 // Inner component that uses Router hooks
 function RouterContent() {
   useNotificationActions();
+  const location = useLocation();
   return (
     <>
-      <Routes>
+      <Routes location={location} key={location.pathname}>
       <Route path="/landing" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route 

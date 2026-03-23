@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { isSameDay, parseISO, startOfDay, isToday, isTomorrow, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
@@ -57,6 +57,16 @@ export default function Calendar() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [newTaskDate, setNewTaskDate] = useState<Date | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // Force-close all dialogs/overlays on unmount to prevent portal leaks
+  useEffect(() => {
+    return () => {
+      setSelectedDate(null);
+      setIsTaskModalOpen(false);
+      setEditingTask(null);
+      setNewTaskDate(null);
+    };
+  }, []);
   
   // Persistent filter setters (saved to DB via useSettings)
   const searchTerm = calendarFilters.search;
