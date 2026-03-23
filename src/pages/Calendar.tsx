@@ -451,7 +451,7 @@ export default function Calendar() {
         onThemeToggle={() => {}}
       />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-auto">
         <FullScreenCalendar
           data={calendarData}
           columns={columns.map(c => ({ id: c.id, name: c.name, color: c.color }))}
