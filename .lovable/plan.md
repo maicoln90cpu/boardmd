@@ -1,60 +1,81 @@
 
 
-# Plano: Tabs em Múltiplas Linhas (sem scroll horizontal) + Bug do Calendário Travado
+# Plano: Fix Navegação Calendário + Preferências de Visualização no Config
 
-## Problema 1: Tabs com scroll horizontal indesejado
+## Problema 1: Navegação travada após entrar no Calendário
 
-O usuário quer que as tabs **quebrem em múltiplas linhas** quando não cabem na tela, com mais espaço entre as tabs e o conteúdo abaixo. **Não** quer scroll horizontal.
+**Diagnóstico**: O `<main>` do Calendar.tsx usa `overflow-hidden` (L454), criando um contexto de contenção. Combinado com dois `DndContext` simultâneos (desktop L660 + mobile L680) que adicionam listeners globais de pointer no document, os eventos de clique nos links do sidebar podem ser interceptados pelos sensors antes de propagar para o React Router `<Link>`. O URL muda (React Router processa o `navigate()`), mas o DndContext captura o evento e impede o cleanup correto do componente.
 
-### Solução
-Trocar `flex overflow-x-auto whitespace-nowrap` por `flex flex-wrap gap-1` em todas as TabsList que usam essa abordagem. Manter `md:grid` para desktop. Adicionar `mb-6` para espaçamento generoso.
+**Solução**:
+1. **Calendar.tsx L454**: Trocar `overflow-hidden` por `overflow-auto` no `<main>` — alinha com Index.tsx que usa `overflow-auto`
+2. **fullscreen-calendar.tsx**: Consolidar os dois DndContexts em um único, evitando listeners duplicados no document
+3. **fullscreen-calendar.tsx**: Adicionar `id` único ao DndContext para evitar conflitos com outros DndContexts em páginas vizinhas
+4. Adicionar cleanup explícito dos sensors via key no DndContext que muda quando a rota muda
 
-### Arquivos afetados
-| Arquivo | TabsList atual | Novo |
-|---------|---------------|------|
-| `src/pages/Config.tsx` (L626) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-8 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-8 mb-6` |
-| `src/pages/Settings.tsx` (L56) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-5 mb-6` |
-| `src/pages/NotificationsDashboard.tsx` (L55) | `flex overflow-x-auto whitespace-nowrap md:grid md:grid-cols-5 mb-4` | `flex flex-wrap gap-1 md:grid md:grid-cols-5 mb-6` |
-
-### Outros locais com `overflow-x-auto` (não precisam de alteração)
-- `SearchFilters.tsx` — filtros horizontais, scroll faz sentido
-- `RichTextToolbar.tsx` — toolbar de editor, `flex-wrap` já usado
-- `GanttView.tsx` — timeline, scroll é necessário
-- `ProductivityHeatmap.tsx` — grid de dados, scroll é necessário
-- `dropdown-menu.tsx`, `popover.tsx` — componentes UI genéricos
-- `NoteEditor.tsx` — code blocks
-- Pomodoro: TabsList com `grid-cols-3` (3 tabs cabem em qualquer tela, ok)
+### Arquivos alterados
+- `src/pages/Calendar.tsx` — `overflow-hidden` → `overflow-auto`
+- `src/components/ui/fullscreen-calendar.tsx` — unificar DndContexts
 
 ---
 
-## Problema 2: Calendário trava navegação
+## Problema 2: Preferências de visualização pré-configuráveis no Config
 
-**Causa provável**: O `DraggableTask` no `fullscreen-calendar.tsx` usa `touch-none` (L163), que bloqueia **todos** os gestos de toque no elemento. Combinado com `{...listeners} {...attributes}` do dnd-kit que capturam todos os eventos de pointer, isso pode impedir que toques no mobile propagarem corretamente para o menu hambúrguer ou links de navegação.
+O usuário quer que o Config defina o **estado inicial** de cada módulo ao abrir. Mudanças feitas dentro da tela valem só na sessão.
 
-Além disso, o container do calendário usa `overflow-hidden` no `<main>` (L454 do Calendar.tsx), que pode prender o scroll.
+### Novas preferências em AppSettings
 
-### Solução
-1. No `fullscreen-calendar.tsx` (L163): remover `touch-none` do `DraggableTask` — o `TouchSensor` do dnd-kit já tem `activationConstraint` com delay de 200ms e tolerance de 8px, o que é suficiente para distinguir scroll de drag
-2. Verificar se o header mobile (z-50) da Sidebar está acessível por cima do calendário — o `KanbanFiltersBar` dentro do calendário pode estar criando uma camada que bloqueia o header
+| Módulo | Preferência | Tipo | Default |
+|--------|------------|------|---------|
+| Anotações | `notes.defaultSidebarMode` | `'notebooks' \| 'wiki'` | `'notebooks'` |
+| Anotações | `notes.defaultViewMode` | `'list' \| 'grid'` | `'list'` |
+| Anotações | `notes.defaultSortBy` | `'updated' \| 'alphabetical' \| 'created'` | `'updated'` |
+| Calendário | `calendar.defaultViewType` | `'month' \| 'week' \| 'day'` | `'month'` |
+| Kanban | `kanban.defaultViewMode` | `'kanban' \| 'table' \| 'gantt'` | `'kanban'` |
+| Kanban | `kanban.defaultDisplayMode` | `'by_category' \| 'all_tasks'` | `'all_tasks'` |
 
-### Arquivo alterado
-- `src/components/ui/fullscreen-calendar.tsx` — remover `touch-none` da classe do `DraggableTask`
+### Implementação
 
----
+1. **useSettings.ts**: Expandir `AppSettings` com `notes?: { defaultSidebarMode, defaultViewMode, defaultSortBy }`, expandir `calendar` com `defaultViewType`, expandir `kanban` com `defaultViewMode`, `defaultDisplayMode`. Atualizar `defaultSettings` e `deepMergeSettings`.
 
-## Resumo
+2. **Notes.tsx**: Inicializar `sidebarMode`, `notesViewMode`, `sortBy` com `settings.notes?.defaultSidebarMode || 'notebooks'` etc.
 
+3. **fullscreen-calendar.tsx**: Aceitar nova prop `defaultViewType` e inicializar `viewType` com ela.
+
+4. **Calendar.tsx**: Passar `settings.calendar?.defaultViewType` para o `FullScreenCalendar`.
+
+5. **useIndexViewState.ts**: Aceitar `defaultDisplayMode` do settings e inicializar `displayMode` com ele.
+
+6. **ProjectsKanbanView.tsx**: Aceitar e usar `defaultViewMode` do settings para inicializar `viewMode`.
+
+7. **Config.tsx**: Adicionar nova seção "Preferências de Visualização" na aba Kanban/Produtividade com Selects para cada preferência:
+   - Anotações: Modo Padrão (Cadernos/Wiki), Visualização (Lista/Grid), Ordenação
+   - Calendário: Visualização Padrão (Mês/Semana/Dia)
+   - Kanban: Modo Padrão (Kanban/Tabela/Gantt), Exibição (Por Categoria/Todas)
+
+### Arquivos alterados
 | Arquivo | Alteração |
 |---------|-----------|
-| `src/pages/Config.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
-| `src/pages/Settings.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
-| `src/pages/NotificationsDashboard.tsx` | TabsList: `flex-wrap gap-1 mb-6` (sem scroll) |
-| `src/components/ui/fullscreen-calendar.tsx` | Remover `touch-none` do DraggableTask |
+| `src/hooks/data/useSettings.ts` | Expandir AppSettings com notes, calendar.defaultViewType, kanban.defaultViewMode/defaultDisplayMode |
+| `src/pages/Notes.tsx` | Ler defaults do settings para inicializar estados |
+| `src/components/ui/fullscreen-calendar.tsx` | Aceitar prop `defaultViewType`, inicializar viewType |
+| `src/pages/Calendar.tsx` | Passar defaultViewType; fix overflow-hidden |
+| `src/hooks/index/useIndexViewState.ts` | Aceitar defaultDisplayMode do settings |
+| `src/components/kanban/ProjectsKanbanView.tsx` | Aceitar defaultViewMode |
+| `src/pages/Config.tsx` | Seção "Preferências de Visualização" com 6 novos Selects |
+| `src/hooks/useIndexState.ts` | Passar defaultDisplayMode para useIndexViewState |
+
+---
 
 ## Checklist manual
-- [ ] Abrir /config em mobile (390px) → tabs devem quebrar em 2 linhas com bom espaço antes do card
-- [ ] Abrir /settings e /notifications em mobile → mesmo comportamento
-- [ ] Nenhuma página deve ter scroll horizontal nas tabs
-- [ ] Abrir /calendar em mobile → navegar pelo menu hambúrguer para outra página → deve funcionar sem travar
-- [ ] Arrastar tarefas no calendário desktop → deve continuar funcionando
+- [ ] Abrir /calendar → navegar para /notes pelo menu → página deve mudar corretamente
+- [ ] Abrir /calendar → navegar pelo hambúrguer mobile → deve funcionar
+- [ ] Abrir Config > Kanban → seção "Preferências de Visualização" deve ter 6 opções
+- [ ] Alterar "Modo Padrão Anotações" para Wiki → abrir /notes → sidebar deve abrir em Wiki
+- [ ] Alterar "Visualização Calendário" para Semana → abrir /calendar → deve abrir em visão semanal
+- [ ] Alterar "Modo Kanban" para Tabela → abrir / → deve abrir em visão tabela
+- [ ] Mudanças feitas dentro da tela (ex: trocar Wiki→Cadernos no Notes) NÃO devem alterar a preferência salva
+
+## Próximas fases
+- Relatório mensal automático com PDF
+- Paginação infinita nas listagens
 
