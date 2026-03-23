@@ -584,7 +584,7 @@ export function FullScreenCalendar({
                   className="py-8"
                 />
               ) : (
-                <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <>
                   <div className="space-y-2">
                     {selectedDayTasks.map(task => {
                       const column = columns.find(c => c.id === task.column_id);
