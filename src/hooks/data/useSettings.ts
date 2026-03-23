@@ -263,6 +263,14 @@ export function useSettings() {
       ...defaultSettings.filters,
       ...(loaded.filters || {}),
     },
+    calendar: {
+      ...defaultSettings.calendar,
+      ...(loaded.calendar || {}),
+    },
+    notes: {
+      ...defaultSettings.notes,
+      ...(loaded.notes || {}),
+    },
   }), []);
 
   // Deep merge two partial settings objects
