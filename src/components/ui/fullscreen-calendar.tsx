@@ -638,11 +638,6 @@ export function FullScreenCalendar({
                       );
                     })}
                   </div>
-                  <DragOverlay>
-                    {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30", getPriorityBg(activeTask.priority))}>
-                      <span className="truncate font-medium">{activeTask.title}</span>
-                    </div>}
-                  </DragOverlay>
                 </>
               )}
             </div>
