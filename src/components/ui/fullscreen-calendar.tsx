@@ -653,9 +653,7 @@ export function FullScreenCalendar({
 
         {/* Calendar Days */}
         <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-          {/* Single DndContext for both desktop and mobile */}
-          <DndContext id="calendar-dnd" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            {/* Desktop View */}
+           {/* Desktop View */}
             <div className={cn("hidden md:grid md:grid-cols-7 md:auto-rows-fr", "min-h-full")}>
               {days.map((day, dayIdx) => {
               const dayData = data.find(d => isSameDay(d.day, day));
@@ -672,16 +670,6 @@ export function FullScreenCalendar({
               return <MobileDroppableDay key={dayIdx} day={day} dayTasks={dayTasks} columns={columns} selectedDay={selectedDay} firstDayCurrentMonth={firstDayCurrentMonth} getPriorityColor={getPriorityColor} onDayClick={handleDayClick} />;
             })}
             </div>
-
-            {/* Unified Drag Overlay */}
-            <DragOverlay>
-              {activeTask && <div className={cn("flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs shadow-xl ring-2 ring-primary/30 cursor-grabbing", getPriorityBg(activeTask.priority))}>
-                  <GripVertical className="h-3 w-3 text-muted-foreground" />
-                  <div className={cn("h-2 w-2 rounded-full flex-shrink-0", getPriorityColor(activeTask.priority))} />
-                  <span className="truncate font-medium">{activeTask.title}</span>
-                </div>}
-            </DragOverlay>
-          </DndContext>
 
           {/* Mobile View - Tasks List for Selected Day */}
           <div className="md:hidden border-t bg-card flex-1 flex flex-col overflow-hidden">
