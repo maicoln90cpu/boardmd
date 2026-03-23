@@ -1,5 +1,6 @@
 import { memo, useRef, lazy, Suspense, useState, useMemo } from "react";
 import { useColumns } from "@/hooks/data/useColumns";
+import { useSettings } from "@/hooks/data/useSettings";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
 import { GlobalSearch } from "@/components/GlobalSearch";
