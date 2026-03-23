@@ -39,6 +39,10 @@ export interface AppSettings {
     projectsDueDateFilter: string | string[];
     // View padrão ao fazer login
     defaultView: 'daily' | 'projects';
+    // Modo de visualização padrão do kanban
+    defaultViewMode: 'kanban' | 'table' | 'gantt';
+    // Modo de exibição padrão (por categoria ou todas)
+    defaultDisplayMode: 'by_category' | 'all_tasks';
     // Automação: mover tarefas da semana atual automaticamente
     autoMoveToCurrentWeek: boolean;
     // Colunas excluídas da automação Semana Atual
