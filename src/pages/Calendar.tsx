@@ -478,6 +478,7 @@ export default function Calendar() {
           dueDateFilter={dueDateFilter}
           onDueDateChange={setDueDateFilter}
           tasks={tasks}
+          defaultViewType={settings.calendar?.defaultViewType || 'month'}
           filterPresetsSlot={
             <FilterPresetsManager
               scope="calendar"

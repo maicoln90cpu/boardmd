@@ -318,14 +318,15 @@ export function FullScreenCalendar({
   dueDateFilter = "all",
   onDueDateChange,
   filterPresetsSlot,
-  tasks
-}: FullScreenCalendarProps & { onMonthChange?: (year: number, month: number) => void }) {
+  tasks,
+  defaultViewType = "month",
+}: FullScreenCalendarProps & { onMonthChange?: (year: number, month: number) => void; defaultViewType?: "month" | "week" | "day" }) {
   const today = startOfToday();
   const [selectedDay, setSelectedDay] = React.useState(today);
   const [currentMonth, setCurrentMonth] = React.useState(format(today, "MMM-yyyy"));
   const [mobileTasksExpanded, setMobileTasksExpanded] = React.useState(true);
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
-  const [viewType, setViewType] = React.useState<"month" | "week" | "day">("month");
+  const [viewType, setViewType] = React.useState<"month" | "week" | "day">(defaultViewType);
   const firstDayCurrentMonth = parse(currentMonth, "MMM-yyyy", new Date());
   const isDesktop = useMediaQuery("(min-width: 768px)");
 

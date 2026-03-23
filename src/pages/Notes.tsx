@@ -17,19 +17,21 @@ import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import { WikiNavigation } from "@/components/notes/WikiNavigation";
 import { useOfflineNotes } from "@/hooks/useOfflineNotes";
+import { useSettings } from "@/hooks/data/useSettings";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
   const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setEditingNoteId, togglePin, fetchNotes } = useNotes();
+  const { settings } = useSettings();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
+  const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>(settings.notes?.defaultSortBy || 'updated');
   const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created' | 'tag'>('updated');
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>('list');
-  const [sidebarMode, setSidebarMode] = useState<'notebooks' | 'wiki'>('notebooks');
+  const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>(settings.notes?.defaultViewMode || 'list');
+  const [sidebarMode, setSidebarMode] = useState<'notebooks' | 'wiki'>(settings.notes?.defaultSidebarMode || 'notebooks');
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
