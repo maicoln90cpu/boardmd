@@ -128,6 +128,16 @@ export default function Calendar() {
     return { year: now.getFullYear(), month: now.getMonth() };
   });
 
+  const handleVisibleMonthChange = useCallback((year: number, month: number) => {
+    setVisibleMonth((current) => {
+      if (current.year === year && current.month === month) {
+        return current;
+      }
+
+      return { year, month };
+    });
+  }, []);
+
   // Fetch tasks filtered by a 3-month window around the visible month
   useEffect(() => {
     const fetchTasks = async () => {
@@ -476,7 +486,7 @@ export default function Calendar() {
           onCreateTaskOnDay={handleCreateTaskOnDay}
           onEditTask={handleEditTask}
           onTaskDateChange={handleTaskDateChange}
-          onMonthChange={(year, month) => setVisibleMonth({ year, month })}
+          onMonthChange={handleVisibleMonthChange}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           priorityFilter={priorityFilter}
