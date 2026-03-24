@@ -582,6 +582,7 @@ export default function Config() {
   const handleSave = async () => {
     try {
       await saveSettings();
+      setHasLocalChanges(false);
       toast({ title: "✅ Configurações salvas", description: "Suas preferências foram salvas com sucesso" });
     } catch (error) {
       toast({ 
@@ -594,6 +595,7 @@ export default function Config() {
 
   const handleReset = () => {
     resetSettings();
+    setHasLocalChanges(false);
     toast({ title: "Configurações resetadas", description: "Todas as configurações foram restauradas aos valores padrão" });
   };
 
