@@ -1303,6 +1303,7 @@ export default function Config() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <DndContext
+                  id="config-categories-dnd"
                   sensors={sensors}
                   collisionDetection={closestCenter}
                   onDragEnd={handleDragEnd}
