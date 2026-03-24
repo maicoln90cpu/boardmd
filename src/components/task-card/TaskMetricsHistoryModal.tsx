@@ -35,7 +35,7 @@ import {
 } from "recharts";
 import { format, parseISO, subDays, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import jsPDF from "jspdf";
+// jsPDF loaded dynamically to reduce bundle size
 
 interface TaskMetricsHistoryModalProps {
   open: boolean;
@@ -130,7 +130,8 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
   };
 
   // Export to PDF
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     

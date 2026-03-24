@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+// jsPDF loaded dynamically to reduce bundle size
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -39,6 +39,7 @@ export async function generateProductivityReport({
   stats,
   period,
 }: ReportData): Promise<Blob> {
+  const jsPDF = (await import('jspdf')).default;
   const doc = new jsPDF();
   const now = new Date();
   

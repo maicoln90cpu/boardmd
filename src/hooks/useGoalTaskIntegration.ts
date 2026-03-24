@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
 
 /**
@@ -44,6 +45,7 @@ export function useGoalTaskIntegration() {
           .eq("id", goal.id);
 
         if (isCompleted) {
+          const confetti = await loadConfetti();
           confetti({
             particleCount: 150,
             spread: 80,

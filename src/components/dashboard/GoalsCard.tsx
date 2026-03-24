@@ -29,7 +29,8 @@ import { useGoals, Goal } from "@/hooks/useGoals";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { differenceInDays } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { Switch } from "@/components/ui/switch";
 
 export function GoalsCard() {
@@ -77,6 +78,7 @@ export function GoalsCard() {
   const handleIncrement = async (goalId: string) => {
     const result = await incrementGoal.mutateAsync(goalId);
     if (result.justCompleted) {
+      const confetti = await loadConfetti();
       confetti({
         particleCount: 150,
         spread: 80,

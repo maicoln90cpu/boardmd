@@ -10,7 +10,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
 import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
 import { formatDateTimeBR } from "@/lib/dateUtils";
@@ -259,8 +260,9 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   }, [task.originalCategory]);
 
   // Confetti trigger
-  const triggerConfetti = React.useCallback(() => {
+  const triggerConfetti = React.useCallback(async () => {
     if (!cardRef.current) return;
+    const confetti = await loadConfetti();
     const rect = cardRef.current.getBoundingClientRect();
     const x = (rect.left + rect.width / 2) / window.innerWidth;
     const y = (rect.top + rect.height / 2) / window.innerHeight;
