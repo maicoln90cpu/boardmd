@@ -236,7 +236,7 @@ function Eisenhower() {
           </p>
         </div>
 
-        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext id="eisenhower-dnd" sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DroppableQuadrant quadrant="do" tasks={grouped.do} />
             <DroppableQuadrant quadrant="schedule" tasks={grouped.schedule} />

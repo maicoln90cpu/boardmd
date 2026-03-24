@@ -207,7 +207,7 @@ function LinksView({
   viewMode: ViewMode;
 }) {
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+    <DndContext id="quicklinks-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={links.map((l) => l.id)} strategy={viewMode === "cards" ? rectSortingStrategy : verticalListSortingStrategy}>
         {viewMode === "cards" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
