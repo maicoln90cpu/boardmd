@@ -16,7 +16,8 @@ import { CourseWeeklyGoal } from "@/components/courses/CourseWeeklyGoal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sidebar } from "@/components/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import {
   AlertDialog,
   AlertDialogAction,

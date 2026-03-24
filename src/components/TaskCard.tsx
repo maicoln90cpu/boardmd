@@ -10,7 +10,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
 import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
 import { formatDateTimeBR } from "@/lib/dateUtils";

@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
-import confetti from "canvas-confetti";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { toast } from "sonner";
 import { notifyAchievement } from "@/lib/whatsappNotifier";
 
