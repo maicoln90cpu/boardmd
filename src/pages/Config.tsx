@@ -1053,7 +1053,10 @@ export default function Config() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
+          {/* Aba Visualização */}
+          <TabsContent value="visualization" className="space-y-4">
             {/* Preferências de Visualização */}
             <Card>
               <CardHeader>
@@ -1206,7 +1209,6 @@ export default function Config() {
                 </div>
 
                 <Separator />
-
 
                 <div className="space-y-2">
                   <Label>Colunas no Grid (Projetos)</Label>
