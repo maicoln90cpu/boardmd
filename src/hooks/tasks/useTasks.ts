@@ -96,23 +96,15 @@ export function useTasks(categoryId: string | null | "all") {
   const fetchTasks = async () => {
     let query = supabase
       .from("tasks")
-      .select("*, categories(name), mirror_task_id");
+      .select("id,title,description,priority,due_date,tags,column_id,category_id,position,user_id,created_at,updated_at,is_favorite,is_completed,subtasks,recurrence_rule,mirror_task_id,linked_note_id,track_metrics,metric_type,track_comments,notification_settings,column_entered_at,linked_course_id");
     
     if (categoryId && categoryId !== "all") {
       query = query.eq("category_id", categoryId);
     }
 
-    // Se for "all", excluir categoria "Diário"
-    if (categoryId === "all") {
-      const { data: categories } = await supabase
-        .from("categories")
-        .select("id")
-        .neq("name", "Diário");
-      
-      if (categories && categories.length > 0) {
-        const categoryIds = categories.map(c => c.id);
-        query = query.in("category_id", categoryIds);
-      }
+    // Use cached category IDs instead of a separate query each time
+    if (categoryId === "all" && excludedCategoryIds && excludedCategoryIds.length > 0) {
+      query = query.in("category_id", excludedCategoryIds);
     }
     
     const { data, error } = await query.order("position");
