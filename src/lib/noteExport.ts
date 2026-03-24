@@ -65,7 +65,8 @@ export function exportNoteAsMarkdown(title: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportNoteAsPDF(title: string, content: string) {
+export async function exportNoteAsPDF(title: string, content: string) {
+  const jsPDF = (await import('jspdf')).default;
   const plainText = htmlToMarkdown(content || "");
   const pdf = new jsPDF({ unit: "mm", format: "a4" });
 

@@ -39,6 +39,7 @@ export async function generateProductivityReport({
   stats,
   period,
 }: ReportData): Promise<Blob> {
+  const jsPDF = (await import('jspdf')).default;
   const doc = new jsPDF();
   const now = new Date();
   

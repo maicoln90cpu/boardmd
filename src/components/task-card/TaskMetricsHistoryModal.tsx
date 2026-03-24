@@ -130,7 +130,8 @@ export const TaskMetricsHistoryModal: React.FC<TaskMetricsHistoryModalProps> = (
   };
 
   // Export to PDF
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
+    const jsPDF = (await import("jspdf")).default;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     

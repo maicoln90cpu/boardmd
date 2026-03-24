@@ -27,7 +27,8 @@ export function CostReportExport({ theme, items, totals, reportText }: Props) {
     share({ title: theme.name, text: reportText });
   };
 
-  const handlePDF = () => {
+  const handlePDF = async () => {
+    const { jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     const margin = 20;
     let y = margin;

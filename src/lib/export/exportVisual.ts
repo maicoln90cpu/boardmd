@@ -1,14 +1,5 @@
 import { logger } from '@/lib/logger';
 
-async function loadHtml2Canvas() {
-  return (await import('html2canvas')).default;
-}
-
-async function loadJsPDF() {
-  return (await import('jspdf')).default;
-}
-import { logger } from '@/lib/logger';
-
 export async function exportToPNG(elementId: string, filename: string = 'kanban-export') {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -16,14 +7,14 @@ export async function exportToPNG(elementId: string, filename: string = 'kanban-
   }
 
   try {
+    const html2canvas = (await import('html2canvas')).default;
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
-      scale: 2, // Higher quality
+      scale: 2,
       logging: false,
       useCORS: true,
     });
 
-    // Convert to blob and download
     canvas.toBlob((blob) => {
       if (blob) {
         const url = URL.createObjectURL(blob);
@@ -47,6 +38,8 @@ export async function exportToPDF(elementId: string, filename: string = 'kanban-
   }
 
   try {
+    const html2canvas = (await import('html2canvas')).default;
+    const jsPDF = (await import('jspdf')).default;
     const canvas = await html2canvas(element, {
       backgroundColor: '#ffffff',
       scale: 2,
