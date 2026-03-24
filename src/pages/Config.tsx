@@ -632,15 +632,14 @@ export default function Config() {
 
         <div className="container max-w-6xl mx-auto p-6 pb-24">
           <Tabs defaultValue="appearance" className="space-y-6">
-          <TabsList className="flex flex-wrap gap-1 md:grid md:grid-cols-8 mb-6 h-auto">
+          <TabsList className="flex flex-wrap gap-1 md:grid md:grid-cols-7 mb-6 h-auto">
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="appearance">Aparência</TabsTrigger>
+            <TabsTrigger value="visualization">Visualização</TabsTrigger>
             <TabsTrigger value="kanban">Kanban</TabsTrigger>
             <TabsTrigger value="productivity">Produtividade</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="ai-prompts">IA & Prompts</TabsTrigger>
             <TabsTrigger value="advanced">Avançado</TabsTrigger>
-            <TabsTrigger value="data">Dados</TabsTrigger>
           </TabsList>
 
           {/* Aba Perfil */}
