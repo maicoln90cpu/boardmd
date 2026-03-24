@@ -356,10 +356,16 @@ export default function Config() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
+  // Wrapper to track local changes for persistent save button
+  const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {
+    updateSettings(newSettings);
+    setHasLocalChanges(true);
+  };
+
   // OTIMIZAÇÃO: Remover disparo de evento storage - não mais necessário
   const handleToggleHideCompleted = (checked: boolean) => {
     localStorage.setItem('hideCompletedTasks', checked.toString());
-    updateSettings({ kanban: { ...settings.kanban, hideCompletedTasks: checked } });
+    handleUpdateSettings({ kanban: { ...settings.kanban, hideCompletedTasks: checked } });
   };
   
   const [editingId, setEditingId] = useState<string | null>(null);
