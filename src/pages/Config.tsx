@@ -622,7 +622,7 @@ export default function Config() {
               </Button>
               <h1 className="text-2xl font-bold">⚙️ Configurações</h1>
             </div>
-            {isDirty && (
+            {(hasLocalChanges || isDirty) && (
               <Button onClick={handleSave} className="font-semibold">
                 💾 Salvar Alterações
               </Button>
