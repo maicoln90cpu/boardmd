@@ -1566,94 +1566,6 @@ export default function Config() {
           </TabsContent>
 
           {/* Aba IA & Prompts */}
-          <TabsContent value="ai-prompts" className="space-y-4">
-            {/* Card do Modelo de IA */}
-            <Card>
-              <CardHeader>
-                <CardTitle>🧠 Modelo de IA</CardTitle>
-                <CardDescription>Escolha qual modelo de IA usar para processar suas notas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select 
-                  value={settings.ai?.model || 'google/gemini-2.5-flash'} 
-                  onValueChange={(value) => handleUpdateSettings({ ai: { ...settings.ai, model: value } })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione um modelo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AI_MODELS.map((model) => (
-                      <SelectItem key={model.value} value={model.value}>
-                        <div className="flex flex-col items-start py-1">
-                          <span className="font-medium">{model.label}</span>
-                          <span className="text-xs text-muted-foreground">{model.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            {/* Card de Prompts */}
-            <Card>
-              <CardHeader>
-                <CardTitle>🤖 Prompts Personalizados</CardTitle>
-                <CardDescription>Personalize os prompts usados pela IA para melhorar suas notas</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex justify-end">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        Resetar Todos
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Resetar todos os prompts?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Isso restaurará todos os prompts para os valores padrão. Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetAllAIPrompts}>
-                          Resetar Todos
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-
-                {getAllPrompts().map((prompt) => (
-                  <div key={prompt.key} className="space-y-2 p-4 border rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-base">{prompt.label}</Label>
-                        <p className="text-sm text-muted-foreground">{prompt.description}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => resetAIPrompt(prompt.key)}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      value={getAIPrompt(prompt.key)}
-                      onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
-                      className="min-h-[100px] font-mono text-sm"
-                      placeholder={prompt.defaultValue}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Aba Avançado */}
           <TabsContent value="advanced" className="space-y-4">
             <Card>
@@ -1802,10 +1714,93 @@ export default function Config() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Aba Dados */}
-          <TabsContent value="data" className="space-y-4">
+            {/* IA & Prompts */}
+            <Card>
+              <CardHeader>
+                <CardTitle>🧠 Modelo de IA</CardTitle>
+                <CardDescription>Escolha qual modelo de IA usar para processar suas notas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select 
+                  value={settings.ai?.model || 'google/gemini-2.5-flash'} 
+                  onValueChange={(value) => handleUpdateSettings({ ai: { ...settings.ai, model: value } })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AI_MODELS.map((model) => (
+                      <SelectItem key={model.value} value={model.value}>
+                        <div className="flex flex-col items-start py-1">
+                          <span className="font-medium">{model.label}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>🤖 Prompts Personalizados</CardTitle>
+                <CardDescription>Personalize os prompts usados pela IA para melhorar suas notas</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex justify-end">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Resetar Todos
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Resetar todos os prompts?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso restaurará todos os prompts para os valores padrão. Esta ação não pode ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={resetAllAIPrompts}>
+                          Resetar Todos
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+
+                {getAllPrompts().map((prompt) => (
+                  <div key={prompt.key} className="space-y-2 p-4 border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-base">{prompt.label}</Label>
+                        <p className="text-sm text-muted-foreground">{prompt.description}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resetAIPrompt(prompt.key)}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={getAIPrompt(prompt.key)}
+                      onChange={(e) => updateAIPrompt(prompt.key, e.target.value)}
+                      className="min-h-[100px] font-mono text-sm"
+                      placeholder={prompt.defaultValue}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Integridade de Dados */}
             <DataIntegrityMonitor />
           </TabsContent>
         </Tabs>
