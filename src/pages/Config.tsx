@@ -662,7 +662,7 @@ export default function Config() {
                     value={settings.theme} 
                     onValueChange={(value) => {
                       const newTheme = value as 'light' | 'dark' | 'auto';
-                      updateSettings({ theme: newTheme });
+                      handleUpdateSettings({ theme: newTheme });
                       setTheme(newTheme);
                     }}
                   >
@@ -688,7 +688,7 @@ export default function Config() {
                   <Label htmlFor="density">Densidade Padrão</Label>
                   <Select 
                     value={settings.defaultDensity} 
-                    onValueChange={(value) => updateSettings({ defaultDensity: value as 'comfortable' | 'compact' | 'ultra-compact' })}
+                    onValueChange={(value) => handleUpdateSettings({ defaultDensity: value as 'comfortable' | 'compact' | 'ultra-compact' })}
                   >
                     <SelectTrigger id="density">
                       <SelectValue />
@@ -707,7 +707,7 @@ export default function Config() {
                   <Label htmlFor="language">Idioma</Label>
                   <Select 
                     value={settings.interface.language} 
-                    onValueChange={(value) => updateSettings({ interface: { ...settings.interface, language: value as 'pt-BR' | 'en' | 'es' } })}
+                    onValueChange={(value) => handleUpdateSettings({ interface: { ...settings.interface, language: value as 'pt-BR' | 'en' | 'es' } })}
                   >
                     <SelectTrigger id="language">
                       <SelectValue />
@@ -727,7 +727,7 @@ export default function Config() {
                   <Label htmlFor="timezone">Fuso Horário</Label>
                   <Select 
                     value={settings.timezone || 'America/Sao_Paulo'} 
-                    onValueChange={(value) => updateSettings({ timezone: value })}
+                    onValueChange={(value) => handleUpdateSettings({ timezone: value })}
                   >
                     <SelectTrigger id="timezone">
                       <SelectValue />
@@ -771,7 +771,7 @@ export default function Config() {
                           type="color"
                           id="highPriorityColor"
                           value={settings.customization?.priorityColors?.high?.background || '#fee2e2'}
-                          onChange={(e) => updateSettings({ 
+                          onChange={(e) => handleUpdateSettings({ 
                             customization: { 
                               ...settings.customization,
                               priorityColors: {
@@ -796,7 +796,7 @@ export default function Config() {
                           type="color"
                           id="mediumPriorityColor"
                           value={settings.customization?.priorityColors?.medium?.background || '#fef3c7'}
-                          onChange={(e) => updateSettings({ 
+                          onChange={(e) => handleUpdateSettings({ 
                             customization: { 
                               ...settings.customization,
                               priorityColors: {
@@ -821,7 +821,7 @@ export default function Config() {
                           type="color"
                           id="lowPriorityColor"
                           value={settings.customization?.priorityColors?.low?.background || '#dcfce7'}
-                          onChange={(e) => updateSettings({ 
+                          onChange={(e) => handleUpdateSettings({ 
                             customization: { 
                               ...settings.customization,
                               priorityColors: {
@@ -876,7 +876,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.kanban.showFavoritesPanel}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ kanban: { ...settings.kanban, showFavoritesPanel: checked } })}
                   />
                 </div>
 
@@ -894,7 +894,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.kanban.autoMoveToCurrentWeek ?? false}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, autoMoveToCurrentWeek: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ kanban: { ...settings.kanban, autoMoveToCurrentWeek: checked } })}
                   />
                 </div>
 
@@ -918,7 +918,7 @@ export default function Config() {
                           <button
                             onClick={() => {
                               const newList = (settings.kanban.excludeFromWeeklyAutomation || []).filter((_, i) => i !== index);
-                              updateSettings({ kanban: { ...settings.kanban, excludeFromWeeklyAutomation: newList } });
+                              handleUpdateSettings({ kanban: { ...settings.kanban, excludeFromWeeklyAutomation: newList } });
                             }}
                             className="ml-1 hover:text-destructive transition-colors"
                           >
@@ -938,7 +938,7 @@ export default function Config() {
                             const input = e.currentTarget;
                             const value = input.value.trim().toLowerCase();
                             if (value && !(settings.kanban.excludeFromWeeklyAutomation || []).includes(value)) {
-                              updateSettings({ 
+                              handleUpdateSettings({ 
                                 kanban: { 
                                   ...settings.kanban, 
                                   excludeFromWeeklyAutomation: [...(settings.kanban.excludeFromWeeklyAutomation || []), value] 
@@ -956,7 +956,7 @@ export default function Config() {
                           const input = document.getElementById('new-exclude-column') as HTMLInputElement;
                           const value = input?.value.trim().toLowerCase();
                           if (value && !(settings.kanban.excludeFromWeeklyAutomation || []).includes(value)) {
-                            updateSettings({ 
+                            handleUpdateSettings({ 
                               kanban: { 
                                 ...settings.kanban, 
                                 excludeFromWeeklyAutomation: [...(settings.kanban.excludeFromWeeklyAutomation || []), value] 
@@ -978,7 +978,7 @@ export default function Config() {
                   <Label>Ordenação Padrão (Projetos)</Label>
                   <Select 
                     value={settings.kanban.projectsSortOption} 
-                    onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, projectsSortOption: value as 'manual' | 'date_asc' | 'date_desc' | 'name_asc' | 'name_desc' | 'priority_asc' | 'priority_desc' } })}
+                    onValueChange={(value) => handleUpdateSettings({ kanban: { ...settings.kanban, projectsSortOption: value as 'manual' | 'date_asc' | 'date_desc' | 'name_asc' | 'name_desc' | 'priority_asc' | 'priority_desc' } })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1021,7 +1021,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.kanban.immediateRecurrentReset}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, immediateRecurrentReset: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ kanban: { ...settings.kanban, immediateRecurrentReset: checked } })}
                   />
                 </div>
 
@@ -1037,7 +1037,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.calendar?.showRecurring !== false}
-                    onCheckedChange={(checked) => updateSettings({ calendar: { ...settings.calendar, showRecurring: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ calendar: { ...settings.calendar, showRecurring: checked } })}
                   />
                 </div>
 
@@ -1071,7 +1071,7 @@ export default function Config() {
                       <Label>Modo de Visualização Padrão</Label>
                       <Select
                         value={settings.kanban.defaultViewMode || 'kanban'}
-                        onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultViewMode: value as 'kanban' | 'table' | 'gantt' } })}
+                        onValueChange={(value) => handleUpdateSettings({ kanban: { ...settings.kanban, defaultViewMode: value as 'kanban' | 'table' | 'gantt' } })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1088,7 +1088,7 @@ export default function Config() {
                       <Label>Exibição Padrão</Label>
                       <Select
                         value={settings.kanban.defaultDisplayMode || 'all_tasks'}
-                        onValueChange={(value) => updateSettings({ kanban: { ...settings.kanban, defaultDisplayMode: value as 'by_category' | 'all_tasks' } })}
+                        onValueChange={(value) => handleUpdateSettings({ kanban: { ...settings.kanban, defaultDisplayMode: value as 'by_category' | 'all_tasks' } })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1112,7 +1112,7 @@ export default function Config() {
                     <Label>Visualização Padrão</Label>
                     <Select
                       value={settings.calendar?.defaultViewType || 'month'}
-                      onValueChange={(value) => updateSettings({ calendar: { ...settings.calendar, defaultViewType: value as 'month' | 'week' | 'day' } })}
+                      onValueChange={(value) => handleUpdateSettings({ calendar: { ...settings.calendar, defaultViewType: value as 'month' | 'week' | 'day' } })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -1137,7 +1137,7 @@ export default function Config() {
                       <Label>Modo da Sidebar</Label>
                       <Select
                         value={settings.notes?.defaultSidebarMode || 'notebooks'}
-                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultSidebarMode: value as 'notebooks' | 'wiki' } })}
+                        onValueChange={(value) => handleUpdateSettings({ notes: { ...settings.notes, defaultSidebarMode: value as 'notebooks' | 'wiki' } })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1153,7 +1153,7 @@ export default function Config() {
                       <Label>Visualização Padrão</Label>
                       <Select
                         value={settings.notes?.defaultViewMode || 'list'}
-                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultViewMode: value as 'list' | 'grid' } })}
+                        onValueChange={(value) => handleUpdateSettings({ notes: { ...settings.notes, defaultViewMode: value as 'list' | 'grid' } })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1169,7 +1169,7 @@ export default function Config() {
                       <Label>Ordenação Padrão</Label>
                       <Select
                         value={settings.notes?.defaultSortBy || 'updated'}
-                        onValueChange={(value) => updateSettings({ notes: { ...settings.notes, defaultSortBy: value as 'updated' | 'alphabetical' | 'created' } })}
+                        onValueChange={(value) => handleUpdateSettings({ notes: { ...settings.notes, defaultSortBy: value as 'updated' | 'alphabetical' | 'created' } })}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -1202,7 +1202,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.mobile.hideBadges}
-                    onCheckedChange={(checked) => updateSettings({ mobile: { ...settings.mobile, hideBadges: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ mobile: { ...settings.mobile, hideBadges: checked } })}
                   />
                 </div>
 
@@ -1213,7 +1213,7 @@ export default function Config() {
                   <Label>Colunas no Grid (Projetos)</Label>
                   <Select 
                     value={String(settings.mobile.projectsGridColumns)} 
-                    onValueChange={(value) => updateSettings({ mobile: { ...settings.mobile, projectsGridColumns: Number(value) as 1 | 2 } })}
+                    onValueChange={(value) => handleUpdateSettings({ mobile: { ...settings.mobile, projectsGridColumns: Number(value) as 1 | 2 } })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1262,7 +1262,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.productivity.dailyReviewEnabled ?? true}
-                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, dailyReviewEnabled: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ productivity: { ...settings.productivity, dailyReviewEnabled: checked } })}
                   />
                 </div>
               </CardContent>
@@ -1284,7 +1284,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.productivity.autoResetDailyStats}
-                    onCheckedChange={(checked) => updateSettings({ productivity: { ...settings.productivity, autoResetDailyStats: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ productivity: { ...settings.productivity, autoResetDailyStats: checked } })}
                   />
                 </div>
               </CardContent>
@@ -1575,7 +1575,7 @@ export default function Config() {
               <CardContent>
                 <Select 
                   value={settings.ai?.model || 'google/gemini-2.5-flash'} 
-                  onValueChange={(value) => updateSettings({ ai: { ...settings.ai, model: value } })}
+                  onValueChange={(value) => handleUpdateSettings({ ai: { ...settings.ai, model: value } })}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione um modelo" />
@@ -1670,7 +1670,7 @@ export default function Config() {
                   </div>
                   <Switch
                     checked={settings.kanban.simplifiedMode}
-                    onCheckedChange={(checked) => updateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
+                    onCheckedChange={(checked) => handleUpdateSettings({ kanban: { ...settings.kanban, simplifiedMode: checked } })}
                   />
                 </div>
 
