@@ -1,5 +1,12 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { logger } from '@/lib/logger';
+
+async function loadHtml2Canvas() {
+  return (await import('html2canvas')).default;
+}
+
+async function loadJsPDF() {
+  return (await import('jspdf')).default;
+}
 import { logger } from '@/lib/logger';
 
 export async function exportToPNG(elementId: string, filename: string = 'kanban-export') {

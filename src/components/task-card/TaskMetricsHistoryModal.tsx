@@ -35,7 +35,7 @@ import {
 } from "recharts";
 import { format, parseISO, subDays, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import jsPDF from "jspdf";
+// jsPDF loaded dynamically to reduce bundle size
 
 interface TaskMetricsHistoryModalProps {
   open: boolean;

@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+// jsPDF loaded dynamically to reduce bundle size
 
 /**
  * Convert TipTap HTML content to plain Markdown (best-effort).
