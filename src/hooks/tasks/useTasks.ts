@@ -62,27 +62,36 @@ export function useTasks(categoryId: string | null | "all") {
   const { user } = useAuth();
   const { isOnline } = useOnlineStatus();
 
+  // Cache category IDs to exclude "Diário" — avoids N+1 query on every fetch
+  const [excludedCategoryIds, setExcludedCategoryIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (categoryId === "all") {
+      supabase
+        .from("categories")
+        .select("id")
+        .neq("name", "Diário")
+        .then(({ data }) => {
+          if (data) setExcludedCategoryIds(data.map(c => c.id));
+        });
+    }
+  }, [categoryId]);
+
   useEffect(() => {
     if (categoryId) {
+      // Wait for excluded IDs to be ready when using "all"
+      if (categoryId === "all" && !excludedCategoryIds) return;
       fetchTasks();
       const cleanup = subscribeToTasks();
       
-      // Listener para updates otimistas
-      const handleTaskUpdate = (event: CustomEvent) => {
-        fetchTasks();
-      };
-      
-      window.addEventListener('task-updated', handleTaskUpdate as EventListener);
-      
       return () => {
         cleanup();
-        window.removeEventListener('task-updated', handleTaskUpdate as EventListener);
       };
     } else {
       setTasks([]);
       setLoading(false);
     }
-  }, [categoryId]);
+  }, [categoryId, excludedCategoryIds]);
 
   const fetchTasks = async () => {
     let query = supabase
