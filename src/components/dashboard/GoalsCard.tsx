@@ -78,6 +78,7 @@ export function GoalsCard() {
   const handleIncrement = async (goalId: string) => {
     const result = await incrementGoal.mutateAsync(goalId);
     if (result.justCompleted) {
+      const confetti = await loadConfetti();
       confetti({
         particleCount: 150,
         spread: 80,

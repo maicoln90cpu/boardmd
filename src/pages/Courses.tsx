@@ -31,14 +31,15 @@ import {
 import type { Course, CourseFormData } from "@/types";
 
 // Função para disparar confetti
-const triggerConfetti = () => {
+const triggerConfetti = async () => {
+  const confetti = await loadConfetti();
   const count = 200;
   const defaults = {
     origin: { y: 0.7 },
     zIndex: 9999,
   };
 
-  function fire(particleRatio: number, opts: confetti.Options) {
+  function fire(particleRatio: number, opts: Record<string, unknown>) {
     confetti({
       ...defaults,
       ...opts,

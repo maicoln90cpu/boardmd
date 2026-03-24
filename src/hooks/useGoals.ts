@@ -144,6 +144,7 @@ export function useGoals() {
         .eq("id", goal.id);
 
       if (isCompleted) {
+        const confetti = await loadConfetti();
         confetti({
           particleCount: 150,
           spread: 80,
