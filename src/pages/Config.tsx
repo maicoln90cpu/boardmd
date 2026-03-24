@@ -348,6 +348,7 @@ function DeleteAccountButton() {
 
 export default function Config() {
   const { settings, updateSettings, saveSettings, resetSettings, isDirty, isLoading, getAIPrompt, updateAIPrompt, resetAIPrompt, resetAllAIPrompts } = useSettings();
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
   const { theme, setTheme, toggleTheme } = useTheme();
   const { categories, addCategory, deleteCategory, reorderCategories, getFlatHierarchy, getSubcategories } = useCategories();
   const { tags, addTag, updateTag, deleteTag } = useTags();
