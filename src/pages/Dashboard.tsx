@@ -95,11 +95,11 @@ export default function Dashboard() {
     return tasks.filter(task => !recurrentColumnIds.includes(task.column_id));
   }, [tasks, columns]);
 
-  const resolvedStats = dashboardStats || {
+  const resolvedStats = useMemo(() => dashboardStats || {
     total: 0, completed: 0, pending: 0, overdue: 0,
     due_today: 0, due_this_week: 0, completed_today: 0,
     completed_this_week: 0, high_priority: 0, favorites: 0,
-  };
+  }, [dashboardStats]);
 
   const level = stats?.level || 1;
   const currentPoints = stats?.total_points || 0;

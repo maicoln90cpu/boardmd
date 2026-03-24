@@ -44,7 +44,7 @@ export function useNotes() {
     try {
       const { data, error } = await supabase
         .from("notes")
-        .select("*")
+        .select("id,title,content,notebook_id,user_id,created_at,updated_at,is_pinned,color,linked_task_id,linked_course_id")
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
