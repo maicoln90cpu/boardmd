@@ -49,6 +49,8 @@ export function useNotes() {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
+      // Set content as null for list items — full content loaded on demand
+      setNotes((data || []).map(d => ({ ...d, content: null })) as Note[]);
       setNotes(data || []);
     } catch (error) {
       logger.error("Error fetching notes:", error);
