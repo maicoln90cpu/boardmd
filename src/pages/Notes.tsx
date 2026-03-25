@@ -63,6 +63,13 @@ export default function Notes() {
     }
   }, [searchParams, notes, setSearchParams, setEditingNoteId]);
 
+  // Load full content when a note is selected
+  useEffect(() => {
+    if (selectedNoteId) {
+      fetchNoteContent(selectedNoteId);
+    }
+  }, [selectedNoteId, fetchNoteContent]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
