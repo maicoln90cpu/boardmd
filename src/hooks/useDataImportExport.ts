@@ -200,7 +200,7 @@ export function useDataImportExport({
       setImportFileName("");
       
       // Forçar refresh do board
-      window.dispatchEvent(new CustomEvent('task-updated'));
+      // Realtime handles sync
       onBoardRefresh();
     } catch (error) {
       logger.error("Import confirm error:", error);

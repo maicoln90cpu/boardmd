@@ -58,7 +58,6 @@ export function useIndexData() {
           .update({ position, updated_at: new Date().toISOString() })
           .eq("id", id);
       }
-      window.dispatchEvent(new CustomEvent('task-updated'));
       refreshDailyBoard();
       addActivity("ai_organize", "Tarefas organizadas com IA");
     } catch (error) {

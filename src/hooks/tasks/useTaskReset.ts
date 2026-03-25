@@ -133,7 +133,7 @@ export function useTaskReset({
     }
 
     // Disparar evento para forçar refetch
-    window.dispatchEvent(new CustomEvent('task-updated'));
+    // Realtime handles sync
     addActivity("recurrent_reset", "Tarefas recorrentes resetadas globalmente");
     toast({
       title: "Tarefas resetadas",

@@ -42,7 +42,7 @@ export function TaskBlockComponent({ node, updateAttributes, selected }: NodeVie
         toast.success(newCompletedState ? "Tarefa concluída" : "Tarefa reaberta");
         
         // Disparar evento para atualizar Kanban
-        window.dispatchEvent(new CustomEvent('task-updated', { detail: { taskId } }));
+        // Realtime handles sync
       }
     } catch (err) {
       // Reverter em caso de erro
