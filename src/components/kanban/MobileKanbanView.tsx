@@ -90,7 +90,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
 
         // Push notification handled by useTasks.updateTask (centralized)
 
-        window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId: task.id } }));
+        // Realtime handles sync
 
         toast({
           title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",

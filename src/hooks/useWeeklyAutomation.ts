@@ -88,7 +88,7 @@ export function useWeeklyAutomation({
     }
     
     // Disparar evento para refresh
-    window.dispatchEvent(new CustomEvent('task-updated'));
+    // Realtime handles sync
     
     toast({
       title: "Automação Semana Atual",

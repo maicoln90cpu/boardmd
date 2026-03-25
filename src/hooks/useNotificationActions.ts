@@ -72,7 +72,7 @@ async function completeTask(taskId: string) {
     });
 
     // Emit event for other components to update
-    window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId } }));
+    // Realtime handles sync
   } catch (error) {
     console.error("Error completing task from notification:", error);
     toast.error("Erro ao concluir tarefa");

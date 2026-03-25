@@ -633,7 +633,7 @@ export function TaskModal({
                             .eq("id", noteItem.id);
                           
                           setLinkedNotes(prev => prev.filter(n => n.id !== noteItem.id));
-                          window.dispatchEvent(new CustomEvent('task-updated'));
+                          
                           
                           toast({
                             title: "Nota desvinculada",

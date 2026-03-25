@@ -378,9 +378,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onMoveToCompleted(task.id, completedColumnId);
       }
 
-      window.dispatchEvent(
-        new CustomEvent("task-updated", { detail: { taskId: task.id } })
-      );
+      // Realtime subscription handles UI sync
     } catch (error) {
       logger.error("Erro ao atualizar tarefa:", error);
       setIsLocalCompleted(!checked);
