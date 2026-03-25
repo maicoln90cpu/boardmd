@@ -21,7 +21,7 @@ import { useSettings } from "@/hooks/data/useSettings";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
-  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setEditingNoteId, togglePin, fetchNotes } = useNotes();
+  const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setEditingNoteId, togglePin, fetchNotes, fetchNoteContent } = useNotes();
   const { settings } = useSettings();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
