@@ -340,6 +340,37 @@ export function useNotes() {
     pendingRemoteUpdateRef.current = null;
   };
 
+  // Fetch full content for a specific note (on-demand)
+  const fetchNoteContent = useCallback(async (noteId: string): Promise<string | null> => {
+    // Check if we already have content cached in state
+    const cached = notes.find(n => n.id === noteId);
+    if (cached?.content !== null && cached?.content !== undefined) {
+      return cached.content;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("content")
+        .eq("id", noteId)
+        .single();
+
+      if (error) throw error;
+
+      // Update content in state cache
+      if (data) {
+        setNotes(prev => prev.map(n => 
+          n.id === noteId ? { ...n, content: data.content } : n
+        ));
+        return data.content;
+      }
+      return null;
+    } catch (error) {
+      logger.error("Error fetching note content:", error);
+      return null;
+    }
+  }, [notes]);
+
   return {
     notes,
     loading,
@@ -348,6 +379,7 @@ export function useNotes() {
     deleteNote,
     moveNoteToNotebook,
     fetchNotes,
+    fetchNoteContent,
     setEditingNoteId,
     hasPendingRemoteUpdate,
     clearPendingRemoteUpdate,
