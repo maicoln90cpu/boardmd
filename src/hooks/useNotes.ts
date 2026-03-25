@@ -42,9 +42,10 @@ export function useNotes() {
     if (!user) return;
 
     try {
+      // List query: exclude heavy 'content' field for performance
       const { data, error } = await supabase
         .from("notes")
-        .select("id,title,content,notebook_id,user_id,created_at,updated_at,is_pinned,color,linked_task_id,linked_course_id")
+        .select("id,title,notebook_id,user_id,created_at,updated_at,is_pinned,color,linked_task_id,linked_course_id")
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
