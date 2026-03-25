@@ -26,7 +26,7 @@ interface NotesListProps {
   viewMode?: 'list' | 'grid';
 }
 
-export function NotesList({
+export const NotesList = memo(function NotesList({
   notes,
   selectedNoteId,
   onSelectNote,
