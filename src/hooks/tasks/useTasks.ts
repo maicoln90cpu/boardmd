@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +8,7 @@ import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { logger } from "@/lib/logger";
 import { notifyTaskCompleted } from "@/lib/whatsappNotifier";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 
 // Helper to dispatch saving state events
@@ -55,88 +56,86 @@ export interface Task {
   } | null;
 }
 
+const TASK_FIELDS = "id,title,description,priority,due_date,tags,column_id,category_id,position,user_id,created_at,updated_at,is_favorite,is_completed,subtasks,recurrence_rule,mirror_task_id,linked_note_id,track_metrics,metric_type,track_comments,notification_settings,column_entered_at,linked_course_id";
+
+async function fetchExcludedCategoryIds(): Promise<string[]> {
+  const { data } = await supabase
+    .from("categories")
+    .select("id")
+    .neq("name", "Diário");
+  return data ? data.map(c => c.id) : [];
+}
+
+async function fetchTasksFromDB(categoryId: string | null | "all", excludedIds: string[]): Promise<Task[]> {
+  let query = supabase.from("tasks").select(TASK_FIELDS);
+
+  if (categoryId && categoryId !== "all") {
+    query = query.eq("category_id", categoryId);
+  }
+
+  if (categoryId === "all" && excludedIds.length > 0) {
+    query = query.in("category_id", excludedIds);
+  }
+
+  const { data, error } = await query.order("position");
+  if (error) throw error;
+  return (data || []) as unknown as Task[];
+}
+
 export function useTasks(categoryId: string | null | "all") {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOnline } = useOnlineStatus();
+  const queryClient = useQueryClient();
 
-  // Cache category IDs to exclude "Diário" — avoids N+1 query on every fetch
-  const [excludedCategoryIds, setExcludedCategoryIds] = useState<string[] | null>(null);
-
-  useEffect(() => {
-    if (categoryId === "all") {
-      supabase
-        .from("categories")
-        .select("id")
-        .neq("name", "Diário")
-        .then(({ data }) => {
-          if (data) setExcludedCategoryIds(data.map(c => c.id));
-        });
-    }
-  }, [categoryId]);
+  // Cache excluded category IDs
+  const excludedIdsRef = useRef<string[]>([]);
+  const [excludedReady, setExcludedReady] = useState(categoryId !== "all");
 
   useEffect(() => {
-    if (categoryId) {
-      // Wait for excluded IDs to be ready when using "all"
-      if (categoryId === "all" && !excludedCategoryIds) return;
-      fetchTasks();
-      const cleanup = subscribeToTasks();
-      
-      return () => {
-        cleanup();
-      };
-    } else {
-      setTasks([]);
-      setLoading(false);
-    }
-  }, [categoryId, excludedCategoryIds]);
-
-  const fetchTasks = async () => {
-    let query = supabase
-      .from("tasks")
-      .select("id,title,description,priority,due_date,tags,column_id,category_id,position,user_id,created_at,updated_at,is_favorite,is_completed,subtasks,recurrence_rule,mirror_task_id,linked_note_id,track_metrics,metric_type,track_comments,notification_settings,column_entered_at,linked_course_id");
-    
-    if (categoryId && categoryId !== "all") {
-      query = query.eq("category_id", categoryId);
-    }
-
-    // Use cached category IDs instead of a separate query each time
-    if (categoryId === "all" && excludedCategoryIds && excludedCategoryIds.length > 0) {
-      query = query.in("category_id", excludedCategoryIds);
-    }
-    
-    const { data, error } = await query.order("position");
-
-    if (error) {
-      toast({ title: "Erro ao carregar tarefas", variant: "destructive" });
+    if (categoryId !== "all") {
+      setExcludedReady(true);
       return;
     }
+    let cancelled = false;
+    fetchExcludedCategoryIds().then(ids => {
+      if (!cancelled) {
+        excludedIdsRef.current = ids;
+        setExcludedReady(true);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [categoryId]);
 
-    setTasks((data || []) as unknown as Task[]);
-    setLoading(false);
-  };
+  const queryKey = ["tasks", categoryId];
 
-  const subscribeToTasks = () => {
-    // OTIMIZAÇÃO: Uma única subscription com event: "*" e update incremental
+  const { data: tasks = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: () => fetchTasksFromDB(categoryId, excludedIdsRef.current),
+    enabled: !!categoryId && excludedReady,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Helper to optimistically update the query cache
+  const setTasks = useCallback((updater: (prev: Task[]) => Task[]) => {
+    queryClient.setQueryData<Task[]>(queryKey, (old) => updater(old || []));
+  }, [queryClient, queryKey]);
+
+  // Realtime subscription for incremental updates
+  useEffect(() => {
+    if (!categoryId || !excludedReady) return;
+
     const channel = supabase
-      .channel(`tasks-${categoryId}`)
+      .channel(`tasks-rt-${categoryId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tasks",
-        },
+        { event: "*", schema: "public", table: "tasks" },
         (payload) => {
-          // Update incremental baseado no tipo de evento
           if (payload.eventType === "INSERT") {
             const newTask = payload.new as Task;
-            // Verificar se a tarefa pertence à categoria correta
             if (categoryId === "all" || newTask.category_id === categoryId) {
               setTasks((prev) => {
-                // Evitar duplicatas
                 if (prev.some(t => t.id === newTask.id)) return prev;
                 return [...prev, newTask];
               });
@@ -146,13 +145,10 @@ export function useTasks(categoryId: string | null | "all") {
             setTasks((prev) =>
               prev.map((t) => {
                 if (t.id !== updatedTask.id) return t;
-                // CORREÇÃO: Preservar campos críticos que podem não vir no payload Realtime
                 return {
                   ...t,
                   ...updatedTask,
-                  // Preservar recurrence_rule se não vier no payload
                   recurrence_rule: updatedTask.recurrence_rule ?? t.recurrence_rule,
-                  // Preservar campos de tracking se não vierem no payload
                   track_metrics: updatedTask.track_metrics ?? t.track_metrics,
                   track_comments: updatedTask.track_comments ?? t.track_comments,
                   metric_type: updatedTask.metric_type ?? t.metric_type,
@@ -171,7 +167,7 @@ export function useTasks(categoryId: string | null | "all") {
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [categoryId, excludedReady, setTasks]);
 
   const addTask = async (task: Partial<Task>) => {
     if (!user) {
@@ -199,7 +195,7 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(taskData);
 
-      // ATUALIZAÇÃO OTIMISTA: Criar tarefa temporária
+      // ATUALIZAÇÃO OTIMISTA
       const tempId = `temp-${Date.now()}`;
       const tempTask: Task = {
         id: tempId,
@@ -243,7 +239,6 @@ export function useTasks(categoryId: string | null | "all") {
         .single();
 
       if (error) {
-        // ROLLBACK: Remover tarefa temporária
         dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.filter(t => t.id !== tempId));
         offlineSync.queueOperation({
@@ -259,14 +254,12 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // Substituir temp pelo real
       if (data) {
         dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.map(t => 
           t.id === tempId ? { ...data as unknown as Task } : t
         ));
 
-        // Registrar no histórico
         await supabase.from("task_history").insert([{
           task_id: data.id,
           user_id: user.id,
@@ -311,7 +304,6 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // If column changed, update column_entered_at for cycle time tracking
       const finalUpdates: Record<string, unknown> = {
         ...validated,
         updated_at: new Date().toISOString(),
@@ -328,8 +320,7 @@ export function useTasks(categoryId: string | null | "all") {
       dispatchSavingEvent(id, false);
 
       if (error) {
-        // ROLLBACK
-        setTasks(previousTasks);
+        setTasks(() => previousTasks);
         offlineSync.queueOperation({
           type: 'task',
           action: 'update',
@@ -343,7 +334,6 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // Registrar no histórico
       const action = updates.column_id ? "moved" : "updated";
       await supabase.from("task_history").insert([{
         task_id: id,
@@ -352,14 +342,12 @@ export function useTasks(categoryId: string | null | "all") {
         changes: JSON.parse(JSON.stringify(updates))
       }]);
 
-      // Notify task completed (WhatsApp + push respecting template)
       if (updates.is_completed === true) {
         const task = tasks.find(t => t.id === id);
         const completedToday = tasks.filter(t => t.is_completed).length + 1;
         const pendingCount = tasks.filter(t => !t.is_completed && t.id !== id).length;
         notifyTaskCompleted(user.id, task?.title || '', completedToday, pendingCount);
         
-        // Push notification via centralized helper (respects template enabled)
         import("@/lib/notifications/pushHelper").then(({ sendPushWithTemplate }) => {
           sendPushWithTemplate({
             userId: user.id,
@@ -375,7 +363,6 @@ export function useTasks(categoryId: string | null | "all") {
       toast({ title: "Tarefa atualizada com sucesso" });
     } catch (e) {
       if (e instanceof z.ZodError) {
-        // ROLLBACK em caso de erro de validação
         toast({
           title: "Erro de validação",
           description: e.errors[0].message,
@@ -388,7 +375,6 @@ export function useTasks(categoryId: string | null | "all") {
   const deleteTask = async (id: string) => {
     if (!user) return;
 
-    // ATUALIZAÇÃO OTIMISTA
     const previousTasks = [...tasks];
     setTasks(prev => prev.filter(t => t.id !== id));
     dispatchSavingEvent(id, true);
@@ -408,8 +394,7 @@ export function useTasks(categoryId: string | null | "all") {
     dispatchSavingEvent(id, false);
 
     if (error) {
-      // ROLLBACK
-      setTasks(previousTasks);
+      setTasks(() => previousTasks);
       offlineSync.queueOperation({
         type: 'task',
         action: 'delete',
@@ -417,7 +402,6 @@ export function useTasks(categoryId: string | null | "all") {
       });
       toast({ title: "Erro ao deletar. Salvo offline", variant: "destructive" });
     } else {
-      // Registrar no histórico
       await supabase.from("task_history").insert([{
         task_id: id,
         user_id: user.id,
@@ -440,22 +424,18 @@ export function useTasks(categoryId: string | null | "all") {
       return;
     }
 
-    // Data atual (meia-noite)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
 
-    // Limpar checkboxes do localStorage para tarefas recorrentes
     tasksToReset.forEach(task => {
       if (task.recurrence_rule) {
         localStorage.removeItem(`task-completed-${task.id}`);
       }
     });
 
-    // OTIMIZAÇÃO: Batch update com .in() para todas as propriedades
     const taskIds = tasksToReset.map(t => t.id);
     
-    // Atualizar todas as tarefas de uma vez (coluna, data e status)
     const { error: updateError } = await supabase
       .from("tasks")
       .update({ 
@@ -471,15 +451,12 @@ export function useTasks(categoryId: string | null | "all") {
       return;
     }
     
-    // OTIMIZAÇÃO: Atualizar posições em batch usando Promise.all com chunks
-    // Em vez de N queries sequenciais, fazemos em paralelo
     const BATCH_SIZE = 10;
     const positionUpdates = tasksToReset.map((task, index) => ({
       id: task.id,
       position: index
     }));
     
-    // Processar em chunks para não sobrecarregar
     for (let i = 0; i < positionUpdates.length; i += BATCH_SIZE) {
       const chunk = positionUpdates.slice(i, i + BATCH_SIZE);
       await Promise.all(
@@ -489,7 +466,6 @@ export function useTasks(categoryId: string | null | "all") {
       );
     }
     
-    // Update otimista local
     setTasks(prev => 
       prev.map(t => {
         if (taskIds.includes(t.id)) {
@@ -515,7 +491,6 @@ export function useTasks(categoryId: string | null | "all") {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    // ATUALIZAÇÃO OTIMISTA
     const previousValue = task.is_favorite;
     setTasks(prev => prev.map(t => 
       t.id === taskId ? { ...t, is_favorite: !t.is_favorite } : t
@@ -536,7 +511,6 @@ export function useTasks(categoryId: string | null | "all") {
         title: previousValue ? "Removido dos favoritos" : "Adicionado aos favoritos",
       });
     } catch (error) {
-      // ROLLBACK
       dispatchSavingEvent(taskId, false);
       setTasks(prev => prev.map(t => 
         t.id === taskId ? { ...t, is_favorite: previousValue } : t
@@ -556,7 +530,6 @@ export function useTasks(categoryId: string | null | "all") {
     if (!task) return;
 
     try {
-      // Criar cópia da tarefa sem id, created_at e updated_at
       const { id, created_at, updated_at, ...taskData } = task;
       
       const duplicatedTask = {
@@ -568,7 +541,6 @@ export function useTasks(categoryId: string | null | "all") {
 
       const validated = taskSchema.parse(duplicatedTask);
 
-      // ATUALIZAÇÃO OTIMISTA: Criar tarefa temporária
       const tempId = `temp-dup-${Date.now()}`;
       const tempTask: Task = {
         id: tempId,
@@ -587,7 +559,6 @@ export function useTasks(categoryId: string | null | "all") {
         .single();
 
       if (error) {
-        // ROLLBACK
         dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.filter(t => t.id !== tempId));
         toast({
@@ -598,14 +569,12 @@ export function useTasks(categoryId: string | null | "all") {
         return;
       }
 
-      // Substituir temp pelo real
       if (data) {
         dispatchSavingEvent(tempId, false);
         setTasks(prev => prev.map(t => 
           t.id === tempId ? { ...data as unknown as Task } : t
         ));
 
-        // Registrar no histórico
         await supabase.from("task_history").insert([{
           task_id: data.id,
           user_id: user.id,
@@ -625,6 +594,10 @@ export function useTasks(categoryId: string | null | "all") {
       }
     }
   };
+
+  const fetchTasks = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
 
   return { tasks, loading, addTask, updateTask, deleteTask, resetAllTasksToFirstColumn, fetchTasks, toggleFavorite, duplicateTask };
 }

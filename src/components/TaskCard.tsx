@@ -325,9 +325,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             .eq("id", task.mirror_task_id);
         }
         
-        window.dispatchEvent(
-          new CustomEvent("task-updated", { detail: { taskId: task.id } })
-        );
+        // Realtime subscription handles UI sync
         return;
       } catch (error) {
         logger.error("Erro ao resetar tarefa recorrente:", error);
