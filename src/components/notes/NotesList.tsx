@@ -134,7 +134,7 @@ export const NotesList = memo(function NotesList({
       )}
     </div>
   );
-}
+});
 
 function NoneDropArea() {
   const { setNodeRef, isOver } = useDroppable({
