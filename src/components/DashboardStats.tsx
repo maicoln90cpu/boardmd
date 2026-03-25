@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Clock, AlertCircle, ListTodo } from "lucide-react";
@@ -6,13 +7,15 @@ interface DashboardStatsProps {
   tasks: Task[];
 }
 
-export function DashboardStats({ tasks }: DashboardStatsProps) {
-  const total = tasks.length;
-  const completed = tasks.filter(t => t.is_completed === true).length;
-  const overdue = tasks.filter(t => 
-    t.due_date && new Date(t.due_date) < new Date() && !t.is_completed
-  ).length;
-  const inProgress = total - completed;
+export const DashboardStats = memo(function DashboardStats({ tasks }: DashboardStatsProps) {
+  const { total, completed, overdue, inProgress } = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.is_completed === true).length;
+    const overdue = tasks.filter(t => 
+      t.due_date && new Date(t.due_date) < new Date() && !t.is_completed
+    ).length;
+    return { total, completed, overdue, inProgress: total - completed };
+  }, [tasks]);
 
   const stats = [
     {
@@ -64,4 +67,4 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
       ))}
     </div>
   );
-}
+});
