@@ -105,8 +105,7 @@ async function snoozeTask(taskId: string) {
       description: "A tarefa foi adiada por 1 hora.",
     });
 
-    // Emit event for other components to update
-    window.dispatchEvent(new CustomEvent("task-updated", { detail: { taskId } }));
+    // Realtime handles sync
   } catch (error) {
     console.error("Error snoozing task from notification:", error);
     toast.error("Erro ao adiar tarefa");

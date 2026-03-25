@@ -176,7 +176,7 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
     });
     
     if (previousTaskId !== newTaskId) {
-      window.dispatchEvent(new CustomEvent('task-updated'));
+      // Realtime handles sync
     }
     
     hasUnsavedChanges.current = false;
