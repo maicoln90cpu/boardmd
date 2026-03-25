@@ -50,8 +50,8 @@ export function useNotes() {
 
       if (error) throw error;
       // Set content as null for list items — full content loaded on demand
-      setNotes((data || []).map(d => ({ ...d, content: null })) as Note[]);
-      setNotes(data || []);
+      const notesWithoutContent: Note[] = (data || []).map(d => ({ ...d, content: null }));
+      setNotes(notesWithoutContent);
     } catch (error) {
       logger.error("Error fetching notes:", error);
       toast({
