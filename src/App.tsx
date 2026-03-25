@@ -72,7 +72,7 @@ function RouterContent() {
   const location = useLocation();
   return (
     <>
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
       <Route path="/landing" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route 
