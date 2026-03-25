@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { Note } from "@/hooks/useNotes";
 import { Notebook } from "@/hooks/useNotebooks";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import { FileText, Plus, Trash2, Pin, Notebook as NotebookIcon } from "lucide-re
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
