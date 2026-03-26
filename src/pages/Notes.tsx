@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { NotebooksList } from "@/components/notes/NotebooksList";
 import { NotesList } from "@/components/notes/NotesList";
 import { NoteEditor } from "@/components/notes/NoteEditor";
@@ -22,6 +23,7 @@ import { useSettings } from "@/hooks/data/useSettings";
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
   const { notes, loading: loadingNotes, addNote, updateNote, deleteNote, moveNoteToNotebook, setEditingNoteId, togglePin, fetchNotes, fetchNoteContent } = useNotes();
+  const { tasks, fetchTasks: refetchTasks } = useTasks("all");
   const { settings } = useSettings();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
@@ -480,6 +482,8 @@ export default function Notes() {
                   note={selectedNote}
                   notebooks={notebooks}
                   allNotes={notes}
+                  tasks={tasks}
+                  refetchTasks={refetchTasks}
                   onUpdate={handleUpdateNote}
                   onTogglePin={togglePin}
                   onMoveToNotebook={moveNoteToNotebook}
