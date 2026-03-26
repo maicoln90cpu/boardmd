@@ -13,6 +13,7 @@ import { SwipeProvider } from "@/contexts/SwipeContext";
 import { SavingTasksProvider } from "@/contexts/SavingTasksContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Auth } from "@/components/Auth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
@@ -72,183 +73,185 @@ function RouterContent() {
   const location = useLocation();
   return (
     <>
-      <Routes location={location}>
-      <Route path="/landing" element={<Landing />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route 
-        path="/forgot-password" 
-        element={
-          <Suspense fallback={<PageLoadingSkeleton />}>
-            <ForgotPassword />
-          </Suspense>
-        } 
-      />
-      <Route 
-        path="/reset-password" 
-        element={
-          <Suspense fallback={<PageLoadingSkeleton />}>
-            <ResetPassword />
-          </Suspense>
-        } 
-      />
-      <Route
-        path="/" 
-        element={
-          <ProtectedRoute>
-            <Index />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<StatsLoadingSkeleton />}>
-              <Dashboard />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/notes" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<NotesLoadingSkeleton />}>
-              <Notes />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/calendar" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<CalendarLoadingSkeleton />}>
-              <Calendar />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/settings" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<SettingsLoadingSkeleton />}>
-              <Settings />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/config" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<SettingsLoadingSkeleton />}>
-              <Config />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/notifications" 
-        element={
-          <ProtectedRoute>
+      <ErrorBoundary>
+        <Routes location={location}>
+        <Route path="/landing" element={<Landing />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route 
+          path="/forgot-password" 
+          element={
             <Suspense fallback={<PageLoadingSkeleton />}>
-              <NotificationsDashboard />
+              <ForgotPassword />
             </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/pomodoro" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PomodoroLoadingSkeleton />}>
-              <Pomodoro />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/tools" 
-        element={
-          <ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/reset-password" 
+          element={
             <Suspense fallback={<PageLoadingSkeleton />}>
-              <Tools />
+              <ResetPassword />
             </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/courses" 
-        element={
-          <ProtectedRoute>
+          } 
+        />
+        <Route
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <Index />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<StatsLoadingSkeleton />}>
+                <Dashboard />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/notes" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<NotesLoadingSkeleton />}>
+                <Notes />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/calendar" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<CalendarLoadingSkeleton />}>
+                <Calendar />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<SettingsLoadingSkeleton />}>
+                <Settings />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/config" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<SettingsLoadingSkeleton />}>
+                <Config />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/notifications" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <NotificationsDashboard />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/pomodoro" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PomodoroLoadingSkeleton />}>
+                <Pomodoro />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/tools" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Tools />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/courses" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Courses />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cost-calculator" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <CostCalculator />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/links" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <QuickLinks />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/habits" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Habits />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/retrospective" 
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Retrospective />
+              </Suspense>
+            </ProtectedRoute>
+          } 
+        />
+        <Route
+          path="/shared/:slug"
+          element={
             <Suspense fallback={<PageLoadingSkeleton />}>
-              <Courses />
+              <SharedNote />
             </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/cost-calculator" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <CostCalculator />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/links" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <QuickLinks />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/habits" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <Habits />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/retrospective" 
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <Retrospective />
-            </Suspense>
-          </ProtectedRoute>
-        } 
-      />
-      <Route
-        path="/shared/:slug"
-        element={
-          <Suspense fallback={<PageLoadingSkeleton />}>
-            <SharedNote />
-          </Suspense>
-        }
-      />
-      <Route
-        path="/eisenhower"
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<PageLoadingSkeleton />}>
-              <Eisenhower />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+          }
+        />
+        <Route
+          path="/eisenhower"
+          element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageLoadingSkeleton />}>
+                <Eisenhower />
+              </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      </ErrorBoundary>
     </>
   );
 }
