@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { Note } from "@/hooks/useNotes";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTasks, Task } from "@/hooks/tasks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,9 +16,11 @@ interface UseNoteEditorStateProps {
   note: Note;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onSave?: () => void;
+  tasks?: Task[];
+  refetchTasks?: () => void | Promise<void>;
 }
 
-export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStateProps) {
+export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTasks, refetchTasks: externalRefetchTasks }: UseNoteEditorStateProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content || "");
   const [color, setColor] = useState(note.color || null);
@@ -39,7 +41,9 @@ export function useNoteEditorState({ note, onUpdate, onSave }: UseNoteEditorStat
   const colorRef = useRef(color);
   const onUpdateRef = useRef(onUpdate);
 
-  const { tasks, fetchTasks: refetchTasks } = useTasks("all");
+  // Use externally provided tasks (avoids duplicate useTasks subscription)
+  const tasks = externalTasks || [];
+  const refetchTasks = externalRefetchTasks || (async () => {});
   const { share } = useWebShare();
   const { user } = useAuth();
   

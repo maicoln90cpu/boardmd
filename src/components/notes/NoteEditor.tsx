@@ -1,4 +1,5 @@
 import { Note } from "@/hooks/useNotes";
+import { Task } from "@/hooks/tasks/useTasks";
 import { exportNoteAsMarkdown, exportNoteAsPDF } from "@/lib/noteExport";
 import { NoteTemplate } from "@/lib/noteTemplates";
 import { Notebook } from "@/hooks/useNotebooks";
@@ -41,6 +42,8 @@ interface NoteEditorProps {
   note: Note;
   notebooks: Notebook[];
   allNotes?: Note[];
+  tasks?: Task[];
+  refetchTasks?: () => void | Promise<void>;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
@@ -53,6 +56,8 @@ export function NoteEditor({
   note,
   notebooks,
   allNotes = [],
+  tasks,
+  refetchTasks,
   onUpdate,
   onTogglePin,
   onMoveToNotebook,
@@ -60,7 +65,7 @@ export function NoteEditor({
   onSave,
   className
 }: NoteEditorProps) {
-  const state = useNoteEditorState({ note, onUpdate, onSave });
+  const state = useNoteEditorState({ note, onUpdate, onSave, tasks, refetchTasks });
 
   // Initialize lowlight for syntax highlighting
   const lowlight = createLowlight(common);

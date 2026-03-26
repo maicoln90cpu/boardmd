@@ -340,10 +340,14 @@ export function useNotes() {
     pendingRemoteUpdateRef.current = null;
   };
 
-  // Fetch full content for a specific note (on-demand)
+  // Ref to check cached content without dependency on notes state
+  const notesRef = useRef(notes);
+  useEffect(() => { notesRef.current = notes; }, [notes]);
+
+  // Fetch full content for a specific note (on-demand) — stable callback
   const fetchNoteContent = useCallback(async (noteId: string): Promise<string | null> => {
-    // Check if we already have content cached in state
-    const cached = notes.find(n => n.id === noteId);
+    // Check if we already have content cached in state via ref
+    const cached = notesRef.current.find(n => n.id === noteId);
     if (cached?.content !== null && cached?.content !== undefined) {
       return cached.content;
     }
@@ -369,7 +373,7 @@ export function useNotes() {
       logger.error("Error fetching note content:", error);
       return null;
     }
-  }, [notes]);
+  }, []);
 
   return {
     notes,
