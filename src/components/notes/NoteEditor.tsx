@@ -43,7 +43,7 @@ interface NoteEditorProps {
   notebooks: Notebook[];
   allNotes?: Note[];
   tasks?: Task[];
-  refetchTasks?: () => Promise<void>;
+  refetchTasks?: () => void | Promise<void>;
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onTogglePin: (id: string) => void;
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;

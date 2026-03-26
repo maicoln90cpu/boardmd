@@ -17,7 +17,7 @@ interface UseNoteEditorStateProps {
   onUpdate: (id: string, updates: Partial<Note>) => void;
   onSave?: () => void;
   tasks?: Task[];
-  refetchTasks?: () => Promise<void>;
+  refetchTasks?: () => void | Promise<void>;
 }
 
 export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTasks, refetchTasks: externalRefetchTasks }: UseNoteEditorStateProps) {
