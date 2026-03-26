@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
 import { AppSettings } from "@/hooks/data/useSettings";
 
@@ -19,7 +19,6 @@ const ALLOWED_HOURS = [0, 6, 12, 18];
 const HOURS_BETWEEN_REVIEWS = 6;
 
 function isInAllowedTimeWindow(currentHour: number): boolean {
-  // Verificar se está dentro de ±30 minutos de um horário permitido
   return ALLOWED_HOURS.some(hour => currentHour === hour);
 }
 
@@ -32,11 +31,23 @@ export function useDailyReview({
   const [showDailyReview, setShowDailyReview] = useState(false);
   const [dailyReviewChecked, setDailyReviewChecked] = useState(false);
 
+  // Use refs to read settings values without depending on them
+  const settingsRef = useRef(settings);
+  const updateSettingsRef = useRef(updateSettings);
+  const saveSettingsRef = useRef(saveSettings);
+  useEffect(() => {
+    settingsRef.current = settings;
+    updateSettingsRef.current = updateSettings;
+    saveSettingsRef.current = saveSettings;
+  }, [settings, updateSettings, saveSettings]);
+
   useEffect(() => {
     if (dailyReviewChecked) return;
     
+    const currentSettings = settingsRef.current;
+    
     // Se Daily Review está desabilitado, não mostrar
-    if (!settings.productivity.dailyReviewEnabled) {
+    if (!currentSettings.productivity.dailyReviewEnabled) {
       setDailyReviewChecked(true);
       return;
     }
@@ -44,19 +55,16 @@ export function useDailyReview({
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Verificar se está em janela de horário permitido (00h, 06h, 12h, 18h)
     if (!isInAllowedTimeWindow(currentHour)) {
       setDailyReviewChecked(true);
       return;
     }
     
-    // Verificar última exibição (agora é timestamp ISO completo)
-    const lastShown = settings.productivity.dailyReviewLastShown;
+    const lastShown = currentSettings.productivity.dailyReviewLastShown;
     if (lastShown) {
       const lastShownDate = new Date(lastShown);
       const hoursSinceLastShown = (now.getTime() - lastShownDate.getTime()) / (1000 * 60 * 60);
       
-      // Se ainda não passaram 6 horas, não mostrar
       if (hoursSinceLastShown < HOURS_BETWEEN_REVIEWS) {
         setDailyReviewChecked(true);
         return;
@@ -68,24 +76,15 @@ export function useDailyReview({
       setShowDailyReview(true);
       setDailyReviewChecked(true);
       
-      // Atualizar última exibição com timestamp completo
-      updateSettings({
+      updateSettingsRef.current({
         productivity: {
-          ...settings.productivity,
-          dailyReviewLastShown: now.toISOString() // Timestamp completo
+          ...currentSettings.productivity,
+          dailyReviewLastShown: now.toISOString()
         }
       });
-      saveSettings();
+      saveSettingsRef.current();
     }
-  }, [
-    tasks.length, 
-    settings.productivity.dailyReviewEnabled, 
-    settings.productivity.dailyReviewLastShown, 
-    dailyReviewChecked,
-    updateSettings,
-    saveSettings,
-    settings.productivity
-  ]);
+  }, [tasks.length, dailyReviewChecked]);
 
   return {
     showDailyReview,
