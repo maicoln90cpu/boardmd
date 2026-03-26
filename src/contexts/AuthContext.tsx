@@ -75,45 +75,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-      setLoading(false);
-      toast.error("Erro ao entrar", { description: error.message });
-      throw error;
-    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        toast.error("Erro ao entrar", { description: error.message });
+        throw error;
+      }
 
-    // Verificar se perfil existe, se não, criar
-    if (data.user) {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", data.user.id)
-        .single();
-
-      if (profileError || !profile) {
-        // Criar perfil padrão se não existir
-        const { error: insertError } = await supabase
+      // Verificar se perfil existe, se não, criar
+      if (data.user) {
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
-          .insert([{ 
-            id: data.user.id, 
-            name: data.user.email?.split('@')[0] || 'Usuário',
-            phone: null 
-          }]);
+          .select("id")
+          .eq("id", data.user.id)
+          .single();
 
-        if (insertError) {
-          logger.error("Erro ao criar perfil:", insertError);
+        if (profileError || !profile) {
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert([{ 
+              id: data.user.id, 
+              name: data.user.email?.split('@')[0] || 'Usuário',
+              phone: null 
+            }]);
+
+          if (insertError) {
+            logger.error("Erro ao criar perfil:", insertError);
+          }
         }
       }
+      
+      toast.success("Sucesso!", { description: "Login realizado com sucesso" });
+      
+      // Log de auditoria
+      setTimeout(() => {
+        logAuditEvent({ eventType: 'login', metadata: { email } });
+      }, 0);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-    toast.success("Sucesso!", { description: "Login realizado com sucesso" });
-    
-    // Log de auditoria
-    setTimeout(() => {
-      logAuditEvent({ eventType: 'login', metadata: { email } });
-    }, 0);
   };
 
   const signOut = async () => {

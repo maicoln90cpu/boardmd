@@ -223,9 +223,26 @@ export function usePushNotifications(tasks: Task[]) {
 
   // Re-agendar quando as tarefas ou configurações mudarem
   useEffect(() => {
+    const timerIds: ReturnType<typeof setTimeout>[] = [];
+    const originalSetTimeout = window.setTimeout;
+
+    // Intercept setTimeout calls during scheduling to track them
+    window.setTimeout = ((fn: TimerHandler, delay?: number, ...args: any[]) => {
+      const id = originalSetTimeout(fn, delay, ...args);
+      timerIds.push(id);
+      return id;
+    }) as typeof window.setTimeout;
+
     if (isSubscribed && permission === "granted") {
       scheduleTaskNotifications();
     }
+
+    // Restore original setTimeout
+    window.setTimeout = originalSetTimeout;
+
+    return () => {
+      timerIds.forEach((id) => clearTimeout(id));
+    };
   }, [tasks, settings.notifications, isSubscribed, permission]);
 
   return {
