@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { Note } from "@/hooks/useNotes";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTasks, Task } from "@/hooks/tasks/useTasks";
+import { Task } from "@/hooks/tasks/useTasks";
 import { useWebShare } from "@/hooks/useWebShare";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
