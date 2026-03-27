@@ -545,6 +545,7 @@ export default function Notes() {
                   onTogglePin={togglePin}
                   onMoveToNotebook={moveNoteToNotebook}
                   onNavigateToNote={handleSelectNote}
+                  onUnsavedChange={setHasUnsavedChanges}
                 />
               </motion.div>
             ) : (
