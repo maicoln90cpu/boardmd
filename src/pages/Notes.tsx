@@ -588,6 +588,12 @@ export default function Notes() {
       </main>
 
       <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
+      <UnsavedChangesDialog
+        open={showUnsavedDialog}
+        onSaveAndLeave={handleSaveAndLeave}
+        onLeaveWithoutSaving={handleLeaveWithoutSaving}
+        onCancel={handleCancelLeave}
+      />
     </div>
   );
 }
