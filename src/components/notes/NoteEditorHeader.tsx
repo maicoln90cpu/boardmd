@@ -73,16 +73,16 @@ export function NoteEditorHeader({
   const { shareNote, loading: sharingLoading } = useSharedNotes();
 
   return (
-    <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0">
+    <div className="p-4 sm:p-6 border-b space-y-3 flex-shrink-0 overflow-hidden">
       {/* Title and actions */}
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 flex-wrap">
         <Input 
           placeholder="Título da anotação..." 
           value={title} 
           onChange={e => onTitleChange(e.target.value)} 
           className="text-xl sm:text-2xl font-bold border-none shadow-none focus-visible:ring-0 px-0 flex-1 bg-transparent" 
         />
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             variant={note.is_pinned ? "default" : "outline"} 
             size="icon" 

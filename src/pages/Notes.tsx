@@ -327,7 +327,7 @@ export default function Notes() {
       <main className="flex-1 flex h-screen overflow-hidden">
         <DndContext id="notes-dnd" sensors={sensors} onDragEnd={handleDragEnd}>
           {/* Coluna 1 - Cadernos / Wiki */}
-          <div className="w-64 border-r flex flex-col bg-gradient-to-b from-card via-card to-muted/5 shadow-sm">
+          <div className="w-64 min-w-0 border-r flex flex-col bg-gradient-to-b from-card via-card to-muted/5 shadow-sm overflow-hidden">
             <div className="p-4 border-b bg-gradient-to-r from-card to-muted/20 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1">
@@ -363,7 +363,7 @@ export default function Notes() {
                     size="sm"
                     onClick={() => setTrashOpen(true)}
                     title="Lixeira"
-                    className="hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8 p-0"
+                    className="hover:bg-destructive/10 hover:text-destructive transition-colors h-9 w-9 p-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -449,7 +449,7 @@ export default function Notes() {
           </div>
 
           {/* Coluna 2 - Lista de Notas */}
-          <div className="w-72 border-r flex flex-col bg-gradient-to-b from-card/80 via-muted/10 to-muted/20 shadow-inner">
+          <div className="w-72 min-w-0 border-r flex flex-col bg-gradient-to-b from-card/80 via-muted/10 to-muted/20 shadow-inner overflow-hidden">
             <div className="sticky top-0 z-10 p-4 border-b bg-card/80 backdrop-blur-md">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
@@ -465,7 +465,7 @@ export default function Notes() {
                     variant={notesViewMode === 'list' ? 'secondary' : 'ghost'}
                     size="icon"
                     onClick={() => setNotesViewMode('list')}
-                    className="h-7 w-7"
+                    className="h-8 w-8"
                     title="Visualização em lista"
                   >
                     <List className="h-3.5 w-3.5" />
@@ -474,7 +474,7 @@ export default function Notes() {
                     variant={notesViewMode === 'grid' ? 'secondary' : 'ghost'}
                     size="icon"
                     onClick={() => setNotesViewMode('grid')}
-                    className="h-7 w-7"
+                    className="h-8 w-8"
                     title="Visualização em grid"
                   >
                     <LayoutGrid className="h-3.5 w-3.5" />

@@ -179,7 +179,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10 overflow-x-auto">
+      <div className="border-b p-2 flex flex-wrap gap-1 bg-card sticky top-0 z-10">
         {/* Formatação básica */}
         <Tooltip>
           <TooltipTrigger asChild>
