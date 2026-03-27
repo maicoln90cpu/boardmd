@@ -86,7 +86,7 @@ function DraggableTask({ task }: { task: EisenhowerTask }) {
       {...listeners}
       {...attributes}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm bg-card border shadow-sm cursor-grab active:cursor-grabbing touch-none transition-all hover:shadow-md",
+        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm bg-card border shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md min-h-[44px]",
         isDragging && "opacity-40",
         isOverdue && "ring-1 ring-destructive/50"
       )}
