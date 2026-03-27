@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -107,7 +107,7 @@ export function useTasks(categoryId: string | null | "all") {
     return () => { cancelled = true; };
   }, [categoryId]);
 
-  const queryKey = ["tasks", categoryId];
+  const queryKey = useMemo(() => ["tasks", categoryId], [categoryId]);
 
   const { data: tasks = [], isLoading: loading } = useQuery({
     queryKey,
