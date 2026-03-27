@@ -12,7 +12,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate, useSearchParams, useBlocker } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,18 +54,6 @@ export default function Notes() {
     hasUnsavedChangesRef.current = value;
   }, []);
   
-  // Block react-router navigation when unsaved
-  const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) =>
-      hasUnsavedChangesRef.current && currentLocation.pathname !== nextLocation.pathname
-  );
-  
-  // Show dialog when blocker triggers
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      setShowUnsavedDialog(true);
-    }
-  }, [blocker.state]);
 
   // Load from cache when offline and no notes loaded
   useEffect(() => {
@@ -214,8 +202,6 @@ export default function Notes() {
       pendingNoteIdRef.current = null;
       setSelectedNoteId(noteId);
       setEditingNoteId(noteId);
-    } else if (blocker.state === "blocked") {
-      blocker.proceed();
     }
   };
 
@@ -228,17 +214,12 @@ export default function Notes() {
       pendingNoteIdRef.current = null;
       setSelectedNoteId(noteId);
       setEditingNoteId(noteId);
-    } else if (blocker.state === "blocked") {
-      blocker.proceed();
     }
   };
 
   const handleCancelLeave = () => {
     setShowUnsavedDialog(false);
     pendingNoteIdRef.current = null;
-    if (blocker.state === "blocked") {
-      blocker.reset();
-    }
   };
 
   const handleDeleteNote = async (noteId: string) => {
