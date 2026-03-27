@@ -89,65 +89,15 @@ export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTask
     onUpdateRef.current = onUpdate;
   }, [title, content, color, linkedTaskId, linkedCourseId, onUpdate]);
 
-  // Auto-save timer ref
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  // Auto-save function (silent)
-  const autoSave = useCallback(() => {
-    if (!hasUnsavedChanges.current) return;
-    const currentTitle = titleRef.current;
-    const currentContent = contentRef.current;
-    const currentColor = colorRef.current;
-    const currentLinkedTaskId = linkedTaskIdRef.current;
-    const currentLinkedCourseId = linkedCourseIdRef.current;
-    if (!currentTitle.trim() && !currentContent.trim()) return;
-    
-    setIsSaving(true);
-    onUpdateRef.current(currentNoteRef.current.id, {
-      title: currentTitle.trim() || "Sem título",
-      content: currentContent.trim(),
-      color: currentColor,
-      linked_task_id: currentLinkedTaskId,
-      linked_course_id: currentLinkedCourseId
-    });
-    hasUnsavedChanges.current = false;
-    
-    // Update saved indicator
-    setTimeout(() => {
-      setIsSaving(false);
-      setLastSaved(new Date());
-    }, 300);
-  }, []);
-
-  // Track changes for auto-save with 3-second debounce
+  // Track changes (no auto-save — user must save manually)
   useEffect(() => {
     if (title !== note.title || content !== note.content || color !== note.color || linkedTaskId !== note.linked_task_id || linkedCourseId !== note.linked_course_id) {
       hasUnsavedChanges.current = true;
-      
-      // Clear previous timer
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-      
-      // Schedule auto-save after 3 seconds of inactivity
-      autoSaveTimerRef.current = setTimeout(() => {
-        if (hasUnsavedChanges.current) {
-          autoSave();
-        }
-      }, 3000);
     }
-  }, [title, content, color, linkedTaskId, linkedCourseId, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id, autoSave]);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, []);
+  }, [title, content, color, linkedTaskId, linkedCourseId, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id]);
 
   // Sync with external note changes
   const syncWithNote = useCallback((editor: Editor | null) => {
@@ -313,7 +263,7 @@ export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTask
     courses,
     
     // Handlers
-    autoSave,
+    
     syncWithNote,
     handleSave,
     handleCancel,

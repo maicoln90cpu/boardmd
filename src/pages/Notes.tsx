@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
 import { useTasks } from "@/hooks/tasks/useTasks";
@@ -12,13 +12,14 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useBlocker } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import { WikiNavigation } from "@/components/notes/WikiNavigation";
 import { useOfflineNotes } from "@/hooks/useOfflineNotes";
 import { useSettings } from "@/hooks/data/useSettings";
+import { UnsavedChangesDialog } from "@/components/notes/UnsavedChangesDialog";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
@@ -42,6 +43,29 @@ export default function Notes() {
 
   // Offline notes support
   const { loadOfflineNotes, isOnline } = useOfflineNotes(notes, fetchNotes);
+  
+  // Unsaved changes tracking
+  const hasUnsavedChangesRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const pendingNoteIdRef = useRef<string | null>(null);
+  
+  // Expose setter for NoteEditor to call
+  const setHasUnsavedChanges = useCallback((value: boolean) => {
+    hasUnsavedChangesRef.current = value;
+  }, []);
+  
+  // Block react-router navigation when unsaved
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChangesRef.current && currentLocation.pathname !== nextLocation.pathname
+  );
+  
+  // Show dialog when blocker triggers
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowUnsavedDialog(true);
+    }
+  }, [blocker.state]);
 
   // Load from cache when offline and no notes loaded
   useEffect(() => {
@@ -169,20 +193,53 @@ export default function Notes() {
   };
 
   const handleSelectNote = (noteId: string) => {
-    if (selectedNoteId && selectedNoteId !== noteId) {
-      window.dispatchEvent(new CustomEvent('save-current-note'));
+    if (selectedNoteId && selectedNoteId !== noteId && hasUnsavedChangesRef.current) {
+      pendingNoteIdRef.current = noteId;
+      setShowUnsavedDialog(true);
+      return;
     }
     setSelectedNoteId(noteId);
     setEditingNoteId(noteId);
   };
 
-  useEffect(() => {
-    return () => {
-      if (selectedNoteId) {
-        window.dispatchEvent(new CustomEvent('save-current-note'));
-      }
-    };
-  }, [selectedNoteId]);
+  // Dialog handlers
+  const handleSaveAndLeave = () => {
+    // Dispatch save event so the editor saves
+    window.dispatchEvent(new CustomEvent('save-current-note'));
+    hasUnsavedChangesRef.current = false;
+    setShowUnsavedDialog(false);
+    
+    if (pendingNoteIdRef.current) {
+      const noteId = pendingNoteIdRef.current;
+      pendingNoteIdRef.current = null;
+      setSelectedNoteId(noteId);
+      setEditingNoteId(noteId);
+    } else if (blocker.state === "blocked") {
+      blocker.proceed();
+    }
+  };
+
+  const handleLeaveWithoutSaving = () => {
+    hasUnsavedChangesRef.current = false;
+    setShowUnsavedDialog(false);
+    
+    if (pendingNoteIdRef.current) {
+      const noteId = pendingNoteIdRef.current;
+      pendingNoteIdRef.current = null;
+      setSelectedNoteId(noteId);
+      setEditingNoteId(noteId);
+    } else if (blocker.state === "blocked") {
+      blocker.proceed();
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowUnsavedDialog(false);
+    pendingNoteIdRef.current = null;
+    if (blocker.state === "blocked") {
+      blocker.reset();
+    }
+  };
 
   const handleDeleteNote = async (noteId: string) => {
     if (selectedNoteId === noteId) {
@@ -488,6 +545,7 @@ export default function Notes() {
                   onTogglePin={togglePin}
                   onMoveToNotebook={moveNoteToNotebook}
                   onNavigateToNote={handleSelectNote}
+                  onUnsavedChange={setHasUnsavedChanges}
                 />
               </motion.div>
             ) : (
@@ -530,6 +588,12 @@ export default function Notes() {
       </main>
 
       <TrashDialog open={trashOpen} onOpenChange={setTrashOpen} />
+      <UnsavedChangesDialog
+        open={showUnsavedDialog}
+        onSaveAndLeave={handleSaveAndLeave}
+        onLeaveWithoutSaving={handleLeaveWithoutSaving}
+        onCancel={handleCancelLeave}
+      />
     </div>
   );
 }
