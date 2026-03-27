@@ -193,20 +193,53 @@ export default function Notes() {
   };
 
   const handleSelectNote = (noteId: string) => {
-    if (selectedNoteId && selectedNoteId !== noteId) {
-      window.dispatchEvent(new CustomEvent('save-current-note'));
+    if (selectedNoteId && selectedNoteId !== noteId && hasUnsavedChangesRef.current) {
+      pendingNoteIdRef.current = noteId;
+      setShowUnsavedDialog(true);
+      return;
     }
     setSelectedNoteId(noteId);
     setEditingNoteId(noteId);
   };
 
-  useEffect(() => {
-    return () => {
-      if (selectedNoteId) {
-        window.dispatchEvent(new CustomEvent('save-current-note'));
-      }
-    };
-  }, [selectedNoteId]);
+  // Dialog handlers
+  const handleSaveAndLeave = () => {
+    // Dispatch save event so the editor saves
+    window.dispatchEvent(new CustomEvent('save-current-note'));
+    hasUnsavedChangesRef.current = false;
+    setShowUnsavedDialog(false);
+    
+    if (pendingNoteIdRef.current) {
+      const noteId = pendingNoteIdRef.current;
+      pendingNoteIdRef.current = null;
+      setSelectedNoteId(noteId);
+      setEditingNoteId(noteId);
+    } else if (blocker.state === "blocked") {
+      blocker.proceed();
+    }
+  };
+
+  const handleLeaveWithoutSaving = () => {
+    hasUnsavedChangesRef.current = false;
+    setShowUnsavedDialog(false);
+    
+    if (pendingNoteIdRef.current) {
+      const noteId = pendingNoteIdRef.current;
+      pendingNoteIdRef.current = null;
+      setSelectedNoteId(noteId);
+      setEditingNoteId(noteId);
+    } else if (blocker.state === "blocked") {
+      blocker.proceed();
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowUnsavedDialog(false);
+    pendingNoteIdRef.current = null;
+    if (blocker.state === "blocked") {
+      blocker.reset();
+    }
+  };
 
   const handleDeleteNote = async (noteId: string) => {
     if (selectedNoteId === noteId) {
