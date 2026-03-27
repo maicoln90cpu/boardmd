@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/data/useSettings";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PriorityColors {
   high: { background: string; text: string };

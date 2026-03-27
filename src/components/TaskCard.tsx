@@ -327,7 +327,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             .eq("id", task.mirror_task_id);
         }
         
-        // Realtime subscription handles UI sync
+        // Invalidate cache to ensure UI reflects changes
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
         return;
       } catch (error) {
         logger.error("Erro ao resetar tarefa recorrente:", error);
@@ -380,7 +381,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onMoveToCompleted(task.id, completedColumnId);
       }
 
-      // Realtime subscription handles UI sync
+      // Invalidate cache to ensure UI reflects changes
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     } catch (error) {
       logger.error("Erro ao atualizar tarefa:", error);
       setIsLocalCompleted(!checked);
