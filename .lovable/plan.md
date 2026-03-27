@@ -1,84 +1,96 @@
 
-Plano: auditoria corretiva do /calendar com foco em travamento visual após mudança de rota
+Objetivo: corrigir a quebra imediata de `/notes` e preparar uma execução segura para a auditoria de responsividade/UI sem aplicar mudanças ainda.
 
-Diagnóstico da auditoria
-- As correções anteriores já estão no código:
-  - `Calendar.tsx` já usa `overflow-auto`
-  - `DraggableTask` já não usa `touch-none`
-  - o calendário mensal/semanal já usa `DndContext id="calendar-dnd"`
-- Mesmo assim, o bug pode persistir porque o problema mais provável não é só “toque bloqueado”, mas sim ciclo de vida da rota + cleanup incompleto do calendário.
-- Há um ponto importante: o `fullscreen-calendar.tsx` ainda mantém lógica de drag espalhada por mais de um ramo visual, e o calendário continua sendo um componente muito “stateful”, com overlays, drag, filtros e lista mobile no mesmo subtree.
-- O sintoma “URL muda mas a tela continua no calendário” indica fortemente uma destas causas:
-  1. o componente de calendário não está desmontando corretamente ao trocar de rota
-  2. algum subtree do calendário continua visualmente montado por falta de remount/cleanup
-  3. o DnD / listeners globais continuam vivos após a navegação e impedem repaint/atualização visual
+1. Corrigir a quebra de `/notes`
+- Remover o uso de `useBlocker` em `src/pages/Notes.tsx`, porque o app usa `BrowserRouter` + `Routes` em `src/App.tsx`, não um data router.
+- Substituir o bloqueio por uma estratégia compatível:
+  - interceptar troca de nota localmente
+  - interceptar cliques de navegação da própria UI de Notes/Sidebar quando houver alterações não salvas
+  - manter `beforeunload` no editor para refresh/fechar aba
+- Garantir que o `UnsavedChangesDialog` continue funcionando sem depender do router blocker.
 
-Teste interno
-- Tentei validar no browser tool, mas a sessão abriu em `/auth`, então não foi possível reproduzir autenticado por esse canal.
-- A evidência prática veio da leitura do código + session replay do preview do usuário, então a próxima correção precisa ser estrutural, não incremental.
+2. Ajustar o fluxo de “alterações não salvas”
+- Em `Notes.tsx`, centralizar uma ação pendente genérica:
+  - trocar nota
+  - navegar para outra rota
+  - fechar editor em mobile
+- Em `NoteEditor.tsx` e `useNoteEditorState.ts`, manter apenas detecção de dirty state + save manual.
+- Revisar o evento `save-current-note` para garantir que “Salvar e sair” salve antes de executar a ação pendente.
 
-Implementação proposta
-1. Forçar desmontagem real ao sair do calendário
-- Em `App.tsx`, usar `useLocation()` dentro do conteúdo roteado e keyear o container das rotas por `location.pathname` ou `location.key`.
-- Objetivo: garantir unmount/mount completo ao trocar de rota, evitando que o subtree do calendário sobreviva visualmente.
+3. Responsividade e UI/UX — pontos críticos identificados
+- `src/pages/Notes.tsx`
+  - colunas desktop com `w-64` e `w-72` fixos sem estratégia clara de compressão; precisa `min-w-0` e possível ajuste para widths responsivos
+  - botões pequenos (`h-7 w-7`, `h-8 w-8`) na sidebar e troca de visualização
+- `src/components/notes/NotebooksList.tsx`
+  - ações com `h-5 w-5` e `h-7 w-7`, ruins para touch
+  - cabeçalho compacto demais em mobile/tablet
+- `src/components/notes/VirtualizedNotebooksList.tsx`
+  - repete os mesmos problemas de targets pequenos
+- `src/components/notes/RichTextToolbar.tsx`
+  - usa `overflow-x-auto`; isso conflita com a regra do projeto de evitar scroll horizontal
+  - vários botões pequenos e alta densidade visual
+- `src/components/notes/NoteEditorHeader.tsx`
+  - linha superior pode estourar em telas intermediárias; precisa quebrar em blocos/linhas
+- `src/components/notes/MobileNotesLayout.tsx`
+  - mistura comportamentos antigos de save/volta que precisam ser alinhados com o novo fluxo sem autosave
 
-2. Unificar o DnD do calendário de verdade
-- Em `src/components/ui/fullscreen-calendar.tsx`, mover toda a árvore visual do calendário para dentro de um único `DndContext` estável no topo do componente.
-- Eliminar qualquer ramo separado com contexto próprio e centralizar `DragOverlay`, `handleDragStart` e `handleDragEnd`.
-- Adicionar cleanup explícito no unmount:
-  - reset de `activeTask`
-  - reset de expansões mobile
-  - reset de seleção temporária se necessário
+4. Abordagem recomendada para a próxima implementação
+- Fase A: estabilização
+  - corrigir `/notes`
+  - validar fluxo de unsaved changes em desktop/mobile
+- Fase B: responsividade estrutural de Notes
+  - aumentar touch targets para mínimo 44px no mobile
+  - remover dependência de scroll horizontal na toolbar
+  - aplicar `min-w-0`, `overflow-hidden`, `truncate/line-clamp` onde faltar
+  - reorganizar header/editor para tablet
+- Fase C: estados de interface
+  - padronizar empty states usando `EmptyState`
+  - melhorar loading/error states com mensagens mais claras e feedback visual
+  - revisar `aria-label`, `title`, foco e contraste nos controles principais
 
-3. Blindar o calendário contra persistência de estado após navegação
-- Em `src/pages/Calendar.tsx`, usar `useLocation()` e limpar estados transitórios quando a rota deixar `/calendar`:
-  - `selectedDate`
-  - `isTaskModalOpen`
-  - `editingTask`
-  - `newTaskDate`
-- Se necessário, keyear o próprio `FullScreenCalendar` por pathname para forçar reinicialização total.
+5. O que muda na prática
+- Antes:
+  - `/notes` quebra por incompatibilidade de roteador
+  - vários controles são pequenos demais
+  - há risco de overflow e inconsistência entre mobile/tablet/desktop
+- Depois:
+  - `/notes` volta a abrir normalmente
+  - proteção de saída continua funcionando sem quebrar a rota
+  - base pronta para endurecer responsividade e UX de Notes
 
-4. Separar overlays/diálogos do estado visual principal
-- Revisar os `Dialog` e listas expansíveis do calendário para garantir que nada continue montado fora do fluxo após navegação.
-- Prioridade:
-  - dialog do dia selecionado
-  - `TaskModal`
-  - `DragOverlay`
-  - lista mobile expandida
+6. Vantagens
+- Corrige o erro crítico sem exigir refactor do roteamento global
+- Mantém a proteção contra perda de conteúdo
+- Reduz risco de regressão ao atacar primeiro a causa real da quebra
 
-5. Instrumentação temporária para confirmar desmontagem
-- Adicionar logs temporários de mount/unmount em:
-  - `Calendar.tsx`
-  - `FullScreenCalendar.tsx`
-  - `RouterContent` / shell das rotas
-- Isso serve para provar se a navegação está trocando rota sem desmontar a tela anterior.
+7. Desvantagens
+- Sem `useBlocker`, o bloqueio de navegação interna precisa ser controlado manualmente nas ações da UI
+- Se houver navegações disparadas fora dos pontos interceptados pela interface, será preciso ampliar a cobertura depois
 
-6. Validação cruzada em outras rotas pesadas
-- Depois de corrigir o calendário, repetir o mesmo padrão de auditoria em páginas com estrutura semelhante:
-  - `Notes.tsx`
-  - `Index.tsx` / Kanban
-- Não para mudar tudo agora, mas para evitar repetir o mesmo problema em módulos com DnD e layout complexo.
+8. Viabilidade e impacto
+- Banco de dados: não
+- Código-fonte: sim
+- Política de negócio: não
+- Risco estimado: médio
+- Complexidade técnica: 6/10
 
-Arquivos a revisar/alterar
-- `src/App.tsx`
-- `src/pages/Calendar.tsx`
-- `src/components/ui/fullscreen-calendar.tsx`
+9. Pontuação de risco
+- Correção da quebra em `/notes`: 7/10
+- Ajuste do fluxo de saída sem `useBlocker`: 6/10
+- Preparação para responsividade de Notes: 5/10
+- Total: 18/30
+- Limite seguro proposto: 20/30
+- Status: dentro do limite seguro
 
-Resultado esperado
-- Entrar em `/calendar`
-- Clicar em qualquer outra rota
-- URL muda e a tela efetivamente troca no mesmo instante
-- sem ficar “presa” no calendário
-- funcionando em desktop e mobile
+10. Checklist manual de validação
+- Abrir `/notes` e confirmar que a página carrega sem tela de erro
+- Editar uma nota e clicar em outra nota: dialog deve aparecer
+- Editar uma nota e tentar sair pela navegação da interface: dialog deve aparecer
+- Editar uma nota e recarregar/fechar a aba: prompt nativo deve aparecer
+- Salvar a nota e navegar novamente: não deve aparecer dialog
+- Testar em mobile, tablet e desktop se a tela abre corretamente sem overflow evidente inicial
 
-Checklist de validação
-- Abrir `/calendar` e navegar para `/`, `/notes`, `/pomodoro`, `/config`
-- Repetir ida e volta: `/calendar` → outra rota → `/calendar`
-- Testar no mobile com menu hambúrguer
-- Testar com visualização mês, semana e dia
-- Testar com dialog de dia aberto e também com modal de tarefa aberto
-- Testar após arrastar tarefa no calendário e depois navegar
-
-Observação de abordagem
-- Como o bug já resistiu a 4 tentativas, eu não seguiria mais com ajustes cosméticos.
-- A correção agora deve ser feita como “hard fix” de ciclo de vida: remount forçado da rota + cleanup explícito do calendário + DnD único e previsível.
+11. Próximas fases
+- Fase A: corrigir `/notes` e estabilizar unsaved changes
+- Fase B: auditoria executiva de responsividade da área de Notas
+- Fase C: padronização global de touch targets, empty/loading/error states e acessibilidade nas páginas principais
