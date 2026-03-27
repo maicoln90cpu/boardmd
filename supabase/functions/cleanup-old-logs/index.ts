@@ -1,122 +1,62 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { handleCors } from '../_shared/cors.ts';
+import { json, error } from '../_shared/response.ts';
+import { createAdminClient } from '../_shared/auth.ts';
+import { createLogger } from '../_shared/logger.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const log = createLogger('cleanup-old-logs');
 
 Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
-  console.log("[cleanup-old-logs] Iniciando limpeza de logs antigos...");
+  log.info("Iniciando limpeza de logs antigos...");
 
   try {
-    // Inicializar cliente Supabase com service role para operações admin
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("[cleanup-old-logs] Variáveis de ambiente não configuradas");
-      throw new Error("Configuração do Supabase incompleta");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Calcular datas de corte
+    const supabase = createAdminClient();
     const now = new Date();
-    
-    // push_logs: manter últimos 30 dias
+
+    // push_logs: keep last 30 days
     const pushLogsThreshold = new Date(now);
     pushLogsThreshold.setDate(pushLogsThreshold.getDate() - 30);
-    const pushLogsThresholdISO = pushLogsThreshold.toISOString();
 
-    // task_history: manter últimos 90 dias
+    // task_history: keep last 90 days
     const taskHistoryThreshold = new Date(now);
     taskHistoryThreshold.setDate(taskHistoryThreshold.getDate() - 90);
-    const taskHistoryThresholdISO = taskHistoryThreshold.toISOString();
 
-    // activity_log: manter últimos 60 dias
+    // activity_log: keep last 60 days
     const activityLogThreshold = new Date(now);
     activityLogThreshold.setDate(activityLogThreshold.getDate() - 60);
-    const activityLogThresholdISO = activityLogThreshold.toISOString();
 
-    console.log("[cleanup-old-logs] Thresholds:", {
-      push_logs: pushLogsThresholdISO,
-      task_history: taskHistoryThresholdISO,
-      activity_log: activityLogThresholdISO,
+    log.info("Thresholds:", {
+      push_logs: pushLogsThreshold.toISOString(),
+      task_history: taskHistoryThreshold.toISOString(),
+      activity_log: activityLogThreshold.toISOString(),
     });
 
-    // Limpar push_logs (mais de 30 dias)
     const { error: pushLogsError } = await supabase
-      .from("push_logs")
-      .delete()
-      .lt("timestamp", pushLogsThresholdISO);
+      .from("push_logs").delete().lt("timestamp", pushLogsThreshold.toISOString());
+    if (pushLogsError) log.error("Erro ao limpar push_logs:", pushLogsError);
 
-    if (pushLogsError) {
-      console.error("[cleanup-old-logs] Erro ao limpar push_logs:", pushLogsError);
-    } else {
-      console.log("[cleanup-old-logs] push_logs: registros antigos removidos");
-    }
-
-    // Limpar task_history (mais de 90 dias)
     const { error: taskHistoryError } = await supabase
-      .from("task_history")
-      .delete()
-      .lt("created_at", taskHistoryThresholdISO);
+      .from("task_history").delete().lt("created_at", taskHistoryThreshold.toISOString());
+    if (taskHistoryError) log.error("Erro ao limpar task_history:", taskHistoryError);
 
-    if (taskHistoryError) {
-      console.error("[cleanup-old-logs] Erro ao limpar task_history:", taskHistoryError);
-    } else {
-      console.log("[cleanup-old-logs] task_history: registros antigos removidos");
-    }
-
-    // Limpar activity_log (mais de 60 dias)
     const { error: activityLogError } = await supabase
-      .from("activity_log")
-      .delete()
-      .lt("created_at", activityLogThresholdISO);
-
-    if (activityLogError) {
-      console.error("[cleanup-old-logs] Erro ao limpar activity_log:", activityLogError);
-    } else {
-      console.log("[cleanup-old-logs] activity_log: registros antigos removidos");
-    }
+      .from("activity_log").delete().lt("created_at", activityLogThreshold.toISOString());
+    if (activityLogError) log.error("Erro ao limpar activity_log:", activityLogError);
 
     const summary = {
       success: true,
-      cleaned: {
-        push_logs: !pushLogsError,
-        task_history: !taskHistoryError,
-        activity_log: !activityLogError,
-      },
-      thresholds: {
-        push_logs_days: 30,
-        task_history_days: 90,
-        activity_log_days: 60,
-      },
+      cleaned: { push_logs: !pushLogsError, task_history: !taskHistoryError, activity_log: !activityLogError },
+      thresholds: { push_logs_days: 30, task_history_days: 90, activity_log_days: 60 },
       timestamp: now.toISOString(),
     };
 
-    console.log("[cleanup-old-logs] Limpeza concluída:", summary);
-
-    return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("[cleanup-old-logs] Erro crítico:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : "Erro desconhecido",
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    log.info("Limpeza concluída:", summary);
+    return json(summary);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    log.error("Erro crítico:", err);
+    return error(err instanceof Error ? err.message : "Erro desconhecido", 500);
   }
 });

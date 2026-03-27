@@ -1,33 +1,22 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleCors } from '../_shared/cors.ts';
+import { json, error, handleAIError } from '../_shared/response.ts';
+import { parseBody, requireFields } from '../_shared/validate.ts';
+import { createLogger } from '../_shared/logger.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const log = createLogger('parse-course-modules');
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const { image } = await req.json();
+    const body = await parseBody(req);
+    requireFields(body, ['image']);
 
-    if (!image) {
-      return new Response(
-        JSON.stringify({ error: "Imagem não fornecida" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { image } = body as { image: string };
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY não configurada" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    if (!LOVABLE_API_KEY) return error("LOVABLE_API_KEY não configurada", 500);
 
     const systemPrompt = `Você é um assistente especializado em analisar imagens de cursos online.
 Sua tarefa é extrair todos os módulos/aulas/seções listados na imagem.
@@ -54,75 +43,44 @@ Regras:
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: "Analise esta imagem de um curso e extraia todos os módulos/aulas listados:",
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/png;base64,${image}`,
-                },
-              },
+              { type: "text", text: "Analise esta imagem de um curso e extraia todos os módulos/aulas listados:" },
+              { type: "image_url", image_url: { url: `data:image/png;base64,${image}` } },
             ],
           },
         ],
       }),
     });
 
+    const aiError = handleAIError(response);
+    if (aiError) return aiError;
+
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit excedido. Tente novamente em alguns segundos." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({ error: "Erro ao processar imagem" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      log.error("AI gateway error:", response.status, errorText);
+      return error("Erro ao processar imagem", 500);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "[]";
 
-    // Parse the response to extract JSON
     let modules: { title: string }[] = [];
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        modules = JSON.parse(jsonMatch[0]);
-      }
+      if (jsonMatch) modules = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      console.error("Error parsing modules:", parseError);
-      modules = [];
+      log.error("Error parsing modules:", parseError);
     }
 
-    // Generate unique IDs for each module
     const modulesWithIds = modules.map((m, index) => ({
       id: crypto.randomUUID(),
       title: m.title || `Módulo ${index + 1}`,
       completed: false,
     }));
 
-    return new Response(
-      JSON.stringify({ modules: modulesWithIds }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error) {
-    console.error("Error in parse-course-modules:", error);
-    return new Response(
-      JSON.stringify({ error: "Erro interno do servidor" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ modules: modulesWithIds });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    log.error("Error:", err);
+    return error("Erro interno do servidor", 500);
   }
 });

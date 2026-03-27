@@ -1,38 +1,16 @@
-/**
- * ============================================================================
- * EDGE FUNCTION: RESET AUTOMÁTICO DE TAREFAS RECORRENTES (CRON JOB 23:59h)
- * ============================================================================
- * 
- * Esta função é executada automaticamente às 23:59h (02:59 UTC) via pg_cron.
- * 
- * NOVA LÓGICA (pós-remoção do Diário):
- * - Busca TODAS as tarefas com recurrence_rule globalmente
- * - Não depende mais da coluna "Recorrente"
- * - Reset aplica apenas em tarefas com is_completed = true
- * 
- * IMPORTANTE: Esta função contém uma CÓPIA LOCAL de calculateNextRecurrenceDate
- * porque Edge Functions não podem importar de src/. Ao modificar a lógica de
- * recorrência, ATUALIZE TAMBÉM: src/lib/recurrenceUtils.ts
- * 
- * REGRAS DE NEGÓCIO:
- * - APENAS tarefas com is_completed === true são resetadas
- * - Cálculo usa DATA ATUAL no TIMEZONE DO USUÁRIO como base
- * - Horário original é PRESERVADO
- * - Sincronização bidirecional: atualiza mirror_task_id + reverse mirrors
- */
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { handleCors } from '../_shared/cors.ts';
+import { json, error } from '../_shared/response.ts';
+import { createAdminClient } from '../_shared/auth.ts';
+import { createLogger } from '../_shared/logger.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const log = createLogger('reset-recurring-tasks');
 
 interface RecurrenceRule {
   frequency?: "daily" | "weekly" | "monthly";
   interval?: number;
-  weekday?: number; // Legacy: único dia
-  weekdays?: number[]; // NOVO: array de dias [1, 4] = Segunda e Quinta
+  weekday?: number;
+  weekdays?: number[];
 }
 
 interface Task {
@@ -45,279 +23,138 @@ interface Task {
   mirror_task_id: string | null;
 }
 
-interface UserSettings {
-  timezone?: string;
-}
-
-/**
- * Obtém a data/hora atual no timezone do usuário
- */
 function getNowInUserTimezone(timezone: string): Date {
   const now = new Date();
-  
   try {
     const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
     });
-    
     const parts = formatter.formatToParts(now);
     const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
-    
-    const year = parseInt(getValue('year'));
-    const month = parseInt(getValue('month')) - 1;
-    const day = parseInt(getValue('day'));
-    const hour = parseInt(getValue('hour'));
-    const minute = parseInt(getValue('minute'));
-    const second = parseInt(getValue('second'));
-    
-    return new Date(year, month, day, hour, minute, second);
-  } catch (error) {
-    console.error(`[reset-recurring-tasks] Erro ao converter timezone ${timezone}, usando UTC:`, error);
+    return new Date(parseInt(getValue('year')), parseInt(getValue('month')) - 1, parseInt(getValue('day')),
+      parseInt(getValue('hour')), parseInt(getValue('minute')), parseInt(getValue('second')));
+  } catch (err) {
+    log.error(`Erro ao converter timezone ${timezone}, usando UTC:`, err);
     return now;
   }
 }
 
-/**
- * CÓPIA LOCAL de calculateNextRecurrenceDate
- * @see src/lib/recurrenceUtils.ts para documentação completa
- */
-function calculateNextRecurrenceDate(
-  currentDueDate: string | null,
-  recurrenceRule: RecurrenceRule | null,
-  userTimezone: string = "America/Sao_Paulo"
-): string {
+function calculateNextRecurrenceDate(currentDueDate: string | null, recurrenceRule: RecurrenceRule | null, userTimezone = "America/Sao_Paulo"): string {
   const now = getNowInUserTimezone(userTimezone);
-
-  if (!currentDueDate) {
-    return now.toISOString();
-  }
+  if (!currentDueDate) return now.toISOString();
 
   const baseDate = new Date(currentDueDate);
-  const hours = baseDate.getUTCHours();
-  const minutes = baseDate.getUTCMinutes();
-  const seconds = baseDate.getUTCSeconds();
+  const hours = baseDate.getUTCHours(), minutes = baseDate.getUTCMinutes(), seconds = baseDate.getUTCSeconds();
+  const createDateWithTime = (date: Date): string =>
+    new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, seconds)).toISOString();
 
-  const createDateWithTime = (date: Date): string => {
-    return new Date(
-      Date.UTC(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        hours,
-        minutes,
-        seconds
-      )
-    ).toISOString();
-  };
+  if (!recurrenceRule || typeof recurrenceRule !== "object") return createDateWithTime(now);
 
-  if (!recurrenceRule || typeof recurrenceRule !== "object") {
-    return createDateWithTime(now);
-  }
-
-  // MODO 1: Por dias da semana (suporta array ou valor único)
-  const weekdays = recurrenceRule.weekdays || 
+  const weekdays = recurrenceRule.weekdays ||
     (recurrenceRule.weekday !== undefined && recurrenceRule.weekday !== null ? [recurrenceRule.weekday] : null);
-  
+
   if (weekdays && weekdays.length > 0) {
     const currentDay = now.getDay();
     const sortedDays = [...weekdays].sort((a, b) => a - b);
-    
-    // Encontrar o próximo dia na lista
     let nextDay = sortedDays.find(d => d > currentDay);
-    let daysToAdd = 0;
-    
-    if (nextDay !== undefined) {
-      daysToAdd = nextDay - currentDay;
-    } else {
-      // Próxima semana, primeiro dia da lista
-      daysToAdd = 7 - currentDay + sortedDays[0];
-    }
-    
+    let daysToAdd = nextDay !== undefined ? nextDay - currentDay : 7 - currentDay + sortedDays[0];
     const nextDate = new Date(now);
     nextDate.setDate(nextDate.getDate() + daysToAdd);
     return createDateWithTime(nextDate);
   }
 
-  // MODO 2: Por frequência (daily/weekly/monthly)
   const frequency = recurrenceRule.frequency || "daily";
   const interval = recurrenceRule.interval || 1;
   const nextDate = new Date(now);
 
   switch (frequency) {
-    case "daily":
-      nextDate.setDate(nextDate.getDate() + interval);
-      break;
-    case "weekly":
-      nextDate.setDate(nextDate.getDate() + 7 * interval);
-      break;
-    case "monthly":
-      nextDate.setMonth(nextDate.getMonth() + interval);
-      break;
-    default:
-      nextDate.setDate(nextDate.getDate() + 1);
+    case "daily": nextDate.setDate(nextDate.getDate() + interval); break;
+    case "weekly": nextDate.setDate(nextDate.getDate() + 7 * interval); break;
+    case "monthly": nextDate.setMonth(nextDate.getMonth() + interval); break;
+    default: nextDate.setDate(nextDate.getDate() + 1);
   }
 
   return createDateWithTime(nextDate);
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    console.log("[reset-recurring-tasks] Iniciando reset automático (busca global por recurrence_rule)");
+    log.info("Iniciando reset automático (busca global por recurrence_rule)");
+    const supabase = createAdminClient();
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Buscar TODAS as tarefas recorrentes completadas (global)
     const { data: tasks, error: fetchError } = await supabase
       .from("tasks")
       .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
       .eq("is_completed", true)
       .not("recurrence_rule", "is", null);
 
-    if (fetchError) {
-      console.error("[reset-recurring-tasks] Erro ao buscar tarefas:", fetchError);
-      throw fetchError;
-    }
+    if (fetchError) { log.error("Erro ao buscar tarefas:", fetchError); throw fetchError; }
 
-    console.log(`[reset-recurring-tasks] Encontradas ${tasks?.length || 0} tarefas recorrentes completadas`);
+    log.info(`Encontradas ${tasks?.length || 0} tarefas recorrentes completadas`);
 
     if (!tasks || tasks.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Nenhuma tarefa recorrente completada encontrada",
-          processed: 0,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ success: true, message: "Nenhuma tarefa recorrente completada encontrada", processed: 0 });
     }
 
-    // Buscar configurações de timezone de todos os usuários únicos
     const userIds = [...new Set(tasks.map((t: Task) => t.user_id))];
     const { data: userSettingsData } = await supabase
-      .from("user_settings")
-      .select("user_id, settings")
-      .in("user_id", userIds);
+      .from("user_settings").select("user_id, settings").in("user_id", userIds);
 
-    // Criar mapa de timezone por usuário
     const userTimezones = new Map<string, string>();
     if (userSettingsData) {
       for (const setting of userSettingsData) {
-        const settings = setting.settings as UserSettings | null;
-        const timezone = settings?.timezone || "America/Sao_Paulo";
-        userTimezones.set(setting.user_id, timezone);
+        userTimezones.set(setting.user_id, (setting.settings as any)?.timezone || "America/Sao_Paulo");
       }
     }
 
-    let processed = 0;
-    let errors = 0;
+    let processed = 0, errors = 0;
     const processedMirrors = new Set<string>();
 
     for (const task of tasks as Task[]) {
       try {
         const userTimezone = userTimezones.get(task.user_id) || "America/Sao_Paulo";
-        const nextDueDate = calculateNextRecurrenceDate(
-          task.due_date,
-          task.recurrence_rule,
-          userTimezone
-        );
+        const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule, userTimezone);
 
-        console.log(`[reset-recurring-tasks] Tarefa "${task.title}": ${task.due_date} -> ${nextDueDate}`);
-
-        // Atualizar tarefa principal
-        const { error: updateError } = await supabase
-          .from("tasks")
-          .update({
-            is_completed: false,
-            due_date: nextDueDate,
-            updated_at: new Date().toISOString(),
-          })
+        const { error: updateError } = await supabase.from("tasks")
+          .update({ is_completed: false, due_date: nextDueDate, updated_at: new Date().toISOString() })
           .eq("id", task.id);
 
-        if (updateError) {
-          console.error(`[reset-recurring-tasks] Erro ao atualizar tarefa ${task.id}:`, updateError);
-          errors++;
-          continue;
-        }
-
+        if (updateError) { log.error(`Erro tarefa ${task.id}:`, updateError); errors++; continue; }
         processed++;
 
-        // Sincronização de mirrors (manter compatibilidade)
         if (task.mirror_task_id && !processedMirrors.has(task.mirror_task_id)) {
-          await supabase
-            .from("tasks")
-            .update({
-              is_completed: false,
-              due_date: nextDueDate,
-              updated_at: new Date().toISOString(),
-            })
+          await supabase.from("tasks")
+            .update({ is_completed: false, due_date: nextDueDate, updated_at: new Date().toISOString() })
             .eq("id", task.mirror_task_id);
           processedMirrors.add(task.mirror_task_id);
         }
 
-        // Buscar reverse mirrors
-        const { data: reverseMirrors } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("mirror_task_id", task.id)
-          .neq("id", task.id);
+        const { data: reverseMirrors } = await supabase.from("tasks")
+          .select("id").eq("mirror_task_id", task.id).neq("id", task.id);
 
         if (reverseMirrors) {
           for (const mirror of reverseMirrors) {
             if (!processedMirrors.has(mirror.id)) {
-              await supabase
-                .from("tasks")
-                .update({
-                  is_completed: false,
-                  due_date: nextDueDate,
-                  updated_at: new Date().toISOString(),
-                })
+              await supabase.from("tasks")
+                .update({ is_completed: false, due_date: nextDueDate, updated_at: new Date().toISOString() })
                 .eq("id", mirror.id);
               processedMirrors.add(mirror.id);
             }
           }
         }
-      } catch (taskError) {
-        console.error(`[reset-recurring-tasks] Erro processando tarefa ${task.id}:`, taskError);
-        errors++;
-      }
+      } catch (taskError) { log.error(`Erro processando tarefa ${task.id}:`, taskError); errors++; }
     }
 
-    const result = {
-      success: true,
-      message: "Reset automático concluído (busca global)",
-      processed,
-      mirrors: processedMirrors.size,
-      errors,
-      timestamp: new Date().toISOString(),
-    };
-
-    console.log("[reset-recurring-tasks] Resultado:", result);
-
-    return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error: unknown) {
-    console.error("[reset-recurring-tasks] Erro geral:", error);
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    const result = { success: true, message: "Reset automático concluído", processed, mirrors: processedMirrors.size, errors, timestamp: new Date().toISOString() };
+    log.info("Resultado:", result);
+    return json(result);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    log.error("Erro geral:", err);
+    return error(err instanceof Error ? err.message : "Erro desconhecido", 500);
   }
 });
