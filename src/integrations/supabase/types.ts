@@ -1429,6 +1429,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      batch_update_positions: {
+        Args: { p_table_name: string; p_updates: Json }
+        Returns: undefined
+      }
       fix_note_task_integrity: {
         Args: never
         Returns: {
@@ -1438,6 +1442,22 @@ export type Database = {
         }[]
       }
       get_dashboard_stats: { Args: { p_user_id: string }; Returns: Json }
+      get_habits_with_checkins: {
+        Args: { p_since?: string; p_user_id: string }
+        Returns: {
+          checked_date: string
+          checkin_created_at: string
+          checkin_id: string
+          color: string
+          frequency: string
+          habit_created_at: string
+          habit_id: string
+          habit_name: string
+          habit_updated_at: string
+          icon: string
+          is_archived: boolean
+        }[]
+      }
       get_productivity_7_days: {
         Args: { p_user_id: string }
         Returns: {
@@ -1452,6 +1472,30 @@ export type Database = {
           color: string
           content: string
           title: string
+        }[]
+      }
+      get_task_counts_by_category: {
+        Args: { p_user_id: string }
+        Returns: {
+          category_id: string
+          task_count: number
+        }[]
+      }
+      get_tools_with_functions: {
+        Args: { p_user_id: string }
+        Returns: {
+          api_key: string
+          created_at: string
+          description: string
+          function_ids: string[]
+          icon: string
+          id: string
+          is_favorite: boolean
+          monthly_cost: number
+          name: string
+          site_url: string
+          updated_at: string
+          user_id: string
         }[]
       }
     }
