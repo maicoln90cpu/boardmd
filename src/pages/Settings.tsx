@@ -39,7 +39,8 @@ export default function Settings() {
         <div className="flex items-center gap-4 px-6 py-3 border-b bg-background">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Voltar para a página inicial"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
           >
             <Home className="h-5 w-5" />
             <span className="text-sm">Voltar</span>

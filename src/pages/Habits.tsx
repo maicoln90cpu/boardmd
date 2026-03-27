@@ -215,7 +215,8 @@ function Habits() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                          aria-label={`Excluir hábito ${habit.name}`}
+                          className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
                           onClick={() => deleteHabit(habit.id)}
                         >
                           <Trash2 className="h-4 w-4" />

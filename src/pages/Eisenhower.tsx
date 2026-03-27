@@ -130,7 +130,7 @@ function DroppableQuadrant({ quadrant, tasks }: { quadrant: Quadrant; tasks: Eis
           <DraggableTask key={task.id} task={task} />
         ))}
         {tasks.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-8 opacity-50">
+          <p className="text-xs text-muted-foreground text-center py-8 opacity-50" role="status">
             Arraste tarefas aqui
           </p>
         )}

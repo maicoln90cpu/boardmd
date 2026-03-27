@@ -335,17 +335,21 @@ export default function Notes() {
                   <div className="flex items-center border rounded-lg overflow-hidden mr-2">
                     <button
                       onClick={() => setSidebarMode("notebooks")}
-                      className={`p-1.5 transition-colors ${sidebarMode === "notebooks" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                      aria-label="Modo cadernos"
+                      aria-pressed={sidebarMode === "notebooks"}
+                      className={`p-2 transition-colors ${sidebarMode === "notebooks" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
                       title="Cadernos"
                     >
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <Sparkles className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setSidebarMode("wiki")}
-                      className={`p-1.5 transition-colors ${sidebarMode === "wiki" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                      aria-label="Modo wiki"
+                      aria-pressed={sidebarMode === "wiki"}
+                      className={`p-2 transition-colors ${sidebarMode === "wiki" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
                       title="Wiki"
                     >
-                      <Book className="h-3.5 w-3.5" />
+                      <Book className="h-4 w-4" />
                     </button>
                   </div>
                   <h2 className="text-lg font-bold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
@@ -362,8 +366,9 @@ export default function Notes() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setTrashOpen(true)}
+                    aria-label="Abrir lixeira"
                     title="Lixeira"
-                    className="hover:bg-destructive/10 hover:text-destructive transition-colors h-9 w-9 p-0"
+                    className="hover:bg-destructive/10 hover:text-destructive transition-colors h-10 w-10 p-0"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
