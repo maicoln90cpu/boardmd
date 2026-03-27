@@ -330,7 +330,7 @@ export default function QuickLinks() {
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-3 sm:px-6 py-3 border-b bg-background">
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={() => navigate("/")} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => navigate("/")} aria-label="Voltar para a página inicial" className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors min-h-[44px]">
               <Home className="h-4 w-4 sm:h-5 sm:w-5" />
               <span className="text-xs sm:text-sm">Voltar</span>
             </button>
@@ -341,17 +341,21 @@ export default function QuickLinks() {
             <div className="flex items-center border rounded-md overflow-hidden">
               <button
                 onClick={() => setViewMode("cards")}
-                className={`p-1.5 transition-colors ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                aria-label="Visualizar como cards"
+                aria-pressed={viewMode === "cards"}
+                className={`p-2 transition-colors ${viewMode === "cards" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
                 title="Cards"
               >
-                <LayoutGrid className="h-3.5 w-3.5" />
+                <LayoutGrid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-1.5 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
+                aria-label="Visualizar como lista"
+                aria-pressed={viewMode === "list"}
+                className={`p-2 transition-colors ${viewMode === "list" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"}`}
                 title="Lista"
               >
-                <List className="h-3.5 w-3.5" />
+                <List className="h-4 w-4" />
               </button>
             </div>
 

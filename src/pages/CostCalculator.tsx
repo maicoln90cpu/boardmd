@@ -6,6 +6,7 @@ import { useCostCalculator } from "@/hooks/useCostCalculator";
 import { CostThemeCard } from "@/components/costs/CostThemeCard";
 import { CostThemeModal } from "@/components/costs/CostThemeModal";
 import { CostThemeDetail } from "@/components/costs/CostThemeDetail";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function CostCalculator() {
   const {
@@ -73,13 +74,19 @@ export default function CostCalculator() {
               </div>
 
               {loadingThemes ? (
-                <p className="text-muted-foreground text-sm">Carregando...</p>
-              ) : themes.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  <Calculator className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p>Nenhum tema de custos criado.</p>
-                  <p className="text-sm">Crie um tema para começar a registrar gastos.</p>
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
+                  ))}
                 </div>
+              ) : themes.length === 0 ? (
+                <EmptyState
+                  variant="tasks"
+                  title="Nenhum tema de custos"
+                  description="Crie um tema para começar a registrar e calcular seus gastos."
+                  actionLabel="Criar Tema"
+                  onAction={() => setShowModal(true)}
+                />
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {themes.map((theme) => (

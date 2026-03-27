@@ -33,8 +33,10 @@ export function BottomTabBar() {
             <button
               key={path}
               onClick={() => handleNavigate(path)}
+              aria-label={`Navegar para ${label}`}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors min-h-[48px]",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
@@ -48,8 +50,9 @@ export function BottomTabBar() {
         <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
           <SheetTrigger asChild>
             <button
+              aria-label="Mais opções de navegação"
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors text-muted-foreground"
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors text-muted-foreground min-h-[48px]"
               )}
               onClick={() => hapticSelection()}
             >

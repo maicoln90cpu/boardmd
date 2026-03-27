@@ -122,14 +122,14 @@ function Retrospective() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
-                <Button variant="ghost" size="icon" onClick={() => navigateWeek(-1)}>
+                <Button variant="ghost" size="icon" aria-label="Semana anterior" onClick={() => navigateWeek(-1)}>
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
                 <div className="text-center">
                   <p className="font-semibold">{formatWeekRange(selectedWeek)}</p>
                   {isCurrentWeek && <Badge variant="secondary" className="mt-1">Semana Atual</Badge>}
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => navigateWeek(1)} disabled={isCurrentWeek}>
+                <Button variant="ghost" size="icon" aria-label="Próxima semana" onClick={() => navigateWeek(1)} disabled={isCurrentWeek}>
                   <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>

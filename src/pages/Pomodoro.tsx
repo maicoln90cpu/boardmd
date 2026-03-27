@@ -266,37 +266,37 @@ export default function Pomodoro() {
                   <div className="flex items-center gap-3">
                     {state === "idle" ? (
                       <>
-                        <Button size="lg" onClick={() => startSession("work")} className="gap-2">
+                        <Button size="lg" onClick={() => startSession("work")} className="gap-2" aria-label="Iniciar sessão de foco">
                           <Play className="h-5 w-5" />
                           Iniciar Foco
                         </Button>
-                        <Button size="lg" variant="outline" onClick={() => startSession("short_break")} className="gap-2">
+                        <Button size="lg" variant="outline" onClick={() => startSession("short_break")} className="gap-2" aria-label="Iniciar pausa curta">
                           <Coffee className="h-5 w-5" />
                           Pausa Curta
                         </Button>
                       </>
                     ) : isPaused ? (
                       <>
-                        <Button size="lg" onClick={resumeSession} className="gap-2">
+                        <Button size="lg" onClick={resumeSession} className="gap-2" aria-label="Retomar sessão">
                           <Play className="h-5 w-5" />
                           Retomar
                         </Button>
-                        <Button size="lg" variant="destructive" onClick={stopSession} className="gap-2">
+                        <Button size="lg" variant="destructive" onClick={stopSession} className="gap-2" aria-label="Parar sessão">
                           <Square className="h-5 w-5" />
                           Parar
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button size="lg" variant="outline" onClick={pauseSession} className="gap-2">
+                        <Button size="lg" variant="outline" onClick={pauseSession} className="gap-2" aria-label="Pausar sessão">
                           <Pause className="h-5 w-5" />
                           Pausar
                         </Button>
-                        <Button size="lg" variant="secondary" onClick={skipSession} className="gap-2">
+                        <Button size="lg" variant="secondary" onClick={skipSession} className="gap-2" aria-label="Pular para próxima sessão">
                           <SkipForward className="h-5 w-5" />
                           Pular
                         </Button>
-                        <Button size="lg" variant="destructive" onClick={stopSession} className="gap-2">
+                        <Button size="lg" variant="destructive" onClick={stopSession} className="gap-2" aria-label="Parar sessão">
                           <Square className="h-5 w-5" />
                           Parar
                         </Button>
