@@ -17,6 +17,7 @@ import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUti
 import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Import subcomponents
 import {
@@ -206,6 +207,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const cardRef = React.useRef<HTMLDivElement>(null);
   const { isTaskSaving } = useSavingTasks();
   const isSaving = isTaskSaving(task.id);
@@ -325,7 +327,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             .eq("id", task.mirror_task_id);
         }
         
-        // Realtime subscription handles UI sync
+        // Invalidate cache to ensure UI reflects changes
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
         return;
       } catch (error) {
         logger.error("Erro ao resetar tarefa recorrente:", error);
@@ -378,7 +381,8 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
         onMoveToCompleted(task.id, completedColumnId);
       }
 
-      // Realtime subscription handles UI sync
+      // Invalidate cache to ensure UI reflects changes
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     } catch (error) {
       logger.error("Erro ao atualizar tarefa:", error);
       setIsLocalCompleted(!checked);

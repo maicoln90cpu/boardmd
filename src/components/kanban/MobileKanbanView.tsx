@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
 import { useSettings } from "@/hooks/data/useSettings";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PriorityColors {
   high: { background: string; text: string };
@@ -62,6 +63,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
   const { toast } = useToast();
   const { settings } = useSettings();
+  const queryClient = useQueryClient();
 
   // Memoizar valores calculados
   const currentColumnIndex = useMemo(
@@ -88,9 +90,8 @@ export const MobileKanbanView = memo(function MobileKanbanView({
           onAddPoints();
         }
 
-        // Push notification handled by useTasks.updateTask (centralized)
-
-        // Realtime handles sync
+        // Invalidate cache to ensure UI reflects changes
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
         toast({
           title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
@@ -104,7 +105,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
         });
       }
     },
-    [onAddPoints, toast]
+    [onAddPoints, toast, queryClient]
   );
 
   return (
