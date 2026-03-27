@@ -94,9 +94,9 @@ export function useHabits() {
       toast({ title: "Erro ao criar hábito", variant: "destructive" });
     } else {
       toast({ title: "Hábito criado!" });
-      fetchHabits();
+      fetchAll();
     }
-  }, [user, toast, fetchHabits]);
+  }, [user, toast, fetchAll]);
 
   const deleteHabit = useCallback(async (id: string) => {
     // Optimistic update
@@ -200,6 +200,6 @@ export function useHabits() {
     toggleCheckin,
     getStreak,
     isCheckedToday,
-    refresh: () => Promise.all([fetchHabits(), fetchCheckins()]),
+    refresh: fetchAll,
   };
 }
