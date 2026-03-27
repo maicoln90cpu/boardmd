@@ -199,36 +199,17 @@ export function NoteEditor({
     state.syncWithNote(editor);
   }, [note.id, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id, editor, state.syncWithNote]);
 
-  // Auto-save when switching notes
+  // Browser native prompt on tab close / reload when unsaved
   useEffect(() => {
-    return () => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (state.hasUnsavedChanges.current) {
-        state.autoSave();
-      }
-    };
-  }, [note.id]);
-
-  // Auto-save on page reload or tab close
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (state.hasUnsavedChanges.current) {
-        state.autoSave();
+        e.preventDefault();
+        e.returnValue = '';
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [state.autoSave]);
-
-  // Listener for custom save event
-  useEffect(() => {
-    const handleSaveEvent = () => {
-      if (state.hasUnsavedChanges.current) {
-        state.autoSave();
-      }
-    };
-    window.addEventListener('save-current-note', handleSaveEvent);
-    return () => window.removeEventListener('save-current-note', handleSaveEvent);
-  }, [state.autoSave]);
+  }, []);
 
   // Handle hash in URL on mount (e.g., /notes#section)
   useEffect(() => {
@@ -271,23 +252,6 @@ export function NoteEditor({
     }
   }, [editor, note.id]);
 
-  // Auto-save when navigating to another page
-  useEffect(() => {
-    return () => {
-      if (state.hasUnsavedChanges.current) {
-        const currentTitle = state.titleRef.current;
-        const currentContent = state.contentRef.current;
-        const currentColor = state.colorRef.current;
-        if (!currentTitle.trim() && !currentContent.trim()) return;
-        state.onUpdateRef.current(state.currentNoteRef.current.id, {
-          title: currentTitle.trim() || "Sem título",
-          content: currentContent.trim(),
-          color: currentColor,
-          linked_task_id: state.linkedTaskId
-        });
-      }
-    };
-  }, []);
 
   // Keyboard shortcuts for save (Ctrl+Enter) and insert task (Ctrl+Shift+T)
   useEffect(() => {
