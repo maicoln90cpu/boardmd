@@ -1,9 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleCors } from '../_shared/cors.ts';
+import { json, error, handleAIError } from '../_shared/response.ts';
+import { parseBody, validateArray } from '../_shared/validate.ts';
+import { tryGetAuthenticatedUser, createAdminClient } from '../_shared/auth.ts';
+import { createLogger } from '../_shared/logger.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const log = createLogger('daily-assistant');
 
 interface Task {
   id: string;
@@ -17,27 +18,17 @@ interface Task {
   subtasks?: Array<{ id: string; title: string; completed: boolean }>;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const { tasks } = await req.json();
-    
-    if (!tasks || !Array.isArray(tasks)) {
-      return new Response(
-        JSON.stringify({ error: "Tasks array is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const body = await parseBody(req);
+    const tasks = validateArray(body.tasks, 'tasks') as Task[];
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    if (!LOVABLE_API_KEY) return error("LOVABLE_API_KEY is not configured", 500);
 
-    // Default system prompt
     let systemPrompt = `Você é um assistente de produtividade especializado em organizar tarefas diárias.
 
 Analise as tarefas fornecidas e retorne uma sugestão de organização inteligente considerando:
@@ -66,36 +57,26 @@ IMPORTANTE:
 - Insights devem ser concisos e acionáveis`;
 
     // Get custom prompt from user settings if authenticated
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
+    const auth = await tryGetAuthenticatedUser(req);
+    if (auth) {
       try {
-        const token = authHeader.replace('Bearer ', '');
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-        
-        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        const { data: { user } } = await supabase.auth.getUser(token);
-        
-        if (user) {
-          const { data: settings } = await supabase
-            .from('user_settings')
-            .select('settings')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (settings?.settings?.aiPrompts?.dailyAssistant) {
-            systemPrompt = settings.settings.aiPrompts.dailyAssistant;
-            console.log('[daily-assistant] Using custom prompt for dailyAssistant');
-          }
+        const adminClient = createAdminClient();
+        const { data: settings } = await adminClient
+          .from('user_settings')
+          .select('settings')
+          .eq('user_id', auth.userId)
+          .single();
+
+        if ((settings?.settings as Record<string, any>)?.aiPrompts?.dailyAssistant) {
+          systemPrompt = (settings.settings as Record<string, any>).aiPrompts.dailyAssistant;
+          log.info('Using custom prompt for dailyAssistant');
         }
       } catch (authError) {
-        console.log('[daily-assistant] Auth error, using default prompt:', authError);
+        log.warn('Auth error, using default prompt:', authError);
       }
     }
 
-    const tasksContext = tasks.map((t: Task) => ({
+    const tasksContext = tasks.map((t) => ({
       id: t.id,
       title: t.title,
       priority: t.priority || "medium",
@@ -103,11 +84,11 @@ IMPORTANTE:
       column: t.column_id,
       tags: t.tags || [],
       subtasks_total: t.subtasks?.length || 0,
-      subtasks_completed: t.subtasks?.filter((s: any) => s.completed).length || 0,
+      subtasks_completed: t.subtasks?.filter((s) => s.completed).length || 0,
       position: t.position
     }));
 
-    console.log(`[daily-assistant] Processing ${tasks.length} tasks`);
+    log.info(`Processing ${tasks.length} tasks`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -119,66 +100,40 @@ IMPORTANTE:
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { 
-            role: "user", 
-            content: `Analise e organize estas tarefas do dia:\n\n${JSON.stringify(tasksContext, null, 2)}` 
-          }
+          { role: "user", content: `Analise e organize estas tarefas do dia:\n\n${JSON.stringify(tasksContext, null, 2)}` }
         ],
         temperature: 0.7,
         max_tokens: 2000,
       }),
     });
 
+    const aiError = handleAIError(response);
+    if (aiError) return aiError;
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[daily-assistant] AI gateway error: ${response.status} - ${errorText}`);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limit excedido. Aguarde um momento e tente novamente." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Créditos insuficientes. Adicione créditos em Settings → Workspace → Usage." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      throw new Error(`AI gateway error: ${response.status}`);
+      log.error(`AI gateway error: ${response.status} - ${errorText}`);
+      return error(`AI gateway error: ${response.status}`, 500);
     }
 
     const data = await response.json();
     const aiResponse = data.choices[0]?.message?.content;
+    if (!aiResponse) return error("No content returned from AI", 500);
 
-    if (!aiResponse) {
-      throw new Error("No content returned from AI");
-    }
-
-    // Parse AI response (remove markdown code blocks if present)
     let parsedResponse;
     try {
       const cleanedResponse = aiResponse.replace(/```json\n?|\n?```/g, '').trim();
       parsedResponse = JSON.parse(cleanedResponse);
-    } catch (parseError) {
-      console.error("[daily-assistant] Failed to parse AI response:", aiResponse);
-      throw new Error("Invalid AI response format");
+    } catch {
+      log.error("Failed to parse AI response:", aiResponse);
+      return error("Invalid AI response format", 500);
     }
 
-    console.log(`[daily-assistant] Success - ${parsedResponse.reorderedTasks?.length || 0} tasks reordered`);
-
-    return new Response(
-      JSON.stringify(parsedResponse),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-
-  } catch (error) {
-    console.error("[daily-assistant] Error:", error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    log.info(`Success - ${parsedResponse.reorderedTasks?.length || 0} tasks reordered`);
+    return json(parsedResponse);
+  } catch (err) {
+    if (err instanceof Response) return err;
+    log.error("Error:", err);
+    return error(err instanceof Error ? err.message : "Unknown error", 500);
   }
 });

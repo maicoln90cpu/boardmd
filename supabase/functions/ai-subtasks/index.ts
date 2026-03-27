@@ -1,25 +1,19 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleCors } from '../_shared/cors.ts';
+import { json, error, handleAIError } from '../_shared/response.ts';
+import { parseBody, requireFields } from '../_shared/validate.ts';
+import { createLogger } from '../_shared/logger.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const log = createLogger('ai-subtasks');
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+Deno.serve(async (req) => {
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const { title, description } = await req.json();
+    const body = await parseBody(req);
+    requireFields(body, ['title']);
 
-    if (!title) {
-      return new Response(
-        JSON.stringify({ error: "Task title is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const { title, description } = body as { title: string; description?: string };
 
     const prompt = `Você é um assistente de produtividade. Dado o título de uma tarefa e opcionalmente sua descrição, sugira 3-5 subtarefas práticas e acionáveis para completá-la.
 
@@ -44,55 +38,42 @@ Exemplo de resposta:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.7,
         max_tokens: 500,
       }),
     });
 
+    const aiError = handleAIError(response);
+    if (aiError) return aiError;
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI API error:", errorText);
-      throw new Error(`AI API error: ${response.status}`);
+      log.error("AI API error:", errorText);
+      return error(`AI API error: ${response.status}`, 500);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || "[]";
 
-    // Extract JSON array from response
     let subtasks: string[] = [];
     try {
-      // Try to parse directly
       subtasks = JSON.parse(content);
     } catch {
-      // Try to extract JSON array from text
       const match = content.match(/\[[\s\S]*\]/);
-      if (match) {
-        subtasks = JSON.parse(match[0]);
-      }
+      if (match) subtasks = JSON.parse(match[0]);
     }
 
-    // Validate and clean subtasks
     subtasks = subtasks
-      .filter((s: any) => typeof s === "string" && s.trim().length > 0)
+      .filter((s: unknown) => typeof s === "string" && (s as string).trim().length > 0)
       .map((s: string) => s.trim().slice(0, 100))
       .slice(0, 5);
 
-    return new Response(
-      JSON.stringify({ subtasks }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: errorMessage, subtasks: [] }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ subtasks });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    log.error("Error:", err);
+    return error(msg, 500);
   }
 });
