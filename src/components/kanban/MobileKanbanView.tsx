@@ -105,7 +105,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
         });
       }
     },
-    [onAddPoints, toast]
+    [onAddPoints, toast, queryClient]
   );
 
   return (
