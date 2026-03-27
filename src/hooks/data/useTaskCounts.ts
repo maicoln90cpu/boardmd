@@ -22,27 +22,24 @@ export function useTaskCounts() {
     }
 
     try {
-      // Query otimizada: busca apenas category_id das tarefas do usuário
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("category_id")
-        .eq("user_id", user.id);
+      const { data, error } = await supabase.rpc('get_task_counts_by_category', {
+        p_user_id: user.id,
+      });
 
       if (error) {
         logger.error("Erro ao buscar contagem de tarefas:", error);
         return;
       }
 
-      // Agregar contagens no cliente
-      const countMap = (data || []).reduce((acc, task) => {
-        if (task.category_id) {
-          acc[task.category_id] = (acc[task.category_id] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>);
+      const countMap: Record<string, number> = {};
+      let total = 0;
+      for (const row of (data || []) as any[]) {
+        countMap[row.category_id] = Number(row.task_count);
+        total += Number(row.task_count);
+      }
 
       setCounts(countMap);
-      setTotalCount(data?.length || 0);
+      setTotalCount(total);
     } catch (err) {
       logger.error("Erro ao processar contagem:", err);
     } finally {

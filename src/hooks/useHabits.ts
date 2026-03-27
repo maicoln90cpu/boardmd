@@ -30,34 +30,57 @@ export function useHabits() {
   const [checkins, setCheckins] = useState<HabitCheckin[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHabits = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("habits")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true });
-    if (data) setHabits(data as Habit[]);
-  }, [user]);
-
-  const fetchCheckins = useCallback(async () => {
-    if (!user) return;
-    // Fetch last 90 days of checkins
-    const since = new Date();
-    since.setDate(since.getDate() - 90);
-    const { data } = await supabase
-      .from("habit_checkins")
-      .select("*")
-      .eq("user_id", user.id)
-      .gte("checked_date", since.toISOString().split("T")[0]);
-    if (data) setCheckins(data as HabitCheckin[]);
-  }, [user]);
-
-  useEffect(() => {
+  const fetchAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    Promise.all([fetchHabits(), fetchCheckins()]).finally(() => setLoading(false));
-  }, [user, fetchHabits, fetchCheckins]);
+    try {
+      const { data, error } = await supabase.rpc('get_habits_with_checkins', {
+        p_user_id: user.id,
+      });
+
+      if (error) {
+        toast({ title: "Erro ao carregar hábitos", variant: "destructive" });
+        return;
+      }
+
+      const habitsMap = new Map<string, Habit>();
+      const checkinsList: HabitCheckin[] = [];
+
+      for (const row of (data || []) as any[]) {
+        if (!habitsMap.has(row.habit_id)) {
+          habitsMap.set(row.habit_id, {
+            id: row.habit_id,
+            user_id: user.id,
+            name: row.habit_name,
+            frequency: row.frequency,
+            color: row.color,
+            icon: row.icon,
+            is_archived: row.is_archived,
+            created_at: row.habit_created_at,
+            updated_at: row.habit_updated_at,
+          });
+        }
+        if (row.checkin_id) {
+          checkinsList.push({
+            id: row.checkin_id,
+            habit_id: row.habit_id,
+            user_id: user.id,
+            checked_date: row.checked_date,
+            created_at: row.checkin_created_at,
+          });
+        }
+      }
+
+      setHabits(Array.from(habitsMap.values()));
+      setCheckins(checkinsList);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, toast]);
+
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const addHabit = useCallback(async (name: string, color: string, icon: string) => {
     if (!user) return;
@@ -71,9 +94,9 @@ export function useHabits() {
       toast({ title: "Erro ao criar hábito", variant: "destructive" });
     } else {
       toast({ title: "Hábito criado!" });
-      fetchHabits();
+      fetchAll();
     }
-  }, [user, toast, fetchHabits]);
+  }, [user, toast, fetchAll]);
 
   const deleteHabit = useCallback(async (id: string) => {
     // Optimistic update
@@ -177,6 +200,6 @@ export function useHabits() {
     toggleCheckin,
     getStreak,
     isCheckedToday,
-    refresh: () => Promise.all([fetchHabits(), fetchCheckins()]),
+    refresh: fetchAll,
   };
 }

@@ -294,7 +294,6 @@ export function useCategories() {
   };
 
   const reorderCategories = async (reorderedCategories: Category[]) => {
-    // ATUALIZAÇÃO OTIMISTA: Atualizar estado ANTES da requisição
     const previousCategories = [...categories];
     const updatedCategories = reorderedCategories.map((cat, index) => ({
       ...cat,
@@ -303,29 +302,18 @@ export function useCategories() {
     setCategories(updatedCategories);
 
     try {
-      // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = reorderedCategories.map((category, index) => ({
         id: category.id,
         position: index,
       }));
 
-      // Executar todos os updates em paralelo
-      const results = await Promise.all(
-        updates.map(update =>
-          supabase
-            .from("categories")
-            .update({ position: update.position })
-            .eq("id", update.id)
-        )
-      );
+      const { error } = await supabase.rpc('batch_update_positions', {
+        p_table_name: 'categories',
+        p_updates: JSON.stringify(updates),
+      });
 
-      // Verificar se algum falhou
-      const errors = results.filter(r => r.error);
-      if (errors.length > 0) {
-        throw errors[0].error;
-      }
+      if (error) throw error;
     } catch (error) {
-      // ROLLBACK: Reverter para estado anterior em caso de erro
       setCategories(previousCategories);
       toast({ title: "Erro ao reordenar categorias", variant: "destructive" });
     }

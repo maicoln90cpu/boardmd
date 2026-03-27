@@ -88,14 +88,17 @@ export function useQuickLinks() {
   const reorderLinks = async (reorderedLinks: QuickLink[]) => {
     queryClient.setQueryData(["quick_links", user?.id], reorderedLinks);
 
-    const updates = reorderedLinks.map((link, index) =>
-      supabase.from("quick_links").update({ position: index }).eq("id", link.id)
-    );
+    const updates = reorderedLinks.map((link, index) => ({
+      id: link.id,
+      position: index,
+    }));
 
-    const results = await Promise.all(updates);
-    const hasError = results.some((r) => r.error);
+    const { error } = await supabase.rpc('batch_update_positions', {
+      p_table_name: 'quick_links',
+      p_updates: JSON.stringify(updates),
+    });
 
-    if (hasError) {
+    if (error) {
       toast.error("Erro ao reordenar links");
       invalidate();
     }
