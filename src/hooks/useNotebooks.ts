@@ -58,18 +58,6 @@ export function useNotebooks() {
   useEffect(() => {
     fetchNotebooks();
 
-    // Listener para evento customizado
-    const handleNotebookUpdated = () => {
-      if (fetchDebounceRef.current) {
-        clearTimeout(fetchDebounceRef.current);
-      }
-      fetchDebounceRef.current = setTimeout(() => {
-        fetchNotebooks();
-      }, 300);
-    };
-
-    window.addEventListener('notebook-updated', handleNotebookUpdated);
-
     const channel = supabase
       .channel("notebooks_changes")
       .on(
@@ -91,7 +79,6 @@ export function useNotebooks() {
       if (fetchDebounceRef.current) {
         clearTimeout(fetchDebounceRef.current);
       }
-      window.removeEventListener('notebook-updated', handleNotebookUpdated);
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -132,9 +119,6 @@ export function useNotebooks() {
         prev.map((n) => (n.id === tempId ? notebookWithTags : n))
       );
 
-      // Disparar evento customizado para forçar refresh
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
-
       toast({ title: "Caderno criado com sucesso!" });
     } catch (error) {
       logger.error("Error adding notebook:", error);
@@ -162,9 +146,6 @@ export function useNotebooks() {
         .eq("id", id);
 
       if (error) throw error;
-
-      // Disparar evento customizado para forçar refresh
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
 
       toast({ title: "Caderno atualizado!" });
     } catch (error) {
@@ -211,9 +192,6 @@ export function useNotebooks() {
 
       if (error) throw error;
 
-      // Disparar evento customizado para forçar refresh
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
-
       toast({ title: "Caderno movido para lixeira" });
     } catch (error) {
       logger.error("Error deleting notebook:", error);
@@ -250,7 +228,6 @@ export function useNotebooks() {
         .eq("id", notebookId);
 
       if (error) throw error;
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
       logger.error("Error adding tag:", error);
       toast({
@@ -283,7 +260,6 @@ export function useNotebooks() {
         .eq("id", notebookId);
 
       if (error) throw error;
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
       logger.error("Error removing tag:", error);
       toast({
@@ -315,7 +291,6 @@ export function useNotebooks() {
         .eq("id", notebookId);
 
       if (error) throw error;
-      window.dispatchEvent(new CustomEvent('notebook-updated'));
     } catch (error) {
       logger.error("Error updating tags:", error);
       toast({

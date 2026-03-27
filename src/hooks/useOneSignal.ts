@@ -1,9 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { initOneSignal, oneSignalUtils } from '@/lib/push/oneSignalProvider';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
 
 export function useOneSignal() {
+  const { user } = useAuth();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
+
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -32,13 +37,13 @@ export function useOneSignal() {
           }
         } else {
           // Vincular external_id em cada carregamento para garantir entrega via API
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await oneSignalUtils.setExternalUserId(user.id);
+          const currentUser = userRef.current;
+          if (currentUser) {
+            await oneSignalUtils.setExternalUserId(currentUser.id);
             await oneSignalUtils.addTags({
               app_version: '1.1',
               platform: 'web',
-              user_id: user.id,
+              user_id: currentUser.id,
             });
           }
           await new Promise(resolve => setTimeout(resolve, 500));
@@ -63,14 +68,14 @@ export function useOneSignal() {
     if (!isInitialized) return;
 
     const handleSubscriptionChange = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      const currentUser = userRef.current;
+      if (currentUser) {
         logger.log('[useOneSignal] Subscription changed, re-linking external_id');
-        await oneSignalUtils.setExternalUserId(user.id);
+        await oneSignalUtils.setExternalUserId(currentUser.id);
         await oneSignalUtils.addTags({
           app_version: '1.1',
           platform: 'web',
-          user_id: user.id,
+          user_id: currentUser.id,
         });
         const subscribed = await oneSignalUtils.isSubscribed();
         setIsSubscribed(subscribed);
@@ -103,13 +108,13 @@ export function useOneSignal() {
       const subscribed = await oneSignalUtils.isSubscribed();
       
       // 3. AFTER subscription exists, link external_id and tags
-      const { data: { user } } = await supabase.auth.getUser();
-      if (subscribed && user) {
-        await oneSignalUtils.setExternalUserId(user.id);
+      const currentUser = userRef.current;
+      if (subscribed && currentUser) {
+        await oneSignalUtils.setExternalUserId(currentUser.id);
         await oneSignalUtils.addTags({
           app_version: '1.1',
           platform: 'web',
-          user_id: user.id,
+          user_id: currentUser.id,
         });
       }
       
@@ -141,12 +146,12 @@ export function useOneSignal() {
 
   const sendTestNotification = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return false;
+      const currentUser = userRef.current;
+      if (!currentUser) return false;
 
       const { error } = await supabase.functions.invoke('send-onesignal', {
         body: {
-          user_id: user.id,
+          user_id: currentUser.id,
           title: '🔔 Teste OneSignal',
           body: 'Se você viu isso, as notificações estão funcionando!',
           notification_type: 'test',

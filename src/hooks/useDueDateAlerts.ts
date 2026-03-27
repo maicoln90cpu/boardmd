@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/ui/useToast";
 import { differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/hooks/data/useSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import { logger } from "@/lib/logger";
 import {
   defaultNotificationTemplates,
@@ -75,6 +76,9 @@ export function getTaskUrgency(task: Task): "overdue" | "urgent" | "warning" | "
 export function useDueDateAlerts(tasks: Task[]) {
   const { toast } = useToast();
   const { settings } = useSettings();
+  const { user } = useAuth();
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
   
   // SessionStorage-backed Set: persists across app restarts within same tab session
   const notifiedRef = useRef<Set<string>>(new Set<string>());
@@ -122,8 +126,8 @@ export function useDueDateAlerts(tasks: Task[]) {
       if (!currentSettings.dueDate) return;
 
       const excludedColumns = currentSettings.excludedPushColumnIds || [];
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const currentUser = userRef.current;
+      if (!currentUser) return;
 
       const userTemplates = settings.notificationTemplates || defaultNotificationTemplates;
       const columnMap = await getColumnMap();
@@ -143,7 +147,7 @@ export function useDueDateAlerts(tasks: Task[]) {
       // Helper: send push (backend handles dedup via dedup_key)
       const push = async (templateId: string, taskId: string, vars: Record<string, string>) => {
         await sendPushWithTemplate({
-          userId: user.id,
+          userId: currentUser.id,
           templateId,
           templates: userTemplates,
           variables: vars,
@@ -238,7 +242,7 @@ export function useDueDateAlerts(tasks: Task[]) {
               if (reminder.channel === 'whatsapp' || reminder.channel === 'both') {
                 import("@/lib/whatsappNotifier").then(({ sendWhatsAppNotification }) => {
                   sendWhatsAppNotification({
-                    userId: user.id,
+                    userId: currentUser.id,
                     templateType: 'due_date',
                     variables: { taskTitle: task.title, timeRemaining: timeText },
                   });
