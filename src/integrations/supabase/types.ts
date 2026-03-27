@@ -134,6 +134,13 @@ export type Database = {
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_categories_parent"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
         ]
       }
       columns: {
@@ -212,6 +219,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cost_items_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "cost_themes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cost_items_theme"
             columns: ["theme_id"]
             isOneToOne: false
             referencedRelation: "cost_themes"
@@ -366,6 +380,13 @@ export type Database = {
             referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_courses_linked_task"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
         ]
       }
       goals: {
@@ -436,6 +457,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_habit_checkins_habit"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "habit_checkins_habit_id_fkey"
             columns: ["habit_id"]
@@ -550,6 +578,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_notes_linked_course"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notes_linked_task"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_notes_notebook"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notes_linked_course_id_fkey"
             columns: ["linked_course_id"]
             isOneToOne: false
@@ -607,6 +656,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_pomodoro_task"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pomodoro_sessions_task_id_fkey"
             columns: ["task_id"]
@@ -856,6 +912,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_shared_notes_note"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shared_notes_note_id_fkey"
             columns: ["note_id"]
             isOneToOne: false
@@ -920,6 +983,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_completion_logs_task"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_completion_logs_task_id_fkey"
             columns: ["task_id"]
@@ -1037,6 +1107,41 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_tasks_category"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_column"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_linked_course"
+            columns: ["linked_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_linked_note"
+            columns: ["linked_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tasks_mirror"
+            columns: ["mirror_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -1093,6 +1198,20 @@ export type Database = {
           tool_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_tfa_function"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "tool_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_tfa_tool"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tool_function_assignments_function_id_fkey"
             columns: ["function_id"]
