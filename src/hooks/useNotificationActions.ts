@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Hook to handle notification action messages from service worker
@@ -10,6 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 export function useNotificationActions() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Handle messages from service worker
