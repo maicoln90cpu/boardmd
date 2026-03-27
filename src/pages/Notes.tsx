@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
 import { useTasks } from "@/hooks/tasks/useTasks";
@@ -12,7 +12,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useBlocker } from "react-router-dom";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
 import { motion, AnimatePresence } from "framer-motion";
