@@ -43,6 +43,29 @@ export default function Notes() {
 
   // Offline notes support
   const { loadOfflineNotes, isOnline } = useOfflineNotes(notes, fetchNotes);
+  
+  // Unsaved changes tracking
+  const hasUnsavedChangesRef = useRef(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const pendingNoteIdRef = useRef<string | null>(null);
+  
+  // Expose setter for NoteEditor to call
+  const setHasUnsavedChanges = useCallback((value: boolean) => {
+    hasUnsavedChangesRef.current = value;
+  }, []);
+  
+  // Block react-router navigation when unsaved
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChangesRef.current && currentLocation.pathname !== nextLocation.pathname
+  );
+  
+  // Show dialog when blocker triggers
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowUnsavedDialog(true);
+    }
+  }, [blocker.state]);
 
   // Load from cache when offline and no notes loaded
   useEffect(() => {
