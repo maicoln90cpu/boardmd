@@ -14,6 +14,8 @@ export function useNotificationActions() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    const invalidate = () => queryClient.invalidateQueries({ queryKey: ["tasks"] });
+
     // Handle messages from service worker
     const handleServiceWorkerMessage = async (event: MessageEvent) => {
       const { type, taskId, action, url } = event.data || {};
@@ -21,8 +23,10 @@ export function useNotificationActions() {
       if (type === "TASK_ACTION" && taskId) {
         if (action === "complete") {
           await completeTask(taskId);
+          invalidate();
         } else if (action === "snooze") {
           await snoozeTask(taskId);
+          invalidate();
         }
       }
 
@@ -39,15 +43,13 @@ export function useNotificationActions() {
     const snoozeTaskId = urlParams.get("snooze_task");
 
     if (completeTaskId) {
-      completeTask(completeTaskId);
-      // Clean up URL
+      completeTask(completeTaskId).then(invalidate);
       urlParams.delete("complete_task");
       navigate({ search: urlParams.toString() }, { replace: true });
     }
 
     if (snoozeTaskId) {
-      snoozeTask(snoozeTaskId);
-      // Clean up URL
+      snoozeTask(snoozeTaskId).then(invalidate);
       urlParams.delete("snooze_task");
       navigate({ search: urlParams.toString() }, { replace: true });
     }
@@ -55,7 +57,7 @@ export function useNotificationActions() {
     return () => {
       navigator.serviceWorker?.removeEventListener("message", handleServiceWorkerMessage);
     };
-  }, [navigate, location.search]);
+  }, [navigate, location.search, queryClient]);
 
   return null;
 }
