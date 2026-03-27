@@ -86,7 +86,7 @@ function DraggableTask({ task }: { task: EisenhowerTask }) {
       {...listeners}
       {...attributes}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm bg-card border shadow-sm cursor-grab active:cursor-grabbing touch-none transition-all hover:shadow-md",
+        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm bg-card border shadow-sm cursor-grab active:cursor-grabbing transition-all hover:shadow-md min-h-[44px]",
         isDragging && "opacity-40",
         isOverdue && "ring-1 ring-destructive/50"
       )}
@@ -228,7 +228,7 @@ function Eisenhower() {
   return (
     <div className="flex h-screen pt-14 md:pt-0">
       <Sidebar onExport={() => {}} onImport={() => {}} onThemeToggle={toggleTheme} />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Matriz Eisenhower</h1>
           <p className="text-sm text-muted-foreground mt-1">

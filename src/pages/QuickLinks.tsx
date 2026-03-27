@@ -430,7 +430,7 @@ export default function QuickLinks() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 pb-24 md:pb-6">
           {links.length === 0 && !isLoading ? (
             <EmptyState variant="links" title="Nenhum link salvo" description="Adicione atalhos para seus sites e ferramentas mais usados, ou importe seus bookmarks do navegador" onAction={() => setIsAddOpen(true)} actionLabel="Adicionar Link" />
           ) : groupedByFolder ? (

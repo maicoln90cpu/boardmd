@@ -155,7 +155,7 @@ export default function Tools() {
         onImport={() => {}}
         onThemeToggle={toggleTheme}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex flex-col gap-4 p-4 md:p-6">
@@ -258,7 +258,7 @@ export default function Tools() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
         {activeTab === "tools" ? (
           <>
             <ToolsCostSummary tools={tools} />
