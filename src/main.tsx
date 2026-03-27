@@ -34,13 +34,7 @@ const updateSW = registerSW({
   },
   onRegistered(registration) {
     logger.log('SW registered:', registration);
-    
-    // Check for updates every hour
-    if (registration) {
-      setInterval(() => {
-        registration.update();
-      }, 60 * 60 * 1000);
-    }
+    // Update interval handled by PWAUpdater — no duplicate here
   },
   onRegisterError(error) {
     prodLogger.error('SW registration error:', error);

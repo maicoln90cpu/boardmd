@@ -167,9 +167,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
 
       setUndoStack((prev) => prev.slice(1));
 
-      // Realtime handles sync
-      window.dispatchEvent(new CustomEvent("note-updated"));
-      window.dispatchEvent(new CustomEvent("notebook-updated"));
+      // Realtime handles sync automatically
 
       toast({
         title: "Ação desfeita",
