@@ -63,6 +63,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const [activeTab, setActiveTab] = useState(columns[0]?.id || "");
   const { toast } = useToast();
   const { settings } = useSettings();
+  const queryClient = useQueryClient();
 
   // Memoizar valores calculados
   const currentColumnIndex = useMemo(
@@ -89,9 +90,8 @@ export const MobileKanbanView = memo(function MobileKanbanView({
           onAddPoints();
         }
 
-        // Push notification handled by useTasks.updateTask (centralized)
-
-        // Realtime handles sync
+        // Invalidate cache to ensure UI reflects changes
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
 
         toast({
           title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
