@@ -263,7 +263,7 @@ export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTask
     courses,
     
     // Handlers
-    autoSave,
+    
     syncWithNote,
     handleSave,
     handleCancel,
