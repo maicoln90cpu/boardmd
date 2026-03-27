@@ -290,7 +290,6 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
   };
 
   const reorderColumns = async (newOrder: Column[]) => {
-    // ATUALIZAÇÃO OTIMISTA
     const previousColumns = [...columns];
     const updatedColumns = newOrder.map((col, index) => ({
       ...col,
@@ -299,31 +298,20 @@ export function useColumns(kanbanType?: 'daily' | 'projects' | 'shared') {
     setColumns(updatedColumns);
 
     try {
-      // OTIMIZAÇÃO: Batch update com Promise.all em vez de loop sequencial
       const updates = newOrder.map((col, index) => ({
         id: col.id,
         position: index,
       }));
 
-      // Executar todos os updates em paralelo
-      const results = await Promise.all(
-        updates.map(update =>
-          supabase
-            .from("columns")
-            .update({ position: update.position })
-            .eq("id", update.id)
-        )
-      );
+      const { error } = await supabase.rpc('batch_update_positions', {
+        p_table_name: 'columns',
+        p_updates: JSON.stringify(updates),
+      });
 
-      // Verificar se algum falhou
-      const errors = results.filter(r => r.error);
-      if (errors.length > 0) {
-        throw errors[0].error;
-      }
+      if (error) throw error;
 
       toast({ title: "Ordem das colunas atualizada" });
     } catch (error) {
-      // ROLLBACK
       setColumns(previousColumns);
       toast({
         title: "Erro ao reordenar colunas",

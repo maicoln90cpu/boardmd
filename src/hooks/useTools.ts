@@ -57,42 +57,25 @@ export const useTools = () => {
     }
 
     try {
-      // Fetch tools
-      const { data: toolsData, error: toolsError } = await supabase
-        .from("tools")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("name", { ascending: true });
+      const { data, error } = await supabase.rpc('get_tools_with_functions', {
+        p_user_id: user.id,
+      });
 
-      if (toolsError) throw toolsError;
+      if (error) throw error;
 
-      // Fetch all assignments for user's tools
-      const toolIds = toolsData?.map((t) => t.id) || [];
-      
-      let assignmentsMap: Record<string, string[]> = {};
-      
-      if (toolIds.length > 0) {
-        const { data: assignmentsData, error: assignmentsError } = await supabase
-          .from("tool_function_assignments")
-          .select("tool_id, function_id")
-          .in("tool_id", toolIds);
-
-        if (assignmentsError) throw assignmentsError;
-
-        // Group by tool_id
-        assignmentsMap = (assignmentsData || []).reduce((acc, assignment) => {
-          if (!acc[assignment.tool_id]) {
-            acc[assignment.tool_id] = [];
-          }
-          acc[assignment.tool_id].push(assignment.function_id);
-          return acc;
-        }, {} as Record<string, string[]>);
-      }
-
-      // Combine tools with their function_ids
-      const toolsWithFunctions: Tool[] = (toolsData || []).map((tool) => ({
-        ...tool,
-        function_ids: assignmentsMap[tool.id] || [],
+      const toolsWithFunctions: Tool[] = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        site_url: row.site_url,
+        api_key: row.api_key,
+        description: row.description,
+        icon: row.icon,
+        is_favorite: row.is_favorite,
+        monthly_cost: row.monthly_cost,
+        user_id: row.user_id,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        function_ids: (row.function_ids || []).map(String),
       }));
 
       setTools(toolsWithFunctions);

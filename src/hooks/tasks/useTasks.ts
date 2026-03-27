@@ -451,19 +451,19 @@ export function useTasks(categoryId: string | null | "all") {
       return;
     }
     
-    const BATCH_SIZE = 10;
     const positionUpdates = tasksToReset.map((task, index) => ({
       id: task.id,
       position: index
     }));
-    
-    for (let i = 0; i < positionUpdates.length; i += BATCH_SIZE) {
-      const chunk = positionUpdates.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        chunk.map(({ id, position }) =>
-          supabase.from("tasks").update({ position }).eq("id", id)
-        )
-      );
+
+    if (positionUpdates.length > 0) {
+      const { error: posError } = await supabase.rpc('batch_update_positions', {
+        p_table_name: 'tasks',
+        p_updates: JSON.stringify(positionUpdates),
+      });
+      if (posError) {
+        logger.error("Erro ao atualizar posições:", posError);
+      }
     }
     
     setTasks(prev => 
