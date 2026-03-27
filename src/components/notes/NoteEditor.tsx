@@ -49,6 +49,7 @@ interface NoteEditorProps {
   onMoveToNotebook: (noteId: string, notebookId: string | null) => void;
   onNavigateToNote?: (noteId: string) => void;
   onSave?: () => void;
+  onUnsavedChange?: (hasChanges: boolean) => void;
   className?: string;
 }
 
@@ -63,6 +64,7 @@ export function NoteEditor({
   onMoveToNotebook,
   onNavigateToNote,
   onSave,
+  onUnsavedChange,
   className
 }: NoteEditorProps) {
   const state = useNoteEditorState({ note, onUpdate, onSave, tasks, refetchTasks });
