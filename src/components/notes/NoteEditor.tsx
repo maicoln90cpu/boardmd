@@ -193,6 +193,22 @@ export function NoteEditor({
     }
   });
 
+  // Notify parent about unsaved changes state
+  useEffect(() => {
+    onUnsavedChange?.(state.hasUnsavedChanges.current);
+  });
+
+  // Listen for save-current-note event (used by UnsavedChangesDialog "Save and Leave")
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      if (state.hasUnsavedChanges.current) {
+        state.handleSave();
+      }
+    };
+    window.addEventListener('save-current-note', handleSaveEvent);
+    return () => window.removeEventListener('save-current-note', handleSaveEvent);
+  }, [state.handleSave]);
+
   // Hook for bidirectional sync with Kanban via Realtime
   useNoteTaskSync(editor);
 
