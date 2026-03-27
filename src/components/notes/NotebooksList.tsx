@@ -115,7 +115,7 @@ export function NotebooksList({
           <div className="flex items-center gap-1">
             {onSortChange && (
               <Select value={sortBy} onValueChange={onSortChange}>
-                <SelectTrigger className="h-7 w-7 p-0 border-0 hover:bg-accent rounded-lg">
+                <SelectTrigger className="h-8 w-8 p-0 border-0 hover:bg-accent rounded-lg">
                   <ArrowUpDown className="h-3.5 w-3.5" />
                 </SelectTrigger>
                 <SelectContent align="end">
@@ -130,7 +130,7 @@ export function NotebooksList({
               variant="ghost" 
               size="sm" 
               onClick={handleAddNotebook}
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-full group h-7 w-7 p-0"
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-full group h-8 w-8 p-0"
             >
               <Plus className="h-3.5 w-3.5 transition-transform group-hover:rotate-90 duration-200" />
             </Button>
@@ -217,7 +217,7 @@ export function NotebooksList({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity" 
+                          className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 text-destructive transition-opacity" 
                           onClick={e => {
                             e.stopPropagation();
                             onDeleteNote(note.id);
@@ -349,13 +349,13 @@ function NotebookHeader({
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-5 w-5 p-0 shrink-0 hover:bg-accent" 
+            className="h-7 w-7 p-0 shrink-0 hover:bg-accent" 
             onClick={e => {
               e.stopPropagation();
               onToggle();
             }}
           >
-            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </Button>
         )}
 
@@ -395,26 +395,26 @@ function NotebookHeader({
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-5 w-5 p-0 hover:bg-accent" 
+            className="h-7 w-7 p-0 hover:bg-accent" 
             onClick={onEditStart}
           >
-            <Pencil className="h-2.5 w-2.5" />
+            <Pencil className="h-3 w-3" />
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-5 w-5 p-0 text-destructive hover:bg-destructive/10" 
+            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" 
             onClick={onDelete}
           >
-            <Trash2 className="h-2.5 w-2.5" />
+            <Trash2 className="h-3 w-3" />
           </Button>
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-5 w-5 p-0 hover:bg-accent" 
+            className="h-7 w-7 p-0 hover:bg-accent" 
             onClick={onAddNote}
           >
-            <Plus className="h-2.5 w-2.5" />
+            <Plus className="h-3 w-3" />
           </Button>
         </div>
       </div>
