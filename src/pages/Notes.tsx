@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { WikiNavigation } from "@/components/notes/WikiNavigation";
 import { useOfflineNotes } from "@/hooks/useOfflineNotes";
 import { useSettings } from "@/hooks/data/useSettings";
+import { UnsavedChangesDialog } from "@/components/notes/UnsavedChangesDialog";
 
 export default function Notes() {
   const { notebooks, loading: loadingNotebooks } = useNotebooks();
