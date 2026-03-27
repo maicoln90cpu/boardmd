@@ -76,28 +76,66 @@ export function useHabits() {
   }, [user, toast, fetchHabits]);
 
   const deleteHabit = useCallback(async (id: string) => {
-    const { error } = await supabase.from("habits").delete().eq("id", id);
-    if (!error) {
-      setHabits(prev => prev.filter(h => h.id !== id));
-      setCheckins(prev => prev.filter(c => c.habit_id !== id));
+    // Optimistic update
+    const previousHabits = habits;
+    const previousCheckins = checkins;
+    setHabits(prev => prev.filter(h => h.id !== id));
+    setCheckins(prev => prev.filter(c => c.habit_id !== id));
+
+    try {
+      const { error } = await supabase.from("habits").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Hábito excluído" });
+    } catch (error) {
+      // Rollback
+      setHabits(previousHabits);
+      setCheckins(previousCheckins);
+      toast({ title: "Erro ao excluir hábito", variant: "destructive" });
     }
-  }, []);
+  }, [habits, checkins, toast]);
 
   const toggleCheckin = useCallback(async (habitId: string, date: string) => {
     if (!user) return;
     const existing = checkins.find(c => c.habit_id === habitId && c.checked_date === date);
+
     if (existing) {
-      await supabase.from("habit_checkins").delete().eq("id", existing.id);
+      // Optimistic remove
+      const previousCheckins = checkins;
       setCheckins(prev => prev.filter(c => c.id !== existing.id));
+
+      try {
+        const { error } = await supabase.from("habit_checkins").delete().eq("id", existing.id);
+        if (error) throw error;
+      } catch {
+        setCheckins(previousCheckins);
+        toast({ title: "Erro ao remover check-in", variant: "destructive" });
+      }
     } else {
-      const { data } = await supabase.from("habit_checkins").insert({
+      // Optimistic add with temp id
+      const tempCheckin: HabitCheckin = {
+        id: `temp-${Date.now()}`,
         habit_id: habitId,
         user_id: user.id,
         checked_date: date,
-      }).select().single();
-      if (data) setCheckins(prev => [...prev, data as HabitCheckin]);
+        created_at: new Date().toISOString(),
+      };
+      setCheckins(prev => [...prev, tempCheckin]);
+
+      try {
+        const { data, error } = await supabase.from("habit_checkins").insert({
+          habit_id: habitId,
+          user_id: user.id,
+          checked_date: date,
+        }).select().single();
+        if (error) throw error;
+        // Replace temp with real
+        setCheckins(prev => prev.map(c => c.id === tempCheckin.id ? (data as HabitCheckin) : c));
+      } catch {
+        setCheckins(prev => prev.filter(c => c.id !== tempCheckin.id));
+        toast({ title: "Erro ao registrar check-in", variant: "destructive" });
+      }
     }
-  }, [user, checkins]);
+  }, [user, checkins, toast]);
 
   const getStreak = useCallback((habitId: string) => {
     const habitCheckins = checkins

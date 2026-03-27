@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
@@ -96,11 +96,15 @@ export function useWeeklyAutomation({
     });
   }, [tasks, columns, autoMoveEnabled, excludeColumnNames, toast]);
 
-  // Executar automação ao carregar
+  // Keep a stable ref for the move function
+  const moveRef = useRef(moveTasksToCurrentWeek);
+  useEffect(() => { moveRef.current = moveTasksToCurrentWeek; }, [moveTasksToCurrentWeek]);
+
+  // Executar automação ao carregar — deps estáveis via ref
   useEffect(() => {
     if (tasks.length > 0 && columns.length > 0 && autoMoveEnabled) {
       const timeout = setTimeout(() => {
-        moveTasksToCurrentWeek();
+        moveRef.current();
       }, 1000);
       return () => clearTimeout(timeout);
     }
