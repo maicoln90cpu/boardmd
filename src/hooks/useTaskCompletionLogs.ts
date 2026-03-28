@@ -2,23 +2,11 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
+import { logger } from "@/lib/logger";
+import type { TaskCompletionLog, TaskCompletionStats } from "@/types";
 
-export interface TaskCompletionLog {
-  id: string;
-  task_id: string;
-  user_id: string;
-  completed_at: string;
-  metric_value: number | null;
-  metric_type: string | null;
-  comment: string | null;
-  created_at: string;
-}
-
-export interface TaskCompletionStats {
-  totalDays: number;
-  sumMetric: number;
-  avgMetric: number;
-}
+// Re-export for consumers
+export type { TaskCompletionLog, TaskCompletionStats } from "@/types";
 
 export const METRIC_TYPES = [
   { id: "time_minutes", name: "Tempo (minutos)", unit: "min", icon: "⏱️" },
@@ -52,7 +40,7 @@ export function useTaskCompletionLogs(taskId?: string) {
       if (error) throw error;
       setLogs((data as TaskCompletionLog[]) || []);
     } catch (error) {
-      console.error("Erro ao buscar logs:", error);
+      logger.error("Erro ao buscar logs:", error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +75,7 @@ export function useTaskCompletionLogs(taskId?: string) {
       
       return true;
     } catch (error) {
-      console.error("Erro ao adicionar log:", error);
+      logger.error("Erro ao adicionar log:", error);
       toast({
         title: "Erro ao salvar registro",
         description: "Não foi possível salvar a métrica da tarefa.",
@@ -109,7 +97,7 @@ export function useTaskCompletionLogs(taskId?: string) {
       setLogs(prev => prev.filter(log => log.id !== logId));
       return true;
     } catch (error) {
-      console.error("Erro ao deletar log:", error);
+      logger.error("Erro ao deletar log:", error);
       toast({
         title: "Erro ao excluir registro",
         variant: "destructive",

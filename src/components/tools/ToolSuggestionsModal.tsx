@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 import { Loader2, Sparkles, Plus, ExternalLink } from "lucide-react";
 import * as Icons from "lucide-react";
 import {
@@ -89,7 +90,7 @@ export function ToolSuggestionsModal({
       });
 
       if (error) {
-        console.error("Error generating suggestions:", error);
+        logger.error("Error generating suggestions:", error);
         toast.error("Erro ao gerar sugestões");
         return;
       }
@@ -106,7 +107,7 @@ export function ToolSuggestionsModal({
         toast.info("Nenhuma sugestão encontrada");
       }
     } catch (error) {
-      console.error("Error generating suggestions:", error);
+      logger.error("Error generating suggestions:", error);
       toast.error("Erro ao gerar sugestões");
     } finally {
       setLoading(false);
