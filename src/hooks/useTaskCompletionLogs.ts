@@ -5,6 +5,9 @@ import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
 import type { TaskCompletionLog, TaskCompletionStats } from "@/types";
 
+// Re-export for consumers
+export type { TaskCompletionLog, TaskCompletionStats } from "@/types";
+
 export const METRIC_TYPES = [
   { id: "time_minutes", name: "Tempo (minutos)", unit: "min", icon: "⏱️" },
   { id: "pages", name: "Páginas", unit: "pág", icon: "📖" },
