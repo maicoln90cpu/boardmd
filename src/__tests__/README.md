@@ -1,77 +1,70 @@
-# Testes Automatizados
-
-Este diretório contém os testes automatizados do projeto.
+# Testes Automatizados - TaskFlow
 
 ## Stack de Testes
 
-- **Vitest**: Framework de testes rápido e compatível com Vite
-- **React Testing Library**: Testes de componentes React
-- **@testing-library/jest-dom**: Matchers adicionais para DOM
+- **Vitest**: Framework de testes compatível com Vite
+- **React Testing Library**: Testes de componentes
+- **@testing-library/jest-dom**: Matchers DOM
+- **Playwright**: Testes E2E
 
 ## Estrutura
 
 ```
 src/__tests__/
-├── setup.ts                    # Configuração global dos testes
-├── README.md                   # Esta documentação
-├── lib/                        # Testes de funções utilitárias
-│   ├── dateUtils.test.ts       # Testes de formatação de datas
-│   └── taskFilters.test.ts     # Testes de filtros de tarefas
-├── contexts/                   # Testes de contexts React
-│   └── AuthContext.test.tsx    # Testes de autenticação
-└── components/                 # Testes de componentes (futuro)
+├── setup.ts                    # Configuração global
+├── components/                 # Testes de componentes (4)
+│   ├── Auth.test.tsx
+│   ├── TaskCard.test.tsx
+│   ├── TaskModal.test.tsx
+│   ├── KanbanBoard.test.tsx
+│   └── VirtualizedNotebooksList.test.tsx
+├── hooks/                      # Testes de hooks (8)
+│   ├── useTasks.test.ts
+│   ├── useCategories.test.ts
+│   ├── useColumns.test.ts
+│   ├── useSettings.test.ts
+│   ├── useNotes.test.ts
+│   ├── usePomodoro.test.ts
+│   ├── useRateLimiter.test.ts
+│   └── useMenuItems.test.tsx
+├── lib/                        # Testes de utilitários (4)
+│   ├── dateUtils.test.ts
+│   ├── taskFilters.test.ts
+│   ├── validations.test.ts
+│   └── columnStyles.test.ts
+└── contexts/                   # Testes de contextos (1)
+    └── AuthContext.test.tsx
+
+e2e/                            # Testes E2E (5 specs)
+├── auth.spec.ts
+├── tasks.spec.ts
+├── kanban.spec.ts
+├── notes.spec.ts
+└── pomodoro.spec.ts
 ```
 
 ## Scripts
 
 ```bash
-# Executar todos os testes
-npm test
-
-# Executar testes em modo watch
-npm run test:watch
-
-# Gerar relatório de cobertura
-npm run test:coverage
+npm run test          # Watch mode
+npm run test:run      # Single run
+npm run test:coverage # Com cobertura
+npm run test:e2e      # E2E headless
+npm run test:e2e:ui   # E2E com UI
 ```
 
-## Padrões de Testes
+## Padrões
 
-### Nomenclatura
 - Arquivos: `*.test.ts` ou `*.test.tsx`
-- Describe: Nome da função/componente
+- Describe: nome da função/componente
 - It: "deve [ação esperada]"
+- Estrutura AAA: Arrange → Act → Assert
+- Mock do Supabase no setup.ts
 
-### Estrutura de Teste
-```typescript
-describe('NomeDaFunção', () => {
-  beforeEach(() => {
-    // Setup antes de cada teste
-  });
+## CI/CD
 
-  it('deve fazer algo específico', () => {
-    // Arrange
-    const input = 'valor';
-    
-    // Act
-    const result = funcao(input);
-    
-    // Assert
-    expect(result).toBe('esperado');
-  });
-});
-```
+Workflow `.github/workflows/test.yml`:
+1. `unit-tests`: Vitest
+2. `e2e-tests`: Playwright (após unit-tests)
 
-## Cobertura
-
-Meta de cobertura mínima:
-- **Funções utilitárias**: 90%+
-- **Hooks**: 80%+
-- **Componentes críticos**: 70%+
-
-## Próximos Passos
-
-- [ ] Adicionar testes para hooks (`useTasks`, `useSettings`)
-- [ ] Adicionar testes de componentes (`TaskCard`, `TaskModal`)
-- [ ] Configurar testes E2E com Playwright
-- [ ] Integrar testes no pipeline CI/CD
+Triggers: push/PR para `main` e `develop`.

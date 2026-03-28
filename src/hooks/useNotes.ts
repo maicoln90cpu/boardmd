@@ -51,7 +51,14 @@ export function useNotes() {
       if (error) throw error;
       // Set content as null for list items — full content loaded on demand
       const notesWithoutContent: Note[] = (data || []).map(d => ({ ...d, content: null }));
-      setNotes(notesWithoutContent);
+      // Preserve cached content to avoid overwriting editor state with null
+      setNotes(prev => {
+        const contentMap = new Map(prev.filter(n => n.content !== null).map(n => [n.id, n.content]));
+        return notesWithoutContent.map(n => ({
+          ...n,
+          content: contentMap.get(n.id) ?? null
+        }));
+      });
     } catch (error) {
       logger.error("Error fetching notes:", error);
       toast({

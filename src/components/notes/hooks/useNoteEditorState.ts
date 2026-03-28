@@ -105,8 +105,8 @@ export function useNoteEditorState({ note, onUpdate, onSave, tasks: externalTask
     setColor(note.color || null);
     setLinkedTaskId(note.linked_task_id || null);
     setLinkedCourseId(note.linked_course_id || null);
-    if (editor && note.content !== editor.getHTML()) {
-      editor.commands.setContent(note.content || "");
+    if (editor && note.content !== null && note.content !== editor.getHTML()) {
+      editor.commands.setContent(note.content);
     }
     currentNoteRef.current = note;
     hasUnsavedChanges.current = false;
