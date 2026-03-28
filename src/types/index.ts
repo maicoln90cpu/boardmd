@@ -243,3 +243,22 @@ export interface CourseStats {
   totalEpisodes: number;
   watchedEpisodes: number;
 }
+
+// ============= Tipos para Task Completion Logs =============
+
+export interface TaskCompletionLog {
+  id: string;
+  task_id: string;
+  user_id: string;
+  completed_at: string;
+  metric_value: number | null;
+  metric_type: string | null;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface TaskCompletionStats {
+  totalDays: number;
+  sumMetric: number;
+  avgMetric: number;
+}

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger";
 
 /**
  * Hook to handle notification action messages from service worker
@@ -78,7 +79,7 @@ async function completeTask(taskId: string) {
     // Emit event for other components to update
     // Realtime handles sync
   } catch (error) {
-    console.error("Error completing task from notification:", error);
+    logger.error("Error completing task from notification:", error);
     toast.error("Erro ao concluir tarefa");
   }
 }
@@ -111,7 +112,7 @@ async function snoozeTask(taskId: string) {
 
     // Realtime handles sync
   } catch (error) {
-    console.error("Error snoozing task from notification:", error);
+    logger.error("Error snoozing task from notification:", error);
     toast.error("Erro ao adiar tarefa");
   }
 }

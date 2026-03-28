@@ -1,12 +1,8 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
-
-interface Subtask {
-  id: string;
-  title: string;
-  completed: boolean;
-}
+import { logger } from "@/lib/logger";
+import type { SubtaskData } from "@/types";
 
 export function useAISubtasks() {
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +34,7 @@ export function useAISubtasks() {
       setSuggestions(subtaskSuggestions);
       return subtaskSuggestions;
     } catch (error) {
-      console.error("Error generating subtasks:", error);
+      logger.error("Error generating subtasks:", error);
       toast({
         title: "Erro ao gerar subtarefas",
         description: "Não foi possível gerar sugestões de subtarefas.",
@@ -55,7 +51,7 @@ export function useAISubtasks() {
   }, []);
 
   // Convert suggestions to subtask format
-  const suggestionsToSubtasks = useCallback((selectedSuggestions: string[]): Subtask[] => {
+  const suggestionsToSubtasks = useCallback((selectedSuggestions: string[]): SubtaskData[] => {
     return selectedSuggestions.map((title) => ({
       id: crypto.randomUUID(),
       title,

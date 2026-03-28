@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,7 +148,7 @@ export function CustomColorPicker() {
             { onConflict: "user_id" }
           );
       } catch (error) {
-        console.error("Error saving custom color:", error);
+        logger.error("Error saving custom color:", error);
       }
     }
 

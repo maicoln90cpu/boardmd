@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 import { Loader2, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -136,7 +137,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
       });
 
       if (error) {
-        console.error("Error generating description:", error);
+        logger.error("Error generating description:", error);
         toast.error("Erro ao gerar descrição");
         return;
       }
@@ -151,7 +152,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
         toast.success("Descrição gerada com sucesso!");
       }
     } catch (error) {
-      console.error("Error generating description:", error);
+      logger.error("Error generating description:", error);
       toast.error("Erro ao gerar descrição");
     } finally {
       setGeneratingDescription(false);

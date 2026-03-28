@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logger } from "@/lib/logger";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -63,7 +64,7 @@ export function ReportExportButton({ tasks, categories, stats }: ReportExportBut
         description: "O arquivo PDF foi baixado com sucesso.",
       });
     } catch (error) {
-      console.error("Erro ao exportar relatório:", error);
+      logger.error("Erro ao exportar relatório:", error);
       toast.error("Erro ao exportar relatório", {
         description: "Tente novamente mais tarde.",
       });

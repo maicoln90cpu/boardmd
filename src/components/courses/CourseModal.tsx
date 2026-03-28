@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from "@/lib/logger";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -203,7 +204,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
         toast.error("Não foi possível extrair módulos da imagem");
       }
     } catch (error) {
-      console.error("Error generating modules:", error);
+      logger.error("Error generating modules:", error);
       toast.error("Erro ao processar imagem");
     } finally {
       setIsGeneratingModules(false);
