@@ -2,18 +2,21 @@
 
 ## TaskFlow - Sistema de Gestão de Tarefas e Produtividade
 
-**Versão**: 1.2  
-**Data**: Janeiro 2026  
+**Versão**: 1.3  
+**Data**: Março 2026  
 **Status**: Em Produção
 
 ---
 
 ## 📚 Documentação Relacionada
 
-- [README.md](./README.md) - Setup e visão geral
+- [README.md](../README.md) - Setup e visão geral
 - [ROADMAP.md](./ROADMAP.md) - Planejamento futuro
 - [PENDENCIAS.md](./PENDENCIAS.md) - Changelog e pendências
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Estrutura técnica
+- [SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md) - Fluxos de dados e APIs
+- [EDGE_FUNCTIONS.md](./EDGE_FUNCTIONS.md) - Edge Functions
+- [COMPONENTES.md](./COMPONENTES.md) - Referência de componentes
 
 ---
 
@@ -21,24 +24,23 @@
 
 ### 1.1 Problema
 
-Profissionais e estudantes enfrentam dificuldades em:
-- Organizar tarefas de múltiplos projetos
-- Manter foco e produtividade
-- Acompanhar progresso e hábitos
-- Ter uma visão consolidada de todas as responsabilidades
-
-Soluções existentes são fragmentadas, exigindo múltiplas ferramentas (uma para tarefas, outra para notas, outra para timer, etc.).
+Profissionais e estudantes enfrentam dificuldades em organizar tarefas, manter foco, acompanhar progresso e ter uma visão consolidada de responsabilidades. Soluções existentes são fragmentadas.
 
 ### 1.2 Solução
 
 TaskFlow é uma plataforma unificada que combina:
 - **Kanban Board** para gestão visual de tarefas
-- **Sistema de Notas** para documentação rica
+- **Matriz de Eisenhower** para priorização
+- **Sistema de Notas** com editor rico TipTap
 - **Timer Pomodoro** para foco
-- **Dashboard** para insights de produtividade
-- **Calendário** para visão temporal
-
-Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
+- **Dashboard** com insights de produtividade e gamificação
+- **Calendário** com drag & drop
+- **Hábitos** para rotinas diárias
+- **Cursos** para gestão de aprendizado
+- **Custos** para controle financeiro de viagens/projetos
+- **Ferramentas** para inventário de ferramentas e APIs
+- **Retrospectivas** semanais
+- **WhatsApp** para notificações
 
 ### 1.3 Proposta de Valor
 
@@ -46,325 +48,171 @@ Tudo em uma única aplicação, sincronizada em tempo real, com suporte offline.
 
 ---
 
-## 2. Personas de Usuário
+## 2. Requisitos Funcionais
 
-### 2.1 João - O Freelancer
+### 2.1 Autenticação (RF-001) ✅
 
-**Perfil**
-- 28 anos, designer freelancer
-- Trabalha com 5-10 clientes simultaneamente
-- Precisa gerenciar prazos e entregas
+- Login/cadastro com email/senha
+- Recuperação e reset de senha
+- Perfil do usuário com foto e telefone
 
-**Dores**
-- Perde prazos por desorganização
-- Dificuldade em priorizar entre projetos
-- Não sabe quanto tempo gasta em cada cliente
+### 2.2 Kanban Board (RF-002) ✅
 
-**Necessidades**
-- Visualização clara de todos os projetos
-- Alertas de prazo
-- Tracking de tempo
+- Drag & drop com @dnd-kit
+- Múltiplas categorias/projetos com subcategorias
+- Colunas customizáveis com cores
+- Kanban Diário e de Projetos separados
+- Filtros avançados com presets salvos
+- Ações em lote (bulk actions)
+- Tarefas recorrentes com regras flexíveis
+- Subtarefas com checklist e sugestão IA
+- Favoritos, espelhamento, tags
+- Visualização em tabela e Gantt
+- Mobile: swipe para ações, grid/lista
+- Histórico de alterações por tarefa
 
-### 2.2 Maria - A Estudante
+### 2.3 Calendário (RF-003) ✅
 
-**Perfil**
-- 22 anos, estudante de medicina
-- Precisa estudar múltiplas matérias
-- Usa técnica Pomodoro
+- Visualização mensal fullscreen
+- Drag & drop de tarefas entre dias
+- Cores por coluna/status, indicadores visuais
 
-**Dores**
-- Dificuldade em manter consistência
-- Muitas ferramentas fragmentadas
-- Não consegue ver progresso
+### 2.4 Notas (RF-004) ✅
 
-**Necessidades**
-- Timer Pomodoro integrado
-- Sistema de notas para estudo
-- Gamificação para motivação
+- Editor TipTap com formatação rica (tabelas, código, imagens, links)
+- Cadernos com tags coloridas
+- Vinculação bidirecional com tarefas (blocos de tarefa)
+- Backlinks e navegação wiki
+- Compartilhamento público via link
+- Formatação e melhoria com IA
+- Salvamento manual (Ctrl+Enter) com guard de navegação
+- Cores personalizadas, fixar, lixeira
 
-### 2.3 Carlos - O Gerente
+### 2.5 Pomodoro (RF-005) ✅
 
-**Perfil**
-- 35 anos, gerente de projetos
-- Coordena equipe de 8 pessoas
-- Precisa de visibilidade de status
+- Timer configurável com templates
+- Pausas curtas/longas
+- Vinculação com tarefas, histórico, estatísticas
 
-**Dores**
-- Dificuldade em acompanhar múltiplos projetos
-- Relatórios manuais consomem tempo
-- Falta de métricas de produtividade
+### 2.6 Dashboard (RF-006) ✅
 
-**Necessidades**
-- Dashboard com métricas
-- Múltiplos quadros Kanban
-- Exportação de relatórios
+- Estatísticas de produtividade e gráficos
+- Insights com IA, gamificação (pontos, níveis, streaks)
+- Heatmap de produtividade, progresso semanal
+- Monitor de push e saúde do sistema
+- Widgets customizáveis, exportação de relatórios
 
----
+### 2.7 Matriz de Eisenhower (RF-007) ✅
 
-## 3. Requisitos Funcionais
+- Classificação urgente/importante
+- Drag & drop entre quadrantes
 
-### 3.1 Autenticação (RF-001)
+### 2.8 Hábitos (RF-008) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-001.1 | Login com email/senha | Alta | ✅ Implementado |
-| RF-001.2 | Cadastro de novos usuários | Alta | ✅ Implementado |
-| RF-001.3 | Recuperação de senha | Alta | ✅ Implementado |
-| RF-001.4 | Logout | Alta | ✅ Implementado |
-| RF-001.5 | Perfil do usuário | Média | ✅ Implementado |
+- Hábitos diários/semanais com ícones e cores
+- Check-in diário, streaks, arquivamento
 
-### 3.2 Kanban Board (RF-002)
+### 2.9 Cursos (RF-009) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-002.1 | Visualização em colunas | Alta | ✅ Implementado |
-| RF-002.2 | Drag & drop de tarefas | Alta | ✅ Implementado |
-| RF-002.3 | Criar/editar/excluir tarefas | Alta | ✅ Implementado |
-| RF-002.4 | Múltiplas categorias | Alta | ✅ Implementado |
-| RF-002.5 | Filtros (prioridade, tags) | Alta | ✅ Implementado |
-| RF-002.6 | Colunas customizáveis | Alta | ✅ Implementado |
-| RF-002.7 | Cores por coluna | Média | ✅ Implementado |
-| RF-002.8 | Subtarefas | Média | ✅ Implementado |
-| RF-002.9 | Tarefas recorrentes | Média | ✅ Implementado |
-| RF-002.10 | Favoritos | Média | ✅ Implementado |
-| RF-002.11 | Ações em lote | Média | ✅ Implementado |
-| RF-002.12 | Presets de filtros | Baixa | ✅ Implementado |
-| RF-002.13 | Filtros mobile (Sheet) | Média | ✅ Implementado |
-| RF-002.14 | Auto-fill categoria no modal | Média | ✅ Implementado |
+- Gestão de cursos com módulos e checklist
+- Categorias, filtros, progresso
+- Meta semanal de estudo
+- Upload de módulos via IA
 
-### 3.3 Calendário (RF-003)
+### 2.10 Custos (RF-010) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-003.1 | Visualização mensal | Alta | ✅ Implementado |
-| RF-003.2 | Tarefas no calendário | Alta | ✅ Implementado |
-| RF-003.3 | Drag & drop entre dias | Alta | ✅ Implementado |
-| RF-003.4 | Cores por status | Média | ✅ Implementado |
-| RF-003.5 | Indicador de overdue | Média | ✅ Implementado |
-| RF-003.6 | Navegação por mês | Média | ✅ Implementado |
+- Temas de custo (viagens, projetos)
+- Multi-moeda com taxas de câmbio
+- Filtros, relatórios, exportação
 
-### 3.4 Notas (RF-004)
+### 2.11 Ferramentas (RF-011) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-004.1 | Editor de texto rico (TipTap) | Alta | ✅ Implementado |
-| RF-004.2 | Criar/editar/excluir notas | Alta | ✅ Implementado |
-| RF-004.3 | Cadernos (notebooks) | Alta | ✅ Implementado |
-| RF-004.4 | Busca em notas | Alta | ✅ Implementado |
-| RF-004.5 | Tags em cadernos | Média | ✅ Implementado |
-| RF-004.6 | Cores personalizadas | Média | ✅ Implementado |
-| RF-004.7 | Fixar notas | Média | ✅ Implementado |
-| RF-004.8 | Lixeira | Média | ✅ Implementado |
-| RF-004.9 | Formatação com IA | Baixa | ✅ Implementado |
-| RF-004.10 | Visualização em grid | Média | ✅ Implementado |
-| RF-004.11 | Preview em hover | Média | ✅ Implementado |
-| RF-004.12 | Contador palavras/caracteres | Baixa | ✅ Implementado |
-| RF-004.13 | Vinculação com tarefas | Média | ✅ Implementado |
-| RF-004.14 | Auto-save | Alta | ✅ Implementado |
+- Inventário de ferramentas com ícones
+- Gerenciamento de API Keys (criptografadas)
+- Funções/categorias, custo mensal
+- Sugestões e alternativas com IA
 
-### 3.5 Pomodoro (RF-005)
+### 2.12 WhatsApp (RF-012) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-005.1 | Timer configurável | Alta | ✅ Implementado |
-| RF-005.2 | Pausas curtas/longas | Alta | ✅ Implementado |
-| RF-005.3 | Templates de sessão | Média | ✅ Implementado |
-| RF-005.4 | Vincular com tarefa | Média | ✅ Implementado |
-| RF-005.5 | Histórico de sessões | Média | ✅ Implementado |
-| RF-005.6 | Estatísticas de foco | Média | ✅ Implementado |
+- Integração com Evolution API
+- Templates de notificação
+- Resumo diário e alertas de vencimento
 
-### 3.6 Dashboard (RF-006)
+### 2.13 Retrospectiva (RF-013) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-006.1 | Estatísticas de tarefas | Alta | ✅ Implementado |
-| RF-006.2 | Gráficos de progresso | Alta | ✅ Implementado |
-| RF-006.3 | Insights com IA | Média | ✅ Implementado |
-| RF-006.4 | Gamificação | Média | ✅ Implementado |
-| RF-006.5 | Monitor de push | Baixa | ✅ Implementado |
-| RF-006.6 | Monitor de saúde | Baixa | ✅ Implementado |
+- Revisão semanal guiada (o que fez, aprendeu, melhorar)
+- Humor semanal
 
-### 3.7 Sistema (RF-007)
+### 2.14 Metas (RF-014) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-007.1 | Tema dark/light | Alta | ✅ Implementado |
-| RF-007.2 | PWA (instalável) | Alta | ✅ Implementado |
-| RF-007.3 | Modo offline | Alta | ✅ Implementado |
-| RF-007.4 | Notificações push | Alta | ✅ Implementado |
-| RF-007.5 | Atalhos de teclado | Média | ✅ Implementado |
-| RF-007.6 | Exportação JSON | Média | ✅ Implementado |
-| RF-007.7 | Exportação PNG/PDF | Média | ✅ Implementado |
-| RF-007.8 | Configurações sincronizadas | Média | ✅ Implementado |
+- Metas com período, progresso
+- Auto-incremento por tarefas concluídas
+- Integração com tarefas
 
-### 3.8 Testes (RF-008)
+### 2.15 Sistema (RF-015) ✅
 
-| ID | Requisito | Prioridade | Status |
-|----|-----------|------------|--------|
-| RF-008.1 | Testes unitários (hooks) | Alta | ✅ Implementado |
-| RF-008.2 | Testes de componentes | Alta | ✅ Implementado |
-| RF-008.3 | Testes E2E | Alta | ✅ Implementado |
-| RF-008.4 | CI/CD workflow | Média | ✅ Implementado |
+- PWA instalável com modo offline
+- Notificações push (OneSignal + Service Worker)
+- Tema dark/light com paletas de cores customizáveis
+- Atalhos de teclado (Ctrl+K, Ctrl+N, Ctrl+Enter, etc.)
+- Busca global, importação/exportação JSON
+- Exportação visual PNG/PDF
+- Indicador de status online
+- Quick Links (favoritos)
+
+### 2.16 Testes (RF-016) ✅
+
+- Testes unitários (hooks e componentes) com Vitest
+- Testes E2E com Playwright
+- CI/CD com GitHub Actions
 
 ---
 
-## 4. Requisitos Não-Funcionais
+## 3. Requisitos Não-Funcionais
 
-### 4.1 Performance
-
-| ID | Requisito | Meta |
-|----|-----------|------|
-| RNF-001 | Tempo de carregamento inicial | < 3s |
-| RNF-002 | Tempo de resposta de interações | < 100ms |
-| RNF-003 | Lighthouse Performance Score | > 80 |
-
-### 4.2 Segurança
-
-| ID | Requisito | Status |
-|----|-----------|--------|
-| RNF-004 | Autenticação via Supabase Auth | ✅ |
-| RNF-005 | Row Level Security em todas as tabelas | ✅ |
-| RNF-006 | HTTPS obrigatório | ✅ |
-| RNF-007 | Sanitização de inputs | ✅ |
-
-### 4.3 Usabilidade
-
-| ID | Requisito | Status |
-|----|-----------|--------|
-| RNF-008 | Responsivo (mobile/desktop) | ✅ |
-| RNF-009 | Acessibilidade WCAG 2.1 AA | Parcial |
-| RNF-010 | Suporte a touch/gestos | ✅ |
-
-### 4.4 Disponibilidade
-
-| ID | Requisito | Meta |
-|----|-----------|------|
-| RNF-011 | Uptime | > 99.5% |
-| RNF-012 | Modo offline funcional | ✅ |
-
-### 4.5 Qualidade de Código
-
-| ID | Requisito | Status |
-|----|-----------|--------|
-| RNF-013 | Testes unitários para hooks críticos | ✅ |
-| RNF-014 | Testes de componentes | ✅ |
-| RNF-015 | Testes E2E para fluxos principais | ✅ |
-| RNF-016 | CI/CD automatizado | ✅ |
+| ID | Requisito | Meta/Status |
+|----|-----------|-------------|
+| RNF-001 | Carregamento inicial | < 3s |
+| RNF-002 | Tempo de resposta | < 100ms |
+| RNF-003 | RLS em todas as tabelas | ✅ |
+| RNF-004 | Responsivo mobile/desktop | ✅ |
+| RNF-005 | Acessibilidade WCAG 2.1 AA | Parcial (melhorado Fase C) |
+| RNF-006 | Modo offline funcional | ✅ |
+| RNF-007 | Testes automatizados | ✅ |
 
 ---
 
-## 5. Backlog de Funcionalidades
+## 4. Backlog de Funcionalidades
 
-### 5.1 Em Desenvolvimento
+### 4.1 Próximas Sprints
 
-| Feature | Descrição | Sprint |
-|---------|-----------|--------|
-| - | - | - |
+| Feature | Prioridade |
+|---------|------------|
+| Anexos em Tarefas (upload de imagens/arquivos) | Alta |
+| Busca Global v2 (busca em notas + histórico) | Alta |
+| Tour guiado para novos usuários | Média |
+| Google Calendar Sync | Média |
 
-### 5.2 Próximas Sprints
+### 4.2 Backlog Futuro
 
-| Feature | Descrição | Prioridade |
-|---------|-----------|------------|
-| Anexos em Tarefas | Upload de imagens e arquivos | Alta |
-| Busca Global v2 | Busca em notas + histórico | Alta |
-| Ícones para Cadernos | Ícones personalizados | Média |
-| Destaque na Busca | Highlight de termos | Média |
-
-### 5.3 Backlog Futuro
-
-| Feature | Descrição | Prioridade |
-|---------|-----------|------------|
-| Google Calendar Sync | Sincronização bidirecional | Alta |
-| Webhooks | Automações externas | Alta |
-| Workspaces | Colaboração em equipe | Alta |
-| AI Task Breakdown | IA quebra tarefas | Média |
-| App Mobile Nativo | iOS/Android | Média |
-| Desktop App | Electron | Baixa |
+| Feature | Prioridade |
+|---------|------------|
+| Workspaces (colaboração em equipe) | Alta |
+| Webhooks / Automações externas | Alta |
+| App Mobile Nativo (iOS/Android) | Média |
+| Desktop App (Electron) | Baixa |
 
 ---
 
-## 6. Critérios de Aceitação
+## 5. Métricas de Sucesso
 
-### 6.1 Definição de Pronto (DoD)
-
-Uma feature é considerada pronta quando:
-
-1. ✅ Código implementado e funcionando
-2. ✅ Testes automatizados passando
-3. ✅ Funciona em mobile e desktop
-4. ✅ Funciona em tema dark e light
-5. ✅ Sem erros no console
-6. ✅ Performance aceitável
-7. ✅ RLS configurado (se aplicável)
-
-### 6.2 Critérios por Feature
-
-#### Kanban - Criar Tarefa
-- [x] Usuário pode abrir modal de criação
-- [x] Campos: título, descrição, prioridade, tags, data
-- [x] Validação de campos obrigatórios
-- [x] Tarefa aparece na coluna correta
-- [x] Toast de confirmação exibido
-- [x] Funciona offline (sync posterior)
-- [x] Categoria é auto-preenchida quando selecionada
-
-#### Notas - Criar Nota
-- [x] Usuário pode criar nova nota
-- [x] Editor de texto rico funcional
-- [x] Salvamento automático
-- [x] Pode associar a caderno
-- [x] Pode adicionar cor
-- [x] Contador de palavras atualiza em tempo real
-
----
-
-## 7. Métricas de Sucesso
-
-### 7.1 KPIs de Produto
-
-| Métrica | Meta Q1 2026 |
+| Métrica | Meta Q2 2026 |
 |---------|--------------|
 | Usuários ativos mensais | 1000 |
-| Tarefas criadas/dia | 2000 |
-| Sessões Pomodoro/dia | 500 |
-| Notas criadas/dia | 300 |
-| NPS | > 50 |
-
-### 7.2 KPIs Técnicos
-
-| Métrica | Meta | Status |
-|---------|------|--------|
-| Lighthouse Score | > 90 | Em progresso |
-| Core Web Vitals | Pass | Em progresso |
-| Error Rate | < 0.1% | ✅ |
-| Uptime | > 99.5% | ✅ |
-| Cobertura de Testes | > 70% | Em progresso |
+| Error Rate | < 0.1% |
+| Uptime | > 99.5% |
+| Cobertura de testes | > 70% |
 
 ---
 
-## 8. Riscos e Mitigações
-
-| Risco | Probabilidade | Impacto | Mitigação |
-|-------|---------------|---------|-----------|
-| Performance degradada | Média | Alto | Virtualização, cache |
-| Perda de dados | Baixa | Crítico | RLS, backups, offline sync |
-| Baixa adoção | Média | Alto | UX polido, onboarding |
-| Complexidade crescente | Alta | Médio | Refatoração contínua, testes |
-
----
-
-## 9. Glossário
-
-| Termo | Definição |
-|-------|-----------|
-| Kanban | Metodologia visual de gestão |
-| Pomodoro | Técnica de foco com intervalos |
-| RLS | Row Level Security - segurança por linha |
-| PWA | Progressive Web App |
-| Edge Function | Função serverless |
-| E2E | End-to-End (teste de ponta a ponta) |
-| TipTap | Editor de texto rico baseado em ProseMirror |
-
----
-
-*Última atualização: 08 de Janeiro de 2026*
+*Última atualização: 28 de Março de 2026*
