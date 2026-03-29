@@ -82,33 +82,19 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    log.info("Iniciando reset automático (busca global por recurrence_rule)");
+    log.info("Iniciando reset automático (apenas tarefas completadas com recurrence_rule)");
     const supabase = createAdminClient();
-    const now = new Date().toISOString();
 
-    // Buscar tarefas recorrentes: completadas OU com due_date no passado
-    const [completedRes, pastDueRes] = await Promise.all([
-      supabase.from("tasks")
-        .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
-        .eq("is_completed", true)
-        .not("recurrence_rule", "is", null),
-      supabase.from("tasks")
-        .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
-        .eq("is_completed", false)
-        .not("recurrence_rule", "is", null)
-        .lt("due_date", now),
-    ]);
+    // Buscar APENAS tarefas recorrentes completadas
+    const { data: completedData, error: fetchError } = await supabase.from("tasks")
+      .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
+      .eq("is_completed", true)
+      .not("recurrence_rule", "is", null);
 
-    if (completedRes.error) { log.error("Erro fetch completadas:", completedRes.error); throw completedRes.error; }
-    if (pastDueRes.error) { log.error("Erro fetch past-due:", pastDueRes.error); throw pastDueRes.error; }
+    if (fetchError) { log.error("Erro fetch completadas:", fetchError); throw fetchError; }
 
-    // Merge e deduplica
-    const taskMap = new Map<string, Task>();
-    for (const t of (completedRes.data || []) as Task[]) taskMap.set(t.id, t);
-    for (const t of (pastDueRes.data || []) as Task[]) taskMap.set(t.id, t);
-    const tasks = Array.from(taskMap.values());
-
-    log.info(`Encontradas ${tasks.length} tarefas recorrentes para processar (${completedRes.data?.length || 0} completadas, ${pastDueRes.data?.length || 0} past-due)`);
+    const tasks = (completedData || []) as Task[];
+    log.info(`Encontradas ${tasks.length} tarefas recorrentes completadas para processar`);
 
     if (tasks.length === 0) {
       return json({ success: true, message: "Nenhuma tarefa recorrente para processar", processed: 0 });
@@ -135,12 +121,9 @@ Deno.serve(async (req) => {
 
         const updatePayload: Record<string, unknown> = {
           due_date: nextDueDate,
+          is_completed: false,
           updated_at: new Date().toISOString(),
         };
-        // Só reseta is_completed se estava completada
-        if (task.is_completed) {
-          updatePayload.is_completed = false;
-        }
 
         const { error: updateError } = await supabase.from("tasks")
           .update(updatePayload)
