@@ -1,41 +1,60 @@
 
 
-# Correção: Reset deve afetar APENAS tarefas completadas (riscadas)
+# Correção: Coluna "Recorrente" condensada no Kanban
 
-## Problema
-O reset está buscando e processando tarefas recorrentes com `due_date` no passado mesmo que **não estejam completadas**. Isso avança a data de tarefas atrasadas que o usuário ainda não fez.
+## Diagnóstico
 
-## Correção
+O `KanbanBoard` carrega `columnSizes` das settings salvas no banco. Se os tamanhos salvos estão desproporcionais (ex: `[5, 30, 30, 35]`) ou têm quantidade diferente das colunas visíveis, a primeira coluna fica comprimida. Não há validação de:
+1. **Quantidade de itens** — se o array de sizes tem tamanho diferente do número de colunas, os valores ficam desalinhados
+2. **Tamanho mínimo razoável** — nenhuma verificação impede sizes muito pequenos
 
-O botão "Resetar Recorrentes" deve afetar **apenas** tarefas com `is_completed = true` e `recurrence_rule` não nulo. Remover completamente a segunda query (`pastDueRes`) que busca tarefas não-completadas com due_date passado.
+O `ResizablePanel` recebe `defaultSize` que só aplica na montagem inicial, e o `minSize={15}` existe mas o valor salvo pode ser menor.
 
-### Arquivo 1: `src/hooks/tasks/useTaskReset.ts`
-- Remover a query `pastDueRes` (linhas 49-53)
-- Remover o merge/deduplica (linhas 63-67)
-- Usar apenas `completedRes.data` diretamente
-- Simplificar: todo task processado tem `is_completed = true`, então sempre setar `is_completed: false`
+## Solução
 
-### Arquivo 2: `supabase/functions/reset-recurring-tasks/index.ts`
-- Mesma correção: remover a query de tarefas não-completadas com due_date passado
-- Cron deve resetar apenas tarefas completadas
+### Arquivo: `src/components/KanbanBoard.tsx` (linhas 104-117)
 
-### Antes vs Depois
-| Antes | Depois |
-|-------|--------|
-| Reseta completadas + atrasadas não-feitas | Reseta **apenas** completadas (riscadas) |
-| Avança due_date de tarefas atrasadas pendentes | Tarefas atrasadas pendentes ficam intactas |
+Adicionar validação ao inicializar `localColumnSizes`:
+- Se `columnSizesFromSettings` tem tamanho diferente de `columns.length` → ignorar e usar distribuição igual
+- Se qualquer valor for menor que `minSize` (15%) → redistribuir igualmente
 
-### Vantagens
-- Respeita o fluxo do usuário: tarefas não-feitas permanecem com a data original
-- Comportamento previsível: só reseta o que está riscado
+```typescript
+// ANTES:
+const columnSizesFromSettings = settings.kanban.columnSizes?.[categoryId];
+const [localColumnSizes, setLocalColumnSizes] = useState<number[]>(
+  columnSizesFromSettings || columns.map(() => 100 / columns.length)
+);
 
-### Desvantagens
-- Tarefas recorrentes não-completadas com due_date passado ficarão "atrasadas" até serem completadas manualmente (comportamento esperado pelo usuário)
+useEffect(() => {
+  if (columnSizesFromSettings) {
+    setLocalColumnSizes(columnSizesFromSettings);
+  }
+}, [columnSizesFromSettings]);
 
-### Checklist manual
-- [ ] Verificar que tarefas riscadas (completadas) são resetadas ao clicar o botão
-- [ ] Verificar que tarefas NÃO riscadas com due_date passado **não são alteradas**
-- [ ] Navegar pelo sidebar após reset — estado refletido sem F5
+// DEPOIS:
+const columnSizesFromSettings = settings.kanban.columnSizes?.[categoryId];
+const getValidSizes = (saved: number[] | undefined, colCount: number): number[] => {
+  const equal = Array(colCount).fill(100 / colCount);
+  if (!saved || saved.length !== colCount) return equal;
+  if (saved.some(s => s < 10)) return equal; // qualquer coluna < 10% → reset
+  return saved;
+};
 
-### Risco: 2/10 — reverter para lógica anterior mais simples
+const [localColumnSizes, setLocalColumnSizes] = useState<number[]>(
+  getValidSizes(columnSizesFromSettings, columns.length)
+);
+
+useEffect(() => {
+  setLocalColumnSizes(getValidSizes(columnSizesFromSettings, columns.length));
+}, [columnSizesFromSettings, columns.length]);
+```
+
+## Impacto
+- **Risco:** 2/10 — validação simples, não altera funcionalidade existente
+- **Complexidade:** 2/10
+
+## Checklist manual
+- [ ] Abrir a página principal com "Todos os Projetos" — todas as colunas devem ter largura proporcional
+- [ ] Redimensionar colunas manualmente e recarregar — tamanhos devem ser mantidos se válidos
+- [ ] Adicionar/remover uma coluna visível — sizes devem resetar para distribuição igual
 
