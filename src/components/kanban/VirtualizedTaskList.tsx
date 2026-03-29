@@ -34,7 +34,7 @@ interface VirtualizedTaskListProps {
 }
 
 // Threshold para ativar virtualização
-const VIRTUALIZATION_THRESHOLD = 50;
+const VIRTUALIZATION_THRESHOLD = 200;
 
 // Altura estimada dos itens baseado no densityMode
 const getEstimatedItemSize = (densityMode: string) => {
