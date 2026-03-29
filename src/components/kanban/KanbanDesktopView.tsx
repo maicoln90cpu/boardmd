@@ -122,7 +122,7 @@ export const KanbanDesktopView = memo(function KanbanDesktopView({
               >
                 <div
                   className={cn(
-                    "flex flex-col h-full transition-all duration-200",
+                    "flex flex-col transition-all duration-200",
                     styles.gap,
                     isDropTarget &&
                       "ring-2 ring-primary ring-offset-2 ring-offset-background rounded-lg scale-[1.01]",
