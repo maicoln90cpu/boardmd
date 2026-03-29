@@ -103,16 +103,21 @@ export function KanbanBoard({
 
   // Tamanhos das colunas sincronizados via settings
   const columnSizesFromSettings = settings.kanban.columnSizes?.[categoryId];
+  const getValidSizes = useCallback((saved: number[] | undefined, colCount: number): number[] => {
+    const equal = Array(colCount).fill(100 / colCount);
+    if (!saved || saved.length !== colCount) return equal;
+    if (saved.some(s => s < 10)) return equal;
+    return saved;
+  }, []);
+
   const [localColumnSizes, setLocalColumnSizes] = useState<number[]>(
-    columnSizesFromSettings || columns.map(() => 100 / columns.length)
+    getValidSizes(columnSizesFromSettings, columns.length)
   );
 
   // Sincronizar tamanhos com settings quando mudar
   useEffect(() => {
-    if (columnSizesFromSettings) {
-      setLocalColumnSizes(columnSizesFromSettings);
-    }
-  }, [columnSizesFromSettings]);
+    setLocalColumnSizes(getValidSizes(columnSizesFromSettings, columns.length));
+  }, [columnSizesFromSettings, columns.length, getValidSizes]);
 
   const columnSizes = localColumnSizes;
   const setColumnSizes = useCallback((newSizes: number[] | ((prev: number[]) => number[])) => {
