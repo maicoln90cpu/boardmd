@@ -1,145 +1,57 @@
 
 
-# Plano: Correção do Bug Crítico no Editor de Notas + Atualização da Documentação
+# Correção: Reset de Tarefas Recorrentes
 
----
+## Diagnóstico
 
-## PARTE 1: Bug Crítico — Editor pisca e apaga texto
+### Problema 1: Botão "Resetar Recorrentes" não faz nada
+O botão e o cron filtram apenas `is_completed = true`. Existem **15+ tarefas recorrentes com `due_date` no passado e `is_completed = false`** — nunca foram completadas, então nunca entram no reset. Exemplos:
+- "Lavar Sofa" — due_date **Janeiro 2026**
+- "Correr" — due_date **Janeiro 2026**
+- "C - 2h/dia" — due_date **21 Março**
+- "Works Workana" — due_date **28 Março**
 
-### Causa raiz identificada
+### Problema 2: Cron funciona mas incompleto
+O cron às 02:59 UTC funciona (logs mostram execuções), mas sofre do mesmo filtro — só reseta tarefas completadas.
 
-O fluxo destrutivo é:
+### Problema 3: Falta de invalidação do cache
+Após o reset, `onBoardRefresh` apenas incrementa uma key de re-render mas **não invalida o cache do TanStack Query**, então a UI não reflete mudanças sem F5.
 
-```text
-1. Usuário está editando uma nota
-2. Realtime dispara para QUALQUER mudança em notes (inclusive da própria sessão)
-3. fetchNotes() roda e retorna todas as notas com content: null (otimização de listagem)
-4. O state notes[] é substituído — a nota selecionada fica com content: null
-5. O useEffect de syncWithNote dispara porque note.content mudou
-6. syncWithNote chama editor.commands.setContent("") — APAGA TUDO
-```
+## Solução
 
-**Arquivo:** `src/hooks/useNotes.ts` — `fetchNotes()` linhas 41-63 retorna `content: null` para todas as notas.  
-**Arquivo:** `src/components/notes/hooks/useNoteEditorState.ts` — `syncWithNote` linhas 103-113 aplica `setContent(note.content || "")` sem verificar se o content é null (veio de list fetch).
+### Passo 1: Expandir `handleResetRecurrentTasks` em `useTaskReset.ts`
+Além de tarefas completadas, buscar também tarefas recorrentes com `due_date < agora` e `is_completed = false`. Para essas, atualizar apenas o `due_date` para a próxima ocorrência (sem tocar em `is_completed`).
 
-### Correções
+### Passo 2: Adicionar invalidação de cache
+Passar `queryClient` (ou callback `fetchTasks`) para o hook e chamar `queryClient.invalidateQueries({ queryKey: ["tasks"] })` após o reset.
 
-#### 1. `src/hooks/useNotes.ts` — Preservar content ao fazer merge
-Em `fetchNotes()`, ao atualizar o state, preservar o `content` que já existe no cache local:
+### Passo 3: Atualizar Edge Function `reset-recurring-tasks`
+Mesma lógica: buscar tarefas recorrentes com due_date passado independente de `is_completed`.
 
-```typescript
-// ANTES (linha 53):
-const notesWithoutContent: Note[] = (data || []).map(d => ({ ...d, content: null }));
-setNotes(notesWithoutContent);
+### Passo 4: Corrigir wiring em `Index.tsx`
+Passar o `queryClient` ou usar invalidação direta no `onBoardRefresh`.
 
-// DEPOIS:
-const notesWithoutContent: Note[] = (data || []).map(d => ({ ...d, content: null }));
-setNotes(prev => {
-  const contentMap = new Map(prev.filter(n => n.content !== null).map(n => [n.id, n.content]));
-  return notesWithoutContent.map(n => ({
-    ...n,
-    content: contentMap.get(n.id) ?? null
-  }));
-});
-```
+## Alterações por arquivo
 
-#### 2. `src/components/notes/hooks/useNoteEditorState.ts` — Ignorar sync quando content é null
-Em `syncWithNote`, não sobrescrever o editor se o content vem como `null` (= fetch de lista, sem conteúdo real):
+| Arquivo | Mudança |
+|---------|---------|
+| `src/hooks/tasks/useTaskReset.ts` | Expandir query para incluir tarefas com due_date passado; adicionar invalidação de cache |
+| `src/pages/Index.tsx` | Passar `fetchTasks` como callback no hook |
+| `supabase/functions/reset-recurring-tasks/index.ts` | Expandir query para due_date passado |
 
-```typescript
-// ANTES (linhas 108-109):
-if (editor && note.content !== editor.getHTML()) {
-  editor.commands.setContent(note.content || "");
-}
+## Vantagens
+- Tarefas recorrentes nunca ficam "presas" no passado
+- UI atualiza imediatamente sem F5
+- Cron mantém due_dates sempre atualizados
 
-// DEPOIS:
-if (editor && note.content !== null && note.content !== editor.getHTML()) {
-  editor.commands.setContent(note.content);
-}
-```
+## Desvantagens
+- Tarefas intencionalmente não-completadas terão due_date avançado automaticamente (comportamento esperado para recorrentes)
 
-### Análise de impacto
-- **Risco:** 3/10 — mudanças cirúrgicas, não afetam outras áreas
-- **Complexidade:** 3/10
-- **Total: 6/30** — dentro do limite seguro
+## Checklist manual
+- [ ] Verificar que existem tarefas com due_date passado antes do reset
+- [ ] Clicar "Resetar Recorrentes" — toast deve mostrar quantidade > 0
+- [ ] Confirmar que due_dates foram atualizados para próxima ocorrência
+- [ ] Navegar pelo sidebar e voltar — estado mantido sem F5
 
----
-
-## PARTE 2: Reorganização e Atualização da Documentação
-
-### Arquivos .md existentes no projeto
-
-| Arquivo | Linhas | Status | Ação |
-|---------|--------|--------|------|
-| `README.md` | 280 | Desatualizado (v1.2, Jan 2026) | Atualizar e mover para `docs/` |
-| `PRD.md` | 370 | Desatualizado (v1.2) | Atualizar e mover |
-| `ROADMAP.md` | 246 | Desatualizado | Atualizar e mover |
-| `PENDENCIAS.md` | 323 | Desatualizado (changelog parado Jan 2026) | Atualizar e mover |
-| `ARCHITECTURE.md` | 726 | Desatualizado (contagens, listagens) | Atualizar e mover |
-| `onedoc.md` | 768 | Atual (Fev 2026) | Renomear → `docs/onesignal.md` |
-| `pwapush.md` | 1832 | Atual (Fev 2026) | Renomear → `docs/pwa-push.md` |
-| `src/__tests__/README.md` | 77 | Desatualizado | Atualizar in-place |
-| `.lovable/plan.md` | 96 | Interno Lovable | Não mover |
-
-### Novos arquivos a criar
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `docs/SYSTEM_DESIGN.md` | Arquitetura de dados, fluxos, APIs, Edge Functions, Realtime |
-| `docs/EDGE_FUNCTIONS.md` | Documentação de cada uma das 19 Edge Functions com endpoints, payloads, respostas |
-| `docs/COMPONENTES.md` | Guia dos componentes principais (não Storybook, mas referência textual com props e uso) |
-
-### Conteúdo a atualizar em cada documento
-
-**README.md**: versão → 1.3, data → Março 2026, stack atualizada (19 edge functions, ~120 componentes, 50+ hooks), links internos apontando para `docs/`, novos scripts
-
-**PRD.md**: features implementadas desde Jan 2026 (Eisenhower, Custos, Cursos, Hábitos, Ferramentas/API Keys, WhatsApp, Retrospectiva, Weekly Reviews, Goals, Achievements), backlog atualizado
-
-**ROADMAP.md**: Q1 2026 → marcar entregas feitas, Q2-Q4 mantido, data de atualização → Março 2026
-
-**PENDENCIAS.md**: changelog com entradas de Fev-Mar 2026 (fases A-D de auditoria, fix de estado de tarefas, padronização de código), bugs conhecidos atualizados
-
-**ARCHITECTURE.md**: contagens atualizadas (~120 componentes, 50+ hooks, 20 páginas, 19 edge functions), novos diretórios (costs/, courses/, tools/, whatsapp/), novos contextos (ColorTheme, SavingTasks)
-
-### Links cruzados
-
-Todos os documentos terão uma seção "Documentação Relacionada" no topo com links relativos atualizados para a nova estrutura `docs/`.
-
-O `README.md` raiz será mantido como cópia simplificada (setup + link para docs/) para quem clona o repositório.
-
-### Knowledge prompt
-
-Após implementação, enviarei um prompt completo e atualizado para inserir no knowledge do projeto.
-
-### Análise de impacto
-- **Risco:** 1/10 — apenas arquivos de documentação
-- **Complexidade:** 4/10 — volume de texto a atualizar
-- **Total: 5/30** — dentro do limite seguro
-
----
-
-## Resumo de execução
-
-1. **Corrigir o bug do editor** (2 arquivos, ~10 linhas alteradas)
-2. **Criar pasta `docs/`** e mover/renomear os .md
-3. **Atualizar conteúdo** de cada documento com dados atuais
-4. **Criar novos documentos** (SYSTEM_DESIGN, EDGE_FUNCTIONS, COMPONENTES)
-5. **Atualizar `src/__tests__/README.md`** in-place
-6. **Enviar knowledge prompt** atualizado no chat
-
-### Checklist manual pós-implementação
-- [ ] Abrir `/notes`, editar uma nota e esperar 30+ segundos — texto NÃO deve desaparecer
-- [ ] Editar uma nota, navegar pela sidebar, voltar — conteúdo preservado
-- [ ] Verificar que `docs/` contém todos os .md reorganizados
-- [ ] Confirmar que links cruzados entre documentos funcionam
-- [ ] Validar que `README.md` raiz aponta para `docs/`
-
-### Vantagens
-- Corrige perda de dados crítica no editor
-- Documentação centralizada e atualizada
-- Referência técnica para desenvolvedores (System Design)
-
-### Desvantagens
-- Volume grande de texto para revisar/validar
-- Documentação precisa de manutenção contínua
+## Risco: 4/10 — lógica de recorrência já testada, expansão do filtro é segura
 
