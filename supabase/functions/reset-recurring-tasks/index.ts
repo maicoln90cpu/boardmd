@@ -121,12 +121,9 @@ Deno.serve(async (req) => {
 
         const updatePayload: Record<string, unknown> = {
           due_date: nextDueDate,
+          is_completed: false,
           updated_at: new Date().toISOString(),
         };
-        // Só reseta is_completed se estava completada
-        if (task.is_completed) {
-          updatePayload.is_completed = false;
-        }
 
         const { error: updateError } = await supabase.from("tasks")
           .update(updatePayload)
