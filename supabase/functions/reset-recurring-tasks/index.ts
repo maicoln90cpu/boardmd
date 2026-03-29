@@ -1,4 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleCors } from '../_shared/cors.ts';
 import { json, error } from '../_shared/response.ts';
 import { createAdminClient } from '../_shared/auth.ts';
@@ -34,8 +33,8 @@ function getNowInUserTimezone(timezone: string): Date {
     const getValue = (type: string) => parts.find(p => p.type === type)?.value || '0';
     return new Date(parseInt(getValue('year')), parseInt(getValue('month')) - 1, parseInt(getValue('day')),
       parseInt(getValue('hour')), parseInt(getValue('minute')), parseInt(getValue('second')));
-  } catch (err) {
-    log.error(`Erro ao converter timezone ${timezone}, usando UTC:`, err);
+  } catch {
+    log.error(`Erro ao converter timezone ${timezone}, usando UTC`);
     return now;
   }
 }
@@ -85,22 +84,37 @@ Deno.serve(async (req) => {
   try {
     log.info("Iniciando reset automático (busca global por recurrence_rule)");
     const supabase = createAdminClient();
+    const now = new Date().toISOString();
 
-    const { data: tasks, error: fetchError } = await supabase
-      .from("tasks")
-      .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
-      .eq("is_completed", true)
-      .not("recurrence_rule", "is", null);
+    // Buscar tarefas recorrentes: completadas OU com due_date no passado
+    const [completedRes, pastDueRes] = await Promise.all([
+      supabase.from("tasks")
+        .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
+        .eq("is_completed", true)
+        .not("recurrence_rule", "is", null),
+      supabase.from("tasks")
+        .select("id, user_id, title, due_date, is_completed, recurrence_rule, mirror_task_id")
+        .eq("is_completed", false)
+        .not("recurrence_rule", "is", null)
+        .lt("due_date", now),
+    ]);
 
-    if (fetchError) { log.error("Erro ao buscar tarefas:", fetchError); throw fetchError; }
+    if (completedRes.error) { log.error("Erro fetch completadas:", completedRes.error); throw completedRes.error; }
+    if (pastDueRes.error) { log.error("Erro fetch past-due:", pastDueRes.error); throw pastDueRes.error; }
 
-    log.info(`Encontradas ${tasks?.length || 0} tarefas recorrentes completadas`);
+    // Merge e deduplica
+    const taskMap = new Map<string, Task>();
+    for (const t of (completedRes.data || []) as Task[]) taskMap.set(t.id, t);
+    for (const t of (pastDueRes.data || []) as Task[]) taskMap.set(t.id, t);
+    const tasks = Array.from(taskMap.values());
 
-    if (!tasks || tasks.length === 0) {
-      return json({ success: true, message: "Nenhuma tarefa recorrente completada encontrada", processed: 0 });
+    log.info(`Encontradas ${tasks.length} tarefas recorrentes para processar (${completedRes.data?.length || 0} completadas, ${pastDueRes.data?.length || 0} past-due)`);
+
+    if (tasks.length === 0) {
+      return json({ success: true, message: "Nenhuma tarefa recorrente para processar", processed: 0 });
     }
 
-    const userIds = [...new Set(tasks.map((t: Task) => t.user_id))];
+    const userIds = [...new Set(tasks.map(t => t.user_id))];
     const { data: userSettingsData } = await supabase
       .from("user_settings").select("user_id, settings").in("user_id", userIds);
 
@@ -114,13 +128,22 @@ Deno.serve(async (req) => {
     let processed = 0, errors = 0;
     const processedMirrors = new Set<string>();
 
-    for (const task of tasks as Task[]) {
+    for (const task of tasks) {
       try {
         const userTimezone = userTimezones.get(task.user_id) || "America/Sao_Paulo";
         const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule, userTimezone);
 
+        const updatePayload: Record<string, unknown> = {
+          due_date: nextDueDate,
+          updated_at: new Date().toISOString(),
+        };
+        // Só reseta is_completed se estava completada
+        if (task.is_completed) {
+          updatePayload.is_completed = false;
+        }
+
         const { error: updateError } = await supabase.from("tasks")
-          .update({ is_completed: false, due_date: nextDueDate, updated_at: new Date().toISOString() })
+          .update(updatePayload)
           .eq("id", task.id);
 
         if (updateError) { log.error(`Erro tarefa ${task.id}:`, updateError); errors++; continue; }
