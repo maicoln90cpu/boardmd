@@ -36,58 +36,37 @@ export function useTaskReset({
   const queryClient = useQueryClient();
 
   const handleResetRecurrentTasks = useCallback(async () => {
-    const now = new Date().toISOString();
+    // Buscar APENAS tarefas recorrentes completadas (riscadas)
+    const { data: completedTasks, error: fetchError } = await supabase
+      .from("tasks")
+      .select("id, title, is_completed, recurrence_rule, due_date")
+      .eq("is_completed", true)
+      .not("recurrence_rule", "is", null);
 
-    // Buscar tarefas recorrentes: completadas OU com due_date no passado
-    const [completedRes, pastDueRes] = await Promise.all([
-      supabase
-        .from("tasks")
-        .select("id, title, is_completed, recurrence_rule, due_date")
-        .eq("is_completed", true)
-        .not("recurrence_rule", "is", null),
-      supabase
-        .from("tasks")
-        .select("id, title, is_completed, recurrence_rule, due_date")
-        .eq("is_completed", false)
-        .not("recurrence_rule", "is", null)
-        .lt("due_date", now),
-    ]);
-
-    if (completedRes.error || pastDueRes.error) {
-      const err = completedRes.error || pastDueRes.error;
-      logger.error("[RESET] Erro ao buscar tarefas recorrentes:", err);
-      toast({ title: "Erro ao buscar tarefas", description: err!.message, variant: "destructive" });
+    if (fetchError) {
+      logger.error("[RESET] Erro ao buscar tarefas recorrentes:", fetchError);
+      toast({ title: "Erro ao buscar tarefas", description: fetchError.message, variant: "destructive" });
       return;
     }
 
-    // Merge e deduplica
-    const allTasksMap = new Map<string, (typeof completedRes.data)[0]>();
-    for (const t of completedRes.data || []) allTasksMap.set(t.id, t);
-    for (const t of pastDueRes.data || []) allTasksMap.set(t.id, t);
-    const allTasks = Array.from(allTasksMap.values());
-
-    if (allTasks.length === 0) {
-      toast({ title: "Nenhuma tarefa", description: "Não há tarefas recorrentes para resetar" });
+    if (!completedTasks || completedTasks.length === 0) {
+      toast({ title: "Nenhuma tarefa", description: "Não há tarefas recorrentes completadas para resetar" });
       return;
     }
 
-    logger.log("[RESET] Tarefas recorrentes encontradas:", allTasks.length);
+    logger.log("[RESET] Tarefas recorrentes completadas encontradas:", completedTasks.length);
 
     // Limpar checkboxes do localStorage
-    allTasks.forEach((task) => localStorage.removeItem(`task-completed-${task.id}`));
+    completedTasks.forEach((task) => localStorage.removeItem(`task-completed-${task.id}`));
 
-    // Processar cada tarefa
+    // Processar cada tarefa: avançar due_date e resetar is_completed
     let successCount = 0;
-    for (const task of allTasks) {
+    for (const task of completedTasks) {
       const nextDueDate = calculateNextRecurrenceDate(task.due_date, task.recurrence_rule as any);
-      const updatePayload: Record<string, unknown> = { due_date: nextDueDate };
-
-      // Só reseta is_completed se estava completada
-      if (task.is_completed) {
-        updatePayload.is_completed = false;
-      }
-
-      const { error } = await supabase.from("tasks").update(updatePayload).eq("id", task.id);
+      const { error } = await supabase
+        .from("tasks")
+        .update({ due_date: nextDueDate, is_completed: false })
+        .eq("id", task.id);
       if (error) {
         logger.error(`[RESET] Erro tarefa ${task.id}:`, error);
       } else {
@@ -96,7 +75,7 @@ export function useTaskReset({
     }
 
     // Sincronizar mirrors
-    const allTaskIds = allTasks.map((t) => t.id);
+    const allTaskIds = completedTasks.map((t) => t.id);
     const { data: tasksWithMirrors } = await supabase
       .from("tasks")
       .select("id, mirror_task_id")
