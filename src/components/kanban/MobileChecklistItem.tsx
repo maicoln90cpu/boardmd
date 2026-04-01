@@ -18,6 +18,7 @@ interface MobileChecklistItemProps {
   onToggleComplete: () => void;
   onEdit: () => void;
   onToggleFavorite: (taskId: string) => void;
+  onLongPress?: (taskId: string) => void;
   priorityColors?: PriorityColors;
 }
 
