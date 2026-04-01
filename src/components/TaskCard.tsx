@@ -245,6 +245,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const [completionModalOpen, setCompletionModalOpen] = React.useState(false);
   const [metricsHistoryOpen, setMetricsHistoryOpen] = React.useState(false);
   const { addLog } = useTaskCompletionLogs();
+  const { toggleComplete, invalidateTasks } = useTaskMutations();
 
   // Sync local state when task changes
   React.useEffect(() => {
