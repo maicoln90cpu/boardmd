@@ -55,9 +55,29 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
   const isCompleted = task.is_completed || false;
   const priority = task.priority as "high" | "medium" | "low" | null;
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
   const handleTitleTap = useCallback(() => {
+    if (didLongPress.current) return;
     onEdit();
   }, [onEdit]);
+
+  const handleTouchStart = useCallback(() => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      if (navigator.vibrate) navigator.vibrate(50);
+      onLongPress?.(task.id);
+    }, 500);
+  }, [onLongPress, task.id]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const handleFavoriteTap = useCallback(
     (e: React.MouseEvent) => {
