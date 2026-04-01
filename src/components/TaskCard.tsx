@@ -324,8 +324,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             .eq("id", task.mirror_task_id);
         }
         
-        // Invalidate cache to ensure UI reflects changes
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        invalidateTasks();
         return;
       } catch (error) {
         logger.error("Erro ao resetar tarefa recorrente:", error);
