@@ -26,6 +26,7 @@ export function WhatsAppLogs() {
   const [logs, setLogs] = useState<WhatsAppLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const { sendWhatsApp } = useWhatsAppEdgeFunctions();
 
   const loadLogs = async () => {
     if (!user) return;
