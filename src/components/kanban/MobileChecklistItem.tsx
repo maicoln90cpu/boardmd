@@ -143,8 +143,11 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
       {/* Título - área clicável principal */}
       <button
         onClick={handleTitleTap}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         className={cn(
-          "flex-1 min-w-0 text-left text-sm truncate py-1",
+          "flex-1 min-w-0 text-left text-sm truncate py-1 select-none",
           isCompleted && "line-through text-muted-foreground",
         )}
       >
