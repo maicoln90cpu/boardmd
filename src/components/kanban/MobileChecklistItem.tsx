@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Star, Calendar } from "lucide-react";
