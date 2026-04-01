@@ -52,8 +52,8 @@ export function FavoritesSection({
     acc[category.id].tasks.push(task);
     return acc;
   }, {} as Record<string, {
-    category: any;
-    tasks: any[];
+    category: { id: string; name: string };
+    tasks: Task[];
   }>);
 
   if (favoriteTasks.length === 0) return null;
