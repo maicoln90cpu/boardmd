@@ -354,6 +354,15 @@ export const MobileKanbanView = memo(function MobileKanbanView({
           Nova tarefa
         </Button>
       </div>
+
+      {/* Drawer para mover tarefa */}
+      <MobileColumnDrawer
+        open={moveDrawerOpen}
+        onOpenChange={setMoveDrawerOpen}
+        columns={columns}
+        currentColumnId={taskToMove?.columnId || ""}
+        onSelectColumn={handleMoveToColumn}
+      />
     </div>
   );
 });
