@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RefreshCw, CheckCircle, AlertTriangle, XCircle, Activity, Clock, Server } from "lucide-react";
 import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import { useHealthCheckEdgeFunctions } from "@/hooks/useEdgeFunctions";
 
 interface ModuleStatus {
   name: string;
@@ -53,6 +52,7 @@ const statusConfig = {
 };
 
 export function SystemHealthMonitor() {
+  const { checkHealth } = useHealthCheckEdgeFunctions();
   const [health, setHealth] = useState<HealthCheckResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -60,23 +60,21 @@ export function SystemHealthMonitor() {
   const fetchHealth = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("health-check");
+      const { data, error } = await checkHealth();
       
       if (error) {
-        logger.error("Health check error:", error);
         toast.error("Erro ao verificar saúde do sistema");
         return;
       }
 
       setHealth(data as HealthCheckResponse);
       setLastChecked(new Date());
-    } catch (error) {
-      logger.error("Health check failed:", error);
+    } catch {
       toast.error("Falha ao conectar com o servidor");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [checkHealth]);
 
   useEffect(() => {
     fetchHealth();
@@ -117,7 +115,6 @@ export function SystemHealthMonitor() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Overall Status */}
         {health && (
           <div className={`flex items-center justify-between p-3 rounded-lg ${overallConfig.bgColor}`}>
             <div className="flex items-center gap-3">
@@ -135,7 +132,6 @@ export function SystemHealthMonitor() {
           </div>
         )}
 
-        {/* Health Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span>Integridade</span>
@@ -144,7 +140,6 @@ export function SystemHealthMonitor() {
           <Progress value={healthPercentage} className="h-2" />
         </div>
 
-        {/* Modules List */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">Módulos</p>
           <div className="grid gap-2">
@@ -176,7 +171,6 @@ export function SystemHealthMonitor() {
           </div>
         </div>
 
-        {/* Summary */}
         {health && (
           <div className="grid grid-cols-3 gap-2 pt-2 border-t">
             <div className="text-center">
@@ -194,7 +188,6 @@ export function SystemHealthMonitor() {
           </div>
         )}
 
-        {/* Loading State */}
         {loading && !health && (
           <div className="flex items-center justify-center py-8">
             <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />

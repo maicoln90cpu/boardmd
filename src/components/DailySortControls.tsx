@@ -2,10 +2,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUpDown, Maximize2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Task } from "@/hooks/tasks/useTasks";
 import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
+import { useDailyAssistantEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { logger } from "@/lib/logger";
 import {
   Dialog,
@@ -46,12 +46,10 @@ export function DailySortControls({
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [aiResult, setAiResult] = useState<AIOrganizationResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  
-  // Rate limiter para endpoint de IA
+  const { organizeWithAI: invokeOrganize } = useDailyAssistantEdgeFunctions();
   const { checkLimit: checkAILimit } = useRateLimiter(RATE_LIMIT_CONFIGS.ai);
 
   const organizeWithAI = async () => {
-    // Verificar rate limit antes de fazer requisição
     if (!checkAILimit()) return;
     
     if (!tasks || tasks.length === 0) {
@@ -67,9 +65,7 @@ export function DailySortControls({
     setIsOrganizing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("daily-assistant", {
-        body: { tasks },
-      });
+      const { data, error } = await invokeOrganize(tasks);
 
       if (error) {
         if (error.message?.includes("429")) {
@@ -148,7 +144,6 @@ export function DailySortControls({
         </Select>
       )}
 
-      {/* AI Organization Button */}
       {tasks && tasks.length > 0 && onReorderTasks && (
         <Button
           variant="default"
@@ -164,7 +159,6 @@ export function DailySortControls({
       )}
     </div>
 
-      {/* AI Organization Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -178,7 +172,6 @@ export function DailySortControls({
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Insights */}
             {aiResult?.insights && aiResult.insights.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm">💡 Insights</h4>
@@ -192,7 +185,6 @@ export function DailySortControls({
               </div>
             )}
 
-            {/* Reordered Tasks Preview */}
             {aiResult?.reorderedTasks && aiResult.reorderedTasks.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-sm">📋 Nova Ordem</h4>
