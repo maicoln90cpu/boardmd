@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, MessageSquare, RotateCcw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useWhatsAppEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,6 +26,7 @@ export function WhatsAppLogs() {
   const [logs, setLogs] = useState<WhatsAppLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const { sendWhatsApp } = useWhatsAppEdgeFunctions();
 
   const loadLogs = async () => {
     if (!user) return;
@@ -52,14 +54,12 @@ export function WhatsAppLogs() {
 
     setResendingId(log.id);
     try {
-      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
-        body: {
-          user_id: user.id,
-          phone_number: log.phone_number,
-          message: log.message,
-          template_type: log.template_type || "retry",
-          retry_log_id: log.id,
-        },
+      const { data, error } = await sendWhatsApp({
+        user_id: user.id,
+        phone_number: log.phone_number,
+        message: log.message,
+        template_type: log.template_type || "retry",
+        retry_log_id: log.id,
       });
 
       if (error) throw error;

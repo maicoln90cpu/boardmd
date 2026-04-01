@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { CourseModulesUploader } from "./CourseModulesUploader";
 import { CourseModulesChecklist, type CourseModule } from "./CourseModulesChecklist";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourseEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
 import type { Course, CourseFormData } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
@@ -82,6 +83,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isGeneratingModules, setIsGeneratingModules] = useState(false);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const { parseCourseModules } = useCourseEdgeFunctions();
   const [availableTasks, setAvailableTasks] = useState<Array<{ id: string; title: string }>>([]);
   
   const navigate = useNavigate();
@@ -186,9 +188,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
 
     setIsGeneratingModules(true);
     try {
-      const { data, error } = await supabase.functions.invoke("parse-course-modules", {
-        body: { image: uploadedImage },
-      });
+      const { data, error } = await parseCourseModules(uploadedImage);
 
       if (error) throw error;
 
