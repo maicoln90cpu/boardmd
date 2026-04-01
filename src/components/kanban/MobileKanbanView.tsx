@@ -65,8 +65,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const [sortMode, setSortMode] = useState<SortMode>("column");
   const [moveDrawerOpen, setMoveDrawerOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<EnrichedTask | null>(null);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { toggleCompleteWithToast, moveToColumnWithToast } = useTaskMutations();
 
   // Achatar todas as tarefas com metadados da coluna
   const allEnrichedTasks = useMemo(() => {
