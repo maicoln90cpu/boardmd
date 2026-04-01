@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
+import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
+import { formatDateTimeBR } from "@/lib/dateUtils";
 
 /**
  * Hook centralizado para mutações de tarefas via Supabase.
@@ -67,6 +69,73 @@ export function useTaskMutations() {
     [invalidateTasks],
   );
 
+  /**
+   * Reset imediato de tarefa recorrente:
+   * Calcula próxima due_date, seta is_completed=false, sincroniza mirrors.
+   * Retorna a próxima data calculada para exibição no toast.
+   */
+  const immediateRecurrenceReset = useCallback(
+    async (
+      taskId: string,
+      dueDate: string | null,
+      recurrenceRule: RecurrenceRule | null,
+      mirrorTaskId?: string | null,
+    ): Promise<string> => {
+      const nextDueDate = calculateNextRecurrenceDate(dueDate, recurrenceRule);
+
+      const { error } = await supabase
+        .from("tasks")
+        .update({ is_completed: false, due_date: nextDueDate })
+        .eq("id", taskId);
+      if (error) throw error;
+
+      // Sync mirror
+      if (mirrorTaskId) {
+        await supabase
+          .from("tasks")
+          .update({ is_completed: false, due_date: nextDueDate })
+          .eq("id", mirrorTaskId);
+      }
+
+      invalidateTasks();
+      return nextDueDate;
+    },
+    [invalidateTasks],
+  );
+
+  /** Reset imediato com toast e feedback visual */
+  const immediateRecurrenceResetWithToast = useCallback(
+    async (
+      taskId: string,
+      dueDate: string | null,
+      recurrenceRule: RecurrenceRule | null,
+      mirrorTaskId?: string | null,
+    ): Promise<string | null> => {
+      try {
+        const nextDueDate = await immediateRecurrenceReset(
+          taskId,
+          dueDate,
+          recurrenceRule,
+          mirrorTaskId,
+        );
+        toast({
+          title: "✓ Tarefa concluída e resetada",
+          description: `Próxima: ${formatDateTimeBR(new Date(nextDueDate))}`,
+        });
+        return nextDueDate;
+      } catch (error) {
+        logger.error("Erro ao resetar tarefa recorrente:", error);
+        toast({
+          title: "Erro ao resetar tarefa",
+          description: "Não foi possível calcular a próxima data.",
+          variant: "destructive",
+        });
+        return null;
+      }
+    },
+    [immediateRecurrenceReset, toast],
+  );
+
   /** Toggle simples de conclusão com toast (usado no mobile checklist) */
   const toggleCompleteWithToast = useCallback(
     async (taskId: string, currentCompleted: boolean, onAddPoints?: () => void) => {
@@ -108,6 +177,8 @@ export function useTaskMutations() {
     toggleCompleteWithToast,
     moveToColumn,
     moveToColumnWithToast,
+    immediateRecurrenceReset,
+    immediateRecurrenceResetWithToast,
     invalidateTasks,
   };
 }
