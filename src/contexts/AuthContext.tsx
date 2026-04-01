@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/hooks/useAuditLog";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
 interface AuthContextType {

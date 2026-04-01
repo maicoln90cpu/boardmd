@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
 import { Search, FileText, StickyNote } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import {
   CommandDialog,
   CommandEmpty,
@@ -10,7 +11,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Task } from "@/hooks/tasks/useTasks";
-import { Badge } from "@/components/ui/badge";
 
 interface Category {
   id: string;

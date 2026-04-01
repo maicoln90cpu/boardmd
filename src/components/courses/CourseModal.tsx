@@ -1,15 +1,20 @@
-import { useEffect, useState } from "react";
-import { logger } from "@/lib/logger";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Loader2, Sparkles, ListChecks } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { z } from "zod";
+import { CourseModulesChecklist, type CourseModule } from "./CourseModulesChecklist";
+import { CourseModulesUploader } from "./CourseModulesUploader";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { logger } from "@/lib/logger";
 import {
   Form,
   FormControl,
@@ -19,7 +24,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -29,14 +33,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CourseModulesUploader } from "./CourseModulesUploader";
-import { CourseModulesChecklist, type CourseModule } from "./CourseModulesChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useCourseEdgeFunctions } from "@/hooks/useEdgeFunctions";
-import { toast } from "sonner";
 import type { Course, CourseFormData } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
-import { useNavigate } from "react-router-dom";
 
 const courseSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(200, "Máximo 200 caracteres"),

@@ -1,8 +1,8 @@
+import { FileText } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { NOTE_TEMPLATES, NoteTemplate } from "@/lib/noteTemplates";
 
 interface NoteTemplateSelectorProps {

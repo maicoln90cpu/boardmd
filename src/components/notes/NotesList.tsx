@@ -1,20 +1,20 @@
-import { memo, useMemo } from "react";
-import { Note } from "@/hooks/useNotes";
-import { Notebook } from "@/hooks/useNotebooks";
-import { Button } from "@/components/ui/button";
-import { BaseBadge, getPinnedBadgeStyle } from "@/components/ui/base-badge";
-import { EmptyState } from "@/components/ui/empty-state";
-import { FileText, Plus, Trash2, Pin, Notebook as NotebookIcon } from "lucide-react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
+import { FileText, Plus, Trash2, Pin, Notebook as NotebookIcon } from "lucide-react";
+import { memo, useMemo } from "react";
+import { BaseBadge, getPinnedBadgeStyle } from "@/components/ui/base-badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Notebook } from "@/hooks/useNotebooks";
+import { Note } from "@/hooks/useNotes";
 
 interface NotesListProps {
   notes: Note[];

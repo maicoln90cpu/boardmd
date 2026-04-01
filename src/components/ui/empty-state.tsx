@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { 
   ClipboardList, 
   FileText, 
@@ -12,7 +12,7 @@ import {
   Clock,
   GraduationCap
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 
 type EmptyStateVariant = 
   | "tasks" 

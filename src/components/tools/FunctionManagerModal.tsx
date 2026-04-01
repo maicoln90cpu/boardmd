@@ -1,15 +1,5 @@
-import { useState } from "react";
 import { Pencil, Trash2, Plus, Check, X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +10,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToolFunctions, FUNCTION_PRESET_COLORS, ToolFunction } from "@/hooks/useToolFunctions";
 import { cn } from "@/lib/utils";
 

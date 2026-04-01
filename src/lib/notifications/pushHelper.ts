@@ -1,10 +1,10 @@
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 import {
   defaultNotificationTemplates,
   formatNotificationTemplate,
   getTemplateById,
   NotificationTemplate,
 } from "@/lib/defaultNotificationTemplates";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
 
 // Unique client instance ID for observability
 const CLIENT_INSTANCE_ID_KEY = "push-client-instance-id";

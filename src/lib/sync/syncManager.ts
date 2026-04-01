@@ -1,8 +1,8 @@
+import { toast } from "sonner";
 import { indexedDBSync, PendingOperation } from "./indexedDB";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
 import { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import { logger } from "@/lib/logger";
 
 const MAX_RETRIES = 3;
 const SYNC_INTERVAL = 30000; // 30 seconds

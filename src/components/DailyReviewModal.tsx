@@ -1,9 +1,3 @@
-import { useState, useEffect, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Calendar, 
   Clock, 
@@ -13,6 +7,12 @@ import {
   ChevronRight,
   Sparkles
 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { Task } from "@/hooks/tasks/useTasks";
 import { formatRelativeDateBR } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";

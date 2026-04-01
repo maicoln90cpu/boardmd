@@ -1,15 +1,16 @@
+import { RotateCcw, Save, TestTube2, Wifi, WifiOff } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { RotateCcw, Save, TestTube2, Wifi, WifiOff } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 const ACTIVE_PUSH_TEMPLATES = [
   'task_completed',
@@ -27,7 +28,6 @@ import {
   NotificationTemplate,
   formatNotificationTemplate 
 } from "@/lib/defaultNotificationTemplates";
-import { toast } from "sonner";
 
 // Merge saved templates with defaults to ensure description and new fields are present
 function mergeWithDefaults(saved: NotificationTemplate[]): NotificationTemplate[] {

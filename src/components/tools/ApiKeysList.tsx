@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { Key, Plus, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Key, Plus, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { ApiKeyCard } from "./ApiKeyCard";
 import { ApiKeyModal } from "./ApiKeyModal";
 import {
@@ -14,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { useApiKeys, type ApiKey } from "@/hooks/useApiKeys";
 
 export function ApiKeysList() {

@@ -1,10 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
-import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
-import { useQueryClient } from "@tanstack/react-query";
+import { calculateNextRecurrenceDate } from "@/lib/recurrenceUtils";
 
 interface Column {
   id: string;

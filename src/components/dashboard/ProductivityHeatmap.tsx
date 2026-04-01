@@ -1,9 +1,9 @@
+import { subDays, format, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Flame } from "lucide-react";
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Flame } from "lucide-react";
-import { subDays, format, startOfDay, endOfDay } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface Task {
   updated_at: string;

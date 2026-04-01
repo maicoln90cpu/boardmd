@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
-import { useAuth } from "@/contexts/AuthContext";
-import { categorySchema } from "@/lib/validations";
 import { z } from "zod";
-import { offlineSync } from "@/lib/sync/offlineSync";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/ui/useToast";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { supabase } from "@/integrations/supabase/client";
+import { offlineSync } from "@/lib/sync/offlineSync";
+import { categorySchema } from "@/lib/validations";
 
 export interface Category {
   id: string;

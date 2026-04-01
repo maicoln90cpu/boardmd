@@ -1,8 +1,8 @@
-import { memo, useCallback, useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, CheckSquare } from "lucide-react";
-import { Column } from "@/hooks/data/useColumns";
+import { memo, useCallback, useMemo } from "react";
 import { ColumnColorPicker } from "./ColumnColorPicker";
+import { Button } from "@/components/ui/button";
+import { Column } from "@/hooks/data/useColumns";
 import { getColumnTopBarClass, getColumnBackgroundClass } from "@/lib/columnStyles";
 import { cn } from "@/lib/utils";
 

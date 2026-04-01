@@ -1,16 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { UserStats } from "@/hooks/useUserStats";
-import { useAchievements, rarityColors, rarityNames, allBadges } from "@/hooks/useAchievements";
-import { useAuth } from "@/contexts/AuthContext";
 import { Trophy, Flame, Star, Award, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAchievements, rarityColors, rarityNames, allBadges } from "@/hooks/useAchievements";
+import { UserStats } from "@/hooks/useUserStats";
+import { cn } from "@/lib/utils";
 
 interface GamificationPanelProps {
   stats: UserStats | null | undefined;

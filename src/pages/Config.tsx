@@ -1,36 +1,3 @@
-import { useState, useEffect } from "react";
-import { useSettings, AppSettings } from "@/hooks/data/useSettings";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useCategories } from "@/hooks/data/useCategories";
-import { useTags, TAG_PRESET_COLORS } from "@/hooks/data/useTags";
-import { useToast } from "@/hooks/ui/useToast";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { logger } from "@/lib/logger";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2, Bell } from "lucide-react";
-import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
-import { UserProfileCard } from "@/components/settings/UserProfileCard";
-import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { ColumnManager } from "@/components/kanban/ColumnManager";
-import { useColumns } from "@/hooks/data/useColumns";
-import { getAllPrompts, AI_MODELS } from "@/lib/defaultAIPrompts";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Sidebar } from "@/components/Sidebar";
-import { usePWAUpdate } from "@/hooks/usePWAUpdate";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   DndContext,
   closestCenter,
@@ -48,6 +15,39 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Pencil, Trash2, Plus, Download, Upload, LogOut, ArrowLeft, GripVertical, Info, RotateCcw, FolderPlus, CornerDownRight, ChevronRight, ChevronDown, UserX, RefreshCw, Smartphone, Sparkles, Loader2, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useSettings, AppSettings } from "@/hooks/data/useSettings";
+import { useCategories } from "@/hooks/data/useCategories";
+import { useTags, TAG_PRESET_COLORS } from "@/hooks/data/useTags";
+import { useToast } from "@/hooks/ui/useToast";
+import { usePWAUpdate } from "@/hooks/usePWAUpdate";
+import { supabase } from "@/integrations/supabase/client";
+import { getAllPrompts, AI_MODELS } from "@/lib/defaultAIPrompts";
+import { logger } from "@/lib/logger";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DataIntegrityMonitor } from "@/components/DataIntegrityMonitor";
+import { UserProfileCard } from "@/components/settings/UserProfileCard";
+import { SettingsLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { ColumnManager } from "@/components/kanban/ColumnManager";
+import { useColumns } from "@/hooks/data/useColumns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sidebar } from "@/components/Sidebar";
 
 // Sortable category item component with hierarchy support
 function SortableCategoryItem({ 

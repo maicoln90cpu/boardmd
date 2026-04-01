@@ -1,21 +1,15 @@
-import { useState, useMemo } from "react";
 import { Plus, Wrench, Sparkles, Settings2, Key } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { ToolsList } from "@/components/tools/ToolsList";
-import { ToolsSearch } from "@/components/tools/ToolsSearch";
-import { ToolModal } from "@/components/tools/ToolModal";
-import { ToolSuggestionsModal } from "@/components/tools/ToolSuggestionsModal";
-import { FunctionManagerModal } from "@/components/tools/FunctionManagerModal";
-import { ToolsCostSummary } from "@/components/tools/ToolsCostSummary";
-import { ApiKeysList } from "@/components/tools/ApiKeysList";
-import { useTools, Tool } from "@/hooks/useTools";
-import { useToolFunctions } from "@/hooks/useToolFunctions";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Sidebar } from "@/components/Sidebar";
-import { useTheme } from "@/contexts/ThemeContext";
+import { ApiKeysList } from "@/components/tools/ApiKeysList";
+import { FunctionManagerModal } from "@/components/tools/FunctionManagerModal";
+import { ToolModal } from "@/components/tools/ToolModal";
+import { ToolsCostSummary } from "@/components/tools/ToolsCostSummary";
+import { ToolsList } from "@/components/tools/ToolsList";
+import { ToolsSearch } from "@/components/tools/ToolsSearch";
+import { ToolSuggestionsModal } from "@/components/tools/ToolSuggestionsModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +20,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useToolFunctions } from "@/hooks/useToolFunctions";
+import { useTools, Tool } from "@/hooks/useTools";
 
 interface ToolWithFunctions {
   id: string;

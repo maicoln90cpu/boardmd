@@ -1,15 +1,15 @@
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Settings2, Trash2, Pencil, Copy } from "lucide-react";
-import { CostItemForm } from "./CostItemForm";
-import { CostItemEditModal } from "./CostItemEditModal";
+import { useState, useMemo } from "react";
 import { CostFiltersBar, EMPTY_FILTERS, DEFAULT_SORT, hasActiveFilters, type CostFilters, type CostSortOption } from "./CostFiltersBar";
+import { CostItemEditModal } from "./CostItemEditModal";
+import { CostItemForm } from "./CostItemForm";
+import { CostReportExport } from "./CostReportExport";
 import { CostSummary } from "./CostSummary";
 import { ExchangeRateEditor } from "./ExchangeRateEditor";
-import { CostReportExport } from "./CostReportExport";
-import { COST_CATEGORIES, PAYMENT_METHODS, getEffectiveAmount } from "@/hooks/useCostCalculator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { CostTheme, CostItem } from "@/hooks/useCostCalculator";
+import { COST_CATEGORIES, PAYMENT_METHODS, getEffectiveAmount } from "@/hooks/useCostCalculator";
 import { useCostCalculator } from "@/hooks/useCostCalculator";
 import { formatDateShortBR } from "@/lib/dateUtils";
 
@@ -59,7 +59,7 @@ export function CostThemeDetail({
   const { convertAmount, calculateTotals, generateReportText } = useCostCalculator();
 
   const filteredItems = useMemo(() => {
-    let result = hasActiveFilters(filters) ? applyFilters(items, filters) : [...items];
+    const result = hasActiveFilters(filters) ? applyFilters(items, filters) : [...items];
     result.sort((a, b) => {
       const dir = sort.dir === "asc" ? 1 : -1;
       switch (sort.field) {

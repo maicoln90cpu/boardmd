@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
-import { useAuth } from "@/contexts/AuthContext";
-import { columnSchema } from "@/lib/validations";
 import { z } from "zod";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/data/useSettings";
+import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
+import { columnSchema } from "@/lib/validations";
 
 export interface Column {
   id: string;

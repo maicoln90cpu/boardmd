@@ -1,6 +1,6 @@
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
 
 interface NotesSearchProps {
   searchTerm: string;

@@ -1,22 +1,22 @@
-import { useState, useRef, useMemo } from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { useQuickLinks, QuickLink } from "@/hooks/useQuickLinks";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Home, Download, Upload, GripVertical, ArrowUpDown, FolderOpen, MousePointerClick, LayoutGrid, List } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { EmptyState } from "@/components/ui/empty-state";
-import { exportToBookmarkHtml, parseBookmarkHtml } from "@/lib/bookmarkUtils";
-import { toast } from "sonner";
-import { hapticSuccess, hapticLight } from "@/lib/haptic";
 import {
   DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Plus, Trash2, Home, Download, Upload, GripVertical, ArrowUpDown, FolderOpen, MousePointerClick, LayoutGrid, List } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Sidebar } from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useQuickLinks, QuickLink } from "@/hooks/useQuickLinks";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
+import { exportToBookmarkHtml, parseBookmarkHtml } from "@/lib/bookmarkUtils";
+import { hapticSuccess, hapticLight } from "@/lib/haptic";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const ICON_OPTIONS = ["🔗", "📌", "⭐", "🌐", "📧", "💼", "📊", "🎨", "🛠️", "📱", "💡", "🎯"];
@@ -246,7 +246,7 @@ export default function QuickLinks() {
   );
 
   const sortedLinks = useMemo(() => {
-    let filtered = filterFolder === "all" ? links : filterFolder === "__none__"
+    const filtered = filterFolder === "all" ? links : filterFolder === "__none__"
       ? links.filter(l => !l.folder) : links.filter(l => l.folder === filterFolder);
 
     if (sortMode === "name") return [...filtered].sort((a, b) => a.title.localeCompare(b.title));

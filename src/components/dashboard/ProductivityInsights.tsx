@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import type { Task } from "@/hooks/tasks/useTasks";
 import { useToast } from "@/hooks/ui/useToast";
 import { useProductivityInsightsEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import type { UserStats } from "@/hooks/useUserStats";
-import type { Task } from "@/hooks/tasks/useTasks";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 
 interface ProductivityInsightsProps {
   stats: UserStats | null | undefined;

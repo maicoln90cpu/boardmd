@@ -1,14 +1,14 @@
+import { Plus, Tag, X, Check } from "lucide-react";
 import { useState } from "react";
-import { NotebookTag } from "@/hooks/useNotebooks";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Plus, Tag, X, Check } from "lucide-react";
+import { NotebookTag } from "@/hooks/useNotebooks";
 
 interface NotebookTagPickerProps {
   tags: NotebookTag[];

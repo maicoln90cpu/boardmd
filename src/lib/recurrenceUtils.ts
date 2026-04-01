@@ -117,7 +117,7 @@ export function calculateNextRecurrenceDate(
     const sortedDays = [...weekdays].sort((a, b) => a - b);
     
     // Encontrar o próximo dia na lista
-    let nextDay = sortedDays.find(d => d > currentDay);
+    const nextDay = sortedDays.find(d => d > currentDay);
     let daysToAdd = 0;
     
     if (nextDay !== undefined) {

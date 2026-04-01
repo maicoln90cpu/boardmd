@@ -1,6 +1,6 @@
+import type { User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 type Theme = "light" | "dark" | "auto";
 

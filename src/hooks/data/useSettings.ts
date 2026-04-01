@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
+import { supabase } from "@/integrations/supabase/client";
 import { getDefaultPrompt } from "@/lib/defaultAIPrompts";
+import { defaultNotificationTemplates, NotificationTemplate } from "@/lib/defaultNotificationTemplates";
 import { logger, prodLogger } from "@/lib/logger";
 
 export interface AppSettings {

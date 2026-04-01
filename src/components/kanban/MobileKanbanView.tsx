@@ -1,16 +1,16 @@
-import { useState, memo, useCallback, useMemo } from "react";
-import { Column } from "@/hooks/data/useColumns";
-import { Task } from "@/hooks/tasks/useTasks";
-import { Button } from "@/components/ui/button";
-import { Plus, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { SwipeableTaskCard } from "./SwipeableTaskCard";
+import { Plus, ArrowUpDown } from "lucide-react";
+import { useState, memo, useCallback, useMemo } from "react";
 import { MobileChecklistItem } from "./MobileChecklistItem";
 import { MobileColumnDrawer } from "./MobileColumnDrawer";
-import { getColumnTopBarClass } from "@/lib/columnStyles";
-import { PriorityColors } from "@/types";
+import { SwipeableTaskCard } from "./SwipeableTaskCard";
+import { Button } from "@/components/ui/button";
+import { Column } from "@/hooks/data/useColumns";
 import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
+import { Task } from "@/hooks/tasks/useTasks";
+import { getColumnTopBarClass } from "@/lib/columnStyles";
+import { cn } from "@/lib/utils";
+import { PriorityColors } from "@/types";
 
 interface MobileKanbanViewProps {
   columns: Column[];

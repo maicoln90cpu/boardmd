@@ -1,11 +1,9 @@
+import { Plus, Flame, Check, Trash2, CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { useHabits } from "@/hooks/useHabits";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +11,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Flame, Check, Trash2, CalendarDays } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { useHabits } from "@/hooks/useHabits";
 import { hapticSuccess } from "@/lib/haptic";
+import { cn } from "@/lib/utils";
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
 const ICONS = ["✅", "💪", "📚", "🏃", "💧", "🧘", "✍️", "🎯", "💤", "🥗", "🎵", "💊"];

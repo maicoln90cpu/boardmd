@@ -1,12 +1,12 @@
+import { Plus, Calculator } from "lucide-react";
 import { useState } from "react";
+import { CostThemeCard } from "@/components/costs/CostThemeCard";
+import { CostThemeDetail } from "@/components/costs/CostThemeDetail";
+import { CostThemeModal } from "@/components/costs/CostThemeModal";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Plus, Calculator } from "lucide-react";
-import { useCostCalculator } from "@/hooks/useCostCalculator";
-import { CostThemeCard } from "@/components/costs/CostThemeCard";
-import { CostThemeModal } from "@/components/costs/CostThemeModal";
-import { CostThemeDetail } from "@/components/costs/CostThemeDetail";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useCostCalculator } from "@/hooks/useCostCalculator";
 
 export default function CostCalculator() {
   const {

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { ChevronRight, Folder, FolderOpen } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { ChevronRight, Folder, FolderOpen } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useSidebar } from "@/components/ui/animated-sidebar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;

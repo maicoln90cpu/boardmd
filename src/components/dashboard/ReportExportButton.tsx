@@ -1,5 +1,7 @@
+import { format } from "date-fns";
+import { FileDown, Calendar, CalendarDays, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { logger } from "@/lib/logger";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,10 +9,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileDown, Calendar, CalendarDays, Loader2 } from "lucide-react";
 import { generateProductivityReport, downloadReport } from "@/lib/export/reportGenerator";
-import { toast } from "sonner";
-import { format } from "date-fns";
+import { logger } from "@/lib/logger";
 
 interface Task {
   id: string;

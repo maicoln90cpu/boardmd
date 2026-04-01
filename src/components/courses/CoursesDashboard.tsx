@@ -1,11 +1,11 @@
-import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
-import { Course } from "@/types";
-import { TrendingUp, Clock, Target, BookOpen } from "lucide-react";
 import { startOfWeek, endOfWeek, isWithinInterval, subWeeks, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { TrendingUp, Clock, Target, BookOpen } from "lucide-react";
+import { useMemo } from "react";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid, Legend } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Course } from "@/types";
 
 interface CoursesDashboardProps {
   courses: Course[];

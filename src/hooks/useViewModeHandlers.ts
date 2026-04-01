@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
 import { Column } from "@/hooks/data/useColumns";
 import { useSettings } from "@/hooks/data/useSettings";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface UseViewModeHandlersProps {
   allTasks: Task[];

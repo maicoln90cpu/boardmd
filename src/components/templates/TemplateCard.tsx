@@ -1,8 +1,8 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ProjectTemplate } from "@/hooks/useTemplates";
 import { CheckCircle2, Loader2, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProjectTemplate } from "@/hooks/useTemplates";
 
 interface TemplateCardProps {
   template: ProjectTemplate;

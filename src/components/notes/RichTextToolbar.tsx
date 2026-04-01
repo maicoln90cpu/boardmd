@@ -1,5 +1,4 @@
 import { Editor } from "@tiptap/react";
-import { Button } from "@/components/ui/button";
 import {
   Bold,
   Italic,
@@ -34,8 +33,9 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
+import { TaskSelectorModal } from "./TaskSelectorModal";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,11 +43,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useFormatNote } from "@/hooks/useEdgeFunctions";
-import { toast } from "sonner";
 import { Task } from "@/hooks/tasks/useTasks";
-import { TaskSelectorModal } from "./TaskSelectorModal";
+import { useFormatNote } from "@/hooks/useEdgeFunctions";
 import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
 import { logger } from "@/lib/logger";
 

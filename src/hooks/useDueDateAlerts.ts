@@ -1,14 +1,14 @@
+import { differenceInMinutes, isPast } from "date-fns";
 import { useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/data/useSettings";
 import { Task } from "@/hooks/tasks/useTasks";
 import { useToast } from "@/hooks/ui/useToast";
-import { differenceInMinutes, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { useSettings } from "@/hooks/data/useSettings";
-import { useAuth } from "@/contexts/AuthContext";
-import { logger } from "@/lib/logger";
 import {
   defaultNotificationTemplates,
 } from "@/lib/defaultNotificationTemplates";
+import { logger } from "@/lib/logger";
 import { sendPushWithTemplate, isTemplateEnabled } from "@/lib/notifications/pushHelper";
 
 // Request browser notification permission on first call

@@ -1,8 +1,8 @@
-import { useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 // canvas-confetti loaded dynamically to reduce bundle size
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";

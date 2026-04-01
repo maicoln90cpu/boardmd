@@ -1,9 +1,9 @@
-import { memo } from "react";
-import { Column } from "@/hooks/data/useColumns";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { cn } from "@/lib/utils";
-import { getColumnTopBarClass } from "@/lib/columnStyles";
 import { Check } from "lucide-react";
+import { memo } from "react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Column } from "@/hooks/data/useColumns";
+import { getColumnTopBarClass } from "@/lib/columnStyles";
+import { cn } from "@/lib/utils";
 
 interface MobileColumnDrawerProps {
   open: boolean;

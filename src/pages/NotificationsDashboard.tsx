@@ -1,10 +1,10 @@
-import { lazy, Suspense } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, Settings, History, MessageSquare } from "lucide-react";
+import { lazy, Suspense } from "react";
 import { PushProviderSelector } from "@/components/PushProviderSelector";
 import { Sidebar } from "@/components/Sidebar";
-import { useTheme } from "@/contexts/ThemeContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const NotificationPreferences = lazy(() => import("@/components/notifications/NotificationPreferences").then(m => ({ default: m.NotificationPreferences })));
 const NotificationHistory = lazy(() => import("@/components/notifications/NotificationHistory").then(m => ({ default: m.NotificationHistory })));

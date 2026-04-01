@@ -1,20 +1,20 @@
 "use client";
 
-import * as React from "react";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
 import { add, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isEqual, isSameDay, isSameMonth, isToday, isBefore, parse, parseISO, startOfToday, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, CalendarClock, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
-import { EmptyState } from "@/components/ui/empty-state";
 import { AnimatePresence, motion } from "framer-motion";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
+import { ChevronLeftIcon, ChevronRightIcon, PlusCircleIcon, Calendar, CalendarDays, CalendarClock, ChevronUp, Plus, GripVertical, Clock } from "lucide-react";
+import * as React from "react";
 import { CalendarColorLegend } from "@/components/calendar/CalendarColorLegend";
+import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
+import { cn } from "@/lib/utils";
 interface Task {
   id: string;
   title: string;

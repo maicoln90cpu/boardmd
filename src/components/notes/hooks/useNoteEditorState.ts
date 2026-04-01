@@ -1,11 +1,11 @@
+import { Editor } from "@tiptap/react";
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { Note } from "@/hooks/useNotes";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task } from "@/hooks/tasks/useTasks";
+import { Note } from "@/hooks/useNotes";
 import { useWebShare } from "@/hooks/useWebShare";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Editor } from "@tiptap/react";
 
 interface Course {
   id: string;

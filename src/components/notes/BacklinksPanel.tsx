@@ -1,6 +1,6 @@
+import { Link2 } from "lucide-react";
 import { useMemo } from "react";
 import { Note } from "@/hooks/useNotes";
-import { Link2 } from "lucide-react";
 
 interface BacklinksPanelProps {
   currentNoteId: string;

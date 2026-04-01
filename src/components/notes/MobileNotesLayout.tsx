@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
-import { Note } from "@/hooks/useNotes";
-import { Notebook } from "@/hooks/useNotebooks";
-import { Button } from "@/components/ui/button";
-import { BaseBadge } from "@/components/ui/base-badge";
 import { ArrowLeft, Plus, Check, BookOpen } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { NotebooksList } from "./NotebooksList";
-import { NotesList } from "./NotesList";
 import { NoteEditor } from "./NoteEditor";
+import { NotesList } from "./NotesList";
+import { BaseBadge } from "@/components/ui/base-badge";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Notebook } from "@/hooks/useNotebooks";
+import { Note } from "@/hooks/useNotes";
 
 type MobileView = "notebooks" | "notes" | "editor";
 

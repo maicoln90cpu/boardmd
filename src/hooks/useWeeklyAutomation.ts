@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
 import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
+import { useCallback, useEffect, useRef } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
+import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
 interface Column {

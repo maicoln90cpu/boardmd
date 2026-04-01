@@ -1,31 +1,3 @@
-import { useState, useEffect } from "react";
-import { ColumnColorPicker } from "./ColumnColorPicker";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Eye, EyeOff, RefreshCw, GripVertical, Pencil } from "lucide-react";
-import { Column } from "@/hooks/data/useColumns";
-import { useTasks } from "@/hooks/tasks/useTasks";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import {
   DndContext,
   closestCenter,
@@ -43,6 +15,34 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, Eye, EyeOff, RefreshCw, GripVertical, Pencil } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ColumnColorPicker } from "./ColumnColorPicker";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Column } from "@/hooks/data/useColumns";
+import { useTasks } from "@/hooks/tasks/useTasks";
 
 interface ColumnManagerProps {
   open: boolean;

@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
 import { Loader2, Sparkles } from "lucide-react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { FunctionSelector } from "./FunctionSelector";
+import { IconSelector } from "./IconSelector";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,14 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FunctionSelector } from "./FunctionSelector";
-import { IconSelector } from "./IconSelector";
 import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
-import { toast } from "sonner";
 import { logger } from "@/lib/logger";
 
 interface Tool {

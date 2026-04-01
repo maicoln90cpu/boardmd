@@ -1,9 +1,9 @@
-import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, AlertCircle, FileText, Repeat, GraduationCap, Bell } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
+import React from "react";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { formatDateShortBR, formatTimeOnlyBR } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 
 // Premium category color palette
 const categoryColorPalette = [

@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 // canvas-confetti loaded dynamically to reduce bundle size
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { notifyGoalReached } from "@/lib/whatsappNotifier";

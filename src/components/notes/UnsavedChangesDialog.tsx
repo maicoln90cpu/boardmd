@@ -1,3 +1,4 @@
+import { Save, LogOut } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +10,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Save, LogOut } from "lucide-react";
 
 interface UnsavedChangesDialogProps {
   open: boolean;

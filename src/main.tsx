@@ -2,10 +2,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { registerSW } from 'virtual:pwa-register';
-import { backgroundSync } from '@/lib/sync/backgroundSync';
-
-import { toast } from 'sonner';
 import { logger, prodLogger } from './lib/logger';
+import { backgroundSync } from '@/lib/sync/backgroundSync';
+import { toast } from 'sonner';
 
 // Register service worker with enhanced update handling
 const updateSW = registerSW({

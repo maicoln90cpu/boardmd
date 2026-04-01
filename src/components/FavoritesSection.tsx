@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useTasks, Task } from "@/hooks/tasks/useTasks";
-import { TaskModal } from "@/components/TaskModal";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Star, Folder } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { TaskModal } from "@/components/TaskModal";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { cn } from "@/lib/utils";
 
 interface FavoritesSectionProps {

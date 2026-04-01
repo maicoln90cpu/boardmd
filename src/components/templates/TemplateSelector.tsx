@@ -1,4 +1,7 @@
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { TemplateCard } from "./TemplateCard";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -6,13 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useTemplates } from "@/hooks/useTemplates";
-import { TemplateCard } from "./TemplateCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTemplates } from "@/hooks/useTemplates";
 
 interface TemplateSelectorProps {
   open: boolean;

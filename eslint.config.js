@@ -26,7 +26,7 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
       "no-console": ["warn", { allow: ["warn"] }],
-      "import/order": ["warn", {
+      "import/order": ["error", {
         groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
         "newlines-between": "never",
         alphabetize: { order: "asc", caseInsensitive: true },

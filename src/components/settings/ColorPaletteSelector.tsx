@@ -1,7 +1,7 @@
+import { Check, Palette } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useColorTheme, ColorPalette, paletteNames, paletteColors } from "@/contexts/ColorThemeContext";
 import { cn } from "@/lib/utils";
-import { Check, Palette } from "lucide-react";
 
 export function ColorPaletteSelector() {
   const { colorPalette, setColorPalette } = useColorTheme();

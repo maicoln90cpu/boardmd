@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Save, RotateCcw } from "lucide-react";
-import { useWhatsAppTemplates } from "@/hooks/useWhatsAppTemplates";
 import { WhatsAppTemplateCard } from "./WhatsAppTemplateCard";
+import { Button } from "@/components/ui/button";
+import { useWhatsAppTemplates } from "@/hooks/useWhatsAppTemplates";
 
 export function WhatsAppTemplates() {
   const {

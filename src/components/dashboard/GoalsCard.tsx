@@ -1,10 +1,11 @@
+import { differenceInDays } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
+import { Target, Plus, Trash2, CheckCircle2, Calendar, Trophy, TrendingUp, Zap, Link2 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CircularProgress } from "@/components/ui/circular-progress";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,16 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Target, Plus, Trash2, CheckCircle2, Calendar, Trophy, TrendingUp, Zap, Link2 } from "lucide-react";
 import { useGoals, Goal } from "@/hooks/useGoals";
-import { CircularProgress } from "@/components/ui/circular-progress";
-import { differenceInDays } from "date-fns";
-import { motion, AnimatePresence } from "framer-motion";
 // canvas-confetti loaded dynamically to reduce bundle size
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { Switch } from "@/components/ui/switch";

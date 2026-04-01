@@ -1,15 +1,15 @@
+import { Check, Palette, Pipette, RotateCcw } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
-import { logger } from "@/lib/logger";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useColorTheme, ColorPalette, paletteNames } from "@/contexts/ColorThemeContext";
-import { cn } from "@/lib/utils";
-import { Check, Palette, Pipette, RotateCcw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { useColorTheme, ColorPalette, paletteNames } from "@/contexts/ColorThemeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
 
 // Convert HEX to HSL
 function hexToHsl(hex: string): { h: number; s: number; l: number } {

@@ -1,7 +1,7 @@
 import { Key, Pencil, Trash2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { SecureApiKeyField } from "./SecureApiKeyField";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import type { ApiKey } from "@/hooks/useApiKeys";
 
 interface ApiKeyCardProps {

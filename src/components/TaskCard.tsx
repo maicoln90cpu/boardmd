@@ -1,26 +1,9 @@
-import { Task } from "@/hooks/tasks/useTasks";
-import { Card } from "@/components/ui/card";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-
-import { useToast } from "@/hooks/ui/useToast";
-import React from "react";
-import { motion } from "framer-motion";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-// canvas-confetti loaded dynamically to reduce bundle size
-const loadConfetti = () => import("canvas-confetti").then(m => m.default);
-import { logger } from "@/lib/logger";
-import { RecurrenceRule } from "@/lib/recurrenceUtils";
-
-import { useSettings } from "@/hooks/data/useSettings";
-import { useAuth } from "@/contexts/AuthContext";
-
-import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
-
-// Import subcomponents
 import {
   TaskCardHeader,
   TaskCardBadges,
@@ -33,9 +16,23 @@ import {
   TaskCompletionModal,
   TaskMetricsHistoryModal,
 } from "@/components/task-card";
-import { useSavingTasks } from "@/contexts/SavingTasksContext";
-import { AnimatePresence } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { useSettings } from "@/hooks/data/useSettings";
+import { Task } from "@/hooks/tasks/useTasks";
+import { useToast } from "@/hooks/ui/useToast";
+import { getTaskUrgency } from "@/hooks/useDueDateAlerts";
 import { useTaskCompletionLogs } from "@/hooks/useTaskCompletionLogs";
+import { logger } from "@/lib/logger";
+import { cn } from "@/lib/utils";
+// canvas-confetti loaded dynamically to reduce bundle size
+const loadConfetti = () => import("canvas-confetti").then(m => m.default);
+import { RecurrenceRule } from "@/lib/recurrenceUtils";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
+
+// Import subcomponents
+import { useSavingTasks } from "@/contexts/SavingTasksContext";
 import { PriorityColors } from "@/types";
 
 interface TaskCardProps {
