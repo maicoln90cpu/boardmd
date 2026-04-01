@@ -29,7 +29,7 @@ export function FavoritesSection({
     toggleFavorite
   } = useTasks("all");
   const [isOpen, setIsOpen] = useState(true);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   // Filtrar apenas favoritos
