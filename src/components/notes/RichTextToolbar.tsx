@@ -44,7 +44,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
+import { useFormatNote } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
 import { Task } from "@/hooks/tasks/useTasks";
 import { TaskSelectorModal } from "./TaskSelectorModal";
@@ -87,6 +87,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
+  const { formatNote } = useFormatNote();
   const [imageUrl, setImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
@@ -149,14 +150,13 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
     setIsFormattingWithAI(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("format-note", {
-        body: { content, action },
-      });
+      const { data, error } = await formatNote(content, action);
 
       if (error) {
-        if (error.message?.includes("429")) {
+        const msg = (error as Error).message || "";
+        if (msg.includes("429")) {
           toast.error("Muitas requisições. Aguarde um momento.");
-        } else if (error.message?.includes("402")) {
+        } else if (msg.includes("402")) {
           toast.error("Créditos insuficientes. Adicione em Settings → Workspace → Usage.");
         } else {
           toast.error("Erro ao formatar nota");

@@ -1,7 +1,7 @@
 import { Task } from "@/hooks/tasks/useTasks";
 import { Card } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { supabase } from "@/integrations/supabase/client";
+
 import { useToast } from "@/hooks/ui/useToast";
 import React from "react";
 import { motion } from "framer-motion";
@@ -13,11 +13,11 @@ import { useNavigate } from "react-router-dom";
 // canvas-confetti loaded dynamically to reduce bundle size
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
-import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
-import { formatDateTimeBR } from "@/lib/dateUtils";
+import { RecurrenceRule } from "@/lib/recurrenceUtils";
+
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
+
 import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
 
 // Import subcomponents
@@ -203,7 +203,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  
   const cardRef = React.useRef<HTMLDivElement>(null);
   const { isTaskSaving } = useSavingTasks();
   const isSaving = isTaskSaving(task.id);
@@ -245,7 +245,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const [completionModalOpen, setCompletionModalOpen] = React.useState(false);
   const [metricsHistoryOpen, setMetricsHistoryOpen] = React.useState(false);
   const { addLog } = useTaskCompletionLogs();
-  const { toggleComplete, invalidateTasks } = useTaskMutations();
+  const { toggleComplete, invalidateTasks, immediateRecurrenceResetWithToast } = useTaskMutations();
 
   // Sync local state when task changes
   React.useEffect(() => {
@@ -284,57 +284,20 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     
     // Se está marcando como concluída E é recorrente E reset imediato está habilitado
     if (checked && isRecurrent && settings.kanban.immediateRecurrentReset) {
-      setIsLocalCompleted(false); // Tarefa vai "reaparecer" desmarcada
+      setIsLocalCompleted(false);
       triggerConfetti();
       
-      try {
-        // Calcular próxima data
-        const nextDueDate = calculateNextRecurrenceDate(
-          task.due_date, 
-          task.recurrence_rule as RecurrenceRule
-        );
-        
-        // Atualizar tarefa com nova data e is_completed = false
-        const { error } = await supabase
-          .from("tasks")
-          .update({ 
-            is_completed: false,
-            due_date: nextDueDate 
-          })
-          .eq("id", task.id);
-          
-        if (error) throw error;
-        
-      if (onAddPoints) {
-          onAddPoints();
-        }
-
-        // Push notification handled by useTasks.updateTask (centralized)
-        
-        toast({
-          title: "✓ Tarefa concluída e resetada",
-          description: `Próxima: ${formatDateTimeBR(new Date(nextDueDate))}`,
-        });
-        
-        // Sync mirrored tasks
-        if (task.mirror_task_id) {
-          await supabase
-            .from("tasks")
-            .update({ is_completed: false, due_date: nextDueDate })
-            .eq("id", task.mirror_task_id);
-        }
-        
-        invalidateTasks();
-        return;
-      } catch (error) {
-        logger.error("Erro ao resetar tarefa recorrente:", error);
-        toast({
-          title: "Erro ao resetar tarefa",
-          description: "Não foi possível calcular a próxima data.",
-          variant: "destructive",
-        });
-        return;
+      const result = await immediateRecurrenceResetWithToast(
+        task.id,
+        task.due_date,
+        task.recurrence_rule as RecurrenceRule,
+        task.mirror_task_id,
+      );
+      
+      if (result && onAddPoints) {
+        onAddPoints();
       }
+      return;
     }
     
     // Comportamento padrão
