@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
+import { useIndexData } from "@/hooks/index/useIndexData";
 import { useIndexFilters } from "@/hooks/index/useIndexFilters";
 import { useIndexViewState } from "@/hooks/index/useIndexViewState";
-import { useIndexData } from "@/hooks/index/useIndexData";
+import { Task } from "@/hooks/tasks/useTasks";
 
 export function useIndexState() {
   // Modular hooks

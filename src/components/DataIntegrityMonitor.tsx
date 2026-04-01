@@ -1,14 +1,14 @@
+import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Shield, Database, AlertTriangle, Clock, Repeat } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Shield, Database, AlertTriangle, Clock, Repeat } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useSettings } from "@/hooks/data/useSettings";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
 interface IntegrityIssue {

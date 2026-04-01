@@ -1,12 +1,7 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowUpDown, Maximize2, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Task } from "@/hooks/tasks/useTasks";
-import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
-import { useDailyAssistantEdgeFunctions } from "@/hooks/useEdgeFunctions";
-import { logger } from "@/lib/logger";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Task } from "@/hooks/tasks/useTasks";
+import { useDailyAssistantEdgeFunctions } from "@/hooks/useEdgeFunctions";
+import { useRateLimiter, RATE_LIMIT_CONFIGS } from "@/hooks/useRateLimiter";
+import { logger } from "@/lib/logger";
 
 interface AIOrganizationResult {
   reorderedTasks: Array<{ id: string; newPosition: number; reason: string }>;

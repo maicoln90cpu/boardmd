@@ -1,6 +1,6 @@
+import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Component, ErrorInfo, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, RefreshCw } from "lucide-react";
 import { logger } from "@/lib/logger";
 
 interface Props {

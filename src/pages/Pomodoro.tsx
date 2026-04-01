@@ -1,5 +1,3 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
   Timer, 
   Play, 
@@ -19,26 +17,28 @@ import {
   Flame,
   Clock
 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Sidebar } from "@/components/Sidebar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Sidebar } from "@/components/Sidebar";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { usePomodoro } from "@/hooks/usePomodoro";
 import { usePomodoroTemplates, PomodoroTemplate } from "@/hooks/usePomodoroTemplates";
-import { useTasks } from "@/hooks/tasks/useTasks";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
 import { formatDateTimeBR } from "@/lib/dateUtils";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Pomodoro() {
   const navigate = useNavigate();

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/ui/useToast";
 import { cn } from "@/lib/utils";
 

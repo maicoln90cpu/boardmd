@@ -1,7 +1,3 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Star,
   ChevronLeft,
@@ -10,9 +6,13 @@ import {
   Trash2,
   Play,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { formatDateShortBR } from "@/lib/dateUtils";
+import React from "react";
 import { getCategoryBadgeStyle, getPriorityBadgeStyle } from "./TaskCardBadges";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { formatDateShortBR } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 
 interface TaskCardUltraCompactProps {
   task: {

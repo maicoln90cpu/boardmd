@@ -1,24 +1,24 @@
 import { useEffect } from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { TaskModal } from "@/components/TaskModal";
+import { ActivityHistory } from "@/components/ActivityHistory";
 import { DailyReviewModal } from "@/components/DailyReviewModal";
 import { ImportPreviewModal } from "@/components/ImportPreviewModal";
-import { ActivityHistory } from "@/components/ActivityHistory";
 import { ProjectsKanbanView } from "@/components/kanban/ProjectsKanbanView";
-import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useToast } from "@/hooks/ui/useToast";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { Sidebar } from "@/components/Sidebar";
+import { TaskModal } from "@/components/TaskModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useIsMobile } from "@/hooks/ui/useMobile";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { useWeeklyAutomation } from "@/hooks/useWeeklyAutomation";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useTaskReset } from "@/hooks/tasks/useTaskReset";
-import { useDataImportExport } from "@/hooks/useDataImportExport";
+import { useIsMobile } from "@/hooks/ui/useMobile";
+import { useToast } from "@/hooks/ui/useToast";
 import { useDailyReview } from "@/hooks/useDailyReview";
+import { useDataImportExport } from "@/hooks/useDataImportExport";
+import { useDueDateAlerts } from "@/hooks/useDueDateAlerts";
 import { useIndexState } from "@/hooks/useIndexState";
-import { useViewModeHandlers } from "@/hooks/useViewModeHandlers";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSettingsUpdaters } from "@/hooks/useSettingsUpdaters";
+import { useViewModeHandlers } from "@/hooks/useViewModeHandlers";
+import { useWeeklyAutomation } from "@/hooks/useWeeklyAutomation";
 
 function Index() {
   const isMobile = useIsMobile();

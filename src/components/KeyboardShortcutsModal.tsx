@@ -1,3 +1,4 @@
+import { Keyboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Dialog,
@@ -5,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Keyboard } from "lucide-react";
 
 interface ShortcutItem {
   keys: string[];

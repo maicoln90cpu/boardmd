@@ -1,11 +1,11 @@
-import { useNavigate, useLocation } from "react-router-dom";
 import { Layers, FileText, BarChart3, Calendar, MoreHorizontal } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { hapticSelection } from "@/lib/haptic";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { SECONDARY_MENU_ITEMS, isMenuItemActive } from "@/hooks/ui/useMenuItems";
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { SECONDARY_MENU_ITEMS, isMenuItemActive } from "@/hooks/ui/useMenuItems";
+import { hapticSelection } from "@/lib/haptic";
+import { cn } from "@/lib/utils";
 
 const TABS = [
   { icon: Layers, label: "Projetos", path: "/" },

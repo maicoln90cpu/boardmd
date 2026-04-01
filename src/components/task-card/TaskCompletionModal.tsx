@@ -1,4 +1,6 @@
+import { CheckCircle2 } from "lucide-react";
 import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,12 +8,10 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { METRIC_TYPES } from "@/hooks/useTaskCompletionLogs";
-import { CheckCircle2 } from "lucide-react";
 
 interface TaskCompletionModalProps {
   open: boolean;

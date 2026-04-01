@@ -1,5 +1,3 @@
-import React, { useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { 
   Calendar, 
   Layers, 
@@ -17,6 +15,8 @@ import {
   Grid2x2,
   LucideIcon 
 } from "lucide-react";
+import React, { useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // ============================================================================
 // MENU ITEMS - Fonte única de verdade para navegação

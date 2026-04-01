@@ -1,11 +1,7 @@
-import { useTrash, TrashItem } from "@/hooks/useTrash";
-import { TrashNoteData, TrashNotebookData } from "@/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Trash2, RotateCcw, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { Trash2, RotateCcw, X } from "lucide-react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +12,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { useTrash, TrashItem } from "@/hooks/useTrash";
+import { TrashNoteData, TrashNotebookData } from "@/types";
 
 interface TrashDialogProps {
   open: boolean;

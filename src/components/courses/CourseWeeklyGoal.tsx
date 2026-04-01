@@ -1,9 +1,9 @@
+import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { Target, TrendingUp, Flame } from "lucide-react";
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Target, TrendingUp, Flame } from "lucide-react";
 import type { Course } from "@/types";
-import { startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
 
 interface CourseWeeklyGoalProps {
   courses: Course[];

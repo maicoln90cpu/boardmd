@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { DollarSign, TrendingUp, Wrench } from "lucide-react";
+import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tool } from "@/hooks/useTools";
 

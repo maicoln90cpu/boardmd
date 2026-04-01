@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { DndContext } from "@dnd-kit/core";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { VirtualizedNotebooksList } from "@/components/notes/VirtualizedNotebooksList";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DndContext } from "@dnd-kit/core";
 import { ReactNode } from "react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { VirtualizedNotebooksList } from "@/components/notes/VirtualizedNotebooksList";
 
 // Mock useNotebooks hook
 vi.mock("@/hooks/useNotebooks", () => ({

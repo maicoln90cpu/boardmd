@@ -1,24 +1,26 @@
-import { lazy, Suspense, useEffect } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { ColorThemeProvider } from "@/contexts/ColorThemeContext";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { UndoProvider } from "@/hooks/useUndoStack";
-import { BulkSelectionProvider } from "@/hooks/useBulkSelection";
-import { SwipeProvider } from "@/contexts/SwipeContext";
-import { SavingTasksProvider } from "@/contexts/SavingTasksContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+import Index from "./pages/Index";
+import Landing from "./pages/Landing";
+import NotFound from "./pages/NotFound";
+import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
 import { Auth } from "@/components/Auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ColorThemeProvider } from "@/contexts/ColorThemeContext";
+import { SwipeProvider } from "@/contexts/SwipeContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { BulkSelectionProvider } from "@/hooks/useBulkSelection";
+import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
+import { UndoProvider } from "@/hooks/useUndoStack";
+import { SavingTasksProvider } from "@/contexts/SavingTasksContext";
 import { OnlineStatusIndicator } from "@/components/OnlineStatusIndicator";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
-import { AddToHomeScreenBanner } from "@/components/AddToHomeScreenBanner";
-
-import { useForegroundPushHandler } from "@/hooks/useForegroundPushHandler";
 import { useGoalTaskIntegration } from "@/hooks/useGoalTaskIntegration";
 import { useNotificationActions } from "@/hooks/useNotificationActions";
 import { syncManager } from "@/lib/sync";
@@ -33,9 +35,6 @@ import {
 } from "@/components/ui/loading-skeleton";
 
 // Eager-loaded pages (critical path)
-import Index from "./pages/Index";
-import Landing from "./pages/Landing";
-import NotFound from "./pages/NotFound";
 
 // Lazy-loaded pages (code splitting)
 const Dashboard = lazy(() => import("./pages/Dashboard"));

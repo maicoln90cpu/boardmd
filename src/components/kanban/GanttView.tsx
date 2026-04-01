@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
-import { Column } from "@/hooks/data/useColumns";
 import { format, differenceInDays, addDays, startOfDay, min, max, isAfter, isBefore, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface GanttViewProps {
   tasks: Task[];

@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Loader2, Wifi, WifiOff, QrCode, RefreshCw, Unplug, Save } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWhatsAppInstanceEdgeFunctions } from "@/hooks/useEdgeFunctions";
-import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type ConnectionPhase = "idle" | "saving" | "connecting" | "checking" | "disconnecting";
 

@@ -1,3 +1,4 @@
+import { ArrowUpDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -5,7 +6,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowUpDown } from "lucide-react";
 
 export type CourseSortOption = 
   | "name_asc" 

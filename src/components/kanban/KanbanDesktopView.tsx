@@ -1,12 +1,12 @@
-import { memo, useMemo } from "react";
-import { Column } from "@/hooks/data/useColumns";
-import { Task } from "@/hooks/tasks/useTasks";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { memo, useMemo } from "react";
 import { DroppableColumn } from "./DroppableColumn";
 import { KanbanColumnHeader } from "./KanbanColumnHeader";
 import { VirtualizedTaskList } from "./VirtualizedTaskList";
-import { getColumnBackgroundClass } from "@/lib/columnStyles";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
+import { getColumnBackgroundClass } from "@/lib/columnStyles";
 import { cn } from "@/lib/utils";
 
 interface KanbanDesktopViewProps {

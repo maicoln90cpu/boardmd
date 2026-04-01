@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
 import { Editor } from "@tiptap/react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Note } from "@/hooks/useNotes";
 
 interface BacklinkSuggestionProps {

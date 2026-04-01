@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { 
   Trash2, 
   CheckCircle2, 
@@ -7,14 +6,7 @@ import {
   X,
   CheckSquare
 } from "lucide-react";
-import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { Column } from "@/hooks/data/useColumns";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +17,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Column } from "@/hooks/data/useColumns";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
 
 interface BulkActionsBarProps {
   columns: Column[];

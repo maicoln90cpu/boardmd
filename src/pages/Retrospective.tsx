@@ -1,15 +1,15 @@
+import { ChevronLeft, ChevronRight, Save, CheckCircle2, Clock, TrendingUp } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { useWeeklyReviews } from "@/hooks/useWeeklyReviews";
-import { useTasks, Task } from "@/hooks/tasks/useTasks";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Save, CheckCircle2, Clock, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useTasks, Task } from "@/hooks/tasks/useTasks";
+import { useWeeklyReviews } from "@/hooks/useWeeklyReviews";
+import { cn } from "@/lib/utils";
 
 const MOODS = [
   { value: 1, emoji: "😞", label: "Ruim" },

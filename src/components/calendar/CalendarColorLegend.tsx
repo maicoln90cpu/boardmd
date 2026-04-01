@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { ChevronDown, ChevronUp, Palette } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 interface Column {
   id: string;

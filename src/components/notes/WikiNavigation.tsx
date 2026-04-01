@@ -1,13 +1,13 @@
-import { useState, useMemo } from "react";
-import { Note } from "@/hooks/useNotes";
-import { Notebook } from "@/hooks/useNotebooks";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronRight, ChevronDown, FileText, Book, Search, 
   Hash, ArrowRight, ExternalLink
 } from "lucide-react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { motion, AnimatePresence } from "framer-motion";
+import { Notebook } from "@/hooks/useNotebooks";
+import { Note } from "@/hooks/useNotes";
 import { cn } from "@/lib/utils";
 
 interface WikiNavigationProps {

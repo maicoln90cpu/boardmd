@@ -1,17 +1,17 @@
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isBefore, parseISO, addDays } from "date-fns";
+import { AlertTriangle, Clock, Zap, Archive, Calendar, GripVertical } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/ui/useToast";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from "@dnd-kit/core";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { isBefore, parseISO, addDays } from "date-fns";
-import { formatDateShortBR } from "@/lib/dateUtils";
-import { AlertTriangle, Clock, Zap, Archive, Calendar, GripVertical } from "lucide-react";
 import { KanbanLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDateShortBR } from "@/lib/dateUtils";
+import { cn } from "@/lib/utils";
 
 interface EisenhowerTask {
   id: string;

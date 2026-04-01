@@ -1,12 +1,12 @@
+import { User, Lock, Phone, Save, Loader2, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, Lock, Phone, Save, Loader2, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
 
 // Brazilian phone format: (XX) XXXXX-XXXX or (XX) XXXX-XXXX
 const PHONE_REGEX = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/;

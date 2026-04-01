@@ -2,22 +2,22 @@
  * Hook para gerenciar notificações push via OneSignal + WhatsApp
  */
 
+import { differenceInMinutes, isPast } from "date-fns";
 import { useState, useEffect } from "react";
-import { pushNotifications } from "@/lib/push/pushNotifications";
-import { useToast } from "@/hooks/ui/useToast";
 import { useSettings } from "@/hooks/data/useSettings";
 import { Task } from "@/hooks/tasks/useTasks";
-import { differenceInMinutes, isPast } from "date-fns";
+import { useToast } from "@/hooks/ui/useToast";
+import { useOneSignal } from "@/hooks/useOneSignal";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   defaultNotificationTemplates, 
   formatNotificationTemplate,
   getTemplateById 
 } from "@/lib/defaultNotificationTemplates";
-import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
-import { useOneSignal } from "@/hooks/useOneSignal";
-import { sendWhatsAppNotification } from "@/lib/whatsappNotifier";
 import { logger } from "@/lib/logger";
+import { oneSignalNotifier } from "@/lib/notifications/oneSignalNotifier";
+import { pushNotifications } from "@/lib/push/pushNotifications";
+import { sendWhatsAppNotification } from "@/lib/whatsappNotifier";
 
 export function usePushNotifications(tasks: Task[]) {
   const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = useOneSignal();

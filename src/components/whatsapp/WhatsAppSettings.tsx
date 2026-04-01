@@ -1,8 +1,8 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wifi, MessageSquare, History } from "lucide-react";
 import { WhatsAppConnection } from "./WhatsAppConnection";
-import { WhatsAppTemplates } from "./WhatsAppTemplates";
 import { WhatsAppLogs } from "./WhatsAppLogs";
+import { WhatsAppTemplates } from "./WhatsAppTemplates";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function WhatsAppSettings() {
   return (

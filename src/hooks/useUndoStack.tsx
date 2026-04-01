@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 
 /**
@@ -86,7 +86,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
               .delete()
               .eq("item_id", action.payload.taskId);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const { error } = await supabase
               .from("tasks")
               .insert(action.payload.fullData as any);
@@ -122,7 +122,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
 
         case "UPDATE_TASK":
           if (action.payload.taskId && action.payload.previousData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const { error } = await supabase
               .from("tasks")
               .update(action.payload.previousData as any)
@@ -139,7 +139,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
               .delete()
               .eq("item_id", action.payload.noteId);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const { error } = await supabase
               .from("notes")
               .insert(action.payload.fullData as any);
@@ -155,7 +155,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
               .delete()
               .eq("item_id", action.payload.notebookId);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             
             const { error } = await supabase
               .from("notebooks")
               .insert(action.payload.fullData as any);

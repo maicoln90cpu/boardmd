@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, MessageSquare, RotateCcw, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useWhatsAppEdgeFunctions } from "@/hooks/useEdgeFunctions";
-import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { RefreshCw, MessageSquare, RotateCcw, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWhatsAppEdgeFunctions } from "@/hooks/useEdgeFunctions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WhatsAppLog {
   id: string;

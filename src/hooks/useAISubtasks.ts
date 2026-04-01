@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 import type { SubtaskData } from "@/types";
 

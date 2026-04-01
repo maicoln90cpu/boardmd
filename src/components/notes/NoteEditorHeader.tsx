@@ -1,17 +1,17 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, Pin, Link2, CheckCircle2, Share2, BookOpen, ChevronsUpDown, GraduationCap, Globe, Loader2 } from "lucide-react";
-import { Note } from "@/hooks/useNotes";
-import { Notebook } from "@/hooks/useNotebooks";
-import { Task } from "@/hooks/tasks/useTasks";
+import { useNavigate } from "react-router-dom";
 import { ColorPicker } from "./ColorPicker";
 import { NoteTemplateSelector } from "./NoteTemplateSelector";
-import { NoteTemplate } from "@/lib/noteTemplates";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Task } from "@/hooks/tasks/useTasks";
+import { Notebook } from "@/hooks/useNotebooks";
+import { Note } from "@/hooks/useNotes";
 import { useSharedNotes } from "@/hooks/useSharedNotes";
+import { NoteTemplate } from "@/lib/noteTemplates";
 
 interface Course {
   id: string;

@@ -1,14 +1,13 @@
-import { memo, useState, useMemo } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
-import { Column } from "@/hooks/data/useColumns";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  ArrowUpDown,
+  Star,
+  Pencil,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Minus,
+} from "lucide-react";
+import { memo, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,16 +20,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowUpDown,
-  Star,
-  Pencil,
-  Trash2,
-  ChevronUp,
-  ChevronDown,
-  Minus,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Column } from "@/hooks/data/useColumns";
+import { Task } from "@/hooks/tasks/useTasks";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
+import { cn } from "@/lib/utils";
 
 interface TaskTableViewProps {
   tasks: Task[];

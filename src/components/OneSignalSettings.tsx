@@ -1,9 +1,9 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Bell, BellOff, CheckCircle, XCircle, Loader2, Send, RefreshCw } from "lucide-react";
-import { useOneSignal } from "@/hooks/useOneSignal";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useOneSignal } from "@/hooks/useOneSignal";
 
 export function OneSignalSettings() {
   const {

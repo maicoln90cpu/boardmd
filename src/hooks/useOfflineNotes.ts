@@ -1,9 +1,9 @@
 import { useEffect, useCallback, useRef } from "react";
-import { indexedDBSync } from "@/lib/sync/indexedDB";
-import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { Note } from "@/hooks/useNotes";
-import { logger } from "@/lib/logger";
 import { toast } from "sonner";
+import { Note } from "@/hooks/useNotes";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { logger } from "@/lib/logger";
+import { indexedDBSync } from "@/lib/sync/indexedDB";
 
 /**
  * Hook para sincronizar notas com IndexedDB para suporte offline.

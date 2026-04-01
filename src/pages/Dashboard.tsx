@@ -1,11 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
+import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { useUserStats } from "@/hooks/useUserStats";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useCategories } from "@/hooks/data/useCategories";
-import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
-import { ProductivityHeatmap } from "@/components/dashboard/ProductivityHeatmap";
+import { useNavigate } from "react-router-dom";
 import { CategoryCharts } from "@/components/dashboard/CategoryCharts";
+import { ProductivityHeatmap } from "@/components/dashboard/ProductivityHeatmap";
 import { WeeklyProgress } from "@/components/dashboard/WeeklyProgress";
 import { GamificationPanel } from "@/components/dashboard/GamificationPanel";
 import { DashboardStats } from "@/components/DashboardStats";
@@ -18,14 +16,16 @@ import { ContinueStudyingCard } from "@/components/dashboard/ContinueStudyingCar
 import { DailyDigestCard } from "@/components/dashboard/DailyDigestCard";
 import { DashboardWidgetContainer, DashboardWidget } from "@/components/dashboard/DashboardWidgetContainer";
 import { GoalsCard } from "@/components/dashboard/GoalsCard";
+import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
+import { Sidebar } from "@/components/Sidebar";
 import { useDashboardWidgets } from "@/hooks/useDashboardWidgets";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, TrendingUp, Target, Zap, Home } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
 import { StatsLoadingSkeleton } from "@/components/ui/loading-skeleton";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useCategories } from "@/hooks/data/useCategories";
+import { useUserStats } from "@/hooks/useUserStats";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();

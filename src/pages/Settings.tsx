@@ -1,16 +1,16 @@
-import { Sidebar } from "@/components/Sidebar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useSettings } from "@/hooks/data/useSettings";
-import { useTheme } from "@/contexts/ThemeContext";
-import { CustomColorPicker } from "@/components/settings/CustomColorPicker";
-import { useNavigate } from "react-router-dom";
 import { Home, Settings as SettingsIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CustomColorPicker } from "@/components/settings/CustomColorPicker";
+import { Sidebar } from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useToast } from "@/hooks/ui/useToast";
 
 export default function Settings() {

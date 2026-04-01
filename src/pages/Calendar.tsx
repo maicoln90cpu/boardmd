@@ -1,20 +1,20 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { isSameDay, parseISO, startOfDay, isToday, isTomorrow, isBefore, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { format } from "date-fns";
-import { Sidebar } from "@/components/Sidebar";
-import { useColumns } from "@/hooks/data/useColumns";
-import { useCategories } from "@/hooks/data/useCategories";
-import { useSettings } from "@/hooks/data/useSettings";
-import { supabase } from "@/integrations/supabase/client";
-import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { TaskModal } from "@/components/TaskModal";
+import { ptBR } from "date-fns/locale";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { FilterPresetsManager } from "@/components/kanban/FilterPresetsManager";
+import { Sidebar } from "@/components/Sidebar";
+import { TaskModal } from "@/components/TaskModal";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FullScreenCalendar } from "@/components/ui/fullscreen-calendar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCategories } from "@/hooks/data/useCategories";
+import { useColumns } from "@/hooks/data/useColumns";
+import { useSettings } from "@/hooks/data/useSettings";
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;

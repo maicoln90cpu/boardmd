@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as React from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { toast as sonnerToast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/ui/useToast";
-import { offlineSync } from "@/lib/sync/offlineSync";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { toast as sonnerToast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
+import { offlineSync } from "@/lib/sync/offlineSync";
 
 export interface Note {
   id: string;

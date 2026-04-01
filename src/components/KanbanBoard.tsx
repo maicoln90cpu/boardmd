@@ -1,24 +1,24 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
-import { Column, useColumns } from "@/hooks/data/useColumns";
-import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter, isToday, isTomorrow, startOfDay } from "date-fns";
-import { Task, useTasks } from "@/hooks/tasks/useTasks";
-import { TaskCard } from "./TaskCard";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
-import { MobileKanbanView } from "./kanban/MobileKanbanView";
-import { KanbanDesktopView } from "./kanban/KanbanDesktopView";
-import { DeleteTaskDialog } from "./kanban/DeleteTaskDialog";
+import { startOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, isBefore, isAfter, isToday, isTomorrow, startOfDay } from "date-fns";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from "react";
 import { BulkActionsBar } from "./kanban/BulkActionsBar";
-import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { DeleteTaskDialog } from "./kanban/DeleteTaskDialog";
+import { KanbanDesktopView } from "./kanban/KanbanDesktopView";
+import { MobileKanbanView } from "./kanban/MobileKanbanView";
+import { TaskCard } from "./TaskCard";
+import { Column, useColumns } from "@/hooks/data/useColumns";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useTags } from "@/hooks/data/useTags";
-import { useUserStats } from "@/hooks/useUserStats";
+import { Task, useTasks } from "@/hooks/tasks/useTasks";
+import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { useKanbanDragDrop } from "@/hooks/useKanbanDragDrop";
 import { useKanbanTaskActions } from "@/hooks/useKanbanTaskActions";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useUserStats } from "@/hooks/useUserStats";
 import { supabase } from "@/integrations/supabase/client";
-import { TaskWithCategory } from "@/types";
 import { sortTasksByOption, SortOptionType } from "@/lib/taskFilters";
+import { TaskWithCategory } from "@/types";
 
 // Lazy load TaskModal - componente pesado com muitas dependências
 const TaskModal = lazy(() => import("./TaskModal").then(m => ({ default: m.TaskModal })));

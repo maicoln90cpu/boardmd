@@ -1,5 +1,3 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { UserStats } from "@/hooks/useUserStats";
 import { 
   CheckCircle2, 
   Clock, 
@@ -8,6 +6,8 @@ import {
   Flame,
   Star
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { UserStats } from "@/hooks/useUserStats";
 import { cn } from "@/lib/utils";
 
 interface DashboardStats {

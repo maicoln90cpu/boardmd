@@ -1,8 +1,8 @@
+import { Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { COST_CATEGORIES, PAYMENT_METHODS, type CostCurrency } from "@/hooks/useCostCalculator";
 
 export interface CostFilters {

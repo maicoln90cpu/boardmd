@@ -1,14 +1,14 @@
 import { NodeViewWrapper, NodeViewProps } from '@tiptap/react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, GripVertical, ExternalLink, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Calendar, GripVertical, ExternalLink, Loader2 } from 'lucide-react';
 import { useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 
 export function TaskBlockComponent({ node, updateAttributes, selected }: NodeViewProps) {
   const { taskId, title, isCompleted, priority, dueDate } = node.attrs;

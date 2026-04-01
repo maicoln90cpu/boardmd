@@ -1,10 +1,10 @@
-import { memo, useCallback, useRef } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Star, Calendar } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Star, Calendar } from "lucide-react";
+import { memo, useCallback, useRef } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Task } from "@/hooks/tasks/useTasks";
+import { cn } from "@/lib/utils";
 import { PriorityColors } from "@/types";
 
 interface MobileChecklistItemProps {

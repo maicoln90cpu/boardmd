@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, Play, CheckCircle2, DollarSign, TrendingUp, Pause } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import type { CourseStats as CourseStatsType } from "@/types";
 
 interface CourseStatsProps {

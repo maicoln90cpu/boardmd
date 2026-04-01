@@ -2,10 +2,10 @@ import { useCallback } from "react";
 import { useCategories } from "@/hooks/data/useCategories";
 import { useColumns } from "@/hooks/data/useColumns";
 import { useTasks, Task } from "@/hooks/tasks/useTasks";
-import { useNotes } from "@/hooks/useNotes";
-import { useNotebooks } from "@/hooks/useNotebooks";
 import { useToast } from "@/hooks/ui/useToast";
 import { useActivityLog } from "@/hooks/useActivityLog";
+import { useNotebooks } from "@/hooks/useNotebooks";
+import { useNotes } from "@/hooks/useNotes";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/lib/logger";
 

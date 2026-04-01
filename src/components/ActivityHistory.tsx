@@ -1,10 +1,10 @@
-import { useTaskHistory } from "@/hooks/tasks/useTaskHistory";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Clock, Edit, Trash2, Plus, MoveRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ListLoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Edit, Trash2, Plus, MoveRight } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useTaskHistory } from "@/hooks/tasks/useTaskHistory";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ActivityHistoryProps {

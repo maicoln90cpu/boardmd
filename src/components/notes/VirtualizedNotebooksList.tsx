@@ -1,16 +1,16 @@
-import { useState, useRef, useCallback } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Notebook, NotebookTag, useNotebooks } from "@/hooks/useNotebooks";
-import { Note } from "@/hooks/useNotes";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText, ArrowUpDown, FolderOpen } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { NotebookTagPicker, NotebookTagFilter } from "./NotebookTagPicker";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ChevronRight, ChevronDown, Plus, Pencil, Trash2, BookOpen, FileText, ArrowUpDown, FolderOpen } from "lucide-react";
-import { useDroppable } from "@dnd-kit/core";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { NotebookTagPicker, NotebookTagFilter } from "./NotebookTagPicker";
-import { motion, AnimatePresence } from "framer-motion";
+import { Notebook, NotebookTag, useNotebooks } from "@/hooks/useNotebooks";
+import { Note } from "@/hooks/useNotes";
 import { cn } from "@/lib/utils";
 
 interface VirtualizedNotebooksListProps {

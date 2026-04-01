@@ -1,13 +1,13 @@
+import { Bell, Clock, Trophy, Columns } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, Clock, Trophy, Columns } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSettings, AppSettings } from "@/hooks/data/useSettings";
+import { Switch } from "@/components/ui/switch";
 import { useColumns } from "@/hooks/data/useColumns";
+import { useSettings, AppSettings } from "@/hooks/data/useSettings";
 import { useToast } from "@/hooks/ui/useToast";
 
 export function NotificationPreferences() {

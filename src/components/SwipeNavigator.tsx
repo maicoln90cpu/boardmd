@@ -1,8 +1,8 @@
-import { useNavigate, useLocation } from "react-router-dom";
 import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/ui/useMobile";
 import { hapticLight } from "@/lib/haptic";
-import { useCallback, useRef } from "react";
 
 const SWIPE_PAGES = ["/", "/notes", "/dashboard", "/calendar"];
 const SWIPE_THRESHOLD = 80;

@@ -1,6 +1,6 @@
+import { parseISO } from "date-fns";
 import { useMemo } from "react";
 import { Task } from "./useTasks";
-import { parseISO } from "date-fns";
 
 export type SortOption = "date" | "time" | "name" | "priority" | "position";
 export type SortOrder = "asc" | "desc";

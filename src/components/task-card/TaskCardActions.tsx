@@ -1,5 +1,3 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
 import {
   Star,
   ChevronLeft,
@@ -8,6 +6,8 @@ import {
   Trash2,
   BarChart3,
 } from "lucide-react";
+import React from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface TaskCardActionsProps {

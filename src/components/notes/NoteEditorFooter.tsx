@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Check, X, Loader2, Cloud, FileText, FileDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Check, X, Loader2, Cloud, FileText, FileDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface NoteEditorFooterProps {

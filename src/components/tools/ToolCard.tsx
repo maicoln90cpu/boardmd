@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { ChevronDown, ChevronUp, ExternalLink, Heart, Pencil, Trash2, Wrench, LucideIcon, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ToolAlternativesModal } from "./ToolAlternativesModal";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { ToolAlternativesModal } from "./ToolAlternativesModal";
 
 // Map of common icon names to components
 const iconMap: Record<string, LucideIcon> = {

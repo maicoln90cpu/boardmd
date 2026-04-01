@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { Search, X, SlidersHorizontal } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { FilterPresetsManager } from "./FilterPresetsManager";
+import { MultiSelectFilter } from "./MultiSelectFilter";
+import { RecurrenceFilter } from "./RecurrenceFilter";
+import { CategoryFilter } from "@/components/CategoryFilter";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/ui/useMobile";
-import { CategoryFilter } from "@/components/CategoryFilter";
-import { FilterPresetsManager } from "./FilterPresetsManager";
 import { FilterPreset } from "@/hooks/useFilterPresets";
-import { RecurrenceFilter } from "./RecurrenceFilter";
-import { MultiSelectFilter } from "./MultiSelectFilter";
 
 interface KanbanFiltersBarProps {
   // Filtros básicos - agora aceitam arrays

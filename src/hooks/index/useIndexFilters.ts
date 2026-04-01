@@ -1,8 +1,8 @@
 import { useCallback } from "react";
+import { Category } from "@/hooks/data/useCategories";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useCategoryFilters } from "@/hooks/useCategoryFilters";
 import { useDebounceCallback } from "@/hooks/useDebounceCallback";
-import { Category } from "@/hooks/data/useCategories";
 
 export function useIndexFilters(categories: Category[]) {
   const { settings, updateSettings, saveSettings } = useSettings();

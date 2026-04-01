@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useWhatsAppEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
-import { logger } from "@/lib/logger";
 import {
   WhatsAppTemplate,
   WhatsAppColumn,
@@ -11,6 +7,10 @@ import {
   AUTO_GENERATED_TEMPLATES,
   SAMPLE_VARIABLES,
 } from "@/components/whatsapp/whatsappTemplateDefaults";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWhatsAppEdgeFunctions } from "@/hooks/useEdgeFunctions";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function useWhatsAppTemplates() {
   const { user } = useAuth();

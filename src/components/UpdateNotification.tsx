@@ -1,6 +1,6 @@
+import { RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { RefreshCw } from 'lucide-react';
 
 interface UpdateNotificationProps {
   registration: ServiceWorkerRegistration | null;

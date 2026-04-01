@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { initOneSignal, oneSignalUtils } from '@/lib/push/oneSignalProvider';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { initOneSignal, oneSignalUtils } from '@/lib/push/oneSignalProvider';
 
 export function useOneSignal() {
   const { user } = useAuth();

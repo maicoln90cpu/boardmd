@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock dependencies
 vi.mock('@/integrations/supabase/client', () => ({

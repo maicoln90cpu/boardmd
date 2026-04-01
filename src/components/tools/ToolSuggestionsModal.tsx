@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { logger } from "@/lib/logger";
 import { Loader2, Sparkles, Plus, ExternalLink } from "lucide-react";
 import * as Icons from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,8 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Tooltip,
@@ -18,10 +18,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { useTools } from "@/hooks/useTools";
-import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
+import { logger } from "@/lib/logger";
 
 interface ToolSuggestion {
   name: string;

@@ -1,7 +1,5 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { 
   ExternalLink, 
   Pencil, 
@@ -18,11 +16,13 @@ import {
   ListChecks,
   Timer
 } from "lucide-react";
-import type { Course } from "@/types";
-import type { CourseCategory } from "@/hooks/useCourseCategories";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import type { CourseCategory } from "@/hooks/useCourseCategories";
+import type { Course } from "@/types";
 
 interface CourseCardProps {
   course: Course;

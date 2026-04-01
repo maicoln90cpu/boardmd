@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Layers,
   LogOut,
@@ -7,14 +7,11 @@ import {
   Folder,
   Menu } from
 "lucide-react";
-import taskflowLogo from "@/assets/taskflow-logo.png";
-import taskflowIcon from "@/assets/taskflow-icon.png";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import taskflowIcon from "@/assets/taskflow-icon.png";
+import taskflowLogo from "@/assets/taskflow-logo.png";
+import { CategoryTree } from "@/components/sidebar/CategoryTree";
 import {
   Sidebar as AnimatedSidebar,
   SidebarBody,
@@ -22,9 +19,12 @@ import {
   SidebarDivider,
   useSidebar } from
 "@/components/ui/animated-sidebar";
-import { useSettings } from "@/hooks/data/useSettings";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/data/useCategories";
-import { CategoryTree } from "@/components/sidebar/CategoryTree";
+import { useSettings } from "@/hooks/data/useSettings";
 import { useTaskCounts } from "@/hooks/data/useTaskCounts";
 import { useMenuItems } from "@/hooks/ui/useMenuItems";
 

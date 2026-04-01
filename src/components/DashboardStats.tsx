@@ -1,7 +1,7 @@
-import { memo, useMemo } from "react";
-import { Task } from "@/hooks/tasks/useTasks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Clock, AlertCircle, ListTodo } from "lucide-react";
+import { memo, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface DashboardStatsProps {
   tasks: Task[];

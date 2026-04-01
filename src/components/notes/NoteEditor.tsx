@@ -1,13 +1,3 @@
-import { Note } from "@/hooks/useNotes";
-import { Task } from "@/hooks/tasks/useTasks";
-import { exportNoteAsMarkdown, exportNoteAsPDF } from "@/lib/noteExport";
-import { NoteTemplate } from "@/lib/noteTemplates";
-import { Notebook } from "@/hooks/useNotebooks";
-import { useEffect, useCallback } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import { HeadingWithId } from "./extensions/HeadingWithIdExtension";
 import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Color from "@tiptap/extension-color";
@@ -22,21 +12,31 @@ import { TableCell } from "@tiptap/extension-table-cell";
 import { Image } from "@tiptap/extension-image";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import FontSize from "@tiptap/extension-font-size";
+import Underline from "@tiptap/extension-underline";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
-import { TaskSelectorModal } from "./TaskSelectorModal";
-import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
-import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
-import { PriorityBadgeExtension } from "./extensions/PriorityBadgeExtension";
+import { useEffect, useCallback } from "react";
 import { BacklinkExtension } from "./extensions/BacklinkExtension";
 import { BacklinkSuggestion } from "./BacklinkSuggestion";
 import { BacklinksPanel } from "./BacklinksPanel";
-import { useNotes } from "@/hooks/useNotes";
+import { HeadingWithId } from "./extensions/HeadingWithIdExtension";
+import { PriorityBadgeExtension } from "./extensions/PriorityBadgeExtension";
+import { TaskBlockExtension } from "./extensions/TaskBlockExtension";
 
 // Refactored components
-import { NoteEditorHeader } from "./NoteEditorHeader";
-import { NoteEditorContent } from "./NoteEditorContent";
 import { NoteEditorFooter } from "./NoteEditorFooter";
 import { useNoteEditorState } from "./hooks/useNoteEditorState";
+import { NoteEditorContent } from "./NoteEditorContent";
+import { NoteEditorHeader } from "./NoteEditorHeader";
+import { TaskSelectorModal } from "./TaskSelectorModal";
+import { Task } from "@/hooks/tasks/useTasks";
+import { Notebook } from "@/hooks/useNotebooks";
+import { useNotes } from "@/hooks/useNotes";
+import { Note } from "@/hooks/useNotes";
+import { useNoteTaskSync } from "@/hooks/useNoteTaskSync";
+import { exportNoteAsMarkdown, exportNoteAsPDF } from "@/lib/noteExport";
+import { NoteTemplate } from "@/lib/noteTemplates";
 
 interface NoteEditorProps {
   note: Note;

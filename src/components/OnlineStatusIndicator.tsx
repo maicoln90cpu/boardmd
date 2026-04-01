@@ -1,7 +1,7 @@
-import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { Wifi, WifiOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export function OnlineStatusIndicator() {
   const { isOnline } = useOnlineStatus();

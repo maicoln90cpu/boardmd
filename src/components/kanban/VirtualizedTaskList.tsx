@@ -1,9 +1,9 @@
-import { memo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Task } from "@/hooks/tasks/useTasks";
+import { motion, AnimatePresence } from "framer-motion";
+import { memo, useRef } from "react";
 import { TaskCard } from "@/components/TaskCard";
 import { EmptyStateCompact } from "@/components/ui/empty-state";
-import { motion, AnimatePresence } from "framer-motion";
+import { Task } from "@/hooks/tasks/useTasks";
 
 interface VirtualizedTaskListProps {
   tasks: Task[];

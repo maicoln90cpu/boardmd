@@ -1,3 +1,5 @@
+import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -6,8 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
 
 interface CourseFiltersProps {

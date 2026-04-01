@@ -1,21 +1,21 @@
+import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { motion, AnimatePresence } from "framer-motion";
+import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
+import { NotebooksList } from "@/components/notes/NotebooksList";
+import { NoteEditor } from "@/components/notes/NoteEditor";
+import { NotesList } from "@/components/notes/NotesList";
+import { NotesSearch } from "@/components/notes/NotesSearch";
+import { useTasks } from "@/hooks/tasks/useTasks";
 import { useNotebooks } from "@/hooks/useNotebooks";
 import { useNotes, Note } from "@/hooks/useNotes";
-import { useTasks } from "@/hooks/tasks/useTasks";
-import { NotebooksList } from "@/components/notes/NotebooksList";
-import { NotesList } from "@/components/notes/NotesList";
-import { NoteEditor } from "@/components/notes/NoteEditor";
 import { useBreakpoint } from "@/hooks/ui/useBreakpoint";
-import { NotesSearch } from "@/components/notes/NotesSearch";
 import { TrashDialog } from "@/components/notes/TrashDialog";
 import { Sidebar } from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, Plus, Sparkles, List, LayoutGrid, Book, WifiOff } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
-import { MobileNotesLayout } from "@/components/notes/MobileNotesLayout";
-import { motion, AnimatePresence } from "framer-motion";
 import { WikiNavigation } from "@/components/notes/WikiNavigation";
 import { useOfflineNotes } from "@/hooks/useOfflineNotes";
 import { useSettings } from "@/hooks/data/useSettings";
@@ -134,7 +134,7 @@ export default function Notes() {
       );
     }
 
-    let sorted = [...filtered];
+    const sorted = [...filtered];
     switch (sortBy) {
       case 'alphabetical':
         sorted.sort((a, b) => a.title.localeCompare(b.title));

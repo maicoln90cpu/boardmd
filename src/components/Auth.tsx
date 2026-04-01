@@ -1,14 +1,14 @@
+import { Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import { signUpSchema, signInSchema } from "@/lib/validations";
-import { z } from "zod";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
 import { logger } from "@/lib/logger";
+import { signUpSchema, signInSchema } from "@/lib/validations";
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);

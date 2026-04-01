@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence, PanInfo } from "framer-motion";
 import { Check, Pencil, Trash2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React, { useState, useRef, useEffect } from "react";
 import { useSwipe } from "@/contexts/SwipeContext";
+import { cn } from "@/lib/utils";
 
 interface SwipeableTaskCardProps {
   taskId: string;

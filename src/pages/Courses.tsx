@@ -1,17 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, GraduationCap, Settings2, LayoutDashboard, List } from "lucide-react";
-import { useCourses } from "@/hooks/useCourses";
-import { useCourseCategories } from "@/hooks/useCourseCategories";
-import { CourseStats } from "@/components/courses/CourseStats";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { CourseCard } from "@/components/courses/CourseCard";
-import { CourseModal } from "@/components/courses/CourseModal";
-import { CourseFilters } from "@/components/courses/CourseFilters";
-import { CourseSortOptions, type CourseSortOption } from "@/components/courses/CourseSortOptions";
 import { CourseCategoryManager } from "@/components/courses/CourseCategoryManager";
+import { CourseFilters } from "@/components/courses/CourseFilters";
+import { CourseModal } from "@/components/courses/CourseModal";
 import { CoursesDashboard } from "@/components/courses/CoursesDashboard";
+import { CourseSortOptions, type CourseSortOption } from "@/components/courses/CourseSortOptions";
+import { CourseStats } from "@/components/courses/CourseStats";
 import { CourseWeeklyGoal } from "@/components/courses/CourseWeeklyGoal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sidebar } from "@/components/Sidebar";
@@ -28,6 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCourseCategories } from "@/hooks/useCourseCategories";
+import { useCourses } from "@/hooks/useCourses";
 import type { Course, CourseFormData } from "@/types";
 
 // Função para disparar confetti
@@ -116,7 +116,7 @@ export default function Courses() {
   // Sort and filter courses
   const filteredAndSortedCourses = useMemo(() => {
     // Primeiro, filtrar
-    let result = courses.filter((course) => {
+    const result = courses.filter((course) => {
       // Search
       if (searchTerm) {
         const search = searchTerm.toLowerCase();

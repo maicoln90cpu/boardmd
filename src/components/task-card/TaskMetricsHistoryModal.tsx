@@ -1,29 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { format, parseISO, subDays, isAfter } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Trash2, BarChart3, TrendingUp, Download, FileSpreadsheet, FileText } from "lucide-react";
-import { useTaskCompletionLogs, TaskCompletionLog } from "@/hooks/useTaskCompletionLogs";
-import { formatDateTimeBR } from "@/lib/dateUtils";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -33,8 +11,30 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format, parseISO, subDays, isAfter } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTaskCompletionLogs, TaskCompletionLog } from "@/hooks/useTaskCompletionLogs";
+import { formatDateTimeBR } from "@/lib/dateUtils";
 // jsPDF loaded dynamically to reduce bundle size
 
 interface TaskMetricsHistoryModalProps {

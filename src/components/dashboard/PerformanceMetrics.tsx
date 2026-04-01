@@ -1,9 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { logger } from "@/lib/logger";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { 
   Activity, 
   TrendingUp, 
@@ -14,6 +10,7 @@ import {
   BarChart3,
   Zap
 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   LineChart, 
   Line, 
@@ -24,8 +21,11 @@ import {
   Area,
   AreaChart
 } from "recharts";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 interface DailyMetrics {
   date: string;

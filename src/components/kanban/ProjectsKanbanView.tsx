@@ -1,19 +1,19 @@
+import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List, GanttChart } from "lucide-react";
 import { memo, useRef, lazy, Suspense, useState, useMemo } from "react";
+import { DashboardStats } from "@/components/DashboardStats";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
+import { KanbanBoard } from "@/components/KanbanBoard";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Category } from "@/hooks/data/useCategories";
 import { useColumns } from "@/hooks/data/useColumns";
 import { useSettings } from "@/hooks/data/useSettings";
-import { KanbanBoard } from "@/components/KanbanBoard";
-import { KanbanFiltersBar } from "@/components/kanban/KanbanFiltersBar";
-import { GlobalSearch } from "@/components/GlobalSearch";
-import { DashboardStats } from "@/components/DashboardStats";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BarChart3, Columns3, Equal, RotateCcw, LayoutGrid, List, GanttChart } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Column } from "@/hooks/data/useColumns";
-import { Category } from "@/hooks/data/useCategories";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Note } from "@/hooks/useNotes";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load ColumnManager - componente pesado com muitas dependências
 const ColumnManager = lazy(() => import("./ColumnManager").then(m => ({ default: m.ColumnManager })));
