@@ -83,6 +83,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isGeneratingModules, setIsGeneratingModules] = useState(false);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const { parseCourseModules } = useCourseEdgeFunctions();
   const [availableTasks, setAvailableTasks] = useState<Array<{ id: string; title: string }>>([]);
   
   const navigate = useNavigate();
