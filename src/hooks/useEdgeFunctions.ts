@@ -122,3 +122,27 @@ export function useToolsEdgeFunctions() {
 
   return { suggestTools, generateDescription, suggestAlternatives, isLoading };
 }
+
+// ============= Cursos =============
+
+export function useCourseEdgeFunctions() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const parseCourseModules = useCallback(async (image: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("parse-course-modules", {
+        body: { image },
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (err) {
+      logger.error("[EdgeFn] parse-course-modules error:", err);
+      return { data: null, error: err as Error };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { parseCourseModules, isLoading };
+}
