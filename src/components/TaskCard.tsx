@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
 import { RecurrenceRule } from "@/lib/recurrenceUtils";
-import { formatDateTimeBR } from "@/lib/dateUtils";
+
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
