@@ -71,6 +71,8 @@ export const MobileKanbanView = memo(function MobileKanbanView({
 }: MobileKanbanViewProps) {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>("column");
+  const [moveDrawerOpen, setMoveDrawerOpen] = useState(false);
+  const [taskToMove, setTaskToMove] = useState<EnrichedTask | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
