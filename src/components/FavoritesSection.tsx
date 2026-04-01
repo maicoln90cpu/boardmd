@@ -58,7 +58,7 @@ export function FavoritesSection({
 
   if (favoriteTasks.length === 0) return null;
 
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setModalOpen(true);
   };
