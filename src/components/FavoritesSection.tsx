@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTasks } from "@/hooks/tasks/useTasks";
+import { useTasks, Task } from "@/hooks/tasks/useTasks";
 import { TaskModal } from "@/components/TaskModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Star, Folder } from "lucide-react";
@@ -29,7 +29,7 @@ export function FavoritesSection({
     toggleFavorite
   } = useTasks("all");
   const [isOpen, setIsOpen] = useState(true);
-  const [editingTask, setEditingTask] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   // Filtrar apenas favoritos
@@ -52,18 +52,18 @@ export function FavoritesSection({
     acc[category.id].tasks.push(task);
     return acc;
   }, {} as Record<string, {
-    category: any;
-    tasks: any[];
+    category: { id: string; name: string };
+    tasks: Task[];
   }>);
 
   if (favoriteTasks.length === 0) return null;
 
-  const handleEditTask = (task: any) => {
+  const handleEditTask = (task: Task) => {
     setEditingTask(task);
     setModalOpen(true);
   };
 
-  const handleSaveTask = async (taskData: any) => {
+  const handleSaveTask = async (taskData: Partial<Task>) => {
     if (editingTask) {
       await updateTask(editingTask.id, taskData);
     }
@@ -123,7 +123,7 @@ export function FavoritesSection({
                     
                     {/* Task Cards Grid */}
                     <div className="">
-                      {categoryTasks.map((task: any) => {
+                      {categoryTasks.map((task: Task) => {
                         return (
                           <div 
                             key={task.id} 
