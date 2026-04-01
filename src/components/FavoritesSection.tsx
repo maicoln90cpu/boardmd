@@ -63,7 +63,7 @@ export function FavoritesSection({
     setModalOpen(true);
   };
 
-  const handleSaveTask = async (taskData: any) => {
+  const handleSaveTask = async (taskData: Partial<Task>) => {
     if (editingTask) {
       await updateTask(editingTask.id, taskData);
     }
