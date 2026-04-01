@@ -185,6 +185,43 @@ export const MobileKanbanView = memo(function MobileKanbanView({
     });
   }, []);
 
+  const handleLongPress = useCallback(
+    (taskId: string) => {
+      const task = allEnrichedTasks.find((t) => t.id === taskId);
+      if (task) {
+        setTaskToMove(task);
+        setMoveDrawerOpen(true);
+      }
+    },
+    [allEnrichedTasks],
+  );
+
+  const handleMoveToColumn = useCallback(
+    async (columnId: string) => {
+      if (!taskToMove) return;
+      try {
+        const { error } = await supabase
+          .from("tasks")
+          .update({ column_id: columnId })
+          .eq("id", taskToMove.id);
+        if (error) throw error;
+        const targetCol = columns.find((c) => c.id === columnId);
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        toast({
+          title: `Movida para "${targetCol?.name || "coluna"}"`,
+          duration: 1500,
+        });
+      } catch (error) {
+        logger.error("Erro ao mover tarefa:", error);
+        toast({ title: "Erro ao mover tarefa", variant: "destructive" });
+      } finally {
+        setMoveDrawerOpen(false);
+        setTaskToMove(null);
+      }
+    },
+    [taskToMove, columns, queryClient, toast],
+  );
+
   const targetColumnId = activeFilter || columns[0]?.id || "";
 
   return (
