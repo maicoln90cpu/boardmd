@@ -49,6 +49,7 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
   onToggleComplete,
   onEdit,
   onToggleFavorite,
+  onLongPress,
   priorityColors,
 }: MobileChecklistItemProps) {
   const isCompleted = task.is_completed || false;
