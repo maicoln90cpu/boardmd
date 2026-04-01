@@ -106,11 +106,17 @@ export function useWhatsAppTemplates() {
         if (tpl.id) {
           await supabase.from("whatsapp_templates").update(payload).eq("id", tpl.id);
         } else {
-          await supabase.from("whatsapp_templates").insert({
+          await supabase.from("whatsapp_templates").insert([{
             user_id: user.id,
             template_type: tpl.template_type,
-            ...payload,
-          });
+            message_template: payload.message_template as string,
+            is_enabled: payload.is_enabled as boolean,
+            send_time: payload.send_time as string | null,
+            send_time_2: payload.send_time_2 as string | null,
+            due_date_hours_before: payload.due_date_hours_before as number,
+            due_date_hours_before_2: payload.due_date_hours_before_2 as number | null,
+            excluded_column_ids: payload.excluded_column_ids as string[],
+          }]);
         }
       }
       toast.success("Templates salvos!");
