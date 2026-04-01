@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { CourseModulesUploader } from "./CourseModulesUploader";
 import { CourseModulesChecklist, type CourseModule } from "./CourseModulesChecklist";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourseEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
 import type { Course, CourseFormData } from "@/types";
 import type { CourseCategory } from "@/hooks/useCourseCategories";
