@@ -19,6 +19,7 @@ const ACTION_WIDTH = 70;
 const LOCK_ANGLE = 25;
 const LONG_PRESS_MS = 500;
 const TAP_MOVE_TOLERANCE = 10;
+const TAP_COOLDOWN_MS = 300; // previne tap fantasma após swipe/long press
 
 export function SwipeableTaskCard({
   taskId,
@@ -41,11 +42,22 @@ export function SwipeableTaskCard({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLongPressRef = useRef(false);
   const didMoveRef = useRef(false);
+  const lastGestureEndRef = useRef(0); // timestamp do último gesto não-tap
+  const gestureActiveRef = useRef(false); // indica se um touch está em andamento
 
   const leftActionsOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
   const rightActionsOpacity = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0]);
   const leftActionsScale = useTransform(x, [0, SWIPE_THRESHOLD], [0.8, 1]);
   const rightActionsScale = useTransform(x, [-SWIPE_THRESHOLD, 0], [1, 0.8]);
+
+  // Limpar timer no unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (openCardId !== null && openCardId !== taskId && isOpen !== null) {
@@ -75,9 +87,10 @@ export function SwipeableTaskCard({
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
-      // Ignorar se tocou em elemento interativo (checkbox, favorito)
       const target = e.target as HTMLElement;
       if (target.closest("[data-gesture-ignore]")) return;
+
+      gestureActiveRef.current = true;
 
       const touch = e.touches[0];
       startXRef.current = touch.clientX;
@@ -92,14 +105,16 @@ export function SwipeableTaskCard({
       if (isOpen) {
         handleClose();
         didLongPressRef.current = true; // prevenir tap
+        lastGestureEndRef.current = Date.now();
         return;
       }
 
       // Iniciar timer de long press
       clearLongPress();
       longPressTimerRef.current = setTimeout(() => {
-        if (!didMoveRef.current) {
+        if (!didMoveRef.current && gestureActiveRef.current) {
           didLongPressRef.current = true;
+          lastGestureEndRef.current = Date.now();
           if (navigator.vibrate) navigator.vibrate(50);
           onLongPress?.();
         }
@@ -119,7 +134,6 @@ export function SwipeableTaskCard({
       const absDx = Math.abs(deltaX);
       const absDy = Math.abs(deltaY);
 
-      // Marcar que houve movimento significativo
       if (absDx > TAP_MOVE_TOLERANCE || absDy > TAP_MOVE_TOLERANCE) {
         didMoveRef.current = true;
         clearLongPress();
@@ -154,10 +168,12 @@ export function SwipeableTaskCard({
       const target = e.target as HTMLElement;
       if (target.closest("[data-gesture-ignore]")) return;
 
+      gestureActiveRef.current = false;
       clearLongPress();
 
       // Se foi swipe horizontal
       if (directionLockedRef.current === "horizontal" && isDraggingRef.current) {
+        lastGestureEndRef.current = Date.now(); // marcar cooldown
         const offset = currentXRef.current;
         if (offset > SWIPE_THRESHOLD) {
           setIsOpen("right");
@@ -178,8 +194,11 @@ export function SwipeableTaskCard({
       directionLockedRef.current = null;
       isDraggingRef.current = false;
 
-      // Se foi long press, não fazer nada (já tratado no timer)
+      // Se foi long press, não fazer nada
       if (didLongPressRef.current) return;
+
+      // Proteção contra tap fantasma: ignorar tap se houve gesto recente
+      if (Date.now() - lastGestureEndRef.current < TAP_COOLDOWN_MS) return;
 
       // Se não moveu → TAP = marcar/desmarcar
       if (!didMoveRef.current) {
