@@ -24,7 +24,7 @@ interface Task {
   tags: string[] | null;
   column_id: string;
   category_id: string;
-  recurrence_rule?: any;
+  recurrence_rule?: Record<string, unknown> | null;
 }
 interface Column {
   id: string;
@@ -58,17 +58,17 @@ interface FullScreenCalendarProps {
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
   priorityFilter?: string | string[];
-  onPriorityChange?: (value: any) => void;
+  onPriorityChange?: (value: string | string[]) => void;
   tagFilter?: string | string[];
-  onTagChange?: (value: any) => void;
+  onTagChange?: (value: string | string[]) => void;
   availableTags?: string[];
   onColumnChange?: (value: string[]) => void;
   dueDateFilter?: string | string[];
-  onDueDateChange?: (value: any) => void;
+  onDueDateChange?: (value: string | string[]) => void;
   // Slot para presets de filtros
   filterPresetsSlot?: React.ReactNode;
   // Tasks para contagem de categorias
-  tasks?: Array<{ category_id: string; [key: string]: any }>;
+  tasks?: Array<{ category_id: string; [key: string]: unknown }>;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
