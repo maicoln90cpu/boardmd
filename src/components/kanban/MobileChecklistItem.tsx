@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import { Task } from "@/hooks/tasks/useTasks";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Star, Calendar } from "lucide-react";
@@ -18,6 +18,7 @@ interface MobileChecklistItemProps {
   onToggleComplete: () => void;
   onEdit: () => void;
   onToggleFavorite: (taskId: string) => void;
+  onLongPress?: (taskId: string) => void;
   priorityColors?: PriorityColors;
 }
 
@@ -48,14 +49,35 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
   onToggleComplete,
   onEdit,
   onToggleFavorite,
+  onLongPress,
   priorityColors,
 }: MobileChecklistItemProps) {
   const isCompleted = task.is_completed || false;
   const priority = task.priority as "high" | "medium" | "low" | null;
 
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
   const handleTitleTap = useCallback(() => {
+    if (didLongPress.current) return;
     onEdit();
   }, [onEdit]);
+
+  const handleTouchStart = useCallback(() => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      if (navigator.vibrate) navigator.vibrate(50);
+      onLongPress?.(task.id);
+    }, 500);
+  }, [onLongPress, task.id]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const handleFavoriteTap = useCallback(
     (e: React.MouseEvent) => {
@@ -121,8 +143,11 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
       {/* Título - área clicável principal */}
       <button
         onClick={handleTitleTap}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         className={cn(
-          "flex-1 min-w-0 text-left text-sm truncate py-1",
+          "flex-1 min-w-0 text-left text-sm truncate py-1 select-none",
           isCompleted && "line-through text-muted-foreground",
         )}
       >
