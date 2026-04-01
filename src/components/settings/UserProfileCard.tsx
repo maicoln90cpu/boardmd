@@ -119,8 +119,9 @@ export function UserProfileCard() {
       }
 
       toast({ title: "Perfil atualizado!" });
-    } catch (e: any) {
-      toast({ title: "Erro ao salvar perfil", description: e.message, variant: "destructive" });
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
+      toast({ title: "Erro ao salvar perfil", description: errorMessage, variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
