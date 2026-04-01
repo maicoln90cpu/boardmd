@@ -13,12 +13,7 @@ import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
 import { useQueryClient } from "@tanstack/react-query";
 import { getColumnTopBarClass } from "@/lib/columnStyles";
-
-interface PriorityColors {
-  high: { background: string; text: string };
-  medium: { background: string; text: string };
-  low: { background: string; text: string };
-}
+import { PriorityColors } from "@/types";
 
 interface MobileKanbanViewProps {
   columns: Column[];
