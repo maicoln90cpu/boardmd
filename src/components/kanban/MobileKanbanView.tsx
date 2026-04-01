@@ -148,25 +148,9 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   // Toggle completion via swipe
   const handleSwipeComplete = useCallback(
     async (task: Task) => {
-      try {
-        const newCompleted = !task.is_completed;
-        const { error } = await supabase
-          .from("tasks")
-          .update({ is_completed: newCompleted })
-          .eq("id", task.id);
-        if (error) throw error;
-        if (newCompleted && onAddPoints) onAddPoints();
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
-        toast({
-          title: newCompleted ? "Tarefa concluída!" : "Tarefa reaberta",
-          duration: 1500,
-        });
-      } catch (error) {
-        logger.error("Erro ao atualizar tarefa:", error);
-        toast({ title: "Erro ao atualizar tarefa", variant: "destructive" });
-      }
+      await toggleCompleteWithToast(task.id, task.is_completed || false, onAddPoints);
     },
-    [onAddPoints, toast, queryClient],
+    [onAddPoints, toggleCompleteWithToast],
   );
 
   const cycleSortMode = useCallback(() => {
@@ -190,27 +174,12 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const handleMoveToColumn = useCallback(
     async (columnId: string) => {
       if (!taskToMove) return;
-      try {
-        const { error } = await supabase
-          .from("tasks")
-          .update({ column_id: columnId })
-          .eq("id", taskToMove.id);
-        if (error) throw error;
-        const targetCol = columns.find((c) => c.id === columnId);
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
-        toast({
-          title: `Movida para "${targetCol?.name || "coluna"}"`,
-          duration: 1500,
-        });
-      } catch (error) {
-        logger.error("Erro ao mover tarefa:", error);
-        toast({ title: "Erro ao mover tarefa", variant: "destructive" });
-      } finally {
-        setMoveDrawerOpen(false);
-        setTaskToMove(null);
-      }
+      const targetCol = columns.find((c) => c.id === columnId);
+      await moveToColumnWithToast(taskToMove.id, columnId, targetCol?.name);
+      setMoveDrawerOpen(false);
+      setTaskToMove(null);
     },
-    [taskToMove, columns, queryClient, toast],
+    [taskToMove, columns, moveToColumnWithToast],
   );
 
   const targetColumnId = activeFilter || columns[0]?.id || "";
