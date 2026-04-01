@@ -262,3 +262,11 @@ export interface TaskCompletionStats {
   sumMetric: number;
   avgMetric: number;
 }
+
+// ============= Tipos para Cores de Prioridade =============
+
+export interface PriorityColors {
+  high: { background: string; text: string };
+  medium: { background: string; text: string };
+  low: { background: string; text: string };
+}

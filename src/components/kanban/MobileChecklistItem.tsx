@@ -5,12 +5,7 @@ import { Star, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
-interface PriorityColors {
-  high: { background: string; text: string };
-  medium: { background: string; text: string };
-  low: { background: string; text: string };
-}
+import { PriorityColors } from "@/types";
 
 interface MobileChecklistItemProps {
   task: Task;
