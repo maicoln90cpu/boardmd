@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 // canvas-confetti loaded dynamically to reduce bundle size
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { logger } from "@/lib/logger";
-import { calculateNextRecurrenceDate, RecurrenceRule } from "@/lib/recurrenceUtils";
+import { RecurrenceRule } from "@/lib/recurrenceUtils";
 import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
