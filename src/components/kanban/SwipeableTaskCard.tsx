@@ -74,7 +74,7 @@ export function SwipeableTaskCard({
     x.set(newX);
   };
 
-  const handlePanEnd = (_: any, info: PanInfo) => {
+  const handlePanEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const elapsed = Date.now() - panStartTimeRef.current;
     const offset = info.offset.x;
     const velocity = info.velocity.x;

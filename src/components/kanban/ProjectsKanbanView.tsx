@@ -36,7 +36,7 @@ interface ProjectsKanbanViewProps {
   tasks: Task[];
   filteredTasks: Task[];
   notes: Note[];
-  notebooks: any[];
+  notebooks: Array<{ id: string; name: string }>;
   availableTags: string[];
   taskCounters: TaskCounters | null;
   boardKey: number;

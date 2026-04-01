@@ -123,7 +123,7 @@ export function FavoritesSection({
                     
                     {/* Task Cards Grid */}
                     <div className="">
-                      {categoryTasks.map((task: any) => {
+                      {categoryTasks.map((task: Task) => {
                         return (
                           <div 
                             key={task.id} 

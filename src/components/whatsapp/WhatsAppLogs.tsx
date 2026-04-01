@@ -73,7 +73,8 @@ export function WhatsAppLogs() {
       } else {
         toast.error("Falha ao reenviar: " + (data?.error || "Erro desconhecido"));
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Erro ao reenviar";
       toast.error(e.message || "Erro ao reenviar");
     } finally {
       setResendingId(null);

@@ -287,7 +287,7 @@ export function NoteEditor({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [state.handleSave]);
 
-  const handleInsertTaskBlock = useCallback((task: any) => {
+  const handleInsertTaskBlock = useCallback((task: Task) => {
     state.handleInsertTaskBlock(editor, task);
   }, [editor, state.handleInsertTaskBlock]);
 
