@@ -8,12 +8,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { MobileChecklistItem } from "./MobileChecklistItem";
 import { MobileColumnDrawer } from "./MobileColumnDrawer";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/ui/useToast";
-import { logger } from "@/lib/logger";
-import { useQueryClient } from "@tanstack/react-query";
 import { getColumnTopBarClass } from "@/lib/columnStyles";
 import { PriorityColors } from "@/types";
+import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
 
 interface MobileKanbanViewProps {
   columns: Column[];
