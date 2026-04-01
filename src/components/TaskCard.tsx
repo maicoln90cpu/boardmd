@@ -17,7 +17,7 @@ import { RecurrenceRule } from "@/lib/recurrenceUtils";
 
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
+
 import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
 
 // Import subcomponents
