@@ -54,14 +54,12 @@ export function WhatsAppLogs() {
 
     setResendingId(log.id);
     try {
-      const { data, error } = await supabase.functions.invoke("send-whatsapp", {
-        body: {
-          user_id: user.id,
-          phone_number: log.phone_number,
-          message: log.message,
-          template_type: log.template_type || "retry",
-          retry_log_id: log.id,
-        },
+      const { data, error } = await sendWhatsApp({
+        user_id: user.id,
+        phone_number: log.phone_number,
+        message: log.message,
+        template_type: log.template_type || "retry",
+        retry_log_id: log.id,
       });
 
       if (error) throw error;
