@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { logger, prodLogger } from '@/lib/logger';
 
@@ -7,6 +7,14 @@ interface PWAUpdateState {
   updateAvailable: boolean;
   lastCheck: Date | null;
   isStandalone: boolean;
+}
+
+/** Wraps navigator.serviceWorker.ready with a timeout so it never hangs. */
+function getRegistrationWithTimeout(ms = 5000): Promise<ServiceWorkerRegistration | null> {
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
 }
 
 export function usePWAUpdate() {
@@ -19,16 +27,15 @@ export function usePWAUpdate() {
 
   // Check if running as PWA
   useEffect(() => {
-    const isStandalone = 
+    const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    
-    setState(prev => ({ ...prev, isStandalone }));
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
 
-    // Load last check from localStorage
+    setState((prev) => ({ ...prev, isStandalone }));
+
     const savedLastCheck = localStorage.getItem('pwa_last_update_check');
     if (savedLastCheck) {
-      setState(prev => ({ ...prev, lastCheck: new Date(savedLastCheck) }));
+      setState((prev) => ({ ...prev, lastCheck: new Date(savedLastCheck) }));
     }
   }, []);
 
@@ -39,22 +46,28 @@ export function usePWAUpdate() {
       return;
     }
 
-    setState(prev => ({ ...prev, isChecking: true }));
+    setState((prev) => ({ ...prev, isChecking: true }));
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getRegistrationWithTimeout(5000);
+
+      if (!registration) {
+        setState((prev) => ({ ...prev, isChecking: false }));
+        toast.info('Nenhum Service Worker ativo. O app já está atualizado.');
+        return;
+      }
+
       await registration.update();
-      
+
       const now = new Date();
       localStorage.setItem('pwa_last_update_check', now.toISOString());
-      
-      // Check if there's a waiting service worker
+
       if (registration.waiting) {
-        setState(prev => ({ 
-          ...prev, 
-          updateAvailable: true, 
+        setState((prev) => ({
+          ...prev,
+          updateAvailable: true,
           lastCheck: now,
-          isChecking: false 
+          isChecking: false,
         }));
         toast.success('Nova versão disponível!', {
           action: {
@@ -63,11 +76,11 @@ export function usePWAUpdate() {
           },
         });
       } else {
-        setState(prev => ({ 
-          ...prev, 
-          updateAvailable: false, 
+        setState((prev) => ({
+          ...prev,
+          updateAvailable: false,
           lastCheck: now,
-          isChecking: false 
+          isChecking: false,
         }));
         toast.success('App está na versão mais recente');
       }
@@ -75,7 +88,7 @@ export function usePWAUpdate() {
       logger.log('[PWA] Update check completed');
     } catch (error) {
       prodLogger.error('[PWA] Update check failed:', error);
-      setState(prev => ({ ...prev, isChecking: false }));
+      setState((prev) => ({ ...prev, isChecking: false }));
       toast.error('Erro ao verificar atualizações');
     }
   }, []);
@@ -85,15 +98,11 @@ export function usePWAUpdate() {
     if (!('serviceWorker' in navigator)) return;
 
     try {
-      const registration = await navigator.serviceWorker.ready;
-      
-      if (registration.waiting) {
-        // Tell the waiting service worker to activate
+      const registration = await getRegistrationWithTimeout(3000);
+
+      if (registration?.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        
         toast.success('Atualizando aplicativo...');
-        
-        // Reload after a short delay to allow SW activation
         setTimeout(() => {
           window.location.reload();
         }, 500);
@@ -107,26 +116,21 @@ export function usePWAUpdate() {
   // Force reinstall - clear all caches and reload
   const forceReinstall = useCallback(async () => {
     try {
-      // Clear all caches
       if ('caches' in window) {
         const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
         logger.log('[PWA] All caches cleared');
       }
 
-      // Unregister service workers
       if ('serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map(reg => reg.unregister()));
+        await Promise.all(registrations.map((reg) => reg.unregister()));
         logger.log('[PWA] Service workers unregistered');
       }
 
-      // Clear localStorage marker
       localStorage.setItem('pwa_force_reinstall', Date.now().toString());
-      
       toast.success('Cache limpo. Recarregando...');
-      
-      // Force hard reload
+
       setTimeout(() => {
         window.location.href = window.location.href + '?t=' + Date.now();
       }, 500);
@@ -142,11 +146,11 @@ export function usePWAUpdate() {
 
     const handleControllerChange = () => {
       logger.log('[PWA] Controller changed - new SW active');
-      setState(prev => ({ ...prev, updateAvailable: false }));
+      setState((prev) => ({ ...prev, updateAvailable: false }));
     };
 
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-    
+
     return () => {
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
@@ -157,9 +161,9 @@ export function usePWAUpdate() {
     if (!('serviceWorker' in navigator)) return;
 
     const checkWaitingSW = async () => {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration.waiting) {
-        setState(prev => ({ ...prev, updateAvailable: true }));
+      const registration = await getRegistrationWithTimeout(3000);
+      if (registration?.waiting) {
+        setState((prev) => ({ ...prev, updateAvailable: true }));
       }
     };
 
