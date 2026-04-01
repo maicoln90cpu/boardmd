@@ -150,14 +150,13 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
     setIsFormattingWithAI(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("format-note", {
-        body: { content, action },
-      });
+      const { data, error } = await formatNote(content, action);
 
       if (error) {
-        if (error.message?.includes("429")) {
+        const msg = (error as Error).message || "";
+        if (msg.includes("429")) {
           toast.error("Muitas requisições. Aguarde um momento.");
-        } else if (error.message?.includes("402")) {
+        } else if (msg.includes("402")) {
           toast.error("Créditos insuficientes. Adicione em Settings → Workspace → Usage.");
         } else {
           toast.error("Erro ao formatar nota");
