@@ -60,7 +60,7 @@ export function SwipeableTaskCard({
     panStartXRef.current = info.point.x;
   };
 
-  const handlePan = (_: any, info: PanInfo) => {
+  const handlePan = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const elapsed = Date.now() - panStartTimeRef.current;
     
     // Só permitir swipe após delay mínimo
