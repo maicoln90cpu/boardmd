@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";
 import { MobileChecklistItem } from "./MobileChecklistItem";
+import { MobileColumnDrawer } from "./MobileColumnDrawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/ui/useToast";
 import { logger } from "@/lib/logger";
