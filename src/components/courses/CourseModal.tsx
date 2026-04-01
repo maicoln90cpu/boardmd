@@ -186,9 +186,7 @@ export function CourseModal({ open, onOpenChange, course, onSubmit, categories =
 
     setIsGeneratingModules(true);
     try {
-      const { data, error } = await supabase.functions.invoke("parse-course-modules", {
-        body: { image: uploadedImage },
-      });
+      const { data, error } = await parseCourseModules(uploadedImage);
 
       if (error) throw error;
 

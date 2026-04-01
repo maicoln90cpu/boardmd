@@ -283,7 +283,7 @@ export function WhatsAppTemplates() {
 
         if (error) throw error;
         if (data?.success) {
-          const sentCount = (data.results || []).filter((r: any) => r.sent).length;
+          const sentCount = (data.results || []).filter((r: unknown) => (r as Record<string, unknown>).sent).length;
           toast.success(`Teste "${tpl.label}" enviado! (${sentCount} mensagem(ns))`);
         } else {
           toast.error("Falha: " + (data?.error || "Erro desconhecido"));
