@@ -7,12 +7,14 @@ import { Loader2, Wifi, WifiOff, QrCode, RefreshCw, Unplug, Save } from "lucide-
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWhatsAppInstanceEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
 
 type ConnectionPhase = "idle" | "saving" | "connecting" | "checking" | "disconnecting";
 
 export function WhatsAppConnection() {
   const { user } = useAuth();
+  const { invokeInstance: invokeEdgeFn } = useWhatsAppInstanceEdgeFunctions();
   const [apiUrl, setApiUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [phase, setPhase] = useState<ConnectionPhase>("idle");
@@ -44,17 +46,13 @@ export function WhatsAppConnection() {
   }, [user]);
 
   const invokeInstance = useCallback(async (action: string, extra?: Record<string, unknown>) => {
-    try {
-      const { data, error } = await supabase.functions.invoke("whatsapp-instance", {
-        body: { action, api_url: apiUrl, api_key: apiKey, ...extra },
-      });
-      if (error) throw error;
-      return data;
-    } catch (e: any) {
-      toast.error(e.message || "Erro na operação");
+    const { data, error } = await invokeEdgeFn(action, { api_url: apiUrl, api_key: apiKey, ...extra });
+    if (error) {
+      toast.error(error.message || "Erro na operação");
       return null;
     }
-  }, [apiUrl, apiKey]);
+    return data;
+  }, [apiUrl, apiKey, invokeEdgeFn]);
 
   const handleSaveConfig = async () => {
     if (!apiUrl || !apiKey) {

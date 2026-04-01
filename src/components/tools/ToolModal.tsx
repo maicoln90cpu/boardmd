@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { logger } from "@/lib/logger";
 import { Loader2, Sparkles } from "lucide-react";
 import {
   Dialog,
@@ -15,8 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FunctionSelector } from "./FunctionSelector";
 import { IconSelector } from "./IconSelector";
-import { supabase } from "@/integrations/supabase/client";
+import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface Tool {
   id: string;
@@ -53,10 +53,10 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
   const [saving, setSaving] = useState(false);
   const [generatingDescription, setGeneratingDescription] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { generateDescription: invokeGenerateDesc } = useToolsEdgeFunctions();
 
   const isEditing = !!tool;
 
-  // Reset form when modal opens/closes or tool changes
   useEffect(() => {
     if (open) {
       if (tool) {
@@ -132,9 +132,7 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
 
     setGeneratingDescription(true);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-tool-description", {
-        body: { name: name.trim(), siteUrl: siteUrl.trim() || null },
-      });
+      const { data, error } = await invokeGenerateDesc(name.trim(), siteUrl.trim() || null);
 
       if (error) {
         logger.error("Error generating description:", error);
@@ -175,13 +173,11 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            {/* Icon */}
             <div className="space-y-2">
               <Label>Ícone</Label>
               <IconSelector value={icon} onChange={setIcon} />
             </div>
 
-            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
                 Nome <span className="text-destructive">*</span>
@@ -198,7 +194,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               )}
             </div>
 
-            {/* Site URL */}
             <div className="space-y-2">
               <Label htmlFor="siteUrl">Site</Label>
               <Input
@@ -214,7 +209,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               )}
             </div>
 
-            {/* Monthly Cost */}
             <div className="space-y-2">
               <Label htmlFor="monthlyCost">Custo Mensal (R$)</Label>
               <Input
@@ -223,7 +217,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
                 inputMode="decimal"
                 value={monthlyCost}
                 onChange={(e) => {
-                  // Allow only numbers, comma and dot
                   const value = e.target.value.replace(/[^0-9.,]/g, "");
                   setMonthlyCost(value);
                 }}
@@ -234,7 +227,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               </p>
             </div>
 
-            {/* Description */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="description">Descrição</Label>
@@ -263,7 +255,6 @@ export function ToolModal({ open, onOpenChange, tool, onSave }: ToolModalProps) 
               />
             </div>
 
-            {/* Functions/Tags */}
             <div className="space-y-2">
               <Label>Funções</Label>
               <FunctionSelector

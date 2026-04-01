@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Loader2, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
 import { toast } from "sonner";
 
 interface ToolAlternative {
@@ -24,26 +24,23 @@ export function ToolAlternativesModal({ open, onOpenChange, toolName }: ToolAlte
   const [alternatives, setAlternatives] = useState<ToolAlternative[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const { suggestAlternatives } = useToolsEdgeFunctions();
 
   const fetchAlternatives = async () => {
     if (hasLoaded) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("suggest-tool-alternatives", {
-        body: { toolName },
-      });
-
+      const { data, error } = await suggestAlternatives(toolName);
       if (error) throw error;
       setAlternatives(data?.alternatives || []);
       setHasLoaded(true);
-    } catch (err) {
+    } catch {
       toast.error("Erro ao buscar alternativas");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch on open
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && !hasLoaded) {
       fetchAlternatives();

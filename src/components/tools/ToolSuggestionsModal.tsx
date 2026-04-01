@@ -18,10 +18,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useToolFunctions } from "@/hooks/useToolFunctions";
 import { useTools } from "@/hooks/useTools";
+import { useToolsEdgeFunctions } from "@/hooks/useEdgeFunctions";
 
 interface ToolSuggestion {
   name: string;
@@ -71,6 +71,7 @@ export function ToolSuggestionsModal({
   const [addingIndex, setAddingIndex] = useState<number | null>(null);
   const { functions } = useToolFunctions();
   const { tools } = useTools();
+  const { suggestTools } = useToolsEdgeFunctions();
 
   const generateSuggestions = async () => {
     if (functions.length === 0) {
@@ -82,12 +83,9 @@ export function ToolSuggestionsModal({
     setSuggestions([]);
 
     try {
-      const { data, error } = await supabase.functions.invoke("suggest-tools", {
-        body: {
-          functions: functions.map((f) => ({ name: f.name })),
-          existingTools: tools.map((t) => ({ name: t.name })),
-        },
-      });
+      const { data, error } = await suggestTools(
+        functions.map((f) => ({ name: f.name }))
+      );
 
       if (error) {
         logger.error("Error generating suggestions:", error);
@@ -118,7 +116,6 @@ export function ToolSuggestionsModal({
     setAddingIndex(index);
 
     try {
-      // Find function IDs that match the suggestion's functions
       const matchingFunctionIds = functions
         .filter((f) =>
           suggestion.functions.some(
@@ -136,7 +133,6 @@ export function ToolSuggestionsModal({
       });
 
       if (success) {
-        // Remove from suggestions list
         setSuggestions((prev) => prev.filter((_, i) => i !== index));
         toast.success(`${suggestion.name} adicionada!`);
       }
@@ -254,7 +250,6 @@ export function ToolSuggestionsModal({
                       {suggestion.functions.length > 0 && (
                         <div className="flex flex-wrap gap-1 items-center">
                           {(() => {
-                            // Match suggestion functions with user's registered functions
                             const matchedFunctions = suggestion.functions
                               .map((fname) =>
                                 functions.find(
@@ -292,7 +287,6 @@ export function ToolSuggestionsModal({
                                     </Tooltip>
                                   </TooltipProvider>
                                 )}
-                                {/* Show unmatched functions with default styling */}
                                 {suggestion.functions
                                   .filter(
                                     (fname) =>
