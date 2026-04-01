@@ -35,12 +35,7 @@ import {
 import { useSavingTasks } from "@/contexts/SavingTasksContext";
 import { AnimatePresence } from "framer-motion";
 import { useTaskCompletionLogs } from "@/hooks/useTaskCompletionLogs";
-
-interface PriorityColors {
-  high: { background: string; text: string };
-  medium: { background: string; text: string };
-  low: { background: string; text: string };
-}
+import { PriorityColors } from "@/types";
 
 interface TaskCardProps {
   task: Task & {
