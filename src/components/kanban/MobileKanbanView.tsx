@@ -314,6 +314,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                       onToggleComplete={() => handleSwipeComplete(task)}
                       onEdit={() => handleEditTask(task)}
                       onToggleFavorite={toggleFavorite}
+                      onLongPress={handleLongPress}
                       priorityColors={priorityColors}
                     />
                   ) : (
@@ -330,6 +331,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                         onToggleComplete={() => handleSwipeComplete(task)}
                         onEdit={() => handleEditTask(task)}
                         onToggleFavorite={toggleFavorite}
+                        onLongPress={handleLongPress}
                         priorityColors={priorityColors}
                       />
                     </SwipeableTaskCard>
