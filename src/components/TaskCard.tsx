@@ -284,57 +284,20 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     
     // Se está marcando como concluída E é recorrente E reset imediato está habilitado
     if (checked && isRecurrent && settings.kanban.immediateRecurrentReset) {
-      setIsLocalCompleted(false); // Tarefa vai "reaparecer" desmarcada
+      setIsLocalCompleted(false);
       triggerConfetti();
       
-      try {
-        // Calcular próxima data
-        const nextDueDate = calculateNextRecurrenceDate(
-          task.due_date, 
-          task.recurrence_rule as RecurrenceRule
-        );
-        
-        // Atualizar tarefa com nova data e is_completed = false
-        const { error } = await supabase
-          .from("tasks")
-          .update({ 
-            is_completed: false,
-            due_date: nextDueDate 
-          })
-          .eq("id", task.id);
-          
-        if (error) throw error;
-        
-      if (onAddPoints) {
-          onAddPoints();
-        }
-
-        // Push notification handled by useTasks.updateTask (centralized)
-        
-        toast({
-          title: "✓ Tarefa concluída e resetada",
-          description: `Próxima: ${formatDateTimeBR(new Date(nextDueDate))}`,
-        });
-        
-        // Sync mirrored tasks
-        if (task.mirror_task_id) {
-          await supabase
-            .from("tasks")
-            .update({ is_completed: false, due_date: nextDueDate })
-            .eq("id", task.mirror_task_id);
-        }
-        
-        invalidateTasks();
-        return;
-      } catch (error) {
-        logger.error("Erro ao resetar tarefa recorrente:", error);
-        toast({
-          title: "Erro ao resetar tarefa",
-          description: "Não foi possível calcular a próxima data.",
-          variant: "destructive",
-        });
-        return;
+      const result = await immediateRecurrenceResetWithToast(
+        task.id,
+        task.due_date,
+        task.recurrence_rule as RecurrenceRule,
+        task.mirror_task_id,
+      );
+      
+      if (result && onAddPoints) {
+        onAddPoints();
       }
+      return;
     }
     
     // Comportamento padrão
