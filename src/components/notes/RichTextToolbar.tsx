@@ -87,6 +87,7 @@ export function RichTextToolbar({ editor, tasks = [], onInsertTaskBlock, onCreat
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [isFormattingWithAI, setIsFormattingWithAI] = useState(false);
+  const { formatNote } = useFormatNote();
   const [imageUrl, setImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
