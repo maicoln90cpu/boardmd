@@ -68,7 +68,7 @@ interface FullScreenCalendarProps {
   // Slot para presets de filtros
   filterPresetsSlot?: React.ReactNode;
   // Tasks para contagem de categorias
-  tasks?: Array<{ category_id: string; [key: string]: unknown }>;
+  tasks?: Array<{ category_id: string }>;
 }
 const colStartClasses = ["", "col-start-2", "col-start-3", "col-start-4", "col-start-5", "col-start-6", "col-start-7"];
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
