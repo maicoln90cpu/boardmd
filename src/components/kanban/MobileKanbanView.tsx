@@ -267,35 +267,22 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                   exit={{ opacity: 0, height: 0, transition: { duration: 0.1 } }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
                 >
-                  {task.isRecurrent ? (
+                  <SwipeableTaskCard
+                    taskId={task.id}
+                    onComplete={() => handleSwipeComplete(task)}
+                    onEdit={() => handleEditTask(task)}
+                    onDelete={() => handleDeleteClick(task.id)}
+                    onLongPress={() => handleLongPress(task.id)}
+                    isCompleted={task.is_completed || false}
+                  >
                     <MobileChecklistItem
                       task={task}
                       columnColor={task.columnColor}
                       onToggleComplete={() => handleSwipeComplete(task)}
-                      onEdit={() => handleEditTask(task)}
                       onToggleFavorite={toggleFavorite}
-                      onLongPress={handleLongPress}
                       priorityColors={priorityColors}
                     />
-                  ) : (
-                    <SwipeableTaskCard
-                      taskId={task.id}
-                      onComplete={() => handleSwipeComplete(task)}
-                      onEdit={() => handleEditTask(task)}
-                      onDelete={() => handleDeleteClick(task.id)}
-                      isCompleted={task.is_completed || false}
-                    >
-                      <MobileChecklistItem
-                        task={task}
-                        columnColor={task.columnColor}
-                        onToggleComplete={() => handleSwipeComplete(task)}
-                        onEdit={() => handleEditTask(task)}
-                        onToggleFavorite={toggleFavorite}
-                        onLongPress={handleLongPress}
-                        priorityColors={priorityColors}
-                      />
-                    </SwipeableTaskCard>
-                  )}
+                  </SwipeableTaskCard>
                 </motion.div>
               );
             })}

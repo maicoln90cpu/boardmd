@@ -1,7 +1,7 @@
 import { format, isPast, isToday, isTomorrow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Star, Calendar } from "lucide-react";
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Task } from "@/hooks/tasks/useTasks";
 import { cn } from "@/lib/utils";
@@ -11,9 +11,7 @@ interface MobileChecklistItemProps {
   task: Task;
   columnColor: string;
   onToggleComplete: () => void;
-  onEdit: () => void;
   onToggleFavorite: (taskId: string) => void;
-  onLongPress?: (taskId: string) => void;
   priorityColors?: PriorityColors;
 }
 
@@ -42,37 +40,11 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
   task,
   columnColor,
   onToggleComplete,
-  onEdit,
   onToggleFavorite,
-  onLongPress,
   priorityColors,
 }: MobileChecklistItemProps) {
   const isCompleted = task.is_completed || false;
   const priority = task.priority as "high" | "medium" | "low" | null;
-
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLongPress = useRef(false);
-
-  const handleTitleTap = useCallback(() => {
-    if (didLongPress.current) return;
-    onEdit();
-  }, [onEdit]);
-
-  const handleTouchStart = useCallback(() => {
-    didLongPress.current = false;
-    longPressTimer.current = setTimeout(() => {
-      didLongPress.current = true;
-      if (navigator.vibrate) navigator.vibrate(50);
-      onLongPress?.(task.id);
-    }, 500);
-  }, [onLongPress, task.id]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
 
   const handleFavoriteTap = useCallback(
     (e: React.MouseEvent) => {
@@ -82,7 +54,7 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
     [onToggleFavorite, task.id],
   );
 
-  const handleCheckboxChange = useCallback(
+  const handleCheckboxClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       onToggleComplete();
@@ -110,10 +82,11 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
       {/* Barra lateral colorida */}
       <div className={cn("w-1 self-stretch rounded-full shrink-0", columnColor)} />
 
-      {/* Checkbox */}
+      {/* Checkbox — protegido do gesto do wrapper */}
       <div
+        data-gesture-ignore
         className="shrink-0 flex items-center justify-center w-8 h-8"
-        onClick={handleCheckboxChange}
+        onClick={handleCheckboxClick}
         role="button"
         aria-label={isCompleted ? "Desmarcar tarefa" : "Completar tarefa"}
       >
@@ -124,9 +97,10 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
         />
       </div>
 
-      {/* Favorito */}
+      {/* Favorito — protegido do gesto do wrapper */}
       {task.is_favorite && (
         <button
+          data-gesture-ignore
           onClick={handleFavoriteTap}
           className="shrink-0 p-0.5"
           aria-label="Remover favorito"
@@ -135,19 +109,15 @@ export const MobileChecklistItem = memo(function MobileChecklistItem({
         </button>
       )}
 
-      {/* Título - área clicável principal */}
-      <button
-        onClick={handleTitleTap}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+      {/* Título — área passiva, gesto controlado pelo SwipeableTaskCard */}
+      <span
         className={cn(
           "flex-1 min-w-0 text-left text-sm truncate py-1 select-none",
           isCompleted && "line-through text-muted-foreground",
         )}
       >
         {task.title}
-      </button>
+      </span>
 
       {/* Data curta */}
       {task.due_date && (
