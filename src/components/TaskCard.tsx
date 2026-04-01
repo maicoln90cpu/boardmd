@@ -18,6 +18,7 @@ import { formatDateTimeBR } from "@/lib/dateUtils";
 import { useSettings } from "@/hooks/data/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
 
 // Import subcomponents
 import {
@@ -244,6 +245,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
   const [completionModalOpen, setCompletionModalOpen] = React.useState(false);
   const [metricsHistoryOpen, setMetricsHistoryOpen] = React.useState(false);
   const { addLog } = useTaskCompletionLogs();
+  const { toggleComplete, invalidateTasks } = useTaskMutations();
 
   // Sync local state when task changes
   React.useEffect(() => {
@@ -322,8 +324,7 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
             .eq("id", task.mirror_task_id);
         }
         
-        // Invalidate cache to ensure UI reflects changes
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        invalidateTasks();
         return;
       } catch (error) {
         logger.error("Erro ao resetar tarefa recorrente:", error);
@@ -344,40 +345,15 @@ const TaskCardComponent: React.FC<TaskCardProps> = ({
     }
     
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ is_completed: checked })
-        .eq("id", task.id);
-      if (error) throw error;
+      await toggleComplete(task.id, checked, task.mirror_task_id);
 
       if (checked && onAddPoints) {
         onAddPoints();
       }
 
-      // Push notification handled by useTasks.updateTask (centralized)
-
-      // Bidirectional sync for mirrored tasks
-      if (task.mirror_task_id) {
-        await supabase
-          .from("tasks")
-          .update({ is_completed: checked })
-          .eq("id", task.mirror_task_id);
-      }
-
-      const { data: reverseMirrors } = await supabase.from("tasks").select("id").eq("mirror_task_id", task.id);
-      if (reverseMirrors && reverseMirrors.length > 0) {
-        await supabase
-          .from("tasks")
-          .update({ is_completed: checked })
-          .in("id", reverseMirrors.map((t) => t.id));
-      }
-
       if (moveToCompleted && completedColumnId && onMoveToCompleted) {
         onMoveToCompleted(task.id, completedColumnId);
       }
-
-      // Invalidate cache to ensure UI reflects changes
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     } catch (error) {
       logger.error("Erro ao atualizar tarefa:", error);
       setIsLocalCompleted(!checked);
