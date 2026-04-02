@@ -54,7 +54,17 @@ export default function Notes() {
   const setHasUnsavedChanges = useCallback((value: boolean) => {
     hasUnsavedChangesRef.current = value;
   }, []);
-  
+
+  // Sync local state with async-loaded settings (runs once)
+  useEffect(() => {
+    if (settingsInitializedRef.current) return;
+    if (settings.notes?.defaultSortBy || settings.notes?.defaultViewMode || settings.notes?.defaultSidebarMode) {
+      settingsInitializedRef.current = true;
+      if (settings.notes?.defaultSortBy) setSortBy(settings.notes.defaultSortBy);
+      if (settings.notes?.defaultViewMode) setNotesViewMode(settings.notes.defaultViewMode);
+      if (settings.notes?.defaultSidebarMode) setSidebarMode(settings.notes.defaultSidebarMode);
+    }
+  }, [settings.notes?.defaultSortBy, settings.notes?.defaultViewMode, settings.notes?.defaultSidebarMode]);
 
   // Load from cache when offline and no notes loaded
   useEffect(() => {

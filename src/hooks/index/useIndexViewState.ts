@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSettings } from "@/hooks/data/useSettings";
 
 export function useIndexViewState() {
   const { settings } = useSettings();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const settingsInitializedRef = useRef(false);
   
   // Board keys for force refresh
   const [projectsBoardKey, setProjectsBoardKey] = useState(0);
@@ -14,10 +15,17 @@ export function useIndexViewState() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showColumnManager, setShowColumnManager] = useState(false);
   const [selectedTaskForHistory, setSelectedTaskForHistory] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">(
-    settings.kanban.defaultDisplayMode || "all_tasks"
-  );
+  const [displayMode, setDisplayMode] = useState<"by_category" | "all_tasks">("all_tasks");
   const [showQuickTaskModal, setShowQuickTaskModal] = useState(false);
+
+  // Sync displayMode with async-loaded settings (runs once)
+  useEffect(() => {
+    if (settingsInitializedRef.current) return;
+    if (settings.kanban.defaultDisplayMode) {
+      settingsInitializedRef.current = true;
+      setDisplayMode(settings.kanban.defaultDisplayMode);
+    }
+  }, [settings.kanban.defaultDisplayMode]);
 
   // Refresh board functions
   const refreshProjectsBoard = useCallback(() => setProjectsBoardKey(k => k + 1), []);
