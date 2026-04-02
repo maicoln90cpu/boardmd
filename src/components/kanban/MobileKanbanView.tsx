@@ -329,6 +329,20 @@ export const MobileKanbanView = memo(function MobileKanbanView({
         currentColumnId={taskToMove?.columnId || ""}
         onSelectColumn={handleMoveToColumn}
       />
+
+      {/* Modal de conclusão com rastreamento */}
+      {completionTask && (
+        <TaskCompletionModal
+          open={!!completionTask}
+          onOpenChange={(open) => { if (!open) setCompletionTask(null); }}
+          taskTitle={completionTask.title}
+          trackMetrics={!!completionTask.track_metrics}
+          metricType={completionTask.metric_type || null}
+          trackComments={!!completionTask.track_comments}
+          onConfirm={handleCompletionConfirm}
+          onCancel={() => setCompletionTask(null)}
+        />
+      )}
     </div>
   );
 });
