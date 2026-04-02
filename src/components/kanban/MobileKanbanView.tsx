@@ -149,12 +149,27 @@ export const MobileKanbanView = memo(function MobileKanbanView({
     return counts;
   }, [allEnrichedTasks]);
 
-  // Toggle completion via swipe
-  const handleSwipeComplete = useCallback(
-    async (task: Task) => {
+  // Toggle completion — check for tracking before completing
+  const handleComplete = useCallback(
+    async (task: EnrichedTask) => {
+      // If task has tracking and is not yet completed, open modal
+      if ((task.track_metrics || task.track_comments) && !task.is_completed) {
+        setCompletionTask(task);
+        return;
+      }
       await toggleCompleteWithToast(task.id, task.is_completed || false, onAddPoints);
     },
     [onAddPoints, toggleCompleteWithToast],
+  );
+
+  const handleCompletionConfirm = useCallback(
+    async (metricValue: number | null, comment: string | null) => {
+      if (!completionTask) return;
+      await toggleCompleteWithToast(completionTask.id, false, onAddPoints);
+      await addCompletionLog(completionTask.id, metricValue, comment, completionTask.metric_type);
+      setCompletionTask(null);
+    },
+    [completionTask, onAddPoints, toggleCompleteWithToast, addCompletionLog],
   );
 
   const cycleSortMode = useCallback(() => {
