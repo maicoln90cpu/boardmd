@@ -288,7 +288,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                 >
                   <SwipeableTaskCard
                     taskId={task.id}
-                    onComplete={() => handleSwipeComplete(task)}
+                    onComplete={() => handleComplete(task)}
                     onEdit={() => handleEditTask(task)}
                     onDelete={() => handleDeleteClick(task.id)}
                     onLongPress={() => handleLongPress(task.id)}
