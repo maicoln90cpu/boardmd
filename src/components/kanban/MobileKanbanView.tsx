@@ -67,7 +67,9 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const [sortMode, setSortMode] = useState<SortMode>("column");
   const [moveDrawerOpen, setMoveDrawerOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<EnrichedTask | null>(null);
+  const [completionTask, setCompletionTask] = useState<EnrichedTask | null>(null);
   const { toggleCompleteWithToast, moveToColumnWithToast } = useTaskMutations();
+  const { addCompletionLog } = useTaskCompletionLogs();
 
   // Achatar todas as tarefas com metadados da coluna
   const allEnrichedTasks = useMemo(() => {
