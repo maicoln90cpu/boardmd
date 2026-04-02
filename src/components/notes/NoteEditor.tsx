@@ -16,7 +16,7 @@ import Underline from "@tiptap/extension-underline";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { BacklinkExtension } from "./extensions/BacklinkExtension";
 import { BacklinkSuggestion } from "./BacklinkSuggestion";
 import { BacklinksPanel } from "./BacklinksPanel";
@@ -212,10 +212,21 @@ export function NoteEditor({
   // Hook for bidirectional sync with Kanban via Realtime
   useNoteTaskSync(editor);
 
-  // Sync with external note changes
+  // Sync with external note changes — content only syncs on note ID change
+  const prevNoteIdRef = useRef(note.id);
   useEffect(() => {
-    state.syncWithNote(editor);
-  }, [note.id, note.title, note.content, note.color, note.linked_task_id, note.linked_course_id, editor, state.syncWithNote]);
+    const isNewNote = note.id !== prevNoteIdRef.current;
+    if (isNewNote) {
+      prevNoteIdRef.current = note.id;
+      state.syncWithNote(editor);
+    } else {
+      // Only sync metadata (title, color, links) — never overwrite editor content
+      state.setTitle(note.title);
+      if (note.color !== undefined) state.handleColorChange(note.color || null);
+      if (note.linked_task_id !== undefined) state.setLinkedTaskId(note.linked_task_id || null);
+      if (note.linked_course_id !== undefined) state.setLinkedCourseId(note.linked_course_id || null);
+    }
+  }, [note.id, note.title, note.color, note.linked_task_id, note.linked_course_id, editor, state.syncWithNote]);
 
   // Browser native prompt on tab close / reload when unsaved
   useEffect(() => {

@@ -4,8 +4,10 @@ import { useState, memo, useCallback, useMemo } from "react";
 import { MobileChecklistItem } from "./MobileChecklistItem";
 import { MobileColumnDrawer } from "./MobileColumnDrawer";
 import { SwipeableTaskCard } from "./SwipeableTaskCard";
+import { TaskCompletionModal } from "@/components/task-card/TaskCompletionModal";
 import { Button } from "@/components/ui/button";
 import { Column } from "@/hooks/data/useColumns";
+import { useTaskCompletionLogs } from "@/hooks/useTaskCompletionLogs";
 import { useTaskMutations } from "@/hooks/tasks/useTaskMutations";
 import { Task } from "@/hooks/tasks/useTasks";
 import { getColumnTopBarClass } from "@/lib/columnStyles";
@@ -65,7 +67,9 @@ export const MobileKanbanView = memo(function MobileKanbanView({
   const [sortMode, setSortMode] = useState<SortMode>("column");
   const [moveDrawerOpen, setMoveDrawerOpen] = useState(false);
   const [taskToMove, setTaskToMove] = useState<EnrichedTask | null>(null);
+  const [completionTask, setCompletionTask] = useState<EnrichedTask | null>(null);
   const { toggleCompleteWithToast, moveToColumnWithToast } = useTaskMutations();
+  const { addLog } = useTaskCompletionLogs();
 
   // Achatar todas as tarefas com metadados da coluna
   const allEnrichedTasks = useMemo(() => {
@@ -145,12 +149,27 @@ export const MobileKanbanView = memo(function MobileKanbanView({
     return counts;
   }, [allEnrichedTasks]);
 
-  // Toggle completion via swipe
-  const handleSwipeComplete = useCallback(
-    async (task: Task) => {
+  // Toggle completion — check for tracking before completing
+  const handleComplete = useCallback(
+    async (task: EnrichedTask) => {
+      // If task has tracking and is not yet completed, open modal
+      if ((task.track_metrics || task.track_comments) && !task.is_completed) {
+        setCompletionTask(task);
+        return;
+      }
       await toggleCompleteWithToast(task.id, task.is_completed || false, onAddPoints);
     },
     [onAddPoints, toggleCompleteWithToast],
+  );
+
+  const handleCompletionConfirm = useCallback(
+    async (metricValue: number | null, comment: string | null) => {
+      if (!completionTask) return;
+      await toggleCompleteWithToast(completionTask.id, false, onAddPoints);
+      await addLog(completionTask.id, metricValue, completionTask.metric_type, comment);
+      setCompletionTask(null);
+    },
+    [completionTask, onAddPoints, toggleCompleteWithToast, addLog],
   );
 
   const cycleSortMode = useCallback(() => {
@@ -269,7 +288,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                 >
                   <SwipeableTaskCard
                     taskId={task.id}
-                    onComplete={() => handleSwipeComplete(task)}
+                    onComplete={() => handleComplete(task)}
                     onEdit={() => handleEditTask(task)}
                     onDelete={() => handleDeleteClick(task.id)}
                     onLongPress={() => handleLongPress(task.id)}
@@ -278,7 +297,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                     <MobileChecklistItem
                       task={task}
                       columnColor={task.columnColor}
-                      onToggleComplete={() => handleSwipeComplete(task)}
+                      onToggleComplete={() => handleComplete(task)}
                       onToggleFavorite={toggleFavorite}
                       priorityColors={priorityColors}
                     />
@@ -310,6 +329,20 @@ export const MobileKanbanView = memo(function MobileKanbanView({
         currentColumnId={taskToMove?.columnId || ""}
         onSelectColumn={handleMoveToColumn}
       />
+
+      {/* Modal de conclusão com rastreamento */}
+      {completionTask && (
+        <TaskCompletionModal
+          open={!!completionTask}
+          onOpenChange={(open) => { if (!open) setCompletionTask(null); }}
+          taskTitle={completionTask.title}
+          trackMetrics={!!completionTask.track_metrics}
+          metricType={completionTask.metric_type || null}
+          trackComments={!!completionTask.track_comments}
+          onConfirm={handleCompletionConfirm}
+          onCancel={() => setCompletionTask(null)}
+        />
+      )}
     </div>
   );
 });
