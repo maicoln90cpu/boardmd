@@ -16,7 +16,7 @@ import Underline from "@tiptap/extension-underline";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { common, createLowlight } from "lowlight";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { BacklinkExtension } from "./extensions/BacklinkExtension";
 import { BacklinkSuggestion } from "./BacklinkSuggestion";
 import { BacklinksPanel } from "./BacklinksPanel";

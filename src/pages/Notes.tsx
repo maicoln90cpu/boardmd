@@ -29,12 +29,13 @@ export default function Notes() {
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>(settings.notes?.defaultSortBy || 'updated');
+  const [sortBy, setSortBy] = useState<'updated' | 'alphabetical' | 'created'>('updated');
   const [notebookSortBy, setNotebookSortBy] = useState<'updated' | 'alphabetical' | 'created' | 'tag'>('updated');
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>(settings.notes?.defaultViewMode || 'list');
-  const [sidebarMode, setSidebarMode] = useState<'notebooks' | 'wiki'>(settings.notes?.defaultSidebarMode || 'notebooks');
+  const [notesViewMode, setNotesViewMode] = useState<'list' | 'grid'>('list');
+  const [sidebarMode, setSidebarMode] = useState<'notebooks' | 'wiki'>('notebooks');
+  const settingsInitializedRef = useRef(false);
   const { toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
