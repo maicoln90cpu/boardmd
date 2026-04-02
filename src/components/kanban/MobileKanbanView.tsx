@@ -297,7 +297,7 @@ export const MobileKanbanView = memo(function MobileKanbanView({
                     <MobileChecklistItem
                       task={task}
                       columnColor={task.columnColor}
-                      onToggleComplete={() => handleSwipeComplete(task)}
+                      onToggleComplete={() => handleComplete(task)}
                       onToggleFavorite={toggleFavorite}
                       priorityColors={priorityColors}
                     />
