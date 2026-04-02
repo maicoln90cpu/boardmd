@@ -166,10 +166,10 @@ export const MobileKanbanView = memo(function MobileKanbanView({
     async (metricValue: number | null, comment: string | null) => {
       if (!completionTask) return;
       await toggleCompleteWithToast(completionTask.id, false, onAddPoints);
-      await addCompletionLog(completionTask.id, metricValue, comment, completionTask.metric_type);
+      await addLog(completionTask.id, metricValue, completionTask.metric_type, comment);
       setCompletionTask(null);
     },
-    [completionTask, onAddPoints, toggleCompleteWithToast, addCompletionLog],
+    [completionTask, onAddPoints, toggleCompleteWithToast, addLog],
   );
 
   const cycleSortMode = useCallback(() => {
